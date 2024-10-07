@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "ms-co2-penalty"
+version = "0.1.0"
+description = ""
+authors = ["Lukas Hörtnagl <lukas.hoertnagl@usys.ethz.ch>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+jupyterlab = ">=4.2.4"
+
+[tool.poetry.group.dev.dependencies]
+diive = { path = "../../21 - DIIVE/diive", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
