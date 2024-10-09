@@ -5,12 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5e3c18ab-39c3-4a91-92ae-c0d6592152e1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/12-testing-SHAP.py" beforeDir="false" afterPath="$PROJECT_DIR$/12-testing-SHAP.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/info/SiteInfo_ICOS_CarbonPortal.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/info/SitesList_20240404.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/info/SitesList_README_20240404.txt" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,25 +31,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.01-save_as_parquet.executor&quot;: &quot;Run&quot;,
-    &quot;Python.02-extract_site_names.executor&quot;: &quot;Run&quot;,
-    &quot;Python.11-collect_site_info.executor&quot;: &quot;Run&quot;,
-    &quot;Python.12-testing-SHAP.executor&quot;: &quot;Run&quot;,
-    &quot;Python.12-xxx.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;F:/Sync/luhk_work/20 - CODING/29 - WORKBENCH/ms_co2_penalty&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.01-save_as_parquet.executor": "Run",
+    "Python.02-extract_site_names.executor": "Run",
+    "Python.11-collect_site_info.executor": "Run",
+    "Python.12-testing-SHAP.executor": "Debug",
+    "Python.12-xxx.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "F:/Sync/luhk_work/20 - CODING/29 - WORKBENCH/ms_co2_penalty",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="L:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty" />
@@ -193,7 +189,7 @@
       <workItem from="1728328130054" duration="175000" />
       <workItem from="1728338064318" duration="2583000" />
       <workItem from="1728429628333" duration="514000" />
-      <workItem from="1728487253193" duration="1036000" />
+      <workItem from="1728487253193" duration="7112000" />
     </task>
     <servers />
   </component>
@@ -221,15 +217,15 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/12-testing-SHAP.py</url>
-          <line>63</line>
-          <option name="timeStamp" value="9" />
+          <line>74</line>
+          <option name="timeStamp" value="16" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/ms_co2_penalty$01_save_as_parquet.coverage" NAME="01-save_as_parquet Coverage Results" MODIFIED="1727018882822" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ms_co2_penalty$12_testing_SHAP.coverage" NAME="12-testing-SHAP Coverage Results" MODIFIED="1728488259157" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ms_co2_penalty$12_testing_SHAP.coverage" NAME="12-testing-SHAP Coverage Results" MODIFIED="1728509647126" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$02_extract_site_names.coverage" NAME="11-collect_site_info Coverage Results" MODIFIED="1727047159903" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$12_xxx.coverage" NAME="12-xxx Coverage Results" MODIFIED="1727047460946" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>

@@ -24,7 +24,7 @@ filepaths = search_files(searchdirs=SEARCHDIRS, pattern=r"ICOSETC_*_FLUXNET_HH_L
 
 sites_df = pd.DataFrame()
 for ix, filepath in enumerate(filepaths):
-    if ix == 6:
+    if ix == 20:
         _filename = Path(filepath).name
         splits = _filename.split('_')
         site = splits[1]
@@ -32,18 +32,20 @@ for ix, filepath in enumerate(filepaths):
         df = load_parquet(filepath=filepath)
         df = df.loc[df['SW_IN_F'] > 20, :].copy()
         # df = df.loc[df['NEE_VUT_50_QC'] == 0, :].copy()
-        locs = (df.index.year >= 2020)
+        locs = (df.index.year == 2022)
         # locs = (df.index.year >= 2020) & (df.index.month == 7)
-        df = df.loc[locs, :].copy()
+        # df = df.loc[locs, :].copy()
         # [print(c) for c in df.columns if "LE" in c];
         break
 
 # print(df['NEE_VUT_50_QC'].describe())
 
+# means = df.resample('D').mean()
+# means.index = means.index.date
+
 X = df[['TA_F', 'VPD_F', 'SW_IN_F']].copy()
 # X = df[['LE_F_MDS', 'TA_F', 'VPD_F', 'SW_IN_F', 'PPFD_IN', 'PPFD_OUT', 'P_F', 'SWC_F_MDS_1']].copy()
 y = df[['NEE_VUT_50']].copy()
-# train an XGBoost model
 
 # train an XGBoost model
 model = xgboost.XGBRegressor().fit(X, y)
@@ -53,15 +55,35 @@ model = xgboost.XGBRegressor().fit(X, y)
 # (same syntax works for LightGBM, CatBoost, scikit-learn, transformers, Spark, etc.)
 explainer = shap.TreeExplainer(model)
 shap_values = explainer(X)
+expected_value = explainer.expected_value
 _shap_values = shap_values.values
-_shap_values
 
-df = pd.DataFrame(data=_shap_values, index=X.index, columns=X.columns)
-means = df.resample('M').sum()
-means.index = means.index.month
+
+shapdf = pd.DataFrame(data=_shap_values, index=X.index, columns=X.columns)
+shapdf.index = pd.to_datetime(shapdf.index)
+shapdf['SUM_SHAP'] = shapdf.sum(axis=1)
+shapdf['NEE_VUT_50'] = df['NEE_VUT_50'].copy()
+shapdf['EXPECTED'] = expected_value
+shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'].add(shapdf['SUM_SHAP'])
+
+shapdf['NEE_VUT_50'].plot()
+shapdf['SUM+EXPECTED'].plot()
+shapdf['EXPECTED'].plot()
+plt.legend()
+plt.show()
+
+means = shapdf.resample('YE').sum()
+means.index = means.index.year
+means['NEE_VUT_50'].plot.bar()
+means['SUM+EXPECTED'].plot.bar()
+means['EXPECTED'].plot.bar()
+# means['SUM_SHAP'].plot()
+plt.legend()
+plt.show()
 
 # means.plot()
-means.plot.bar(stacked=True)
+means.plot.bar(stacked=True, figsize=(20, 5))
+# means.plot.bar(stacked=True, subplots=True)
 plt.show()
 # # visualize the first prediction's explanation
 # fig = plt.figure()
@@ -71,6 +93,9 @@ plt.show()
 
 # shap.plots.initjs()
 
+# # https://shap.readthedocs.io/en/latest/example_notebooks/api_examples/plots/decision_plot.html
+# # features_display = X_display.loc[features.index]
+# shap.decision_plot(expected_value, _shap_values)
 
 # # visualize the first prediction's explanation with a force plot
 # # shap.plots.force(shap_values[0], show=False, matplotlib=False)
@@ -94,8 +119,8 @@ plt.show()
 # # shap.plots.scatter(shap_values[:, "VPD_F"], color=shap_values[:, "LE_F_MDS"])
 # # shap.plots.scatter(shap_values[:, "TA_F"], color=shap_values[:, "VPD_F"])
 
-# summarize the effects of all the features
-shap.plots.beeswarm(shap_values, plot_size=(16, 9))
+# # summarize the effects of all the features
+# shap.plots.beeswarm(shap_values, plot_size=(16, 9))
 
 # shap.plots.bar(shap_values)
 
