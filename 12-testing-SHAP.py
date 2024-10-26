@@ -17,14 +17,14 @@ from diive.core.io.files import load_parquet
 pd.set_option('display.max_rows', 3000)
 pd.set_option('display.max_columns', 3000)
 
-SEARCHDIRS = r"L:\Sync\luhk_work\40 - DATA\Datasets\2024 - ICOS - Ecosystem final quality (L2) product in ETC-Archive format - release 2024-1\2-FLUXNET_HH_PARQUET"
+SEARCHDIRS = r"F:\Sync\luhk_work\40 - DATA\Datasets\2024 - ICOS - Ecosystem final quality (L2) product in ETC-Archive format - release 2024-1\2-FLUXNET_HH_PARQUET"
 IDENTIFIERS = ['ICOSETC_', '_FLUXNET_HH_L2', '.csv.parquet']
 
 filepaths = search_files(searchdirs=SEARCHDIRS, pattern=r"ICOSETC_*_FLUXNET_HH_L2.csv.parquet")
 
 sites_df = pd.DataFrame()
 for ix, filepath in enumerate(filepaths):
-    if ix == 20:
+    if ix == 1:
         _filename = Path(filepath).name
         splits = _filename.split('_')
         site = splits[1]
@@ -43,9 +43,13 @@ for ix, filepath in enumerate(filepaths):
 # means = df.resample('D').mean()
 # means.index = means.index.date
 
-X = df[['TA_F', 'VPD_F', 'SW_IN_F']].copy()
+X = df[['TA_F', 'VPD_F', 'SW_IN_F', 'SWC_F_MDS_1']].copy()
 # X = df[['LE_F_MDS', 'TA_F', 'VPD_F', 'SW_IN_F', 'PPFD_IN', 'PPFD_OUT', 'P_F', 'SWC_F_MDS_1']].copy()
 y = df[['NEE_VUT_50']].copy()
+
+X['SWC_F_MDS_1'].plot()
+y['NEE_VUT_50'].plot()
+plt.show()
 
 # train an XGBoost model
 model = xgboost.XGBRegressor().fit(X, y)
@@ -66,25 +70,26 @@ shapdf['NEE_VUT_50'] = df['NEE_VUT_50'].copy()
 shapdf['EXPECTED'] = expected_value
 shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'].add(shapdf['SUM_SHAP'])
 
-shapdf['NEE_VUT_50'].plot()
-shapdf['SUM+EXPECTED'].plot()
-shapdf['EXPECTED'].plot()
-plt.legend()
-plt.show()
+# shapdf['NEE_VUT_50'].plot()
+# shapdf['SUM+EXPECTED'].plot()
+# shapdf['EXPECTED'].plot()
+# plt.legend()
+# plt.show()
 
-means = shapdf.resample('YE').sum()
-means.index = means.index.year
-means['NEE_VUT_50'].plot.bar()
-means['SUM+EXPECTED'].plot.bar()
-means['EXPECTED'].plot.bar()
+# means = shapdf.resample('ME').sum()
+means = shapdf.groupby(shapdf.index.month).sum()
+# means.index = means.index.month
+means[['TA_F', 'VPD_F', 'SW_IN_F', 'SWC_F_MDS_1']].plot.bar(stacked=True, figsize=(14, 5))
+# means['SUM+EXPECTED'].plot.bar()
+# means['EXPECTED'].plot.bar()
 # means['SUM_SHAP'].plot()
-plt.legend()
+# plt.legend()
 plt.show()
 
 # means.plot()
-means.plot.bar(stacked=True, figsize=(20, 5))
+# means.plot.bar(stacked=True, figsize=(20, 5))
 # means.plot.bar(stacked=True, subplots=True)
-plt.show()
+# plt.show()
 # # visualize the first prediction's explanation
 # fig = plt.figure()
 # # shap.plots.waterfall(shap_values[666], show=False)

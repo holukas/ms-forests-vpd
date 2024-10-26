@@ -15,8 +15,8 @@ filepaths = search_files(searchdirs=SEARCHDIRS, pattern=r"ICOSETC_*_FLUXNET_HH_L
 
 sites_df = pd.DataFrame()
 for ix, filepath in enumerate(filepaths):
-    # if ix > 2:
-    #     break
+    if ix > 2:
+        break
     _filename = Path(filepath).name
     splits = _filename.split('_')
     site = splits[1]
@@ -51,26 +51,26 @@ for ix, filepath in enumerate(filepaths):
     # df['TA_F'].plot(x_compat=True)
     plt.show()
 
-# SITE INFO
-CONFIGFILEPATH = r"L:\Sync\luhk_work\40 - DATA\Datasets\2024 - ICOS - Ecosystem final quality (L2) product in ETC-Archive format - release 2024-1\3-ARCHIVE_L2"
-filepaths = search_files(searchdirs=CONFIGFILEPATH, pattern=r"ICOSETC_*_SITEINFO_L2.csv")
-for ix, filepath in enumerate(filepaths):
-    # if ix > 3:
-    #     break
-    _filename = Path(filepath).name
-    splits = _filename.split('_')
-    site = splits[1]
-    print(f"Reading site info for site {site} ...")
-    df = pd.read_csv(filepath, on_bad_lines='warn')
-    igbp = df.loc[df['VARIABLE'] == 'IGBP', 'DATAVALUE'].values[0]
-    location_lat = df.loc[df['VARIABLE'] == 'LOCATION_LAT', 'DATAVALUE'].values[0]
-    location_long = df.loc[df['VARIABLE'] == 'LOCATION_LONG', 'DATAVALUE'].values[0]
-    location_elev = df.loc[df['VARIABLE'] == 'LOCATION_ELEV', 'DATAVALUE'].values[0]
-
-    sites_df.loc[sites_df['SITE'] == site, 'IGBP'] = igbp
-    sites_df.loc[sites_df['SITE'] == site, 'LOCATION_LAT'] = location_lat
-    sites_df.loc[sites_df['SITE'] == site, 'LOCATION_LONG'] = location_long
-    sites_df.loc[sites_df['SITE'] == site, 'LOCATION_ELEV'] = location_elev
+# # SITE INFO
+# CONFIGFILEPATH = r"F:\Sync\luhk_work\40 - DATA\Datasets\2024 - ICOS - Ecosystem final quality (L2) product in ETC-Archive format - release 2024-1\3-ARCHIVE_L2"
+# filepaths = search_files(searchdirs=CONFIGFILEPATH, pattern=r"ICOSETC_*_SITEINFO_L2.csv")
+# for ix, filepath in enumerate(filepaths):
+#     if ix > 2:
+#         break
+#     _filename = Path(filepath).name
+#     splits = _filename.split('_')
+#     site = splits[1]
+#     print(f"Reading site info for site {site} ...")
+#     df = pd.read_csv(filepath, on_bad_lines='warn')
+#     igbp = df.loc[df['VARIABLE'] == 'IGBP', 'DATAVALUE'].values[0]
+#     location_lat = df.loc[df['VARIABLE'] == 'LOCATION_LAT', 'DATAVALUE'].values[0]
+#     location_long = df.loc[df['VARIABLE'] == 'LOCATION_LONG', 'DATAVALUE'].values[0]
+#     location_elev = df.loc[df['VARIABLE'] == 'LOCATION_ELEV', 'DATAVALUE'].values[0]
+#
+#     sites_df.loc[sites_df['SITE'] == site, 'IGBP'] = igbp
+#     sites_df.loc[sites_df['SITE'] == site, 'LOCATION_LAT'] = location_lat
+#     sites_df.loc[sites_df['SITE'] == site, 'LOCATION_LONG'] = location_long
+#     sites_df.loc[sites_df['SITE'] == site, 'LOCATION_ELEV'] = location_elev
 
 print(sites_df)
 sites_df.to_csv("OUT/11.1-site_info.csv")
