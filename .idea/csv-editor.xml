@@ -10,6 +10,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\OUT\11.1-basic_sitelist.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\OUT\11.1-filepath_list.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\OUT\11.1-site_info.csv">
           <value>
             <Attribute>
@@ -18,6 +32,27 @@
           </value>
         </entry>
         <entry key="\OUT\11.1-site_info_ICOS.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\OUT\11.1-sitelist.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\OUT\11.1-siteslist.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\OUT\11.2-sitelist.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

@@ -1,17 +1,22 @@
+"""
+Convert ICOS L2 and FLUXNET half-hourly CSV files to parquet
+"""
+
+from pathlib import Path
+
 from funcs.files import convert_datafiles_to_parquet
 
-# Convert ICOS L2 half-hourly files to parquet
-convert_datafiles_to_parquet(
-    filepattern="ICOSETC_*_FLUXNET_HH_L2.csv",
-    filetype="FLUXNET-FULLSET-HH-CSV-30MIN",
-    searchdirs=r"L:\Sync\luhk_work\40 - DATA\Datasets\2024 - ICOS - Ecosystem final quality (L2) product in ETC-Archive format - release 2024-1\1-FLUXNET_HH_CSV",
-    outpath=r"L:\Sync\luhk_work\40 - DATA\Datasets\2024 - ICOS - Ecosystem final quality (L2) product in ETC-Archive format - release 2024-1\2-FLUXNET_HH_PARQUET"
-)
+# Input and output folder for each ecosystem
+basedir = r"L:\Sync\luhk_work\40 - DATA\Datasets\2024 - FLUXNET ICOS FORESTS"
+ecosystems = ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
 
-# Convert FLUXNET Warm Winter 2020 half-hourly files to parquet
-convert_datafiles_to_parquet(
-    filepattern="FLX_*_FLUXNET2015_FULLSET_HH_*.csv",
-    filetype="FLUXNET-FULLSET-HH-CSV-30MIN",
-    searchdirs=r"F:\Sync\luhk_work\40 - DATA\DATASETS\2022 - FLUXNET - Warm Winter 2020 - release 2022-1",
-    outpath=r"F:\Sync\luhk_work\40 - DATA\DATASETS\2022 - FLUXNET - Warm Winter 2020 - release 2022-1\2-FLUXNET_HH_PARQUET"
-)
+# Conversion to parquet
+for ecosystem in ecosystems:
+    searchdir = Path(basedir).joinpath(ecosystem) / "1-FLUXFILES_CSV"
+    outpath = Path(basedir).joinpath(ecosystem) / "2-FLUXFILES_PARQUET"
+    convert_datafiles_to_parquet(
+        filepatterns=["ICOSETC_*_FLUXNET_HH_L2.csv", "FLX_*_FLUXNET2015_FULLSET_HH_*.csv"],
+        filetype="FLUXNET-FULLSET-HH-CSV-30MIN",
+        searchdir=str(searchdir),
+        outpath=str(outpath)
+    )
