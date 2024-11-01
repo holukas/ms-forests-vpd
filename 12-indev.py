@@ -37,7 +37,9 @@ class ShapAnalysis:
 
     def _run_site(self, row):
         # print(row)
-        df = load_parquet(row['.filepath'])
+        filepath = row['.filepath']
+        filepath = str(filepath).replace('L:', 'F:')
+        df = load_parquet(filepath)
         featurecols = [self.TACOL, self.SW_IN_COL, self.VPD_COL, self.SWC_COL]
         subsetcols = featurecols.copy()
         subsetcols.append(self.targetcol)
@@ -55,7 +57,7 @@ class ShapAnalysis:
         expected_value = explainer.expected_value
         _shap_values = shap_values.values
 
-        # todo Add absolute values to shapdf
+        # Add absolute values to shapdf
         shapdf = X.copy()
         shapcolnames = [f"SHAP_{c}" for c in X.columns]
         _tempdf = pd.DataFrame(data=_shap_values, index=X.index, columns=shapcolnames)
@@ -66,8 +68,29 @@ class ShapAnalysis:
         shapdf['EXPECTED'] = expected_value
         shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'].add(shapdf['SUM_SHAP'])
 
-        # ScatterXY(x=shapdf[TACOL], y=shapdf[f"SHAP_{TACOL}"], nbins=50).plot()
-        # ScatterXY(x=shapdf[VPD_COL], y=shapdf[f"SHAP_{VPD_COL}"], nbins=50).plot()
+        # ScatterXY(x=shapdf[TACOL], y=shapdf[f"SHAP_{TACOL}"], nbins=20, binagg='mean').plot()
+        # ScatterXY(x=shapdf[VPD_COL], y=shapdf[f"SHAP_{VPD_COL}"], nbins=20, binagg='mean').plot()
+
+        test = shapdf[[f"SHAP_{VPD_COL}", VPD_COL]].copy()
+        test = test.sort_values(by=f"{VPD_COL}")
+        test = test.reset_index(drop=True)
+        test
+        # rmean = test.rolling(window=48, center=True, min_periods=1).mean()
+        # rmean.plot()
+        # ScatterXY(x=rmean[VPD_COL], y=rmean[f"SHAP_{VPD_COL}"], nbins=50, binagg='mean').plot()
+        # plt.show()
+
+        # todo fit to bins, binfitter?
+        from diive.core.dfun.fits import fit_to_bins_polyreg
+        _df, predicted_col, predicted_results = fit_to_bins_polyreg(df=test, x_col=VPD_COL, y_col=f"SHAP_{VPD_COL}", degree=1)
+        _df.columns
+        _df[[f"SHAP_{VPD_COL}", 'predicted']].plot()
+        plt.show()
+
+        from diive.pkgs.analyses.optimumrange import FindOptimumRange
+        optrange = FindOptimumRange(df=shapdf, xcol=f"SHAP_{TACOL}", ycol=TACOL, define_optimum="max", rwinsize=0.3)
+        optrange.find_optimum()
+        optrange.plot_vals_in_optimum_range()
 
         # means = shapdf.resample('ME').sum()
         means = shapdf.groupby(shapdf.index.isocalendar().week).mean()
