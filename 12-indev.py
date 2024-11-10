@@ -22,10 +22,11 @@ from scipy.stats import zscore
 
 class ShapAnalysis:
 
-    def __init__(self, siteinfo: pd.DataFrame, targetcol: str, featurecols: list):
+    def __init__(self, siteinfo: pd.DataFrame, targetcol: str, featurecols: list, auxcols: list):
         self.siteinfo = siteinfo
         self.targetcol = targetcol
         self.featurecols = featurecols
+        self.auxcols = auxcols
 
         # todo testing
         # ix = 24
@@ -46,12 +47,13 @@ class ShapAnalysis:
         df = load_parquet(filepath)
         # [print(v) for v in df.columns if "LE" in v]
         df = df.loc[df['SW_IN_POT'] > 20].copy()
+        df = df.loc[df[self.auxcols[0]] == 0].copy()  # Only measured data
         subsetcols = self.featurecols.copy()
         subsetcols.append(self.targetcol)
         subset = df[subsetcols].copy()
         subset = subset.dropna()
         # todo testing:
-        subset = subset.iloc[0:5000].copy()
+        # subset = subset.iloc[0:5000].copy()
         return subset
 
     @staticmethod
@@ -76,10 +78,15 @@ class ShapAnalysis:
         shapdf[FLUXCOL] = subset[FLUXCOL].copy()
         shapdf['EXPECTED'] = expected_value
         shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'].add(shapdf['SUM_SHAP'])
+        # Adjust SHAP values to EXPECTED value
+        for c in shapcolnames:
+            newcol = f"{c}+EXPECTED"
+            shapdf[newcol] = shapdf[c].add(expected_value)
         return shapdf
 
     def _bins_shap(self, xcol, shapdf, site, showplot: bool = True):
-        y = f"SHAP_{xcol}"
+        y = f"SHAP_{xcol}+EXPECTED"
+        # y = f"SHAP_{xcol}"
         test = shapdf[[xcol, y]].copy()
         test = test.sort_values(by=f"{xcol}")
         test = test.reset_index(drop=True)
@@ -89,7 +96,7 @@ class ShapAnalysis:
             xcol=xcol,
             ycol=y,
             n_predictions=1000,
-            n_bins_x=0,
+            n_bins_x=200,
             bins_y_agg='mean',
             fit_type='cubic'  # 'linear', 'quadratic_offset', 'quadratic', 'cubic'
         )
@@ -128,6 +135,9 @@ class ShapAnalysis:
         else:
             zerocrossings_ix = np.argwhere(np.diff(_signs)).flatten()
             # n_zerocrossings = len(zerocrossings_ix)
+
+        if not zerocrossings_ix:
+            return None
 
         # Keep crossings
         valid_crossings_ix = []
@@ -184,7 +194,10 @@ class ShapAnalysis:
         # Make subset
         subset = self._load_filter_data(row)
 
-        subset = subset.apply(zscore)
+
+
+        # # Convert all values to z-scores
+        # subset = subset.apply(zscore)
 
         # Set data
         X = subset[self.featurecols].copy()
@@ -211,7 +224,16 @@ class ShapAnalysis:
 
         zerocrossing_vals = self._detect_zerocrossing_y(x=fit_results['fit_df']['fit_x'],
                                                         y=fit_results['fit_df']['nom'],
-                                                        thres_y_sign_change='-')
+                                                        thres_y_sign_change='+')
+
+        if not zerocrossing_vals:
+            return None
+
+        locs = fit_results['input_df']['VPD_F'] > zerocrossing_vals['x_col']
+        n_vals = len(locs.index)
+        n_vals_above_threshold = locs.sum()
+        perc_above_threshold = n_vals_above_threshold / n_vals
+        print(perc_above_threshold)
 
         # print(zerocrossing_vals)
         self.test_xcols.append(zerocrossing_vals['x_col'])
@@ -373,8 +395,8 @@ class ShapAnalysis:
 if __name__ == '__main__':
     sitelist = pd.read_csv("OUT/11.2-sitelist.csv")
     # FLUXCOL = 'GPP_DT_VUT_REF'
-    FLUXCOL = 'GPP_NT_VUT_REF'
-    # FLUXCOL = 'NEE_VUT_REF'
+    # FLUXCOL = 'GPP_NT_VUT_REF'
+    FLUXCOL = 'NEE_VUT_REF'
     # FLUXCOL = 'RECO_DT_VUT_REF'
     # FLUXCOL = 'RECO_NT_VUT_REF'
     FLUXQCCOL = 'NEE_VUT_REF_QC'
@@ -383,6 +405,7 @@ if __name__ == '__main__':
     VPD_COL = 'VPD_F'
     SWC_COL = 'SWC_F_MDS_1'
     # LE_COL = 'LE_F_MDS'
+    AUXCOLS = [FLUXQCCOL]
     FEATURECOLS = [TACOL, SW_IN_COL, VPD_COL, SWC_COL]
-    sa = ShapAnalysis(siteinfo=sitelist, targetcol=FLUXCOL, featurecols=FEATURECOLS)
+    sa = ShapAnalysis(siteinfo=sitelist, targetcol=FLUXCOL, featurecols=FEATURECOLS, auxcols=AUXCOLS)
     sa.run()
