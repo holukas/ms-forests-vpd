@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="ms_co2_penalty" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="ms_co2_penalty" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="ms_co2p" project-jdk-type="Python SDK" />
 </project>
