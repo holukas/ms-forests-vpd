@@ -3,6 +3,23 @@ import os
 from pathlib import Path
 
 import yaml
+from diive.core.io.filereader import search_files, ReadFileType
+from diive.core.io.files import save_parquet
+
+
+def convert_datafiles_to_parquet(filepatterns: list, filetype: str, searchdir: str, outpath: str):
+    filelist = []
+    for filepattern in filepatterns:
+        _filelist = search_files(
+            searchdirs=searchdir,
+            pattern=filepattern)
+        filelist = filelist + _filelist
+
+    for f in filelist:
+        filename = f.name
+        loaddatafile = ReadFileType(filetype=filetype, filepath=f, data_nrows=None)
+        data_df, metadata_df = loaddatafile.get_filedata()
+        filepath = save_parquet(filename=filename, data=data_df, outpath=outpath)
 
 
 def read_settings_file(filepath_settings):
