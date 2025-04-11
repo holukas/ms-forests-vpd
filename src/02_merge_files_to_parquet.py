@@ -5,13 +5,14 @@ import pandas as pd
 from diive.core.io.filereader import ReadFileType
 from diive.core.io.files import save_parquet
 
-df = pd.read_csv('../OUT/01_siteinfo.csv', na_values='?')
+df = pd.read_csv('../OUT/01_siteinfo.csv')
 df = df.fillna(np.nan)
 # print(df)
 
-data_nrows = None
+data_nrows = 100
 
-for ix, row in df.iterrows():
+_df = df.copy()
+for ix, row in _df.iterrows():
     site = row['SITE']
     igbp = row['IGBP']
     origin = row['ORIGIN']
@@ -56,3 +57,7 @@ for ix, row in df.iterrows():
     outfilepath = save_parquet(filename=f"DATA-MERGED_{site}_{igbp}_{sourcetxt}_{start}-{end}",
                                data=merged_df,
                                outpath=outpath)
+
+    df.loc[ix, '_FILEPATH_PARQUET'] = Path(outfilepath)
+
+df.to_csv("../OUT/02_siteinfo.csv", index=False)

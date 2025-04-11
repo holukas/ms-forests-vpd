@@ -10,6 +10,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\OUT\02_siteinfo.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\OUT\03_siteinfo.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\OUT\11.1-basic_sitelist.csv">
           <value>
             <Attribute>
@@ -39,6 +53,13 @@
           </value>
         </entry>
         <entry key="\src\01_siteinfo.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\src\02_siteinfo.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

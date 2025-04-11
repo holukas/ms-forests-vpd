@@ -5,12 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5e3c18ab-39c3-4a91-92ae-c0d6592152e1" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/03_read_files.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/csv-editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/csv-editor.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/01_collect_info.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/01_collect_info.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/02_merge_files_to_parquet.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/02_merge_files_to_parquet.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/files.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/files.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/sites.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/sites.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,6 +42,7 @@
     "Python.01_collect_info.executor": "Run",
     "Python.02-extract_site_names.executor": "Run",
     "Python.02_merge_files_to_parquet.executor": "Run",
+    "Python.03_read_files.executor": "Run",
     "Python.10-convert_to_parquet.executor": "Run",
     "Python.11-collect_site_info (1).executor": "Run",
     "Python.11-collect_site_info.executor": "Run",
@@ -84,7 +83,7 @@
       <recent name="L:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\X" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.02_merge_files_to_parquet">
+  <component name="RunManager" selected="Python.03_read_files">
     <configuration name="01_collect_info (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ms_co2_penalty" />
       <option name="ENV_FILES" value="" />
@@ -154,6 +153,29 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="03_read_files" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="ms_co2_penalty" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/03_read_files.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="10-convert_to_parquet" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ms_co2_penalty" />
       <option name="ENV_FILES" value="" />
@@ -169,29 +191,6 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/10-convert_to_parquet.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="12-indev" type="PythonConfigurationType" factoryName="Python" singleton="false" temporary="true" nameIsGenerated="true">
-      <module name="ms_co2_penalty" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/12-indev.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -248,18 +247,18 @@
     </configuration>
     <list>
       <item itemvalue="Python.02_merge_files_to_parquet" />
+      <item itemvalue="Python.03_read_files" />
       <item itemvalue="Python.01_collect_info (1)" />
       <item itemvalue="Python.10-convert_to_parquet" />
       <item itemvalue="Python.01_collect_info" />
-      <item itemvalue="Python.12-indev" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.03_read_files" />
         <item itemvalue="Python.02_merge_files_to_parquet" />
         <item itemvalue="Python.01_collect_info (1)" />
         <item itemvalue="Python.01_collect_info" />
         <item itemvalue="Python.10-convert_to_parquet" />
-        <item itemvalue="Python.12-indev" />
       </list>
     </recent_temporary>
   </component>
@@ -321,7 +320,7 @@
       <workItem from="1744268993621" duration="13850000" />
       <workItem from="1744312031008" duration="13424000" />
       <workItem from="1744356638342" duration="2095000" />
-      <workItem from="1744363639442" duration="9394000" />
+      <workItem from="1744363639442" duration="10905000" />
     </task>
     <servers />
   </component>
@@ -372,13 +371,14 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/ms_co2_penalty$Doctests_in_common.coverage" NAME="Doctests in common Coverage Results" MODIFIED="1730238474315" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$USER_HOME$/miniconda3/envs/ms_co2_penalty/Lib/site-packages/pandas/io" />
-    <SUITE FILE_PATH="coverage/ms_co2_penalty$02_merge_files_to_parquet.coverage" NAME="02_merge_files_to_parquet Coverage Results" MODIFIED="1744375025615" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/ms_co2_penalty$02_merge_files_to_parquet.coverage" NAME="02_merge_files_to_parquet Coverage Results" MODIFIED="1744378679990" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$12_indev.coverage" NAME="12-indev Coverage Results" MODIFIED="1731201590832" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$12_collect_site_info_FLUXNET_WW2020.coverage" NAME="12-collect_site_info_FLUXNET-WW2020 Coverage Results" MODIFIED="1729987315084" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$optimumrange.coverage" NAME="optimumrange Coverage Results" MODIFIED="1730503036248" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../21 - DIIVE/diive/diive/pkgs/analyses" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$01_save_as_parquet.coverage" NAME="01-save_as_parquet Coverage Results" MODIFIED="1727018882822" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$12_testing_SHAP.coverage" NAME="12-testing-SHAP Coverage Results" MODIFIED="1729947609915" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$11_collect_site_info__1_.coverage" NAME="11-collect_site_info (1) Coverage Results" MODIFIED="1729980906866" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ms_co2_penalty$03_read_files.coverage" NAME="03_read_files Coverage Results" MODIFIED="1744379567478" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$02_extract_site_names.coverage" NAME="11-collect_site_info Coverage Results" MODIFIED="1727047159903" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$11_merge_files.coverage" NAME="11-merge_files Coverage Results" MODIFIED="1730238458857" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$11_collect_site_info_ICOS__1_.coverage" NAME="11-collect_site_info_ICOS (1) Coverage Results" MODIFIED="1729987283813" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
