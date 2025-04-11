@@ -9,7 +9,7 @@ df = pd.read_csv('../OUT/01_siteinfo.csv')
 df = df.fillna(np.nan)
 # print(df)
 
-data_nrows = 100
+data_nrows = None
 
 _df = df.copy()
 for ix, row in _df.iterrows():
