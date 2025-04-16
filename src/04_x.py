@@ -134,7 +134,7 @@ for ix, row in _df.iterrows():
         infldf.loc[_ix, 'DELTA_Y_P16'] = delta_y_p16
         infldf.loc[_ix, 'DELTA_Y_P84'] = delta_y_p84
 
-        infldf.loc[_ix, 'Z'] = _ix
+        infldf.loc[_ix, 'Z'] = float(_ix)
         infldf.loc[_ix, 'X'] = v.loc[1, xvar]
         infldf.loc[_ix, 'DELTA_X'] = v.loc[1, xvar] - v.loc[0, xvar]
 
@@ -146,12 +146,13 @@ for ix, row in _df.iterrows():
 
     # Speed, change of flux normalized to change of VPD
 
-    plt.scatter(infldf['Z'], infldf['SPEED'])
-    plt.scatter(infldf['Z'], infldf['SPEED_P16'])
-    plt.scatter(infldf['Z'], infldf['SPEED_P84'])
+    plt.scatter(infldf['Z'], infldf['SPEED'], label="agg")
+    # plt.scatter(infldf['Z'], infldf['SPEED_P16'], label="P16")
+    # plt.scatter(infldf['Z'], infldf['SPEED_P84'], label="P84")
     # plt.plot(infldf['SPEED'])
-    # plt.locator_params(axis='x', nbins=5)
+    plt.locator_params(axis='x', nbins=20)
     plt.title("Speed")
+    plt.legend()
     plt.show()
 
     # # Plot deltas
