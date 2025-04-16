@@ -24,6 +24,14 @@ swccol = "SWC_F_MDS_1"
 swcqc = "SWC_F_MDS_1_QC"
 swinpotcol = "SW_IN_POT"
 
+subsetcols = [
+    neecol, neeqc,
+    swinpotcol,
+    tacol, taqc,
+    vpdcol, vpdqc,
+    # swccol, swcqc,
+]
+
 _mins = []
 
 _df = df.copy()
@@ -31,25 +39,17 @@ for ix, row in _df.iterrows():
 
     print(f"INDEX: {ix}")
 
-    if ix != 4:
+    if ix != 0:
         continue
 
     site = row['SITE']
     igbp = row['IGBP']
     filepath = row['_FILEPATH_PARQUET']
     sitedata = load_parquet(filepath)
-
     # [print(c) for c in sitedata.columns if "NEE_" in c];
-
-    subsetcols = [
-        neecol, neeqc,
-        swinpotcol,
-        tacol, taqc,
-        vpdcol, vpdqc,
-        # swccol, swcqc,
-    ]
-
     sitedata = sitedata[subsetcols].copy()
+
+    sitedata[vpdcol].describe()
 
     # Highest-quality fluxes and meteo
     locs_qc0 = (sitedata[neeqc] == 0) & (sitedata[taqc] == 0) & (sitedata[vpdqc] == 0)
@@ -75,6 +75,17 @@ for ix, row in _df.iterrows():
                     sitedata_qc0_dt.index.month == warmest6[4]) | (sitedata_qc0_dt.index.month == warmest6[5])
     sitedata_qc0_dt_warmest6 = sitedata_qc0_dt.loc[locs].copy()
 
+    # # Checking sum of z-scores
+    # from scipy.stats import zscore
+    # sitedata_qc0_dt_warmest6 = sitedata_qc0_dt_warmest6.apply(zscore)
+    # zsum = sitedata_qc0_dt_warmest6[tacol].add(sitedata_qc0_dt_warmest6[vpdcol])
+    # yy = sitedata_qc0_dt_warmest6[neecol]
+    # plt.scatter(zsum, yy)
+    # plt.scatter(zsum, sitedata_qc0_dt_warmest6[tacol])
+    # plt.scatter(zsum, sitedata_qc0_dt_warmest6[vpdcol])
+    # plt.title("Sum of z-scores")
+    # plt.show()
+
     # Used vars
     xvar = vpdcol
     yvar = neecol
@@ -96,7 +107,8 @@ for ix, row in _df.iterrows():
     time_elapsed = end_time - start_time
     print(f"Execution time: {time_elapsed}")
     binaggs = sbm.get_binaggs()
-    sbm.showplot_decoupling_sbm(marker='o', emphasize_lines=True, title=site)
+
+    # sbm.showplot_decoupling_sbm(marker='o', emphasize_lines=True, title=site)
 
     # Collect deltas
     infldf = pd.DataFrame()
@@ -104,78 +116,92 @@ for ix, row in _df.iterrows():
     for _ix, v in binaggs.items():
 
         from_y = v.loc[0, yvar]
-        from_y_p25 = v.loc[0, f"{yvar}_P25"]
-        from_y_p75 = v.loc[0, f"{yvar}_P75"]
+        from_y_p16 = v.loc[0, f"{yvar}_P16"]
+        from_y_p84 = v.loc[0, f"{yvar}_P84"]
         infldf.loc[_ix, 'FROM_Y'] = from_y
 
         to_y = v.loc[1, yvar]
-        to_y_p25 = v.loc[1, f"{yvar}_P25"]
-        to_y_p75 = v.loc[1, f"{yvar}_P75"]
+        to_y_p16 = v.loc[1, f"{yvar}_P16"]
+        to_y_p84 = v.loc[1, f"{yvar}_P84"]
         infldf.loc[_ix, 'TO_Y'] = to_y
-        infldf.loc[_ix, 'TO_Y_P25'] = to_y_p25
-        infldf.loc[_ix, 'TO_Y_P75'] = to_y_p75
+        infldf.loc[_ix, 'TO_Y_P16'] = to_y_p16
+        infldf.loc[_ix, 'TO_Y_P84'] = to_y_p84
 
         delta_y = to_y - from_y
-        delta_y_p25 = to_y_p25 - from_y_p25
-        delta_y_p75 = to_y_p75 - from_y_p75
+        delta_y_p16 = to_y_p16 - from_y_p16
+        delta_y_p84 = to_y_p84 - from_y_p84
         infldf.loc[_ix, 'DELTA_Y'] = delta_y
-        infldf.loc[_ix, 'DELTA_Y_P25'] = delta_y_p25
-        infldf.loc[_ix, 'DELTA_Y_P75'] = delta_y_p75
+        infldf.loc[_ix, 'DELTA_Y_P16'] = delta_y_p16
+        infldf.loc[_ix, 'DELTA_Y_P84'] = delta_y_p84
 
         infldf.loc[_ix, 'Z'] = _ix
         infldf.loc[_ix, 'X'] = v.loc[1, xvar]
+        infldf.loc[_ix, 'DELTA_X'] = v.loc[1, xvar] - v.loc[0, xvar]
 
+        infldf.loc[_ix, 'SPEED'] = infldf.loc[_ix, 'DELTA_Y'] / infldf.loc[_ix, 'DELTA_X']
+        infldf.loc[_ix, 'SPEED_P16'] = infldf.loc[_ix, 'DELTA_Y_P16'] / infldf.loc[_ix, 'DELTA_X']
+        infldf.loc[_ix, 'SPEED_P84'] = infldf.loc[_ix, 'DELTA_Y_P84'] / infldf.loc[_ix, 'DELTA_X']
 
+        # NEE_VUT_USTAR50_P84
 
+    # Speed, change of flux normalized to change of VPD
 
-        # NEE_VUT_USTAR50_P75
-
-    # Plot deltas
-    dy = infldf['DELTA_Y']
-    plt.scatter(infldf['X'], dy)
-    plt.axhline(0)
-    plt.title(f"{site} ({igbp}): delta {yvar}")
+    plt.scatter(infldf['Z'], infldf['SPEED'])
+    plt.scatter(infldf['Z'], infldf['SPEED_P16'])
+    plt.scatter(infldf['Z'], infldf['SPEED_P84'])
+    # plt.plot(infldf['SPEED'])
+    # plt.locator_params(axis='x', nbins=5)
+    plt.title("Speed")
     plt.show()
 
-    # Plot to y
-    # locs = (infldf['TO_Y'] > 0) & (infldf['FROM_Y'] < 0)
-    # _infldf = infldf[locs].copy()
-    dy = infldf['TO_Y']
-    dy2 = infldf['TO_Y_P75']
-    dy3 = infldf['TO_Y_P25']
-    plt.scatter(infldf['X'], dy)
-    plt.scatter(infldf['X'], dy2)
-    plt.scatter(infldf['X'], dy3)
-    plt.axhline(0)
-    plt.title(f"{site} ({igbp}): TO_Y_P25 / TO_Y / TO_Y_P75")
-    plt.show()
+    # # Plot deltas
+    # dy = infldf['DELTA_Y']
+    # plt.scatter(infldf['X'], dy)
+    # plt.axhline(0)
+    # plt.title(f"{site} ({igbp}): delta {yvar}")
+    # plt.show()
 
-    # Plot cumulative deltas, with minimum
-    dy = infldf['DELTA_Y'].cumsum()
-    dy_p25 = infldf['DELTA_Y_P25'].cumsum()
-    dy_p75 = infldf['DELTA_Y_P75'].cumsum()
-    dy_min = dy.min()
-    dy_min_p25 = dy_p25.min()
-    dy_min_p75 = dy_p75.min()
-    _min = infldf.loc[dy == dy_min, 'X'].values[0]
-    _min_p25 = infldf.loc[dy_p25 == dy_min_p25, 'X'].values[0]
-    _min_p75 = infldf.loc[dy_p75 == dy_min_p75, 'X'].values[0]
-    plt.axvline(_min)
-    plt.axvline(_min_p25)
-    plt.axvline(_min_p75)
-    plt.scatter(infldf['X'], dy, label=f"agg: min x = {_min}")
-    plt.scatter(infldf['X'], dy_p25, label=f"p25: min x = {_min_p25}")
-    plt.scatter(infldf['X'], dy_p75, label=f"p75: min x = {_min_p75}")
-    plt.scatter(_min, dy_min, color="red")
-    plt.scatter(_min_p25, dy_min_p25, color="red")
-    plt.scatter(_min_p75, dy_min_p75, color="red")
-    plt.title(f"{site} ({igbp}): cumulative delta {yvar}")
-    plt.legend()
-    plt.show()
 
-    _mins.append(_min)
 
-print(_mins)
+#     # Plot to y
+#     # locs = (infldf['TO_Y'] > 0) & (infldf['FROM_Y'] < 0)
+#     # _infldf = infldf[locs].copy()
+#     dy = infldf['TO_Y']
+#     dy2 = infldf['TO_Y_P84']
+#     dy3 = infldf['TO_Y_P16']
+#     plt.scatter(infldf['X'], dy)
+#     plt.scatter(infldf['X'], dy2)
+#     plt.scatter(infldf['X'], dy3)
+#     plt.axhline(0)
+#     plt.title(f"{site} ({igbp}): TO_Y_P16 / TO_Y / TO_Y_P84")
+#     plt.show()
+#
+#     # Plot cumulative deltas, with minimum
+#     dy = infldf['DELTA_Y'].cumsum()
+#     dy_p16 = infldf['DELTA_Y_P16'].cumsum()
+#     dy_p84 = infldf['DELTA_Y_P84'].cumsum()
+#     dy_min = dy.min()
+#     dy_min_p16 = dy_p16.min()
+#     dy_min_p84 = dy_p84.min()
+#     _min = infldf.loc[dy == dy_min, 'X'].values[0]
+#     _min_p16 = infldf.loc[dy_p16 == dy_min_p16, 'X'].values[0]
+#     _min_p84 = infldf.loc[dy_p84 == dy_min_p84, 'X'].values[0]
+#     plt.axvline(_min)
+#     plt.axvline(_min_p16)
+#     plt.axvline(_min_p84)
+#     plt.scatter(infldf['X'], dy, label=f"agg: min x = {_min}")
+#     plt.scatter(infldf['X'], dy_p16, label=f"P16: min x = {_min_p16}")
+#     plt.scatter(infldf['X'], dy_p84, label=f"P84: min x = {_min_p84}")
+#     plt.scatter(_min, dy_min, color="red")
+#     plt.scatter(_min_p16, dy_min_p16, color="red")
+#     plt.scatter(_min_p84, dy_min_p84, color="red")
+#     plt.title(f"{site} ({igbp}): cumulative delta {yvar}")
+#     plt.legend()
+#     plt.show()
+#
+#     _mins.append(_min)
+#
+# print(_mins)
 
 # _signs = np.sign(cc)
 
