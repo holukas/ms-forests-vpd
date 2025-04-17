@@ -1,13 +1,16 @@
 import time
-
+import matplotlib.gridspec as grid_spec
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from diive.core.io.files import load_parquet
 from diive.pkgs.analyses.decoupling import SortingBinsMethod
-from scipy.stats import binned_statistic
 
 df = pd.read_csv('../OUT/03_siteinfo.csv')
 df = df.fillna(np.nan)
+
+n_sites = 3
+# todo n_sites = len(df)
 
 # Variables
 neecol = "NEE_VUT_50"
@@ -36,13 +39,18 @@ _mins = []
 
 _df = df.copy()
 
+# Dynamic plot
+fig = plt.figure(figsize=(16, 9), layout=None, dpi=72)
+gs = (grid_spec.GridSpec(n_sites, 2))
+gs.update(wspace=0, hspace=1, left=0.09, right=0.97, top=0.95, bottom=0.07)
+ax_objs = []  # Create empty list for dynamic number of plots (rows)
+i = 0
+
 for ix, row in _df.iterrows():
 
     print(f"INDEX: {ix}")
 
-    # if ix != 6:
-    #     continue
-    if ix > 2:
+    if ix > 3:
         break
 
     site = row['SITE']
@@ -51,6 +59,8 @@ for ix, row in _df.iterrows():
     sitedata = load_parquet(filepath)
     # [print(c) for c in sitedata.columns if "NEE_" in c];
     sitedata = sitedata[subsetcols].copy()
+
+    sitedata[vpdcol].describe()
 
     # Highest-quality fluxes and meteo
     locs_qc0 = (sitedata[neeqc] == 0) & (sitedata[taqc] == 0) & (sitedata[vpdqc] == 0)
@@ -61,9 +71,9 @@ for ix, row in _df.iterrows():
     locs_dt = sitedata_qc0[swinpotcol] > 20
     sitedata_qc0_dt = sitedata_qc0.loc[locs_dt].copy()
 
-    # # Nighttime data
-    # locs_nt = sitedata_qc0[swinpotcol] <= 20
-    # sitedata_qc0_nt = sitedata_qc0.loc[locs_nt].copy()
+    # Nighttime data
+    locs_nt = sitedata_qc0[swinpotcol] <= 20
+    sitedata_qc0_nt = sitedata_qc0.loc[locs_nt].copy()
 
     # Focus on 6 warmest months
     sitedata['MONTH'] = sitedata.index.month
@@ -73,7 +83,7 @@ for ix, row in _df.iterrows():
     locs = \
         (sitedata_qc0_dt.index.month == warmest6[0]) | (sitedata_qc0_dt.index.month == warmest6[1]) | (
                 sitedata_qc0_dt.index.month == warmest6[2]) | (sitedata_qc0_dt.index.month == warmest6[3]) | (
-                sitedata_qc0_dt.index.month == warmest6[4]) | (sitedata_qc0_dt.index.month == warmest6[5])
+                    sitedata_qc0_dt.index.month == warmest6[4]) | (sitedata_qc0_dt.index.month == warmest6[5])
     sitedata_qc0_dt_warmest6 = sitedata_qc0_dt.loc[locs].copy()
 
     # # Checking sum of z-scores
@@ -88,14 +98,11 @@ for ix, row in _df.iterrows():
     # plt.show()
 
     # Used vars
-    # zvar = vpdcol
-    xvar = vpdcol
-    # xvar = tacol
-    zvar = tacol
+    zvar = vpdcol
+    # xvar = vpdcol
+    xvar = tacol
+    # zvar = tacol
     yvar = neecol
-
-    # Keep required columns only
-    sitedata_qc0_dt_warmest6 = sitedata_qc0_dt_warmest6[[xvar, yvar, zvar]].copy()
 
     # Calculate bins
     start_time = time.time()
@@ -105,8 +112,8 @@ for ix, row in _df.iterrows():
                             zvar=zvar,
                             n_bins_z=100,
                             n_bins_x=2,
-                            # conversion=None,
-                            conversion='z-score',
+                            conversion=None,
+                            # conversion='z-score',
                             agg='median')
     sbm.calcbins()
     end_time = time.time()
@@ -114,73 +121,49 @@ for ix, row in _df.iterrows():
     print(f"Execution time: {time_elapsed}")
     binaggs = sbm.get_binaggs()
 
-    # sbm.showplot_decoupling_sbm(marker='o', emphasize_lines=True, title=site, legend=False)
+    # Dynamic plot
+    # Create new axes object
+    # ax_objs.insert(0, self.fig.add_subplot(gs[i:i + 1, 0:]))
+    ax_objs.append(fig.add_subplot(gs[i:i + 1, 0]))
+    # ax_objs.append(fig.add_subplot(gs[i:i + 1, 0:]))
+    # self.ax = ax_objs[0]
+    ax = ax_objs[-1]
+    i += 1
 
-    # Testing: collect all z-scores for all sites in one df
-    coll = pd.DataFrame()
-    merged_rows = pd.DataFrame()
-    for k, v in binaggs.items():
-        from_row = v.loc[0].copy()
-        index_from = v.loc[0].index.tolist()
-        index_from = [f"FROM_{i}" for i in index_from]
-        from_row.index = index_from
+    sbm.showplot_decoupling_sbm(ax=ax, marker='o', emphasize_lines=True, title=site, legend=False)
+    fig.show()
 
-        to_row = v.loc[1].copy()
-        index_to = v.loc[1].index.tolist()
-        index_to = [f"TO_{i}" for i in index_to]
-        to_row.index = index_to
+    # Collect deltas
+    infldf = pd.DataFrame()
+    cc = []
+    for _ix, v in binaggs.items():
 
-        new_row = pd.concat([from_row, to_row], axis=0, ignore_index=False)
-        new_row = pd.DataFrame(new_row).transpose()
-        new_row.index = [site]
-        merged_rows = pd.concat([merged_rows, new_row])
+        from_y = v.loc[0, yvar]
+        from_y_p16 = v.loc[0, f"{yvar}_P16"]
+        from_y_p84 = v.loc[0, f"{yvar}_P84"]
+        infldf.loc[_ix, 'FROM_Y'] = from_y
 
-    print(merged_rows)
+        to_y = v.loc[1, yvar]
+        to_y_p16 = v.loc[1, f"{yvar}_P16"]
+        to_y_p84 = v.loc[1, f"{yvar}_P84"]
+        infldf.loc[_ix, 'TO_Y'] = to_y
+        infldf.loc[_ix, 'TO_Y_P16'] = to_y_p16
+        infldf.loc[_ix, 'TO_Y_P84'] = to_y_p84
 
-    # todo hier weiter
-    coll = pd.concat([coll, merged_rows], axis=0)
+        delta_y = to_y - from_y
+        delta_y_p16 = to_y_p16 - from_y_p16
+        delta_y_p84 = to_y_p84 - from_y_p84
+        infldf.loc[_ix, 'DELTA_Y'] = delta_y
+        infldf.loc[_ix, 'DELTA_Y_P16'] = delta_y_p16
+        infldf.loc[_ix, 'DELTA_Y_P84'] = delta_y_p84
 
+        infldf.loc[_ix, 'Z'] = float(_ix)
+        infldf.loc[_ix, 'X'] = v.loc[1, xvar]
+        infldf.loc[_ix, 'DELTA_X'] = v.loc[1, xvar] - v.loc[0, xvar]
 
-        # coll.loc[site] = new_row
-
-    # if igbp in collection:
-    #     pass
-    # else:
-    #     collection[igbp] = {}
-
-    # collection[igbp][site] = binaggs
-
-
-    # # Collect deltas
-    # infldf = pd.DataFrame()
-    # cc = []
-    # for _ix, v in binaggs.items():
-    #     from_y = v.loc[0, yvar]
-    #     from_y_p16 = v.loc[0, f"{yvar}_P16"]
-    #     from_y_p84 = v.loc[0, f"{yvar}_P84"]
-    #     infldf.loc[_ix, 'FROM_Y'] = from_y
-    #
-    #     to_y = v.loc[1, yvar]
-    #     to_y_p16 = v.loc[1, f"{yvar}_P16"]
-    #     to_y_p84 = v.loc[1, f"{yvar}_P84"]
-    #     infldf.loc[_ix, 'TO_Y'] = to_y
-    #     infldf.loc[_ix, 'TO_Y_P16'] = to_y_p16
-    #     infldf.loc[_ix, 'TO_Y_P84'] = to_y_p84
-    #
-    #     delta_y = to_y - from_y
-    #     delta_y_p16 = to_y_p16 - from_y_p16
-    #     delta_y_p84 = to_y_p84 - from_y_p84
-    #     infldf.loc[_ix, 'DELTA_Y'] = delta_y
-    #     infldf.loc[_ix, 'DELTA_Y_P16'] = delta_y_p16
-    #     infldf.loc[_ix, 'DELTA_Y_P84'] = delta_y_p84
-    #
-    #     infldf.loc[_ix, 'Z'] = float(_ix)
-    #     infldf.loc[_ix, 'X'] = v.loc[1, xvar]
-    #     infldf.loc[_ix, 'DELTA_X'] = v.loc[1, xvar] - v.loc[0, xvar]
-    #
-    #     infldf.loc[_ix, 'SPEED'] = infldf.loc[_ix, 'DELTA_Y'] / infldf.loc[_ix, 'DELTA_X']
-    #     infldf.loc[_ix, 'SPEED_P16'] = infldf.loc[_ix, 'DELTA_Y_P16'] / infldf.loc[_ix, 'DELTA_X']
-    #     infldf.loc[_ix, 'SPEED_P84'] = infldf.loc[_ix, 'DELTA_Y_P84'] / infldf.loc[_ix, 'DELTA_X']
+        infldf.loc[_ix, 'SPEED'] = infldf.loc[_ix, 'DELTA_Y'] / infldf.loc[_ix, 'DELTA_X']
+        infldf.loc[_ix, 'SPEED_P16'] = infldf.loc[_ix, 'DELTA_Y_P16'] / infldf.loc[_ix, 'DELTA_X']
+        infldf.loc[_ix, 'SPEED_P84'] = infldf.loc[_ix, 'DELTA_Y_P84'] / infldf.loc[_ix, 'DELTA_X']
 
         # NEE_VUT_USTAR50_P84
 
@@ -201,6 +184,8 @@ for ix, row in _df.iterrows():
     # plt.axhline(0)
     # plt.title(f"{site} ({igbp}): delta {yvar}")
     # plt.show()
+
+
 
 #     # Plot to y
 #     # locs = (infldf['TO_Y'] > 0) & (infldf['FROM_Y'] < 0)
