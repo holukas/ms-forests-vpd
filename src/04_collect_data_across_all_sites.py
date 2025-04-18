@@ -13,22 +13,14 @@ df = df.fillna(np.nan)
 # Variables
 neecol = "NEE_VUT_50"
 neeqc = "NEE_VUT_50_QC"
-# neecol = "NEE_CUT_50"
-# neeqc = "NEE_CUT_50_QC"
-# neecol = "NEE_VUT_USTAR50"
-# neeqc = "NEE_VUT_USTAR50_QC"
 tacol = "TA_F"
 taqc = "TA_F_QC"
 vpdcol = "VPD_F"
 vpdqc = "VPD_F_QC"
-swccol = "SWC_F_MDS_1"
-swcqc = "SWC_F_MDS_1_QC"
-swinpotcol = "SW_IN_POT"
+swinpotcol = "SW_IN_POT"  # For daytime/nighttime
 
 # Used vars
-# zvar = vpdcol
 xvar = vpdcol
-# xvar = tacol
 zvar = tacol
 yvar = neecol
 
@@ -36,92 +28,63 @@ subsetcols = [
     neecol, neeqc,
     swinpotcol,
     tacol, taqc,
-    vpdcol, vpdqc,
-    # swccol, swcqc,
+    vpdcol, vpdqc
 ]
 
-_mins = []
-
-_df = df.copy()
+# Dataframe for collecting data across all sites
 coll = pd.DataFrame()
 
-for ix, row in _df.iterrows():
+for ix, row in df.iterrows():
 
-    print(f"INDEX: {ix}")
-
-    # if ix != 1:
-    #     continue
-    if ix > 0:
-        break
+    # if ix >1:
+    #     break
 
     site = row['SITE']
     igbp = row['IGBP']
+
+    print(f"\nWorking on site #{ix + 1} {site} ({igbp}) ...")
+
+    # Load data and required columns
     filepath = row['_FILEPATH_PARQUET']
     sitedata = load_parquet(filepath)
-    # [print(c) for c in sitedata.columns if "NEE_" in c];
     sitedata = sitedata[subsetcols].copy()
 
-    # Highest-quality fluxes and meteo
-    locs_qc0 = (sitedata[neeqc] == 0) & (sitedata[taqc] == 0) & (sitedata[vpdqc] == 0)
-    # locs_qc0 = (sitedata[neeqc] == 0) & (sitedata[swcqc] == 0) & (sitedata[taqc] == 0) & (sitedata[vpdqc] == 0)
-    sitedata_qc0 = sitedata.loc[locs_qc0].copy()
-
-    # Daytime data
-    locs_dt = sitedata_qc0[swinpotcol] > 20
-    sitedata_qc0_dt = sitedata_qc0.loc[locs_dt].copy()
-
-    # # Nighttime data
-    # locs_nt = sitedata_qc0[swinpotcol] <= 20
-    # sitedata_qc0_nt = sitedata_qc0.loc[locs_nt].copy()
-
-    # Focus on 6 warmest months
+    # Keep data for 6 warmest months
     sitedata['MONTH'] = sitedata.index.month
     monthly_avg = sitedata.groupby('MONTH').mean()
     monthly_avg = monthly_avg.sort_values(by='TA_F', ascending=False, inplace=False)
     warmest6 = list(monthly_avg.head(6).index)
     locs = \
-        (sitedata_qc0_dt.index.month == warmest6[0]) | (sitedata_qc0_dt.index.month == warmest6[1]) | (
-                sitedata_qc0_dt.index.month == warmest6[2]) | (sitedata_qc0_dt.index.month == warmest6[3]) | (
-                sitedata_qc0_dt.index.month == warmest6[4]) | (sitedata_qc0_dt.index.month == warmest6[5])
-    sitedata_qc0_dt_warmest6 = sitedata_qc0_dt.loc[locs].copy()
+        (sitedata.index.month == warmest6[0]) | (sitedata.index.month == warmest6[1]) | (
+                sitedata.index.month == warmest6[2]) | (sitedata.index.month == warmest6[3]) | (
+                sitedata.index.month == warmest6[4]) | (sitedata.index.month == warmest6[5])
+    sitedata_warmest6 = sitedata.loc[locs].copy()
 
-    # # Checking sum of z-scores
-    # from scipy.stats import zscore
-    # sitedata_qc0_dt_warmest6 = sitedata_qc0_dt_warmest6.apply(zscore)
-    # zsum = sitedata_qc0_dt_warmest6[tacol].add(sitedata_qc0_dt_warmest6[vpdcol])
-    # yy = sitedata_qc0_dt_warmest6[neecol]
-    # plt.scatter(zsum, yy)
-    # plt.scatter(zsum, sitedata_qc0_dt_warmest6[tacol])
-    # plt.scatter(zsum, sitedata_qc0_dt_warmest6[vpdcol])
-    # plt.title("Sum of z-scores")
-    # plt.show()
+    # Keep directly measured fluxes and meteo, no gap-filled data
+    locs_qc0 = (sitedata_warmest6[neeqc] == 0) & (sitedata_warmest6[taqc] == 0) & (sitedata_warmest6[vpdqc] == 0)
+    sitedata_warmest6_qc0 = sitedata_warmest6.loc[locs_qc0].copy()
 
-
+    # Keep daytime data
+    locs_dt = sitedata_warmest6_qc0[swinpotcol] > 20
+    sitedata_warmest6_qc0_dt = sitedata_warmest6_qc0.loc[locs_dt].copy()
 
     # Keep required columns only
-    sitedata_qc0_dt_warmest6 = sitedata_qc0_dt_warmest6[[xvar, yvar, zvar]].copy()
+    sitedata_warmest6_qc0_dt = sitedata_warmest6_qc0_dt[[xvar, yvar, zvar]].copy()
 
     # Calculate bins
-    start_time = time.time()
-    sbm = SortingBinsMethod(df=sitedata_qc0_dt_warmest6,
+    sbm = SortingBinsMethod(df=sitedata_warmest6_qc0_dt,
                             xvar=xvar,
                             yvar=yvar,
                             zvar=zvar,
                             n_bins_z=100,
                             n_bins_x=2,
-                            # conversion=None,
                             conversion='z-score',
                             agg='median')
     sbm.calcbins()
-    end_time = time.time()
-    time_elapsed = end_time - start_time
-    print(f"Execution time: {time_elapsed}")
     binaggs = sbm.get_binaggs()
-
-    # sbm.showplot_decoupling_sbm(marker='o', emphasize_lines=True, title=site, legend=False)
+    sbm.showplot_decoupling_sbm(marker='o', emphasize_lines=True, title=f"{site} ({igbp})", legend=True)
 
     # Testing: collect all z-scores for all sites in one df
-
     merged_rows = pd.DataFrame()
     for k, v in binaggs.items():
         from_row = v.loc[0].copy()
@@ -139,52 +102,54 @@ for ix, row in _df.iterrows():
         new_row.index = [k]
         merged_rows = pd.concat([merged_rows, new_row])
 
+    # Add site info
     merged_rows.insert(0, 'SITE', site)
     merged_rows.insert(1, 'IGBP', igbp)
-    print(merged_rows)
 
-    # todo hier weiter
+    # Merge this site data with collection across all sites
     coll = pd.concat([coll, merged_rows], axis=0)
 
+coll.to_csv("../OUT/04_bins_zscores_allsites.csv", index=False)
 
-fig = plt.figure(figsize=(16, 9))
-gs = gridspec.GridSpec(1, 1)  # rows, cols
-# gs.update(wspace=.2, hspace=1, left=.1, right=.9, top=.85, bottom=.1)
 
-ax = fig.add_subplot(gs[0, 0])
-
-f"{coll.index}"
-
-from_xvar = f"FROM_{xvar}"
-to_xvar = f"TO_{xvar}"
-from_yvar = f"FROM_{yvar}"
-to_yvar = f"TO_{yvar}"
-
-from_xerror_pos = f"FROM_xerror_pos"
-to_xerror_pos = f"TO_xerror_pos"
-from_xerror_neg = f"FROM_xerror_neg"
-to_xerror_neg = f"TO_xerror_neg"
-
-from_yerror_pos = f"FROM_yerror_pos"
-to_yerror_pos = f"TO_yerror_pos"
-from_yerror_neg = f"FROM_yerror_neg"
-to_yerror_neg = f"TO_yerror_neg"
-
-for k, row in coll.iterrows():
-    x = [row[from_xvar], row[to_xvar]]
-    y = [row[from_yvar], row[to_yvar]]
-    xerror_pos = [row[from_xerror_pos], row[to_xerror_pos]]
-    xerror_neg = [row[from_xerror_neg], row[to_xerror_neg]]
-    yerror_pos = [row[from_yerror_pos], row[to_yerror_pos]]
-    yerror_neg = [row[from_yerror_neg], row[to_yerror_neg]]
-
-    ax.plot(x, y,
-            ls='-', lw=3, ms=14, label="X", color="black",
-            marker='o', mec='k', mew=1, alpha=1, zorder=99)
-    ax.errorbar(x=x, y=y,
-                xerr=[xerror_neg, xerror_pos],
-                yerr=[yerror_neg, yerror_pos],
-                elinewidth=8, ecolor="red", alpha=.1, lw=0)
+# fig = plt.figure(figsize=(16, 9))
+# gs = gridspec.GridSpec(1, 1)  # rows, cols
+# # gs.update(wspace=.2, hspace=1, left=.1, right=.9, top=.85, bottom=.1)
+#
+# ax = fig.add_subplot(gs[0, 0])
+#
+# f"{coll.index}"
+#
+# from_xvar = f"FROM_{xvar}"
+# to_xvar = f"TO_{xvar}"
+# from_yvar = f"FROM_{yvar}"
+# to_yvar = f"TO_{yvar}"
+#
+# from_xerror_pos = f"FROM_xerror_pos"
+# to_xerror_pos = f"TO_xerror_pos"
+# from_xerror_neg = f"FROM_xerror_neg"
+# to_xerror_neg = f"TO_xerror_neg"
+#
+# from_yerror_pos = f"FROM_yerror_pos"
+# to_yerror_pos = f"TO_yerror_pos"
+# from_yerror_neg = f"FROM_yerror_neg"
+# to_yerror_neg = f"TO_yerror_neg"
+#
+# for k, row in coll.iterrows():
+#     x = [row[from_xvar], row[to_xvar]]
+#     y = [row[from_yvar], row[to_yvar]]
+#     xerror_pos = [row[from_xerror_pos], row[to_xerror_pos]]
+#     xerror_neg = [row[from_xerror_neg], row[to_xerror_neg]]
+#     yerror_pos = [row[from_yerror_pos], row[to_yerror_pos]]
+#     yerror_neg = [row[from_yerror_neg], row[to_yerror_neg]]
+#
+#     ax.plot(x, y,
+#             ls='-', lw=3, ms=14, label="X", color="black",
+#             marker='o', mec='k', mew=1, alpha=1, zorder=99)
+#     ax.errorbar(x=x, y=y,
+#                 xerr=[xerror_neg, xerror_pos],
+#                 yerr=[yerror_neg, yerror_pos],
+#                 elinewidth=8, ecolor="red", alpha=.1, lw=0)
 
 # colors = plt.cm.coolwarm(np.linspace(0.1, 1, self.n_bins_z))
 # for ix, m in enumerate(self.binaggs.keys()):
@@ -248,9 +213,9 @@ for k, row in coll.iterrows():
 
 
 
-fig.suptitle("All z-scores", fontsize=16)
-fig.tight_layout()
-fig.show()
+# fig.suptitle("All z-scores", fontsize=16)
+# fig.tight_layout()
+# fig.show()
 
 
 
