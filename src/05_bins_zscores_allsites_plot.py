@@ -9,7 +9,11 @@ from scipy.stats import binned_statistic
 
 df = pd.read_csv('../OUT/04_bins_zscores_allsites.csv')
 
+igbps = list(set(df['IGBP'].tolist()))
+print(igbps)
+
 # Keep specific IGBP
+# ['EBF', 'ENF', 'MF', 'DBF', 'DNF']
 # locs = df['IGBP'] == 'ENF'
 # df = df[locs].copy()
 
@@ -26,6 +30,7 @@ xvar = vpdcol
 zvar = tacol
 yvar = neecol
 
+from_zvar = f"FROM_{zvar}"
 to_zvar = f"TO_{zvar}"
 
 from_xvar = f"FROM_{xvar}"
@@ -51,13 +56,17 @@ group, bins = pd.qcut(df[to_zvar], q=100, retbins=True, precision=9, duplicates=
 df['AGG_GROUP'] = group
 
 # Init figure
-fig = plt.figure(figsize=(16, 9))
+fig = plt.figure(figsize=(9, 9))
 gs = gridspec.GridSpec(1, 1)  # rows, cols
 # gs.update(wspace=.2, hspace=1, left=.1, right=.9, top=.85, bottom=.1)
-ax = fig.add_subplot(gs[0, 0])
+ax1 = fig.add_subplot(gs[0, 0])
+# ax2 = fig.add_subplot(gs[0, 1])
+colors = plt.cm.coolwarm(np.linspace(0.1, 1, 100))  # Colors for 100 bins
 
+counter = -1
 grouped = df.groupby(by='AGG_GROUP', observed=True, as_index=True, sort=True, group_keys=True)
 for g, g_df in grouped:
+    counter += 1
     g_df = g_df.set_index('AGG_GROUP')
     # Number of different sites in this group
     n_sites = len(set(g_df['SITE'].tolist()))
@@ -69,7 +78,19 @@ for g, g_df in grouped:
     from_y_median = g_df[from_yvar].median()
     to_y_median = g_df[to_yvar].median()
 
-    # Get group minima
+    # todo
+    delta_x = to_x_median - from_x_median
+    delta_y = to_y_median - from_y_median
+    sensitivity = delta_y / delta_x
+    print(delta_x, delta_y, sensitivity)
+
+    # z (TA) is used as the grouping variable and for the colors
+    from_z_medians = g_df[from_zvar].to_list()
+    to_z_medians = g_df[to_zvar].to_list()
+    all_z_medians = from_z_medians + to_z_medians
+    z_median_across_all = np.mean(all_z_medians)
+
+    # Lower error: get group SD
     from_x_min = g_df[from_xvar].std()
     to_x_min = g_df[to_xvar].std()
     from_y_min = g_df[from_yvar].std()
@@ -92,14 +113,19 @@ for g, g_df in grouped:
 
 
 
-    ax.plot(x, y,
-            ls='-', lw=3, ms=14, label="X", color="black",
-            marker='o', mec='k', mew=1, alpha=1, zorder=99)
-    ax.errorbar(x=x, y=y,
-                xerr=[xerror_neg, xerror_pos],
-                yerr=[yerror_neg, yerror_pos],
-                elinewidth=8, ecolor="red", alpha=.1, lw=0)
+    ax1.plot(x, y,
+             ls='-', lw=5, ms=14, label="X", color=colors[counter],
+             marker='o', mec='k', mew=1, mfc=colors[counter], alpha=1, zorder=99)
+    ax1.errorbar(x=x, y=y,
+                 xerr=[xerror_neg, xerror_pos],
+                 yerr=[yerror_neg, yerror_pos],
+                 elinewidth=8, ecolor=colors[counter], alpha=.3, lw=0)
+    ax1.plot(x, y,
+             ls='-', lw=2, ms=0, label=None, color='black',
+             mec='k', mew=1, alpha=1, zorder=99)
 
+ax1.axhline(0, color="black")
+ax1.axvline(0, color="black")
 fig.suptitle("All z-scores", fontsize=16)
 fig.tight_layout()
 fig.show()
