@@ -15,7 +15,53 @@ pattern_fxn = settings['PATTERN_DIR_FXN']
 pattern_icos = settings['PATTERN_DIR_ICOS']
 pattern_amf = settings['PATTERN_DIR_AMF']
 
-# ---
+# ---------
+# AMERIFLUX
+# ---------
+
+# Get info for AMERIFLUX sites
+amf = sites.SiteList(searchdir=searchdir, identifiers=pattern_amf, origin='AMERIFLUX')
+amf.run()
+allsites_amf = amf.get_site_info()
+
+# Read CSV with additional site info from EFDC / FLUXNET
+infofile_amf = r"F:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\docs\AMERIFLUX_AA-Flx_FLUXNET-BIF_CCBY4_20241205.csv"
+info_amf = pd.read_csv(infofile_amf)
+
+for ix, row in allsites_amf.iterrows():
+    site = row['SITE']
+    sitelocs = info_amf['SITE_ID'] == site
+    siteinfo = info_amf[sitelocs].copy()
+
+    try:
+        elev_amf = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_ELEV']['DATAVALUE'].iloc[0]
+    except IndexError:
+        elev_amf = np.nan
+
+    try:
+        lon_amf = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LONG']['DATAVALUE'].iloc[0]
+    except IndexError:
+        lon_amf = np.nan
+
+    try:
+        lat_amf = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LAT']['DATAVALUE'].iloc[0]
+    except IndexError:
+        lat_amf = np.nan
+
+    try:
+        igbp_amf = siteinfo[siteinfo['VARIABLE'] == 'IGBP']['DATAVALUE'].iloc[0]
+    except IndexError:
+        igbp_amf = np.nan
+
+    allsites_amf.loc[allsites_amf['SITE'] == site, 'ELEVATION'] = elev_amf
+    allsites_amf.loc[allsites_amf['SITE'] == site, 'LON'] = lon_amf
+    allsites_amf.loc[allsites_amf['SITE'] == site, 'LAT'] = lat_amf
+    allsites_amf.loc[allsites_amf['SITE'] == site, 'IGBP'] = igbp_amf
+
+
+# ---------
+# FLUXNET
+# ---------
 
 # Get info for FLUXNET sites
 fxn = sites.SiteList(searchdir=searchdir, identifiers=pattern_fxn, origin="FLUXNET")
@@ -23,7 +69,7 @@ fxn.run()
 allsites_fxn = fxn.get_site_info()
 
 # Read CSV with additional site info from EFDC / FLUXNET
-infofile_fxn = r"F:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\docs\SitesList_20240404.csv"
+infofile_fxn = r"F:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\docs\FLUXNET_SitesList_20240404.csv"
 siteinfo_fxn = pd.read_csv(infofile_fxn)
 siteinfo_fxn = siteinfo_fxn[['Site Code', 'IGBP Code', 'Site Latitude', 'Site Longitude']].copy()
 
@@ -41,6 +87,8 @@ allsites_fxn = allsites_fxn.rename(columns=rename_dict, inplace=False)
 allsites_fxn = allsites_fxn.sort_values(by=['SITE'], ascending=True, inplace=False)
 
 # ---------
+# ICOS
+# ---------
 
 # Get info for ICOS sites
 icos = sites.SiteList(searchdir=searchdir, identifiers=pattern_icos, origin='ICOS')
@@ -52,7 +100,7 @@ _allsites_icos = allsites_icos.copy()
 for ix, row in _allsites_icos.iterrows():
     site = row['SITE']
 
-    # Get info from ICOS file
+    # Get info from this site's ICOS SITEINFO file
     infofile_icos = f"ICOSETC_{site}_SITEINFO_L2.csv"
     infofile_icos_path = Path(row['_DIRPATH_ICOS']) / infofile_icos
     info_icos = pd.read_csv(infofile_icos_path)
@@ -76,7 +124,7 @@ for ix, row in _allsites_icos.iterrows():
 
 # ---------
 
-allsites = pd.concat([allsites_fxn, allsites_icos], axis=0, ignore_index=True)
+allsites = pd.concat([allsites_fxn, allsites_icos, allsites_amf], axis=0, ignore_index=True)
 allsites = allsites.reset_index(drop=True)
 allsites = allsites.fillna(np.nan)
 # print(allsites)
@@ -106,6 +154,9 @@ for ix, u in enumerate(uniq_sites):
             # row = row.set_index('SITE', drop=False)
         elif not _df.loc[_df['ORIGIN'] == 'FLUXNET'].empty:
             row = _df.loc[_df['ORIGIN'] == 'FLUXNET']
+            # row = row.set_index('SITE', drop=False)
+        elif not _df.loc[_df['ORIGIN'] == 'AMERIFLUX'].empty:
+            row = _df.loc[_df['ORIGIN'] == 'AMERIFLUX']
             # row = row.set_index('SITE', drop=False)
 
     else:
