@@ -31,13 +31,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\OUT\04_zscores_allsites.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\OUT\11.2-sitelist.csv">
           <value>
             <Attribute>
