@@ -9,13 +9,8 @@
   <component name="ChangeListManager">
     <list default="true" id="5e3c18ab-39c3-4a91-92ae-c0d6592152e1" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OUT/01_siteinfo.csv" beforeDir="false" afterPath="$PROJECT_DIR$/OUT/01_siteinfo.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/SiteInfo_ICOS_CarbonPortal.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/SitesList_20240404.csv" beforeDir="false" afterPath="$PROJECT_DIR$/docs/FLUXNET_SitesList_20240404.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/SitesList_README_20240404.txt" beforeDir="false" afterPath="$PROJECT_DIR$/docs/FLUXNET_SitesList_README_20240404.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/01_collect_info.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/01_collect_info.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OUT/02_siteinfo.csv" beforeDir="false" afterPath="$PROJECT_DIR$/OUT/02_siteinfo.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/02_merge_files_to_parquet.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/02_merge_files_to_parquet.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/sites.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/sites.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,7 +43,7 @@
     "Python.01_collect_info (1).executor": "Run",
     "Python.01_collect_info.executor": "Run",
     "Python.02-extract_site_names.executor": "Run",
-    "Python.02_merge_files_to_parquet.executor": "Debug",
+    "Python.02_merge_files_to_parquet.executor": "Run",
     "Python.03_read_files.executor": "Run",
     "Python.04_collect_data_across_all_sites.executor": "Run",
     "Python.04_testing_ustar_scen.executor": "Run",
@@ -304,7 +299,7 @@
       <workItem from="1745057224278" duration="2096000" />
       <workItem from="1745097568298" duration="31000" />
       <workItem from="1745322218926" duration="8375000" />
-      <workItem from="1745353156693" duration="5810000" />
+      <workItem from="1745353156693" duration="9339000" />
     </task>
     <servers />
   </component>
@@ -350,18 +345,13 @@
           <line>283</line>
           <option name="timeStamp" value="103" />
         </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/src/02_merge_files_to_parquet.py</url>
-          <line>63</line>
-          <option name="timeStamp" value="141" />
-        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/ms_co2_penalty$05_bins_zscores_allsites_plot.coverage" NAME="05_bins_zscores_allsites_plot Coverage Results" MODIFIED="1745334997412" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$Doctests_in_common.coverage" NAME="Doctests in common Coverage Results" MODIFIED="1730238474315" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$USER_HOME$/miniconda3/envs/ms_co2_penalty/Lib/site-packages/pandas/io" />
-    <SUITE FILE_PATH="coverage/ms_co2_penalty$02_merge_files_to_parquet.coverage" NAME="02_merge_files_to_parquet Coverage Results" MODIFIED="1745361475026" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/ms_co2_penalty$02_merge_files_to_parquet.coverage" NAME="02_merge_files_to_parquet Coverage Results" MODIFIED="1745362167223" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$12_collect_site_info_FLUXNET_WW2020.coverage" NAME="12-collect_site_info_FLUXNET-WW2020 Coverage Results" MODIFIED="1729987315084" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$optimumrange.coverage" NAME="optimumrange Coverage Results" MODIFIED="1730503036248" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../21 - DIIVE/diive/diive/pkgs/analyses" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$12_indev.coverage" NAME="12-indev Coverage Results" MODIFIED="1731201590832" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
