@@ -8,16 +8,17 @@ import sites
 
 # Settings
 settings = files.read_settings_file("settings.yaml")
-filepatterns = [settings['PATTERN_FILE_HH_ICOS'], settings['PATTERN_FILE_HH_FXN']]
+filepatterns = [settings['PATTERN_FILE_HH_ICOS'], settings['PATTERN_FILE_HH_FXN'], settings['PATTERN_FILE_HH_AMF']]
 ecosystems = settings['ECOSYSTEMS']
 searchdir = str(Path(settings['BASEDIR']))
 pattern_fxn = settings['PATTERN_DIR_FXN']
 pattern_icos = settings['PATTERN_DIR_ICOS']
+pattern_amf = settings['PATTERN_DIR_AMF']
 
 # ---
 
 # Get info for FLUXNET sites
-fxn = sites.FluxnetIcosSiteList(searchdir=searchdir, identifiers=pattern_fxn, origin="FLUXNET")
+fxn = sites.SiteList(searchdir=searchdir, identifiers=pattern_fxn, origin="FLUXNET")
 fxn.run()
 allsites_fxn = fxn.get_site_info()
 
@@ -42,7 +43,7 @@ allsites_fxn = allsites_fxn.sort_values(by=['SITE'], ascending=True, inplace=Fal
 # ---------
 
 # Get info for ICOS sites
-icos = sites.FluxnetIcosSiteList(searchdir=searchdir, identifiers=pattern_icos, origin='ICOS')
+icos = sites.SiteList(searchdir=searchdir, identifiers=pattern_icos, origin='ICOS')
 icos.run()
 allsites_icos = icos.get_site_info()
 

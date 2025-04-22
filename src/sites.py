@@ -9,7 +9,7 @@ pd.set_option('display.max_rows', 3000)
 pd.set_option('display.max_columns', 3000)
 
 
-class FluxnetIcosSiteList:
+class SiteList:
 
     def __init__(self,
                  searchdir: str,
