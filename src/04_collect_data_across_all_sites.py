@@ -36,7 +36,7 @@ coll = pd.DataFrame()
 
 for ix, row in df.iterrows():
 
-    # if ix >1:
+    # if ix > 1:
     #     break
 
     site = row['SITE']

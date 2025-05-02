@@ -1,13 +1,22 @@
 import numpy as np
 import pandas as pd
 from diive.core.io.files import load_parquet
+from collections import Counter
 
 df = pd.read_csv('../OUT/02_siteinfo.csv')
 df = df.fillna(np.nan)
 print(df)
 
+# # Number of IGBPs
+# # {'ENF': 72, 'DBF': 47, 'MF': 12, 'DNF': 2, 'EBF': 3, 'OSH': 1}
+# counts_igbps = Counter(df['IGBP'])
+# print(dict(counts_igbps))
+
 _df = df.copy()
 for ix, row in _df.iterrows():
+
+    print(f"\nLoading data for site {row['SITE']} ...")
+
     filepath = row['_FILEPATH_PARQUET']
     sitedata = load_parquet(filepath)
 
