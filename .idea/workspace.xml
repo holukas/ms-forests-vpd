@@ -8,12 +8,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5e3c18ab-39c3-4a91-92ae-c0d6592152e1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/csv-editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/csv-editor.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OUT/03_siteinfo.csv" beforeDir="false" afterPath="$PROJECT_DIR$/OUT/03_siteinfo.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OUT/04_bins_zscores_allsites.csv" beforeDir="false" afterPath="$PROJECT_DIR$/OUT/04_bins_zscores_allsites.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/03_add_basic_stats.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/03_add_basic_stats.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/04_collect_data_across_all_sites.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/04_collect_data_across_all_sites.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -94,7 +90,7 @@
       <recent name="L:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\X" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.05_bins_zscores_allsites_plot">
+  <component name="RunManager" selected="Python.03_add_basic_stats">
     <configuration name="01_collect_info" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ms_co2_penalty" />
       <option name="ENV_FILES" value="" />
@@ -219,9 +215,9 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.03_add_basic_stats" />
         <item itemvalue="Python.05_bins_zscores_allsites_plot" />
         <item itemvalue="Python.04_collect_data_across_all_sites" />
-        <item itemvalue="Python.03_add_basic_stats" />
         <item itemvalue="Python.02_merge_files_to_parquet" />
         <item itemvalue="Python.01_collect_info" />
       </list>
@@ -305,7 +301,7 @@
       <workItem from="1745322218926" duration="8375000" />
       <workItem from="1745353156693" duration="9339000" />
       <workItem from="1746179778440" duration="13000" />
-      <workItem from="1746190767273" duration="3833000" />
+      <workItem from="1746190767273" duration="5172000" />
     </task>
     <servers />
   </component>
@@ -351,6 +347,11 @@
           <line>283</line>
           <option name="timeStamp" value="103" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/03_add_basic_stats.py</url>
+          <line>36</line>
+          <option name="timeStamp" value="108" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
@@ -374,7 +375,7 @@
     <SUITE FILE_PATH="coverage/ms_co2_penalty$11_collect_site_info__1_.coverage" NAME="11-collect_site_info (1) Coverage Results" MODIFIED="1729980906866" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$11_merge_files.coverage" NAME="11-merge_files Coverage Results" MODIFIED="1730238458857" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$11_indev.coverage" NAME="11-make_sitelist Coverage Results" MODIFIED="1730207625720" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ms_co2_penalty$03_add_basic_stats.coverage" NAME="03_add_basic_stats Coverage Results" MODIFIED="1746192980595" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/ms_co2_penalty$03_add_basic_stats.coverage" NAME="03_add_basic_stats Coverage Results" MODIFIED="1746199709481" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$11_merge_files__1_.coverage" NAME="11-merge_files (1) Coverage Results" MODIFIED="1730240326061" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$12_testing_SHAP.coverage" NAME="12-testing-SHAP Coverage Results" MODIFIED="1729947609915" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$12_indev.coverage" NAME="12-indev Coverage Results" MODIFIED="1731201590832" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

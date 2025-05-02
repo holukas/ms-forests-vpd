@@ -12,6 +12,11 @@ print(df)
 # counts_igbps = Counter(df['IGBP'])
 # print(dict(counts_igbps))
 
+# todo make list of available vars
+
+sitevars_all = pd.DataFrame()
+sitevars = dict()
+
 _df = df.copy()
 for ix, row in _df.iterrows():
 
@@ -19,6 +24,14 @@ for ix, row in _df.iterrows():
 
     filepath = row['_FILEPATH_PARQUET']
     sitedata = load_parquet(filepath)
+
+
+
+
+    sitevars_available = sitedata.columns
+    for sv in sitevars_available:
+        # sitevars_all.loc[row['SITE'], sv] = sitedata[sv].count()
+
 
     # Collect info
     date_first = sitedata.index[0]
