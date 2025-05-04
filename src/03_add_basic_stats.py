@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from diive.core.io.files import load_parquet
-from collections import Counter
+
 
 df = pd.read_csv('../OUT/02_siteinfo.csv')
 df = df.fillna(np.nan)
@@ -9,13 +9,14 @@ print(df)
 
 # # Number of IGBPs
 # # {'ENF': 72, 'DBF': 47, 'MF': 12, 'DNF': 2, 'EBF': 3, 'OSH': 1}
+# from collections import Counter
 # counts_igbps = Counter(df['IGBP'])
 # print(dict(counts_igbps))
 
-# todo make list of available vars
 
-sitevars_all = pd.DataFrame()
-sitevars = dict()
+
+# sitevars_all = pd.DataFrame()
+# sitevars = dict()
 
 _df = df.copy()
 for ix, row in _df.iterrows():
@@ -25,12 +26,10 @@ for ix, row in _df.iterrows():
     filepath = row['_FILEPATH_PARQUET']
     sitedata = load_parquet(filepath)
 
-
-
-
-    sitevars_available = sitedata.columns
-    for sv in sitevars_available:
-        # sitevars_all.loc[row['SITE'], sv] = sitedata[sv].count()
+    # todo make list of available vars
+    # sitevars_available = sitedata.columns
+    # for sv in sitevars_available:
+    #     # sitevars_all.loc[row['SITE'], sv] = sitedata[sv].count()
 
 
     # Collect info

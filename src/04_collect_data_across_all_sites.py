@@ -1,18 +1,20 @@
-import time
-import matplotlib.gridspec as gridspec
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from diive.core.io.files import load_parquet
 from diive.pkgs.analyses.decoupling import SortingBinsMethod
-from scipy.stats import binned_statistic
 
-df = pd.read_csv('../OUT/03_siteinfo.csv')
+# Files
+INFILE = "../OUT/03_siteinfo.csv"
+OUTFILE = "../OUT/04_bins_zscores_allsites.csv"
+
+df = pd.read_csv(INFILE)
 df = df.fillna(np.nan)
 
 # Variables
-neecol = "NEE_VUT_50"
-neeqc = "NEE_VUT_50_QC"
+# fluxcol = "GPP_DT_VUT_50"
+# fluxcol = "RECO_NT_VUT_50"
+fluxcol = "NEE_VUT_50"
+fluxqc = "NEE_VUT_50_QC"
 tacol = "TA_F"
 taqc = "TA_F_QC"
 vpdcol = "VPD_F"
@@ -22,10 +24,11 @@ swinpotcol = "SW_IN_POT"  # For daytime/nighttime
 # Used vars
 xvar = vpdcol
 zvar = tacol
-yvar = neecol
+yvar = fluxcol
 
 subsetcols = [
-    neecol, neeqc,
+    fluxcol,
+    fluxqc,
     swinpotcol,
     tacol, taqc,
     vpdcol, vpdqc
@@ -36,8 +39,8 @@ coll = pd.DataFrame()
 
 for ix, row in df.iterrows():
 
-    # if ix > 1:
-    #     break
+    if ix > 0:
+        break
 
     site = row['SITE']
     igbp = row['IGBP']
@@ -47,6 +50,7 @@ for ix, row in df.iterrows():
     # Load data and required columns
     filepath = row['_FILEPATH_PARQUET']
     sitedata = load_parquet(filepath)
+    # [print(c) for c in sitedata.columns if "GPP" in c];
     sitedata = sitedata[subsetcols].copy()
 
     # Keep data for 6 warmest months
@@ -61,12 +65,14 @@ for ix, row in df.iterrows():
     sitedata_warmest6 = sitedata.loc[locs].copy()
 
     # Keep directly measured fluxes and meteo, no gap-filled data
-    locs_qc0 = (sitedata_warmest6[neeqc] == 0) & (sitedata_warmest6[taqc] == 0) & (sitedata_warmest6[vpdqc] == 0)
+    locs_qc0 = (sitedata_warmest6[fluxqc] == 0) & (sitedata_warmest6[taqc] == 0) & (sitedata_warmest6[vpdqc] == 0)
     sitedata_warmest6_qc0 = sitedata_warmest6.loc[locs_qc0].copy()
 
     # Keep daytime data
     locs_dt = sitedata_warmest6_qc0[swinpotcol] > 20
     sitedata_warmest6_qc0_dt = sitedata_warmest6_qc0.loc[locs_dt].copy()
+    # locs_dt = sitedata_warmest6[swinpotcol] > 20
+    # sitedata_warmest6_qc0_dt = sitedata_warmest6.loc[locs_dt].copy()
 
     # Keep required columns only
     sitedata_warmest6_qc0_dt = sitedata_warmest6_qc0_dt[[xvar, yvar, zvar]].copy()
@@ -78,7 +84,8 @@ for ix, row in df.iterrows():
                             zvar=zvar,
                             n_bins_z=100,
                             n_bins_x=2,
-                            conversion='z-score',
+                            conversion=None,
+                            # conversion='z-score',
                             agg='median')
     sbm.calcbins()
     binaggs = sbm.get_binaggs()
@@ -109,59 +116,58 @@ for ix, row in df.iterrows():
     # Merge this site data with collection across all sites
     coll = pd.concat([coll, merged_rows], axis=0)
 
-coll.to_csv("../OUT/04_bins_zscores_allsites.csv", index=False)
+coll.to_csv(OUTFILE, index=False)
 
+# # Collect deltas
+# infldf = pd.DataFrame()
+# cc = []
+# for _ix, v in binaggs.items():
+#     from_y = v.loc[0, yvar]
+#     from_y_p16 = v.loc[0, f"{yvar}_P16"]
+#     from_y_p84 = v.loc[0, f"{yvar}_P84"]
+#     infldf.loc[_ix, 'FROM_Y'] = from_y
+#
+#     to_y = v.loc[1, yvar]
+#     to_y_p16 = v.loc[1, f"{yvar}_P16"]
+#     to_y_p84 = v.loc[1, f"{yvar}_P84"]
+#     infldf.loc[_ix, 'TO_Y'] = to_y
+#     infldf.loc[_ix, 'TO_Y_P16'] = to_y_p16
+#     infldf.loc[_ix, 'TO_Y_P84'] = to_y_p84
+#
+#     delta_y = to_y - from_y
+#     delta_y_p16 = to_y_p16 - from_y_p16
+#     delta_y_p84 = to_y_p84 - from_y_p84
+#     infldf.loc[_ix, 'DELTA_Y'] = delta_y
+#     infldf.loc[_ix, 'DELTA_Y_P16'] = delta_y_p16
+#     infldf.loc[_ix, 'DELTA_Y_P84'] = delta_y_p84
+#
+#     infldf.loc[_ix, 'Z'] = float(_ix)
+#     infldf.loc[_ix, 'X'] = v.loc[1, xvar]
+#     infldf.loc[_ix, 'DELTA_X'] = v.loc[1, xvar] - v.loc[0, xvar]
+#
+#     infldf.loc[_ix, 'SPEED'] = infldf.loc[_ix, 'DELTA_Y'] / infldf.loc[_ix, 'DELTA_X']
+#     infldf.loc[_ix, 'SPEED_P16'] = infldf.loc[_ix, 'DELTA_Y_P16'] / infldf.loc[_ix, 'DELTA_X']
+#     infldf.loc[_ix, 'SPEED_P84'] = infldf.loc[_ix, 'DELTA_Y_P84'] / infldf.loc[_ix, 'DELTA_X']
 
-    # # Collect deltas
-    # infldf = pd.DataFrame()
-    # cc = []
-    # for _ix, v in binaggs.items():
-    #     from_y = v.loc[0, yvar]
-    #     from_y_p16 = v.loc[0, f"{yvar}_P16"]
-    #     from_y_p84 = v.loc[0, f"{yvar}_P84"]
-    #     infldf.loc[_ix, 'FROM_Y'] = from_y
-    #
-    #     to_y = v.loc[1, yvar]
-    #     to_y_p16 = v.loc[1, f"{yvar}_P16"]
-    #     to_y_p84 = v.loc[1, f"{yvar}_P84"]
-    #     infldf.loc[_ix, 'TO_Y'] = to_y
-    #     infldf.loc[_ix, 'TO_Y_P16'] = to_y_p16
-    #     infldf.loc[_ix, 'TO_Y_P84'] = to_y_p84
-    #
-    #     delta_y = to_y - from_y
-    #     delta_y_p16 = to_y_p16 - from_y_p16
-    #     delta_y_p84 = to_y_p84 - from_y_p84
-    #     infldf.loc[_ix, 'DELTA_Y'] = delta_y
-    #     infldf.loc[_ix, 'DELTA_Y_P16'] = delta_y_p16
-    #     infldf.loc[_ix, 'DELTA_Y_P84'] = delta_y_p84
-    #
-    #     infldf.loc[_ix, 'Z'] = float(_ix)
-    #     infldf.loc[_ix, 'X'] = v.loc[1, xvar]
-    #     infldf.loc[_ix, 'DELTA_X'] = v.loc[1, xvar] - v.loc[0, xvar]
-    #
-    #     infldf.loc[_ix, 'SPEED'] = infldf.loc[_ix, 'DELTA_Y'] / infldf.loc[_ix, 'DELTA_X']
-    #     infldf.loc[_ix, 'SPEED_P16'] = infldf.loc[_ix, 'DELTA_Y_P16'] / infldf.loc[_ix, 'DELTA_X']
-    #     infldf.loc[_ix, 'SPEED_P84'] = infldf.loc[_ix, 'DELTA_Y_P84'] / infldf.loc[_ix, 'DELTA_X']
+# NEE_VUT_USTAR50_P84
 
-        # NEE_VUT_USTAR50_P84
+# Speed, change of flux normalized to change of VPD
 
-    # Speed, change of flux normalized to change of VPD
+# plt.scatter(infldf['Z'], infldf['SPEED'], label="agg")
+# # plt.scatter(infldf['Z'], infldf['SPEED_P16'], label="P16")
+# # plt.scatter(infldf['Z'], infldf['SPEED_P84'], label="P84")
+# # plt.plot(infldf['SPEED'])
+# plt.locator_params(axis='x', nbins=20)
+# plt.title("Speed")
+# plt.legend()
+# plt.show()
 
-    # plt.scatter(infldf['Z'], infldf['SPEED'], label="agg")
-    # # plt.scatter(infldf['Z'], infldf['SPEED_P16'], label="P16")
-    # # plt.scatter(infldf['Z'], infldf['SPEED_P84'], label="P84")
-    # # plt.plot(infldf['SPEED'])
-    # plt.locator_params(axis='x', nbins=20)
-    # plt.title("Speed")
-    # plt.legend()
-    # plt.show()
-
-    # # Plot deltas
-    # dy = infldf['DELTA_Y']
-    # plt.scatter(infldf['X'], dy)
-    # plt.axhline(0)
-    # plt.title(f"{site} ({igbp}): delta {yvar}")
-    # plt.show()
+# # Plot deltas
+# dy = infldf['DELTA_Y']
+# plt.scatter(infldf['X'], dy)
+# plt.axhline(0)
+# plt.title(f"{site} ({igbp}): delta {yvar}")
+# plt.show()
 
 #     # Plot to y
 #     # locs = (infldf['TO_Y'] > 0) & (infldf['FROM_Y'] < 0)
