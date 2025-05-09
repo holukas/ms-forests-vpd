@@ -7,6 +7,7 @@ from diive.core.io.files import save_parquet
 
 df = pd.read_csv('../OUT/01_siteinfo.csv')
 df = df.fillna(np.nan)
+import diive as dv
 # print(df)
 
 data_nrows = None
@@ -14,6 +15,10 @@ data_nrows = None
 _df = df.copy()
 for ix, row in _df.iterrows():
     site = row['SITE']
+
+    # if site != 'CH-Dav':
+    #     continue
+
     igbp = row['IGBP']
     origin = row['ORIGIN']
     filepath_icos = row['_FILEPATH_ICOS']
@@ -27,14 +32,49 @@ for ix, row in _df.iterrows():
         load_fxn = ReadFileType(filetype="FLUXNET-FULLSET-HH-CSV-30MIN", filepath=filepath_fxn, data_nrows=data_nrows)
         fxndf, _ = load_fxn.get_filedata()
 
-        # Keep records from FLUXNET data that are not in ICOS data
-        keeplocs = fxndf.index < icosdf.index[0]
-        fxndf = fxndf[keeplocs].copy()
+        # Check for overlapping years
+        # Find the first overlapping year between the two datasets.
+        # The logic is that the first year of ICOS measurements for a site can
+        # be incomplete, but from the second year onwards it should be fine.
+        # In case more records are available for the FLUXNET dataset, the FLUXNET dataset is used
+        # for this year. Otherwise ICOS.
+        # Count number of directly measured NEE values to decide which dataset to use for this year.
+        yrs_icos = list(set(icosdf.index.year))
+        yrs_fxn = list(set(fxndf.index.year))
+        firstyr_icos = yrs_icos[0]
+
+        if firstyr_icos in yrs_fxn:
+            qcseries_icos = icosdf.loc[icosdf.index.year == firstyr_icos, 'NEE_VUT_REF_QC']
+            n_measured_icos = qcseries_icos[qcseries_icos == 0].count()
+            qcseries_fxn = fxndf.loc[fxndf.index.year == firstyr_icos, 'NEE_VUT_REF_QC']
+            n_measured_fxn = qcseries_fxn[qcseries_fxn == 0].count()
+
+            # In case FXN has more records for the first common year, remove year from ICOS
+            if n_measured_fxn > n_measured_icos:
+                keeplocs_icos = icosdf.index.year > firstyr_icos
+                icosdf = icosdf.loc[keeplocs_icos]
+            # In case ICOS has more records, remove year from FXN
+            elif n_measured_icos > n_measured_fxn:
+                keeplocs_fxn = fxndf.index.year < firstyr_icos
+                fxndf = fxndf.loc[keeplocs_fxn]
+
+        # Generally, only keep records from FLUXNET data that are not in ICOS data
+        keeplocs_fxn = fxndf.index < icosdf.index[0]
+        fxndf = fxndf[keeplocs_fxn].copy()
 
         # Merge ICOS and FLUXNET data
         merged_df = pd.concat([icosdf, fxndf], axis=0)
         merged_df = merged_df.sort_index()
         sourcetxt = "ICOS+FXN"
+
+        # Heatmap plots
+        var = 'NEE_VUT_REF'
+        hm = dv.heatmapdatetime(series=icosdf[var], title="ICOS (2025)", vmin=-20, vmax=20)
+        hm.show()
+        hm = dv.heatmapdatetime(series=fxndf[var], title="FLUXNET (2024)", vmin=-20, vmax=20)
+        hm.show()
+        hm = dv.heatmapdatetime(series=merged_df[var], title="ICOS+FLUXNET", vmin=-20, vmax=20)
+        hm.show()
 
     elif origin == 'FLUXNET':
         icosdf = None

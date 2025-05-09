@@ -1,3 +1,5 @@
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from diive.core.io.files import load_parquet
@@ -39,8 +41,8 @@ coll = pd.DataFrame()
 
 for ix, row in df.iterrows():
 
-    if ix > 0:
-        break
+    if ix != 24:
+        continue
 
     site = row['SITE']
     igbp = row['IGBP']
@@ -52,6 +54,8 @@ for ix, row in df.iterrows():
     sitedata = load_parquet(filepath)
     # [print(c) for c in sitedata.columns if "GPP" in c];
     sitedata = sitedata[subsetcols].copy()
+
+
 
     # Keep data for 6 warmest months
     sitedata['MONTH'] = sitedata.index.month
@@ -77,23 +81,58 @@ for ix, row in df.iterrows():
     # Keep required columns only
     sitedata_warmest6_qc0_dt = sitedata_warmest6_qc0_dt[[xvar, yvar, zvar]].copy()
 
+    fig = plt.figure(figsize=(36, 18))
+    gs = gridspec.GridSpec(2, 2)  # rows, cols
+    gs.update(wspace=.2, hspace=1, left=0.01, right=0.99, top=0.99, bottom=0.01)
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1])
+    ax3 = fig.add_subplot(gs[1, 0])
+    # ax = self._plot_bins(ax=ax, n_col=n_col, emphasize_lines=emphasize_lines, **kwargs)
+
     # Calculate bins
-    sbm = SortingBinsMethod(df=sitedata_warmest6_qc0_dt,
-                            xvar=xvar,
-                            yvar=yvar,
-                            zvar=zvar,
-                            n_bins_z=100,
-                            n_bins_x=2,
-                            conversion=None,
-                            # conversion='z-score',
-                            agg='median')
-    sbm.calcbins()
-    binaggs = sbm.get_binaggs()
-    sbm.showplot_decoupling_sbm(marker='o', emphasize_lines=True, title=f"{site} ({igbp})", legend=True)
+    settings = dict(df=sitedata_warmest6_qc0_dt,
+                    xvar=xvar, yvar=yvar, zvar=zvar,
+                    n_bins_z=100, n_bins_x=2, )
+
+    # Measured
+    sbm_measured = SortingBinsMethod(conversion=None, agg='median', **settings)
+    sbm_measured.calcbins()
+    binaggs_medians = sbm_measured.get_binaggs()
+    sbm_measured.showplot_decoupling_sbm(ax=ax1, marker='o', emphasize_lines=True, title=f"{site} ({igbp})",
+                                         legend=True)
+    ax1.set_title("Measured", size=20)
+
+    # Measured: deltas
+    infldf = pd.DataFrame()
+    for _ix, v in binaggs_medians.items():
+        from_y = v.loc[0, yvar]
+        to_y = v.loc[1, yvar]
+        delta_y = to_y - from_y
+        infldf.loc[_ix, 'FROM_Y'] = from_y
+        infldf.loc[_ix, 'TO_Y'] = to_y
+        infldf.loc[_ix, 'DELTA_Y'] = delta_y
+        infldf.loc[_ix, 'X'] = v.loc[1, xvar]
+    dy = infldf['DELTA_Y']
+    ax3.scatter(infldf['X'], dy)
+    ax3.axhline(0)
+    ax3.set_title("Delta")
+
+    # z-scores
+    sbm_zscores = SortingBinsMethod(conversion='z-score', agg='median', **settings)
+    sbm_zscores.calcbins()
+    binaggs_zscores = sbm_zscores.get_binaggs()
+    sbm_zscores.showplot_decoupling_sbm(ax=ax2, marker='o', emphasize_lines=True, title=f"{site} ({igbp})", legend=True)
+    ax2.set_title("z-scores", size=20)
+
+    # sbm.showplot_decoupling_sbm(marker='o', emphasize_lines=True, title=f"{site} ({igbp})", legend=True)
+
+    fig.suptitle(f"{site} ({igbp})", fontsize=16)
+    fig.tight_layout()
+    fig.show()
 
     # Testing: collect all z-scores for all sites in one df
     merged_rows = pd.DataFrame()
-    for k, v in binaggs.items():
+    for k, v in binaggs_medians.items():
         from_row = v.loc[0].copy()
         index_from = v.loc[0].index.tolist()
         index_from = [f"FROM_{i}" for i in index_from]
@@ -162,12 +201,12 @@ coll.to_csv(OUTFILE, index=False)
 # plt.legend()
 # plt.show()
 
-# # Plot deltas
-# dy = infldf['DELTA_Y']
-# plt.scatter(infldf['X'], dy)
-# plt.axhline(0)
-# plt.title(f"{site} ({igbp}): delta {yvar}")
-# plt.show()
+#
+#
+#
+#
+#
+#
 
 #     # Plot to y
 #     # locs = (infldf['TO_Y'] > 0) & (infldf['FROM_Y'] < 0)
