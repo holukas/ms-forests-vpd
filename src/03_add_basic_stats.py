@@ -23,6 +23,9 @@ for ix, row in _df.iterrows():
 
     print(f"\nLoading data for site {row['SITE']} ...")
 
+    # if row['SITE'] != 'CH-Dav':
+    #     continue
+
     filepath = row['_FILEPATH_PARQUET']
     sitedata = load_parquet(filepath)
 

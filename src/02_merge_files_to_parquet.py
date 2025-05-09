@@ -67,14 +67,14 @@ for ix, row in _df.iterrows():
         merged_df = merged_df.sort_index()
         sourcetxt = "ICOS+FXN"
 
-        # Heatmap plots
-        var = 'NEE_VUT_REF'
-        hm = dv.heatmapdatetime(series=icosdf[var], title="ICOS (2025)", vmin=-20, vmax=20)
-        hm.show()
-        hm = dv.heatmapdatetime(series=fxndf[var], title="FLUXNET (2024)", vmin=-20, vmax=20)
-        hm.show()
-        hm = dv.heatmapdatetime(series=merged_df[var], title="ICOS+FLUXNET", vmin=-20, vmax=20)
-        hm.show()
+        # # Heatmap plots
+        # var = 'NEE_VUT_REF'
+        # hm = dv.heatmapdatetime(series=icosdf[var], title=f"{site} ICOS (2025)", vmin=-20, vmax=20)
+        # hm.show()
+        # hm = dv.heatmapdatetime(series=fxndf[var], title=f"{site} FLUXNET (2024)", vmin=-20, vmax=20)
+        # hm.show()
+        # hm = dv.heatmapdatetime(series=merged_df[var], title=f"{site} ICOS+FLUXNET", vmin=-20, vmax=20)
+        # hm.show()
 
     elif origin == 'FLUXNET':
         icosdf = None
