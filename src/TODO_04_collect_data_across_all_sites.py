@@ -41,7 +41,7 @@ coll = pd.DataFrame()
 
 for ix, row in df.iterrows():
 
-    if ix != 24:
+    if ix != 1:
         continue
 
     site = row['SITE']
@@ -54,8 +54,6 @@ for ix, row in df.iterrows():
     sitedata = load_parquet(filepath)
     # [print(c) for c in sitedata.columns if "GPP" in c];
     sitedata = sitedata[subsetcols].copy()
-
-
 
     # Keep data for 6 warmest months
     sitedata['MONTH'] = sitedata.index.month
@@ -83,10 +81,11 @@ for ix, row in df.iterrows():
 
     fig = plt.figure(figsize=(36, 18))
     gs = gridspec.GridSpec(2, 2)  # rows, cols
-    gs.update(wspace=.2, hspace=1, left=0.01, right=0.99, top=0.99, bottom=0.01)
+    # gs.update(wspace=.2, hspace=1, left=0.01, right=0.99, top=0.99, bottom=0.01)
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[0, 1])
     ax3 = fig.add_subplot(gs[1, 0])
+    ax4 = fig.add_subplot(gs[1, 1])
     # ax = self._plot_bins(ax=ax, n_col=n_col, emphasize_lines=emphasize_lines, **kwargs)
 
     # Calculate bins
@@ -112,10 +111,13 @@ for ix, row in df.iterrows():
         infldf.loc[_ix, 'TO_Y'] = to_y
         infldf.loc[_ix, 'DELTA_Y'] = delta_y
         infldf.loc[_ix, 'X'] = v.loc[1, xvar]
+        infldf.loc[_ix, 'DELTA_X'] = v.loc[1, xvar] - v.loc[0, xvar]
+        infldf.loc[_ix, 'SLOPE'] = infldf.loc[_ix, 'DELTA_Y'] / infldf.loc[_ix, 'DELTA_X']
     dy = infldf['DELTA_Y']
-    ax3.scatter(infldf['X'], dy)
+
+    ax3.scatter(infldf['X'], infldf['SLOPE'])
     ax3.axhline(0)
-    ax3.set_title("Delta")
+    ax3.set_title("SLOPE")
 
     # z-scores
     sbm_zscores = SortingBinsMethod(conversion='z-score', agg='median', **settings)
@@ -123,6 +125,24 @@ for ix, row in df.iterrows():
     binaggs_zscores = sbm_zscores.get_binaggs()
     sbm_zscores.showplot_decoupling_sbm(ax=ax2, marker='o', emphasize_lines=True, title=f"{site} ({igbp})", legend=True)
     ax2.set_title("z-scores", size=20)
+
+    # z-scores: deltas
+    infldf = pd.DataFrame()
+    for _ix, v in binaggs_zscores.items():
+        from_y = v.loc[0, yvar]
+        to_y = v.loc[1, yvar]
+        delta_y = to_y - from_y
+        infldf.loc[_ix, 'FROM_Y'] = from_y
+        infldf.loc[_ix, 'TO_Y'] = to_y
+        infldf.loc[_ix, 'DELTA_Y'] = delta_y
+        infldf.loc[_ix, 'X'] = v.loc[1, xvar]
+        infldf.loc[_ix, 'DELTA_X'] = v.loc[1, xvar] - v.loc[0, xvar]
+        infldf.loc[_ix, 'SLOPE'] = infldf.loc[_ix, 'DELTA_Y'] / infldf.loc[_ix, 'DELTA_X']
+    dy = infldf['DELTA_Y']
+
+    ax4.scatter(infldf['X'], infldf['SLOPE'])
+    ax4.axhline(0)
+    ax4.set_title("SLOPE")
 
     # sbm.showplot_decoupling_sbm(marker='o', emphasize_lines=True, title=f"{site} ({igbp})", legend=True)
 
@@ -184,7 +204,7 @@ coll.to_csv(OUTFILE, index=False)
 #     infldf.loc[_ix, 'X'] = v.loc[1, xvar]
 #     infldf.loc[_ix, 'DELTA_X'] = v.loc[1, xvar] - v.loc[0, xvar]
 #
-#     infldf.loc[_ix, 'SPEED'] = infldf.loc[_ix, 'DELTA_Y'] / infldf.loc[_ix, 'DELTA_X']
+#     infldf.loc[_ix, 'SLOPE'] = infldf.loc[_ix, 'DELTA_Y'] / infldf.loc[_ix, 'DELTA_X']
 #     infldf.loc[_ix, 'SPEED_P16'] = infldf.loc[_ix, 'DELTA_Y_P16'] / infldf.loc[_ix, 'DELTA_X']
 #     infldf.loc[_ix, 'SPEED_P84'] = infldf.loc[_ix, 'DELTA_Y_P84'] / infldf.loc[_ix, 'DELTA_X']
 
@@ -192,10 +212,10 @@ coll.to_csv(OUTFILE, index=False)
 
 # Speed, change of flux normalized to change of VPD
 
-# plt.scatter(infldf['Z'], infldf['SPEED'], label="agg")
+# plt.scatter(infldf['Z'], infldf['SLOPE'], label="agg")
 # # plt.scatter(infldf['Z'], infldf['SPEED_P16'], label="P16")
 # # plt.scatter(infldf['Z'], infldf['SPEED_P84'], label="P84")
-# # plt.plot(infldf['SPEED'])
+# # plt.plot(infldf['SLOPE'])
 # plt.locator_params(axis='x', nbins=20)
 # plt.title("Speed")
 # plt.legend()
