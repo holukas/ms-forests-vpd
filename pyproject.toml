@@ -6,7 +6,7 @@ authors = ["Lukas Hörtnagl <lukas.hoertnagl@usys.ethz.ch>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.11,<3.12"
 jupyterlab = ">=4.2.4"
 pyyaml = "^6.0.2"
 
