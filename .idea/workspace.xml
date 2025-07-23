@@ -35,52 +35,52 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python tests.Doctests in common.executor": "Debug",
-    "Python.01-save_as_parquet.executor": "Run",
-    "Python.01_collect_info (1).executor": "Run",
-    "Python.01_collect_info.executor": "Run",
-    "Python.02-extract_site_names.executor": "Run",
-    "Python.02_merge_files_to_parquet.executor": "Run",
-    "Python.03_add_basic_stats.executor": "Debug",
-    "Python.03_read_files.executor": "Run",
-    "Python.04_collect_data_across_all_sites.executor": "Run",
-    "Python.04_shap.executor": "Debug",
-    "Python.04_testing_ustar_scen.executor": "Run",
-    "Python.04_x.executor": "Debug",
-    "Python.05_bins_zscores_allsites_plot.executor": "Run",
-    "Python.05_shapiq.executor": "Debug",
-    "Python.10-convert_to_parquet.executor": "Run",
-    "Python.11-collect_site_info (1).executor": "Run",
-    "Python.11-collect_site_info.executor": "Run",
-    "Python.11-collect_site_info_ICOS (1).executor": "Run",
-    "Python.11-indev.executor": "Run",
-    "Python.11-make_sitelist (1).executor": "Run",
-    "Python.11-make_sitelist.executor": "Run",
-    "Python.11-merge_files (1).executor": "Run",
-    "Python.11-merge_files.executor": "Debug",
-    "Python.12-collect_site_info_FLUXNET-WW2020.executor": "Run",
-    "Python.12-indev.executor": "Debug",
-    "Python.12-testing-SHAP.executor": "Run",
-    "Python.12-xxx.executor": "Run",
-    "Python.13-indev.executor": "Debug",
-    "Python.1_s.executor": "Run",
-    "Python.optimumrange.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "F:/Sync/luhk_work/20 - CODING/29 - WORKBENCH/ms_co2_penalty/src",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python tests.Doctests in common.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.01-save_as_parquet.executor&quot;: &quot;Run&quot;,
+    &quot;Python.01_collect_info (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.01_collect_info.executor&quot;: &quot;Run&quot;,
+    &quot;Python.02-extract_site_names.executor&quot;: &quot;Run&quot;,
+    &quot;Python.02_merge_files_to_parquet.executor&quot;: &quot;Run&quot;,
+    &quot;Python.03_add_basic_stats.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.03_read_files.executor&quot;: &quot;Run&quot;,
+    &quot;Python.04_collect_data_across_all_sites.executor&quot;: &quot;Run&quot;,
+    &quot;Python.04_shap.executor&quot;: &quot;Run&quot;,
+    &quot;Python.04_testing_ustar_scen.executor&quot;: &quot;Run&quot;,
+    &quot;Python.04_x.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.05_bins_zscores_allsites_plot.executor&quot;: &quot;Run&quot;,
+    &quot;Python.05_shapiq.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.10-convert_to_parquet.executor&quot;: &quot;Run&quot;,
+    &quot;Python.11-collect_site_info (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.11-collect_site_info.executor&quot;: &quot;Run&quot;,
+    &quot;Python.11-collect_site_info_ICOS (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.11-indev.executor&quot;: &quot;Run&quot;,
+    &quot;Python.11-make_sitelist (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.11-make_sitelist.executor&quot;: &quot;Run&quot;,
+    &quot;Python.11-merge_files (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.11-merge_files.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.12-collect_site_info_FLUXNET-WW2020.executor&quot;: &quot;Run&quot;,
+    &quot;Python.12-indev.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.12-testing-SHAP.executor&quot;: &quot;Run&quot;,
+    &quot;Python.12-xxx.executor&quot;: &quot;Run&quot;,
+    &quot;Python.13-indev.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.1_s.executor&quot;: &quot;Run&quot;,
+    &quot;Python.optimumrange.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;F:/Sync/luhk_work/20 - CODING/29 - WORKBENCH/ms_co2_penalty/src&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="F:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\src" />
@@ -209,9 +209,9 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.05_shapiq" />
-      <item itemvalue="Python.04_shap" />
       <item itemvalue="Python.03_add_basic_stats" />
+      <item itemvalue="Python.04_shap" />
+      <item itemvalue="Python.05_shapiq" />
       <item itemvalue="Python.TODO_04_collect_data_across_all_sites" />
       <item itemvalue="Python.TODO_05_bins_zscores_allsites_plot" />
     </list>
@@ -228,8 +228,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-PY-243.26574.90" />
-        <option value="bundled-python-sdk-c1fac28bca04-4df51de95216-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.26574.90" />
+        <option value="bundled-js-predefined-d6986cc7102b-09060db00ec0-JavaScript-PY-251.26927.90" />
+        <option value="bundled-python-sdk-41e8cd69c857-64d779b69b7a-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-251.26927.90" />
       </set>
     </attachedChunks>
   </component>
@@ -314,7 +314,13 @@
       <workItem from="1747034610152" duration="4000" />
       <workItem from="1752849820072" duration="9311000" />
       <workItem from="1752920161682" duration="14661000" />
-      <workItem from="1752965098205" duration="4375000" />
+      <workItem from="1752965098205" duration="4526000" />
+      <workItem from="1753002184901" duration="5113000" />
+      <workItem from="1753034531805" duration="604000" />
+      <workItem from="1753136042201" duration="618000" />
+      <workItem from="1753170856948" duration="21000" />
+      <workItem from="1753170886967" duration="41000" />
+      <workItem from="1753171012023" duration="134000" />
     </task>
     <servers />
   </component>
@@ -375,6 +381,11 @@
           <line>107</line>
           <option name="timeStamp" value="121" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/04_shap.py</url>
+          <line>155</line>
+          <option name="timeStamp" value="127" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
@@ -400,7 +411,7 @@
     <SUITE FILE_PATH="coverage/ms_co2_penalty$11_collect_site_info__1_.coverage" NAME="11-collect_site_info (1) Coverage Results" MODIFIED="1729980906866" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$03_read_files.coverage" NAME="03_read_files Coverage Results" MODIFIED="1744400283647" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$11_merge_files.coverage" NAME="11-merge_files Coverage Results" MODIFIED="1730238458857" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ms_co2_penalty$04_shap.coverage" NAME="04_shap Coverage Results" MODIFIED="1752969080093" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/ms_co2_penalty$04_shap.coverage" NAME="04_shap Coverage Results" MODIFIED="1753005210623" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$01_collect_info.coverage" NAME="01_collect_info Coverage Results" MODIFIED="1752850106519" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$04_x.coverage" NAME="04_x Coverage Results" MODIFIED="1744982663335" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/ms_co2_penalty$11_make_sitelist__1_.coverage" NAME="11-make_sitelist (1) Coverage Results" MODIFIED="1730236362948" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

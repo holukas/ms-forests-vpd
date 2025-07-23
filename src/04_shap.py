@@ -17,6 +17,7 @@ vpdqc = 'VPD_F_QC'
 preccol = 'P_F'
 swccol = 'SWC_F_MDS_1'
 # fluxcol = 'GPP_NT_VUT_50'
+# fluxcol = 'LE_F_MDS'
 fluxcol = 'NEE_VUT_50'
 fluxqc = "NEE_VUT_50_QC"
 swinpotcol = "SW_IN_POT"  # For daytime/nighttime
@@ -26,7 +27,8 @@ _df = df.copy()
 for ix, row in _df.iterrows():
 
     # if row['SITE'] != 'CH-Dav':
-    if row['SITE'] != 'BE-Bra':
+    # if row['SITE'] != 'BE-Bra':
+    if ix != 0:
         continue
 
     print(f"\nLoading data for site {row['SITE']} ...")
@@ -34,7 +36,7 @@ for ix, row in _df.iterrows():
     # Load site data
     filepath = row['_FILEPATH_PARQUET']
     sitedata = load_parquet(filepath)
-    # [print(c) for c in sitedata.columns if "GPP" in c];
+    # [print(c) for c in sitedata.columns if "LE" in c];
 
     # Detect 6 warmest months
     ta = sitedata[[tacol]].copy()
@@ -68,9 +70,10 @@ for ix, row in _df.iterrows():
         [fluxcol, tacol, vpdcol, swccol, swincol]
     ].copy()
     subset = subset.dropna()
+    print(f"Records: {len(subset)}")
 
     # Limit time range
-    subset = subset.loc[subset.index.year == 2019].copy()
+    # subset = subset.loc[subset.index.year == 2019].copy()
 
     # Target and features
     features = [tacol, vpdcol, swccol, swincol]
@@ -98,7 +101,7 @@ for ix, row in _df.iterrows():
                              n_jobs=-1)  # Use all available CPU cores
 
     # Train the model
-    model.fit(X, y, eval_set=[(X, y)], verbose=True)
+    model.fit(X, y, eval_set=[(X, y)], verbose=False)
 
 
     # Evaluate model performance on the test set
@@ -124,12 +127,52 @@ for ix, row in _df.iterrows():
     expected_value = explainer.expected_value
 
     # Collect SHAP values in dataframe
-    shapdf = pd.DataFrame(data=shap_values, index=X.index, columns=X.columns)
+    shapcols = [f'{c}_SHAPVALS' for c in X]
+    shapdf = pd.DataFrame(data=shap_values, index=X.index, columns=shapcols)
     shapdf.index = pd.to_datetime(shapdf.index)
-    shapdf['SUM_SHAP'] = shapdf.sum(axis=1)
+    shapdf['SUM'] = shapdf.sum(axis=1)
     shapdf['EXPECTED'] = expected_value
-    shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'].add(shapdf['SUM_SHAP'])
+    shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'].add(shapdf['SUM'])
     shapdf[fluxcol] = y.copy()
+
+    merged = pd.concat([X, shapdf], axis=1)
+
+    from diive.core.plotting.scatter import ScatterXY
+    ScatterXY(x=merged['VPD_F'], y=merged['VPD_F_SHAPVALS'], nbins=20).plot()
+
+    print(shapdf)
+
+    xvar = vpdcol
+    yvar = tacol
+    zvar = fluxcol
+
+    import diive as dv
+    plotdf = shapdf[[xvar, yvar, zvar]].copy()
+    q = dv.ga(
+        x=plotdf[xvar],
+        y=plotdf[yvar],
+        z=plotdf[zvar],
+        binning_type='custom',
+        custom_x_bins=list(range(-3, 4, 1)),
+        custom_y_bins=list(range(-3, 4, 1)),
+        # n_bins=10,
+        min_n_vals_per_bin=3,
+        aggfunc='mean'
+    )
+
+
+    hm = dv.heatmapxyz(
+        x=q.df_long[f'BIN_{xvar}'],
+        y=q.df_long[f'BIN_{yvar}'],
+        z=q.df_long[fluxcol],
+        cb_digits_after_comma=0,
+        xlabel=r'x',
+        ylabel=r'y',
+        zlabel=r'z',
+        vmin=-3,
+        vmax=3
+    )
+    hm.show()
 
 #     # Calculate SHAP interaction values for a subset of the data or the full dataset
 #     # For large datasets, consider using a representative sample (e.g., X_train.sample(5000, random_state=42))
@@ -146,22 +189,27 @@ for ix, row in _df.iterrows():
 #     # # The diagonal shows the main effect of each feature.
 #     # shap.summary_plot(shap_interaction_values, X_train, feature_names=X_train.columns)
 #
-#     # Example: How does the effect of Solar Radiation (Rg) on LE change with Air Temperature (Ta)?
-#     # Replace 'Rg' and 'Ta' with your actual feature names if different
-#     # Ensure these features exist in X_train.columns
-#     # shap_values = explainer.shap_values(X_train)
-#     shap_values = explainer.shap_values(X)
-#     if swincol in X.columns and tacol in X.columns:
-#         print("\nGenerating dependence plot for Rg interacting with Ta...")
-#         shap.dependence_plot(
-#             swincol,  # The feature whose SHAP values you want to plot on the y-axis
-#             shap_values=shap_values,  # Use standard shap_values for dependence plot
-#             features=X,
-#             interaction_index=tacol,  # The feature with which you want to see the interaction
-#             x_jitter=0.5  # Add jitter for better visualization of scattered points
-#         )
-#     else:
-#         print("Features 'Rg' or 'Ta' not found in the dataset for dependence plot example.")
+
+    # # Example: How does the effect of Solar Radiation (Rg) on LE change with Air Temperature (Ta)?
+    # # Replace 'Rg' and 'Ta' with your actual feature names if different
+    # # Ensure these features exist in X_train.columns
+    # # shap_values = explainer.shap_values(X_train)
+    # # shap_values = explainer.shap_values(X)
+    # xvar = vpdcol
+    # yvar = tacol
+    # if xvar in X.columns and yvar in X.columns:
+    #     print("\nGenerating dependence plot ...")
+    #     shap.dependence_plot(
+    #         xvar,  # The feature whose SHAP values you want to plot on the y-axis
+    #         shap_values=shap_values,  # Use standard shap_values for dependence plot
+    #         features=X,
+    #         interaction_index=yvar,  # The feature with which you want to see the interaction
+    #         x_jitter=0.5  # Add jitter for better visualization of scattered points
+    #     )
+    # else:
+    #     print("Features not found in the dataset for dependence plot example.")
+
+    # shap.summary_plot(shap_values, X, feature_names=X.columns)
 #
 #     # Top interactions
 #     # Calculate the mean absolute interaction values
