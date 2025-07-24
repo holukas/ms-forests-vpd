@@ -10,7 +10,7 @@ pd.set_option('display.max_rows', 3000)
 pd.set_option('display.max_columns', 3000)
 
 
-def merge_site_info(allsites_fxn, allsites_icos, allsites_amf):
+def merge_site_info(allsites_fxn, allsites_icos, allsites_amf, outfile):
     allsites = pd.concat([allsites_fxn, allsites_icos, allsites_amf], axis=0, ignore_index=True)
     allsites = allsites.reset_index(drop=True)
     allsites = allsites.fillna(np.nan)
@@ -56,7 +56,7 @@ def merge_site_info(allsites_fxn, allsites_icos, allsites_amf):
     allsites_combined = allsites_combined[cols]
     allsites_combined = allsites_combined.sort_values(by='SITE', inplace=False, ascending=True, ignore_index=True)
 
-    # allsites_combined.to_csv('../OUT/01_siteinfo.csv', index=False)
+    allsites_combined.to_csv(outfile, index=False)
     return allsites_combined
 
 

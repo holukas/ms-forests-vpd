@@ -1,5 +1,9 @@
-BASEDIR: F:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\data\0_source
-OUTDIR: "OUT"
+# Dirs
+DIR_DATA: ../data
+DIR_DATA_SOURCEFILES: ../data/source
+DIR_DATA_PARQUET: ../data/merged_to_parquet
+DIR_DATA_OUT: ../data/output
+
 ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
 
 # ICOS (European sites)

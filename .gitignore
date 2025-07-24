@@ -1,8 +1,8 @@
 /.idea
 /_archive
 /X
-/data/0_source
-/data/1_merged_to_parquet
+/data/source
+/data/merged_to_parquet
 
 *.xlsx
 

@@ -5,7 +5,7 @@ import src.sites as sites
 
 # Settings
 settings = files.read_settings_file("../config/settings.yaml")
-searchdir = str(Path(settings['BASEDIR']))
+searchdir = str(Path(settings['DIR_DATA']))
 
 ecosystems = settings['ECOSYSTEMS']
 
@@ -30,5 +30,10 @@ site_info_icos = sites.get_site_info_icos(
 # print(site_info_icos)
 
 # Merge site info
-site_info = sites.merge_site_info(site_info_fxn, site_info_ameriflux, site_info_icos)
+outfile = Path(settings['DIR_DATA_OUT']) / '01_siteinfo.csv'
+site_info = sites.merge_site_info(
+    allsites_fxn=site_info_fxn,
+    allsites_amf=site_info_ameriflux,
+    allsites_icos=site_info_icos,
+    outfile=outfile)
 print(site_info)
