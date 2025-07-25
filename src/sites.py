@@ -56,7 +56,6 @@ def merge_site_info(allsites_fxn, allsites_icos, allsites_amf, outfile):
     allsites_combined = allsites_combined[cols]
     allsites_combined = allsites_combined.sort_values(by='SITE', inplace=False, ascending=True, ignore_index=True)
 
-    allsites_combined.to_csv(outfile, index=False)
     return allsites_combined
 
 

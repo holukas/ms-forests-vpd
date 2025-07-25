@@ -2,6 +2,7 @@
 /_archive
 /X
 /data/source
+/data/_source_ALLFILES
 /data/merged_to_parquet
 
 *.xlsx
