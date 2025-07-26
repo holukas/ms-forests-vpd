@@ -1,8 +1,25 @@
 from pathlib import Path
 
 import diive as dv
+import numpy as np
 import pandas as pd
 import yaml
+
+
+def save_siteinfo(siteinfo_df: pd.DataFrame, filename: str) -> None:
+    settings = read_settings_file("../config/settings.yaml")
+    outfile = Path(settings['DIR_DATA_OUT']) / filename
+    siteinfo_df.to_csv(outfile, index=False)
+    print(f"Saved updated site info to file {outfile}.")
+    return None
+
+
+def load_siteinfo(filename: str) -> pd.DataFrame:
+    settings = read_settings_file("../config/settings.yaml")
+    infile = Path(settings['DIR_DATA_OUT']) / filename
+    siteinfo_df = pd.read_csv(infile)
+    siteinfo_df = siteinfo_df.fillna(np.nan)
+    return siteinfo_df
 
 
 def create_parquet_files(siteinfo_df, data_nrows, settings) -> pd.DataFrame:
