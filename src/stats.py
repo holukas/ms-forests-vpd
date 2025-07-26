@@ -12,8 +12,8 @@ def basic_stats(siteinfo_df) -> pd.DataFrame:
     _df = siteinfo_df.copy()
     for ix, row in _df.iterrows():
 
-        if row['SITE'] != 'BE-Bra':
-            continue
+        # if row['SITE'] != 'BE-Bra':
+        #     continue
 
         print(f"\nLoading data for site {row['SITE']} ...")
 
