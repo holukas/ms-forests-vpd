@@ -1,14 +1,13 @@
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import shap
 import xgboost as xgb
 from diive.core.io.files import load_parquet
-from sklearn.metrics import mean_squared_error
-
+from scipy.stats import zscore
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
 import src.files as files
-from src.files import read_settings_file
+import diive as dv
 
 # Load site info
 siteinfo_df = files.load_siteinfo(filename="03_siteinfo.csv")
@@ -29,6 +28,7 @@ swincol = "SW_IN_F"
 df_all = None
 _df = siteinfo_df.copy()
 for ix, row in _df.iterrows():
+
     # if ix != 0:
     #     continue
 
@@ -125,19 +125,64 @@ for ix, row in _df.iterrows():
     shapdf['EXPECTED'] = expected_value
     shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'].add(shapdf['SUM'])
     shapdf[fluxcol] = y.copy()
+    # print(shapdf)
 
-    # Merge SHAP values with measured
     merged = pd.concat([X, shapdf], axis=1)
+    # print(merged)
 
     # from diive.core.plotting.scatter import ScatterXY
-    # ScatterXY(x=merged[vpdcol], y=merged[f'{vpdcol}_SHAPVALS'], nbins=20,
-    #           binagg='mean').plot()
+    # ScatterXY(x=merged['VPD_F'], y=merged['VPD_F_SHAPVALS'], nbins=200,
+    #           xlim=[-1, 10], binagg='mean').plot()
 
-    settings = read_settings_file("../config/settings.yaml")
-    import diive as dv
+    # xvar = vpdcol
+    # yvar = tacol
+    # zvar = fluxcol
+    # plotdf = shapdf[[xvar, yvar, zvar]].copy()
 
-    outfilepath = dv.save_parquet(
-        filename=f"{row['SITE']}_shap_values",
-        data=merged,
-        outpath=Path(settings['DIR_DATA_OUT_SHAPVALS_SITE']))
-    print(f"Saved SHAP values to file {outfilepath}.")
+    q = dv.ga(
+        x=merged['TA_F'],
+        y=merged['VPD_F'],
+        z=merged['VPD_F_SHAPVALS'],
+        # binning_type='custom',
+        # custom_x_bins=list(np.arange(-8, 10, .5)),
+        # custom_y_bins=list(np.arange(-8, 10, .5)),
+        binning_type='quantiles',
+        n_bins=20,
+        min_n_vals_per_bin=1,
+        aggfunc='mean'
+    )
+    print(q.df_agg_wide)
+
+    hm = dv.heatmapxyz(
+        x=q.df_agg_long[f'BIN_TA_F'],
+        y=q.df_agg_long[f'BIN_VPD_F'],
+        z=q.df_agg_long['VPD_F_SHAPVALS'],
+        cb_digits_after_comma=0,
+        xlabel=r'x',
+        ylabel=r'y',
+        zlabel=r'z',
+        # vmin=-3,
+        # vmax=3
+    )
+    hm.show()
+
+    if ix == 0:
+        df_all = q.df_agg_long.copy()
+    else:
+        df_all = pd.concat([df_all, q.df_agg_long], axis=0)
+
+df_all['BIN_COMBINED_STR'] = (df_all['BIN_TA_F'].astype(str) + "+" + df_all['BIN_VPD_F'].astype(str))
+df_all.groupby('BIN_COMBINED_STR').mean()
+
+hm = dv.heatmapxyz(
+    x=df_all[f'BIN_TA_F'],
+    y=df_all[f'BIN_VPD_F'],
+    z=df_all['VPD_F_SHAPVALS'],
+    cb_digits_after_comma=0,
+    xlabel=r'x',
+    ylabel=r'y',
+    zlabel=r'z',
+    # vmin=-3,
+    # vmax=3
+)
+hm.show()

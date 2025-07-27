@@ -3,6 +3,8 @@ DIR_DATA: ../data
 DIR_DATA_SOURCEFILES: ../data/source
 DIR_DATA_PARQUET: ../data/merged_to_parquet
 DIR_DATA_OUT: ../data/output
+DIR_DATA_OUT_SITEINFO: ../data/output/03_siteinfo
+DIR_DATA_OUT_SHAPVALS_SITE: ../data/output/04_shap_values_site
 
 ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
 

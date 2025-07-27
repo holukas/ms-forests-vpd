@@ -30,7 +30,7 @@ site_info_icos = sites.get_site_info_icos(
 # print(site_info_icos)
 
 # Merge site info
-outfile = Path(settings['DIR_DATA_OUT']) / '01_siteinfo.csv'
+outfile = Path(settings['DIR_DATA_OUT_SITEINFO']) / '01_siteinfo.csv'
 siteinfo_df = sites.merge_site_info(
     allsites_fxn=site_info_fxn,
     allsites_amf=site_info_ameriflux,

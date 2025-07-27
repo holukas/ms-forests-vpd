@@ -8,7 +8,7 @@ import yaml
 
 def save_siteinfo(siteinfo_df: pd.DataFrame, filename: str) -> None:
     settings = read_settings_file("../config/settings.yaml")
-    outfile = Path(settings['DIR_DATA_OUT']) / filename
+    outfile = Path(settings['DIR_DATA_OUT_SITEINFO']) / filename
     siteinfo_df.to_csv(outfile, index=False)
     print(f"Saved updated site info to file {outfile}.")
     return None
@@ -16,7 +16,7 @@ def save_siteinfo(siteinfo_df: pd.DataFrame, filename: str) -> None:
 
 def load_siteinfo(filename: str) -> pd.DataFrame:
     settings = read_settings_file("../config/settings.yaml")
-    infile = Path(settings['DIR_DATA_OUT']) / filename
+    infile = Path(settings['DIR_DATA_OUT_SITEINFO']) / filename
     siteinfo_df = pd.read_csv(infile)
     siteinfo_df = siteinfo_df.fillna(np.nan)
     return siteinfo_df

@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import src.files as files
 
 # Load site info

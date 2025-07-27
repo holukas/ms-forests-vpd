@@ -98,8 +98,10 @@ def get_site_info_fxn(searchdir, pattern_fxn, infofile_fxn) -> pd.DataFrame:
     fxn.run()
     allsites_fxn = fxn.get_site_info()
 
-    # Read CSV with additional site info from EFDC / FLUXNET
+    if allsites_fxn.empty:
+        return allsites_fxn
 
+    # Read CSV with additional site info from EFDC / FLUXNET
     siteinfo_fxn = pd.read_csv(infofile_fxn)
     siteinfo_fxn = siteinfo_fxn[['Site Code', 'IGBP Code', 'Site Latitude', 'Site Longitude']].copy()
 
