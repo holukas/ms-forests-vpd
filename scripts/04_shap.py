@@ -1,5 +1,9 @@
+"""
+Train XGBoost model for each site and save SHAP values to file.
+"""
 from pathlib import Path
 
+import diive as dv
 import numpy as np
 import pandas as pd
 import shap
@@ -10,8 +14,14 @@ from sklearn.metrics import mean_squared_error
 import src.files as files
 from src.files import read_settings_file
 
+# Load settings
+settings = read_settings_file("../config/settings.yaml")
+
 # Load site info
 siteinfo_df = files.load_siteinfo(filename="03_siteinfo.csv")
+
+# 1. Writing to a file (overwrites if file exists, creates if not)
+modelstxt = Path(settings['DIR_DATA_OUT_SHAPVALS_SITE']) / "1_models_xgboost.txt"
 
 tacol = 'TA_F'
 taqc = 'TA_F_QC'
@@ -25,6 +35,10 @@ fluxcol = 'NEE_VUT_50'
 fluxqc = "NEE_VUT_50_QC"
 swinpotcol = "SW_IN_POT"  # For daytime/nighttime
 swincol = "SW_IN_F"
+
+with open(modelstxt, 'w') as file:
+    file.write("XGBOOST MODELS\n")
+    file.write(f"Target: {fluxcol}\n")
 
 df_all = None
 _df = siteinfo_df.copy()
@@ -105,15 +119,14 @@ for ix, row in _df.iterrows():
 
     # Evaluate model performance on the test set
     y_pred = model.predict(X)
+    r2 = model.score(X, y)
     rmse = np.sqrt(mean_squared_error(y, y_pred))
-    print(f"R2: {model.score(X, y):.4f}")
-    print(f"RMSE: {rmse:.2f}")
+    print(f"R2: {r2:.4f} / RMSE: {rmse:.2f}")
+    with open(modelstxt, 'a') as file:
+        file.write(f"SITE: {row['SITE']} / R2: {model.score(X, y):.4f} / RMSE: {rmse:.2f}\n")
 
-    # Create a SHAP TreeExplainer for the trained XGBoost model
+    # Create SHAP TreeExplainer for the trained XGBoost model and get SHAP values
     explainer = shap.TreeExplainer(model)
-    print("SHAP Explainer created.")
-
-    # Get SHAP values
     shap_values = explainer.shap_values(X)
     expected_value = explainer.expected_value
 
@@ -125,6 +138,7 @@ for ix, row in _df.iterrows():
     shapdf['EXPECTED'] = expected_value
     shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'].add(shapdf['SUM'])
     shapdf[fluxcol] = y.copy()
+    shapdf[f'{fluxcol}_PRED'] = y_pred.copy()
 
     # Merge SHAP values with measured
     merged = pd.concat([X, shapdf], axis=1)
@@ -132,9 +146,6 @@ for ix, row in _df.iterrows():
     # from diive.core.plotting.scatter import ScatterXY
     # ScatterXY(x=merged[vpdcol], y=merged[f'{vpdcol}_SHAPVALS'], nbins=20,
     #           binagg='mean').plot()
-
-    settings = read_settings_file("../config/settings.yaml")
-    import diive as dv
 
     outfilepath = dv.save_parquet(
         filename=f"{row['SITE']}_shap_values",
