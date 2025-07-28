@@ -3,27 +3,14 @@ from diive.core.io.files import load_parquet
 
 
 def basic_stats(siteinfo_df) -> pd.DataFrame:
-    swincol = 'SW_IN_F'
-    tacol = 'TA_F'
-    vpdcol = 'VPD_F'
-    preccol = 'P_F'
-    swccol = 'SWC_F_MDS_1'
 
     _df = siteinfo_df.copy()
-    for ix, row in _df.iterrows():
+    for ix, site in _df.iterrows():
 
-        # if row['SITE'] != 'BE-Bra':
-        #     continue
+        print(f"\nLoading data for site #{ix + 1} {site['SITE']} ...")
 
-        print(f"\nLoading data for site {row['SITE']} ...")
-
-        filepath = row['_FILEPATH_PARQUET']
+        filepath = site['_FILEPATH_PARQUET']
         sitedata = load_parquet(filepath)
-
-        # # todo make list of available vars
-        # sitevars_available = sitedata.columns
-        # for sv in sitevars_available:
-        #     # sitevars_all.loc[row['SITE'], sv] = sitedata[sv].count()
 
         # Collect info
         date_first = sitedata.index[0]
@@ -33,19 +20,32 @@ def basic_stats(siteinfo_df) -> pd.DataFrame:
         n_records = len(sitedata.index)
         n_years = (date_last.year - date_first.year) + 1
 
+        # Get variable names for this site
+        swin_var = site['SWIN_VAR']
+        ta_var = site['TA_VAR']
+        vpd_var = site['VPD_VAR']
+        prec_var = site['PREC_VAR']
+        swc_var = site['SWC_VAR']
+
         siteinfo_df.loc[ix, 'DATE_FIRST'] = date_first_str
         siteinfo_df.loc[ix, 'DATE_LAST'] = date_last_str
         siteinfo_df.loc[ix, 'N_YEARS'] = n_years
         siteinfo_df.loc[ix, 'N_RECORDS'] = n_records
-        siteinfo_df.loc[ix, 'SW_IN_AVG'] = sitedata[swincol].mean()
-        siteinfo_df.loc[ix, 'SW_IN_N_RECORDS'] = sitedata[swincol].dropna().count()
-        siteinfo_df.loc[ix, 'TA_AVG'] = sitedata[tacol].mean()
-        siteinfo_df.loc[ix, 'TA_N_RECORDS'] = sitedata[tacol].dropna().count()
-        siteinfo_df.loc[ix, 'VPD_AVG'] = sitedata[vpdcol].mean()
-        siteinfo_df.loc[ix, 'VPD_N_RECORDS'] = sitedata[vpdcol].dropna().count()
-        siteinfo_df.loc[ix, 'PREC/YR'] = sitedata[preccol].sum() / n_years
-        siteinfo_df.loc[ix, 'PREC_N_RECORDS'] = sitedata[preccol].dropna().count()
-        siteinfo_df.loc[ix, 'SWC_1_AVG'] = sitedata[swccol].mean()
-        siteinfo_df.loc[ix, 'SWC_1_N_RECORDS'] = sitedata[swccol].dropna().count()
+        siteinfo_df.loc[ix, 'SWIN_AVG'] = sitedata[swin_var].mean()
+        siteinfo_df.loc[ix, 'SWIN_N_RECORDS'] = sitedata[swin_var].dropna().count()
+        siteinfo_df.loc[ix, 'TA_AVG'] = sitedata[ta_var].mean()
+        siteinfo_df.loc[ix, 'TA_N_RECORDS'] = sitedata[ta_var].dropna().count()
+        siteinfo_df.loc[ix, 'VPD_AVG'] = sitedata[vpd_var].mean()
+        siteinfo_df.loc[ix, 'VPD_N_RECORDS'] = sitedata[vpd_var].dropna().count()
+        siteinfo_df.loc[ix, 'PREC/YR'] = sitedata[prec_var].sum() / n_years
+        siteinfo_df.loc[ix, 'PREC_N_RECORDS'] = sitedata[prec_var].dropna().count()
+
+        if site['SWC_VAR'] != '-MISSING-':
+            siteinfo_df.loc[ix, 'SWC_AVG'] = sitedata[swc_var].mean()
+            siteinfo_df.loc[ix, 'SWC_N_RECORDS'] = sitedata[swc_var].dropna().count()
+        else:
+            siteinfo_df.loc[ix, 'SWC_AVG'] = '-MISSING-'
+            siteinfo_df.loc[ix, 'SWC_N_RECORDS'] = '-MISSING-'
+
 
     return siteinfo_df

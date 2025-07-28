@@ -2,7 +2,7 @@ import src.files as files
 import src.stats as stats
 
 # Load site info
-siteinfo_df = files.load_siteinfo(filename="02_siteinfo.csv")
+siteinfo_df = files.load_siteinfo(filename="03_siteinfo.csv")
 
 # Load settings
 settings = files.read_settings_file("../config/settings.yaml")
@@ -17,4 +17,4 @@ settings = files.read_settings_file("../config/settings.yaml")
 siteinfo_df = stats.basic_stats(siteinfo_df=siteinfo_df)
 
 # Save updated site info
-files.save_siteinfo(siteinfo_df=siteinfo_df, filename="03_siteinfo.csv")
+files.save_siteinfo(siteinfo_df=siteinfo_df, filename="04_siteinfo.csv")

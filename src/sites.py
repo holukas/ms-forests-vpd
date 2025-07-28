@@ -89,7 +89,7 @@ def get_site_info_icos(pattern_icos, searchdir):
         allsites_icos.loc[allsites_icos['SITE'] == site, 'LON'] = lon_icos
         allsites_icos.loc[allsites_icos['SITE'] == site, 'LAT'] = lat_icos
         allsites_icos.loc[allsites_icos['SITE'] == site, 'IGBP'] = igbp_icos
-        return allsites_icos
+    return allsites_icos
 
 
 def get_site_info_fxn(searchdir, pattern_fxn, infofile_fxn) -> pd.DataFrame:
