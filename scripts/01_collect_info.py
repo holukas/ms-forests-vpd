@@ -5,7 +5,9 @@ import src.sites as sites
 
 # Settings
 settings = files.read_settings_file("../config/settings.yaml")
-searchdir = str(Path(settings['DIR_DATA_SOURCEFILES']))
+# TODO testing dir ---
+searchdir = str(Path(settings['DIR_DATA_SOURCEFILES']) / 'icos')
+# --- TODO testing dir
 
 ecosystems = settings['ECOSYSTEMS']
 

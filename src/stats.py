@@ -21,16 +21,19 @@ def basic_stats(siteinfo_df) -> pd.DataFrame:
         n_years = (date_last.year - date_first.year) + 1
 
         # Get variable names for this site
-        swin_var = site['SWIN_VAR']
-        ta_var = site['TA_VAR']
-        vpd_var = site['VPD_VAR']
-        prec_var = site['PREC_VAR']
-        swc_var = site['SWC_VAR']
+        nee_var = str(site['NEE_VAR'])
+        swin_var = str(site['SWIN_VAR'])
+        ta_var = str(site['TA_VAR'])
+        vpd_var = str(site['VPD_VAR'])
+        prec_var = str(site['PREC_VAR'])
+        swc_var = str(site['SWC_VAR'])
 
         siteinfo_df.loc[ix, 'DATE_FIRST'] = date_first_str
         siteinfo_df.loc[ix, 'DATE_LAST'] = date_last_str
         siteinfo_df.loc[ix, 'N_YEARS'] = n_years
         siteinfo_df.loc[ix, 'N_RECORDS'] = n_records
+        siteinfo_df.loc[ix, 'NEE_AVG'] = sitedata[nee_var].mean()
+        siteinfo_df.loc[ix, 'NEE_N_RECORDS'] = sitedata[nee_var].dropna().count()
         siteinfo_df.loc[ix, 'SWIN_AVG'] = sitedata[swin_var].mean()
         siteinfo_df.loc[ix, 'SWIN_N_RECORDS'] = sitedata[swin_var].dropna().count()
         siteinfo_df.loc[ix, 'TA_AVG'] = sitedata[ta_var].mean()

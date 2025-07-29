@@ -12,7 +12,7 @@ import src.files as files
 settings = files.read_settings_file("../config/settings.yaml")
 
 # Load site info
-siteinfo_df = files.load_siteinfo(filename="05_siteinfo.csv")
+siteinfo_df = files.load_siteinfo(filename="06_siteinfo.csv")
 
 tacol = 'TA_F'
 vpdcol = 'VPD_F'
@@ -32,8 +32,8 @@ df_all = None
 
 for ix, site in siteinfo_df.iterrows():
 
-    if site['SITE'] != 'DE-Msr':
-        continue
+    # if site['SITE'] != 'DE-Msr':
+    #     continue
 
     print(f"\nLoading data for site #{ix + 1} {site['SITE']} ...")
     filepath = site['_FILEPATH_SHAP_VALUES']
@@ -54,15 +54,15 @@ for ix, site in siteinfo_df.iterrows():
         y=shapvals_df[y],
         z=shapvals_df[z],
         binning_type='custom',
-        custom_x_bins=list(np.arange(-8, 10, .5)),
-        custom_y_bins=list(np.arange(-8, 10, .5)),
+        custom_x_bins=list(np.arange(-8, 10, .1)),
+        custom_y_bins=list(np.arange(-8, 10, .1)),
         # binning_type='quantiles',
         # n_bins=20,
         min_n_vals_per_bin=1,
         aggfunc=aggfunc
     )
     # print(q.df_agg_wide)
-    print(q.df_agg_long['BIN_VPD_F'].unique())
+    # print(q.df_agg_long['BIN_VPD_F'].unique())
 
     hm = dv.heatmapxyz(
         x=q.df_agg_long[binx],
@@ -70,8 +70,8 @@ for ix, site in siteinfo_df.iterrows():
         z=q.df_agg_long[z],
         title=site['SITE'],
         cb_digits_after_comma=1,
-        xlabel=f'{binx} (percentile)',
-        ylabel=f'{biny} (percentile)',
+        xlabel=f'{binx} (z-score)',
+        ylabel=f'{biny} (z-score)',
         zlabel=f'{aggfunc} {z} (z-score)',
         # vmin=-3,
         # vmax=3
@@ -95,16 +95,4 @@ df_all.to_csv(outfilepath.replace('.parquet', '.csv'))
 
 # print(df_all)
 
-# hm = dv.heatmapxyz(
-#     title="All sites",
-#     x=df_all[binx],
-#     y=df_all[biny],
-#     z=df_all[z],
-#     cb_digits_after_comma=1,
-#     xlabel=f'{binx} (percentile)',
-#     ylabel=f'{biny} (percentile)',
-#     zlabel=f'{aggfunc} {z} (z-score)',
-#     # vmin=-3,
-#     # vmax=3
-# )
-# hm.show()
+

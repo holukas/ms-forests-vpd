@@ -3,7 +3,7 @@
 /X
 /data/source
 /data/_source_ALLFILES
-/data/merged_to_parquet
+/data/parquet
 /data/output/04_shap_values_site/*.parquet
 
 *.xlsx

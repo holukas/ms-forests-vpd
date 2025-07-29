@@ -1,9 +1,76 @@
 from pathlib import Path
-
+from scipy.stats import zscore
 import diive as dv
 import numpy as np
 import pandas as pd
 import yaml
+
+
+def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
+
+    print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
+
+    # Load site data
+    filepath = siteconfig['_FILEPATH_PARQUET']
+    sitedata = dv.load_parquet(filepath)
+    # [print(c) for c in sitedata.columns if "LE" in c];
+
+    # Get variable names for this site
+    nee_var = str(siteconfig['NEE_VAR'])
+    nee_qc_var = str(siteconfig['NEE_QC_VAR'])
+    swin_var = str(siteconfig['SWIN_VAR'])
+    ta_var = str(siteconfig['TA_VAR'])
+    vpd_var = str(siteconfig['VPD_VAR'])
+    swc_var = str(siteconfig['SWC_VAR'])
+    swinpot_var = 'SW_IN_POT'
+
+    if swc_var == '-MISSING-':
+        siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = '-MISSING-'
+        return siteinfo_df
+
+    # Make subset
+    subset = sitedata[[nee_var, nee_qc_var, swinpot_var, ta_var, vpd_var, swc_var, swin_var]].copy()
+
+    # Keep 6 warmest months
+    ta = sitedata[[ta_var]].copy()
+    ta['MONTH'] = ta.index.month
+    monthly_avg = ta.groupby('MONTH').mean()
+    monthly_avg = monthly_avg.sort_values(by=ta_var, ascending=False, inplace=False)
+    warmest6 = monthly_avg.head(6).index.to_list()
+    subset = subset.loc[sitedata.index.month.isin(warmest6)].copy()
+
+    # Keep directly measured fluxes, no gap-filled data
+    if nee_qc_var is not None:
+        subset = subset.loc[subset[nee_qc_var] == 0].copy()
+
+    # Keep daytime records
+    subset = subset.loc[subset[swinpot_var] > 20].copy()
+
+    # Keep required cols
+    subset = subset[[nee_var, ta_var, vpd_var, swin_var, swc_var]].copy()
+
+    # Keep records where all vars available
+    subset = subset.dropna()
+
+    # Convert z-scores, ignoring NaNs
+    # z-scores are calculated from subset records
+    subset = subset.apply(lambda x: zscore(x, nan_policy='omit'))
+
+    print(f"Records: {len(subset)}")
+
+    # TODO testing: Limit time range
+    # subset = subset.loc[subset.index.year == 2019].copy()
+    # subset = subset.loc[subset.index.month == 7].copy()
+    # TODO testing: Limit time range
+
+    outfilepath = dv.save_parquet(
+        filename=f"{siteconfig['SITE']}_subset_warmest6_qc0_daytime_zscores",
+        data=subset,
+        outpath=Path(settings['DIR_DATA_PARQUET_SUBSET']))
+    print(f"Saved subset data for {siteconfig['SITE']} to file {outfilepath}.")
+    siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = outfilepath
+
+    return siteinfo_df
 
 
 def save_siteinfo(siteinfo_df: pd.DataFrame, filename: str) -> None:

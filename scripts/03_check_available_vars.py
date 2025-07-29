@@ -9,6 +9,8 @@ siteinfo_df = files.load_siteinfo(filename="02_siteinfo.csv")
 settings = files.read_settings_file("../config/settings.yaml")
 
 required_vars = dict(
+    NEE_VAR='NEE_VUT_50',
+    NEE_QC_VAR='NEE_VUT_50_QC',
     SWIN_VAR='SW_IN_F',
     TA_VAR='TA_F',
     VPD_VAR='VPD_F',
