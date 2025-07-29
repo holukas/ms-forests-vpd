@@ -34,10 +34,10 @@ def train_xgboost_models_and_shap(
         # [print(c) for c in sitedata.columns if "LE" in c];
 
         # Get variable names for this site
-        swin_var = site['SWIN_VAR']
-        ta_var = site['TA_VAR']
-        vpd_var = site['VPD_VAR']
-        swc_var = site['SWC_VAR']
+        swin_var = str(site['SWIN_VAR'])
+        ta_var = str(site['TA_VAR'])
+        vpd_var = str(site['VPD_VAR'])
+        swc_var = str(site['SWC_VAR'])
         swinpot_var = 'SW_IN_POT'
 
         if swc_var == '-MISSING-':
@@ -56,8 +56,9 @@ def train_xgboost_models_and_shap(
         subset = sitedata[[fluxcol, ta_var, vpd_var, swc_var, swin_var]].copy()
 
         # Convert target to z-scores, ignoring NaNs
-        # subset[fluxcol] = subset[fluxcol].apply(lambda x: zscore(x, nan_policy='omit'))
-        subset[fluxcol] = subset[fluxcol].transform(lambda x: (x - x.mean()) / x.std())
+        from scipy.stats import zscore
+        subset[fluxcol] = subset[fluxcol].apply(lambda x: zscore(x, nan_policy='omit'))
+        # subset[fluxcol] = subset[fluxcol].transform(lambda x: (x - x.mean()) / x.std())
         # subset = subset.apply(lambda x: zscore(x, nan_policy='omit'))
 
         # Add original flux quality flag and potential radiation

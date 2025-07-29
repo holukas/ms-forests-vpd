@@ -40,6 +40,7 @@ def basic_stats(siteinfo_df) -> pd.DataFrame:
         siteinfo_df.loc[ix, 'PREC/YR'] = sitedata[prec_var].sum() / n_years
         siteinfo_df.loc[ix, 'PREC_N_RECORDS'] = sitedata[prec_var].dropna().count()
 
+        # SWC is completely missing for some sites
         if site['SWC_VAR'] != '-MISSING-':
             siteinfo_df.loc[ix, 'SWC_AVG'] = sitedata[swc_var].mean()
             siteinfo_df.loc[ix, 'SWC_N_RECORDS'] = sitedata[swc_var].dropna().count()

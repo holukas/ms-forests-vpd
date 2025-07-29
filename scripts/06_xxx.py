@@ -1,6 +1,8 @@
 """
 Train XGBoost model for each site and save SHAP values to file.
 """
+from pathlib import Path
+import numpy as np
 import diive as dv
 import pandas as pd
 
@@ -29,35 +31,45 @@ aggfunc = 'mean'
 df_all = None
 
 for ix, site in siteinfo_df.iterrows():
+
+    if site['SITE'] != 'DE-Msr':
+        continue
+
     print(f"\nLoading data for site #{ix + 1} {site['SITE']} ...")
     filepath = site['_FILEPATH_SHAP_VALUES']
 
     if filepath == '-MISSING-':
         continue
 
+    # if ix > 1:
+    #     break
+
+
+
     shapvals_df = dv.load_parquet(filepath)
-    print(shapvals_df)
+    # print(shapvals_df)
 
     q = dv.ga(
         x=shapvals_df[x],
         y=shapvals_df[y],
         z=shapvals_df[z],
-        # binning_type='custom',
-        # custom_x_bins=list(np.arange(-8, 10, .5)),
-        # custom_y_bins=list(np.arange(-8, 10, .5)),
-        binning_type='quantiles',
-        n_bins=20,
+        binning_type='custom',
+        custom_x_bins=list(np.arange(-8, 10, .5)),
+        custom_y_bins=list(np.arange(-8, 10, .5)),
+        # binning_type='quantiles',
+        # n_bins=20,
         min_n_vals_per_bin=1,
         aggfunc=aggfunc
     )
-    print(q.df_agg_wide)
+    # print(q.df_agg_wide)
+    print(q.df_agg_long['BIN_VPD_F'].unique())
 
     hm = dv.heatmapxyz(
         x=q.df_agg_long[binx],
         y=q.df_agg_long[biny],
         z=q.df_agg_long[z],
         title=site['SITE'],
-        cb_digits_after_comma=0,
+        cb_digits_after_comma=1,
         xlabel=f'{binx} (percentile)',
         ylabel=f'{biny} (percentile)',
         zlabel=f'{aggfunc} {z} (z-score)',
@@ -72,20 +84,27 @@ for ix, site in siteinfo_df.iterrows():
         df_all = pd.concat([df_all, q.df_agg_long], axis=0)
 
 df_all['BIN_COMBINED_STR'] = (df_all[binx].astype(str) + "+" + df_all[biny].astype(str))
-df_all.groupby('BIN_COMBINED_STR').mean()
+df_all = df_all.groupby('BIN_COMBINED_STR').mean()
 
-print(df_all)
+outfilepath = dv.save_parquet(
+    filename=f"2_ALLSITES_shap_values_mean",
+    data=df_all,
+    outpath=Path(settings['DIR_DATA_OUT_SHAPVALS_SITE']))
+# print(f"Saved SHAP values across all files as mean to file {outfilepath}.")
+df_all.to_csv(outfilepath.replace('.parquet', '.csv'))
 
-hm = dv.heatmapxyz(
-    title="All sites",
-    x=df_all[binx],
-    y=df_all[biny],
-    z=df_all[z],
-    cb_digits_after_comma=0,
-    xlabel=f'{binx} (percentile)',
-    ylabel=f'{biny} (percentile)',
-    zlabel=f'{aggfunc} {z} (z-score)',
-    # vmin=-3,
-    # vmax=3
-)
-hm.show()
+# print(df_all)
+
+# hm = dv.heatmapxyz(
+#     title="All sites",
+#     x=df_all[binx],
+#     y=df_all[biny],
+#     z=df_all[z],
+#     cb_digits_after_comma=1,
+#     xlabel=f'{binx} (percentile)',
+#     ylabel=f'{biny} (percentile)',
+#     zlabel=f'{aggfunc} {z} (z-score)',
+#     # vmin=-3,
+#     # vmax=3
+# )
+# hm.show()
