@@ -55,19 +55,19 @@ for ix, siteconfig in siteinfo_df.iterrows():
     # print(q.df_agg_wide)
     # print(q.df_agg_long['BIN_VPD_F'].unique())
 
-    # hm = dv.heatmapxyz(
-    #     x=q.df_agg_long[binx],
-    #     y=q.df_agg_long[biny],
-    #     z=q.df_agg_long[z],
-    #     title=site['SITE'],
-    #     cb_digits_after_comma=1,
-    #     xlabel=f'{binx} (z-score)',
-    #     ylabel=f'{biny} (z-score)',
-    #     zlabel=f'{aggfunc} {z} (z-score)',
-    #     # vmin=-3,
-    #     # vmax=3
-    # )
-    # hm.show()
+    hm = dv.heatmapxyz(
+        x=q.df_agg_long[binx],
+        y=q.df_agg_long[biny],
+        z=q.df_agg_long[z],
+        title=siteconfig['SITE'],
+        cb_digits_after_comma=1,
+        xlabel=f'{binx} (z-score)',
+        ylabel=f'{biny} (z-score)',
+        zlabel=f'{aggfunc} {z} (z-score)',
+        # vmin=-3,
+        # vmax=3
+    )
+    hm.show()
 
     if ix == 0:
         df_all = q.df_agg_long.copy()
