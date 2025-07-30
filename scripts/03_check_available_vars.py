@@ -1,16 +1,20 @@
-import src.files as files
-import src.stats as stats
 from diive.core.io.files import load_parquet
 
-# Load site info
-siteinfo_df = files.load_siteinfo(filename="02_siteinfo.csv")
+import src.files as files
 
 # Load settings
 settings = files.read_settings_file("../config/settings.yaml")
 
+# Load site info
+siteinfo_df = files.load_siteinfo(settings)
+
 required_vars = dict(
     NEE_VAR='NEE_VUT_50',
     NEE_QC_VAR='NEE_VUT_50_QC',
+    LE_VAR='LE_F_MDS',
+    LE_QC_VAR='LE_F_MDS_QC',
+    GPP_VAR='GPP_NT_VUT_50',
+    RECO_VAR='RECO_NT_VUT_50',
     SWIN_VAR='SW_IN_F',
     TA_VAR='TA_F',
     VPD_VAR='VPD_F',
@@ -18,8 +22,8 @@ required_vars = dict(
     SWC_VAR=['SWC_F_MDS_1', 'SWC_F_MDS_2']
 )
 
-_df = siteinfo_df.copy()
-for ix, site in _df.iterrows():
+_siteinfo_df = siteinfo_df.copy()
+for ix, site in _siteinfo_df.iterrows():
     print(f"\nLoading data for site #{ix + 1} {site['SITE']} ...")
     filepath = site['_FILEPATH_PARQUET']
     sitedata = load_parquet(filepath)
@@ -44,4 +48,4 @@ for ix, site in _df.iterrows():
         siteinfo_df.loc[ix, var_key] = expected_col_name
 
 # Save updated site info
-files.save_siteinfo(siteinfo_df=siteinfo_df, filename="03_siteinfo.csv")
+files.save_siteinfo(siteinfo_df=siteinfo_df, settings=settings)

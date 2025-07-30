@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import griddata
 
+
 import src.files as files
 
 settings = files.read_settings_file("../config/settings.yaml")
@@ -46,8 +47,8 @@ z_scatter = df[z].values
 # The number of points (e.g., 100j) determines the resolution of your grid.
 # Adjust min/max based on the actual range of your data.
 grid_x, grid_y = np.mgrid[
-                 x_scatter.min():x_scatter.max():2000j,
-                 y_scatter.min():y_scatter.max():2000j
+                 x_scatter.min():x_scatter.max():100j,
+                 y_scatter.min():y_scatter.max():100j
                  ]
 
 # Interpolate the SHAP values onto the new grid
@@ -81,7 +82,7 @@ cbar = fig.colorbar(contourf_plot, ax=ax, label='mean VPD_F_SHAPVALS (z-score)')
 #   0.5: Significant positive influence (VPD becomes a major driver, likely stress)
 #   1.0: Very strong positive influence (extreme VPD stress/control)
 # Adjust these values based on your ecological understanding and statistical analysis of the SHAP values.
-critical_shap_levels = [0, 0.5, 1]
+critical_shap_levels = [-0.5, 0, 0.5, 1]
 
 # Filter out levels that are outside the range of the interpolated data to avoid errors
 valid_critical_levels = [
@@ -96,7 +97,7 @@ if valid_critical_levels:
         grid_x, grid_y, grid_z,
         levels=valid_critical_levels,
         colors='black',  # Color of the lines
-        linestyles='-',  # Style of the lines (dashed)
+        linestyles='--',  # Style of the lines (dashed)
         linewidths=2  # Thickness of the lines
     )
 

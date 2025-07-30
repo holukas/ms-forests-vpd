@@ -8,43 +8,34 @@ import numpy as np
 import pandas as pd
 
 import src.files as files
+from common import get_variable_names
 
 # Load settings
 settings = files.read_settings_file("../config/settings.yaml")
 
 # Load site info
-siteinfo_df = files.load_siteinfo(filename="06_siteinfo.csv")
+siteinfo_df = files.load_siteinfo(settings)
 
 df_all = None
 
 for ix, siteconfig in siteinfo_df.iterrows():
 
     # Get variable names for this site
-    nee_var = str(siteconfig['NEE_VAR'])
-    swin_var = str(siteconfig['SWIN_VAR'])
-    ta_var = str(siteconfig['TA_VAR'])
-    vpd_var = str(siteconfig['VPD_VAR'])
-    swc_var = str(siteconfig['SWC_VAR'])
+    varnames = get_variable_names(siteconfig)
 
-    x = ta_var
-    y = vpd_var
-    z = f"{vpd_var}_SHAPVALS"
+    x = varnames['ta_var']
+    y = varnames['vpd_var']
+    z = f"{varnames['vpd_var']}_SHAPVALS"
 
     binx = f"BIN_{x}"
     biny = f"BIN_{y}"
     aggfunc = 'median'
-
-    # if site['SITE'] != 'DE-Msr':
-    #     continue
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
     filepath = siteconfig['_FILEPATH_SHAP_VALUES']
 
     if filepath == '-MISSING-':
         continue
-
-    # if ix > 1:
-    #     break
 
     shapvals_df = dv.load_parquet(filepath)
     # print(shapvals_df)

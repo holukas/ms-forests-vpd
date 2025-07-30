@@ -7,9 +7,10 @@ import shap
 import xgboost as xgb
 from sklearn.metrics import mean_squared_error
 
+from common import get_variable_names
+
 
 def train_xgboost_models_and_shap(settings: dict, siteinfo_df: pd.DataFrame, siteconfig, ix) -> pd.DataFrame:
-
     # Writing to a file (overwrites if file exists, creates if not)
     modelstxt = Path(settings['DIR_DATA_OUT_SHAPVALS_SITE']) / "1_models_xgboost.txt"
     with open(modelstxt, 'w') as file:
@@ -30,21 +31,16 @@ def train_xgboost_models_and_shap(settings: dict, siteinfo_df: pd.DataFrame, sit
     # [print(c) for c in sitedata.columns if "LE" in c];
 
     # Get variable names for this site
-    nee_var = str(siteconfig['NEE_VAR'])
-    swin_var = str(siteconfig['SWIN_VAR'])
-    ta_var = str(siteconfig['TA_VAR'])
-    vpd_var = str(siteconfig['VPD_VAR'])
-    swc_var = str(siteconfig['SWC_VAR'])
-
-
+    varnames = get_variable_names(siteconfig)
 
     print(f"Records: {len(subset)}")
 
     # Target and features
     # features = [tacol, vpdcol, swincol]
-    features = [ta_var, vpd_var, swc_var, swin_var]
+    features = [varnames['ta_var'], varnames['vpd_var'], varnames['swc_var'], varnames['swin_var']]
     X = subset[features]
-    y = subset[nee_var]
+    # y = subset[varnames['le_var']]
+    y = subset[varnames['nee_var']]
 
     # Initialize XGBoost Regressor
     # objective='reg:squarederror' for standard regression
@@ -85,8 +81,10 @@ def train_xgboost_models_and_shap(settings: dict, siteinfo_df: pd.DataFrame, sit
     shapdf['SUM'] = shapdf.sum(axis=1)
     shapdf['EXPECTED'] = expected_value
     shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'].add(shapdf['SUM'])
-    shapdf[nee_var] = y.copy()
-    shapdf[f'{nee_var}_PRED'] = y_pred.copy()
+    # shapdf[varnames['le_var']] = y.copy()
+    shapdf[varnames['nee_var']] = y.copy()
+    # shapdf[f"{varnames['le_var']}_PRED"] = y_pred.copy()
+    shapdf[f"{varnames['nee_var']}_PRED"] = y_pred.copy()
 
     # Merge SHAP values with measured
     merged = pd.concat([X, shapdf], axis=1)

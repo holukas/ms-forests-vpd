@@ -7,7 +7,7 @@ import src.files as files
 settings = files.read_settings_file("../config/settings.yaml")
 
 # Load site info
-siteinfo_df = files.load_siteinfo(filename="04_siteinfo.csv")
+siteinfo_df = files.load_siteinfo(settings)
 
 _siteinfo_df = siteinfo_df.copy()
 for ix, siteconfig in _siteinfo_df.iterrows():
@@ -19,4 +19,4 @@ for ix, siteconfig in _siteinfo_df.iterrows():
     )
 
 # Save updated site info
-files.save_siteinfo(siteinfo_df=siteinfo_df, filename="05_siteinfo.csv")
+files.save_siteinfo(siteinfo_df=siteinfo_df, settings=settings)
