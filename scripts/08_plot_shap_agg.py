@@ -9,6 +9,7 @@ import src.files as files
 
 settings = files.read_settings_file("../config/settings.yaml")
 
+swincol = 'SW_IN_F'
 tacol = 'TA_F'
 vpdcol = 'VPD_F'
 
@@ -18,7 +19,7 @@ z = f"{vpdcol}_SHAPVALS"
 
 binx = f"BIN_{x}"
 biny = f"BIN_{y}"
-aggfunc = 'mean'
+aggfunc = 'median'
 
 filepath = Path(settings['DIR_DATA_OUT_SHAPVALS_SITE']) / "2_ALLSITES_shap_values_mean.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)

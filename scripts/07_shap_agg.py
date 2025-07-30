@@ -2,8 +2,9 @@
 Train XGBoost model for each site and save SHAP values to file.
 """
 from pathlib import Path
-import numpy as np
+
 import diive as dv
+import numpy as np
 import pandas as pd
 
 import src.files as files
@@ -14,37 +15,36 @@ settings = files.read_settings_file("../config/settings.yaml")
 # Load site info
 siteinfo_df = files.load_siteinfo(filename="06_siteinfo.csv")
 
-tacol = 'TA_F'
-vpdcol = 'VPD_F'
-swccol = 'SWC_F_MDS_1'
-fluxcol = 'NEE_VUT_50'
-swincol = "SW_IN_F"
-
-x = tacol
-y = vpdcol
-z = f"{vpdcol}_SHAPVALS"
-
-binx = f"BIN_{x}"
-biny = f"BIN_{y}"
-aggfunc = 'mean'
-
 df_all = None
 
-for ix, site in siteinfo_df.iterrows():
+for ix, siteconfig in siteinfo_df.iterrows():
+
+    # Get variable names for this site
+    nee_var = str(siteconfig['NEE_VAR'])
+    swin_var = str(siteconfig['SWIN_VAR'])
+    ta_var = str(siteconfig['TA_VAR'])
+    vpd_var = str(siteconfig['VPD_VAR'])
+    swc_var = str(siteconfig['SWC_VAR'])
+
+    x = ta_var
+    y = vpd_var
+    z = f"{vpd_var}_SHAPVALS"
+
+    binx = f"BIN_{x}"
+    biny = f"BIN_{y}"
+    aggfunc = 'median'
 
     # if site['SITE'] != 'DE-Msr':
     #     continue
 
-    print(f"\nLoading data for site #{ix + 1} {site['SITE']} ...")
-    filepath = site['_FILEPATH_SHAP_VALUES']
+    print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
+    filepath = siteconfig['_FILEPATH_SHAP_VALUES']
 
     if filepath == '-MISSING-':
         continue
 
     # if ix > 1:
     #     break
-
-
 
     shapvals_df = dv.load_parquet(filepath)
     # print(shapvals_df)
@@ -64,19 +64,19 @@ for ix, site in siteinfo_df.iterrows():
     # print(q.df_agg_wide)
     # print(q.df_agg_long['BIN_VPD_F'].unique())
 
-    hm = dv.heatmapxyz(
-        x=q.df_agg_long[binx],
-        y=q.df_agg_long[biny],
-        z=q.df_agg_long[z],
-        title=site['SITE'],
-        cb_digits_after_comma=1,
-        xlabel=f'{binx} (z-score)',
-        ylabel=f'{biny} (z-score)',
-        zlabel=f'{aggfunc} {z} (z-score)',
-        # vmin=-3,
-        # vmax=3
-    )
-    hm.show()
+    # hm = dv.heatmapxyz(
+    #     x=q.df_agg_long[binx],
+    #     y=q.df_agg_long[biny],
+    #     z=q.df_agg_long[z],
+    #     title=site['SITE'],
+    #     cb_digits_after_comma=1,
+    #     xlabel=f'{binx} (z-score)',
+    #     ylabel=f'{biny} (z-score)',
+    #     zlabel=f'{aggfunc} {z} (z-score)',
+    #     # vmin=-3,
+    #     # vmax=3
+    # )
+    # hm.show()
 
     if ix == 0:
         df_all = q.df_agg_long.copy()
@@ -94,5 +94,3 @@ outfilepath = dv.save_parquet(
 df_all.to_csv(outfilepath.replace('.parquet', '.csv'))
 
 # print(df_all)
-
-
