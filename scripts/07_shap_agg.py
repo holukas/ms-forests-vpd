@@ -45,11 +45,11 @@ for ix, siteconfig in siteinfo_df.iterrows():
         y=shapvals_df[y],
         z=shapvals_df[z],
         binning_type='custom',
-        custom_x_bins=list(np.arange(-8, 10, .1)),
-        custom_y_bins=list(np.arange(-8, 10, .1)),
+        custom_x_bins=list(np.arange(-8, 10, .05)),
+        custom_y_bins=list(np.arange(-8, 10, .05)),
         # binning_type='quantiles',
         # n_bins=20,
-        min_n_vals_per_bin=1,
+        min_n_vals_per_bin=3,
         aggfunc=aggfunc
     )
     # print(q.df_agg_wide)

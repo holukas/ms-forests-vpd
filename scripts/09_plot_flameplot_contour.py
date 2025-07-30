@@ -38,29 +38,32 @@ df.dropna(subset=[binx, biny, z], inplace=True)
 
 # hexbin returns a PolyCollection and a ColorbarBase.
 fig, ax = plt.subplots(figsize=(10, 8))
+ax.set_facecolor("gray")
 
-hb = ax.hexbin(df[binx], df[biny], C=df[z], gridsize=40, cmap='RdYlBu_r',
+hb = ax.hexbin(df[binx], df[biny], C=df[z], gridsize=50, cmap='RdYlBu_r',
                reduce_C_function=np.median)
 cbar = fig.colorbar(hb, ax=ax, label='z')
 
-# Get the paths (vertices) and values of each hexagon
-paths = hb.get_paths()
-values = hb.get_array()
-
-# Define a threshold to highlight bins
-threshold = np.percentile(values, 80)  # Highlight top 20% by count
-
-# Create a new PolyCollection for the highlighted outlines
-highlighted_verts = []
-for i, count in enumerate(values):
-    if count >= threshold:
-        highlighted_verts.append(paths[i].vertices)
+# # Get the paths (vertices) and values of each hexagon
+# paths = hb.get_paths()
+# values = hb.get_array()
+#
+# # Define a threshold to highlight bins
+# threshold = np.percentile(values, 80)  # Highlight top 20% by count
+#
+# # Create a new PolyCollection for the highlighted outlines
+# highlighted_verts = []
+# for i, count in enumerate(values):
+#     if count >= threshold:
+#         highlighted_verts.append(paths[i].vertices)
 
 # Customize plot
 ax.set_title('Interactive Thresholds of VPD Influence on NEE')
 ax.set_xlabel(f'{binx} (z-score)')
 ax.set_ylabel(f'{biny} (z-score)')
 ax.set_aspect('equal')  # Or 'equal' if physical units require it
+ax.axhline(y=0, color='black', linestyle='-')
+ax.axvline(x=0, color='black', linestyle='-')
 
 # Add grid lines
 # plt.grid(True, linestyle=':', alpha=0.6)
