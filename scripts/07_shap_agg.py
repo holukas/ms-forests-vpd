@@ -40,34 +40,41 @@ for ix, siteconfig in siteinfo_df.iterrows():
     shapvals_df = dv.load_parquet(filepath)
     # print(shapvals_df)
 
+    custom_x_bins = list(np.arange(-8, 10, .05))
+    rounded_custom_x_bins_float = [round(num, 2) for num in custom_x_bins]
+    custom_y_bins = list(np.arange(-8, 10, .05))
+    rounded_custom_y_bins_float = [round(num, 2) for num in custom_y_bins]
+
+
     q = dv.ga(
         x=shapvals_df[x],
         y=shapvals_df[y],
         z=shapvals_df[z],
         binning_type='custom',
-        custom_x_bins=list(np.arange(-8, 10, .05)),
-        custom_y_bins=list(np.arange(-8, 10, .05)),
+        custom_x_bins=rounded_custom_x_bins_float,
+        custom_y_bins=rounded_custom_y_bins_float,
         # binning_type='quantiles',
-        # n_bins=20,
+        # binning_type='equal_width',
+        n_bins=20,
         min_n_vals_per_bin=3,
         aggfunc=aggfunc
     )
     # print(q.df_agg_wide)
     # print(q.df_agg_long['BIN_VPD_F'].unique())
 
-    hm = dv.heatmapxyz(
-        x=q.df_agg_long[binx],
-        y=q.df_agg_long[biny],
-        z=q.df_agg_long[z],
-        title=siteconfig['SITE'],
-        cb_digits_after_comma=1,
-        xlabel=f'{binx} (z-score)',
-        ylabel=f'{biny} (z-score)',
-        zlabel=f'{aggfunc} {z} (z-score)',
-        # vmin=-3,
-        # vmax=3
-    )
-    hm.show()
+    # hm = dv.heatmapxyz(
+    #     x=q.df_agg_long[binx],
+    #     y=q.df_agg_long[biny],
+    #     z=q.df_agg_long[z],
+    #     title=siteconfig['SITE'],
+    #     cb_digits_after_comma=1,
+    #     xlabel=f'{binx} (z-score)',
+    #     ylabel=f'{biny} (z-score)',
+    #     zlabel=f'{aggfunc} {z} (z-score)',
+    #     # vmin=-3,
+    #     # vmax=3
+    # )
+    # hm.show()
 
     if ix == 0:
         df_all = q.df_agg_long.copy()

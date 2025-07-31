@@ -40,8 +40,8 @@ df.dropna(subset=[binx, biny, z], inplace=True)
 fig, ax = plt.subplots(figsize=(10, 8))
 ax.set_facecolor("gray")
 
-hb = ax.hexbin(df[binx], df[biny], C=df[z], gridsize=50, cmap='RdYlBu_r',
-               reduce_C_function=np.median)
+hb = ax.hexbin(df[binx], df[biny], C=df[z], gridsize=40, cmap='RdYlBu_r',
+               reduce_C_function=np.median, mincnt=10)
 cbar = fig.colorbar(hb, ax=ax, label='z')
 
 # # Get the paths (vertices) and values of each hexagon

@@ -16,8 +16,8 @@ ecosystems = settings['ECOSYSTEMS']
 site_info_ameriflux = sites.get_site_info_ameriflux(
     pattern_amf=settings['PATTERN_DIR_AMF'],
     infofile_amf=settings['INFOFILE_AMF'],
-    searchdir=TESTDIR  # todo testing
-    # searchdir=settings['DIR_DATA_SOURCEFILES_AMF']
+    # searchdir=TESTDIR  # todo testing
+    searchdir=settings['DIR_DATA_SOURCEFILES_AMF']
 )
 # print(site_info_ameriflux)
 
@@ -25,16 +25,16 @@ site_info_ameriflux = sites.get_site_info_ameriflux(
 site_info_fxn = sites.get_site_info_fxn(
     pattern_fxn=settings['PATTERN_DIR_FXN'],
     infofile_fxn=settings['INFOFILE_FXN'],
-    searchdir=TESTDIR  # todo testing
-    # searchdir=settings['DIR_DATA_SOURCEFILES_FXN']
+    # searchdir=TESTDIR  # todo testing
+    searchdir=settings['DIR_DATA_SOURCEFILES_FXN']
 )
 # print(site_info_fxn)
 
 # ICOS
 site_info_icos = sites.get_site_info_icos(
     pattern_icos=settings['PATTERN_DIR_ICOS'],
-    searchdir=TESTDIR  # todo testing
-    # searchdir=settings['DIR_DATA_SOURCEFILES_ICOS']
+    # searchdir=TESTDIR  # todo testing
+    searchdir=settings['DIR_DATA_SOURCEFILES_ICOS']
 )
 # print(site_info_icos)
 
