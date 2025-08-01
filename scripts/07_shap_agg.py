@@ -40,11 +40,11 @@ for ix, siteconfig in siteinfo_df.iterrows():
     shapvals_df = dv.load_parquet(filepath)
     # print(shapvals_df)
 
-    custom_x_bins = list(np.arange(-8, 10, .05))
-    rounded_custom_x_bins_float = [round(num, 2) for num in custom_x_bins]
-    custom_y_bins = list(np.arange(-8, 10, .05))
-    rounded_custom_y_bins_float = [round(num, 2) for num in custom_y_bins]
-
+    # Round custom bins for exactly two digits after the comma
+    custom_x_bins = list(np.arange(-8, 10, .2))
+    rounded_custom_x_bins_float = [round(num, 1) for num in custom_x_bins]
+    custom_y_bins = list(np.arange(-8, 10, .2))
+    rounded_custom_y_bins_float = [round(num, 1) for num in custom_y_bins]
 
     q = dv.ga(
         x=shapvals_df[x],
@@ -55,8 +55,8 @@ for ix, siteconfig in siteinfo_df.iterrows():
         custom_y_bins=rounded_custom_y_bins_float,
         # binning_type='quantiles',
         # binning_type='equal_width',
-        n_bins=20,
-        min_n_vals_per_bin=3,
+        # n_bins=20,
+        min_n_vals_per_bin=3,  # Number of 30MIN values
         aggfunc=aggfunc
     )
     # print(q.df_agg_wide)
@@ -81,14 +81,37 @@ for ix, siteconfig in siteinfo_df.iterrows():
     else:
         df_all = pd.concat([df_all, q.df_agg_long], axis=0)
 
+    # # TODO testing --------------------
+    # # _df_all = df_all.copy()
+    # # _df_all['BIN_COMBINED_STR'] = (_df_all[binx].astype(str) + "+" + _df_all[biny].astype(str))
+    # # _df_all = _df_all.groupby('BIN_COMBINED_STR').median()
+    # hm = dv.heatmapxyz(
+    #     title="All sites",
+    #     x=df_all[binx],
+    #     y=df_all[biny],
+    #     z=df_all[z],
+    #     cb_digits_after_comma=1,
+    #     xlabel=f'{binx} (z-score)',
+    #     ylabel=f'{biny} (z-score)',
+    #     zlabel=f'{aggfunc} {z} (z-score)',
+    #     # vmin=-3,
+    #     # vmax=3
+    # )
+    # hm.show()
+    # print("X")
+    # # TODO testing --------------------
+
 df_all['BIN_COMBINED_STR'] = (df_all[binx].astype(str) + "+" + df_all[biny].astype(str))
-df_all = df_all.groupby('BIN_COMBINED_STR').mean()
+df_all_median = df_all.groupby('BIN_COMBINED_STR').median()
+df_all_counts = df_all.groupby('BIN_COMBINED_STR').count()
+
+df_all_median[f'{z}_COUNTS'] = df_all_counts[z].copy()
 
 outfilepath = dv.save_parquet(
-    filename=f"2_ALLSITES_shap_values_mean",
-    data=df_all,
+    filename=f"2_ALLSITES_shap_values_median",
+    data=df_all_median,
     outpath=Path(settings['DIR_DATA_OUT_SHAPVALS_SITE']))
 # print(f"Saved SHAP values across all files as mean to file {outfilepath}.")
-df_all.to_csv(outfilepath.replace('.parquet', '.csv'))
+df_all_median.to_csv(outfilepath.replace('.parquet', '.csv'))
 
 # print(df_all)

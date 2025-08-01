@@ -25,23 +25,28 @@ z = f"{vpdcol}_SHAPVALS"
 binx = f"BIN_{x}"
 biny = f"BIN_{y}"
 
-filepath = Path(settings['DIR_DATA_OUT_SHAPVALS_SITE']) / "2_ALLSITES_shap_values_mean.parquet"
-df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
+filepath = Path(settings['DIR_DATA_OUT_SHAPVALS_SITE']) / "2_ALLSITES_shap_values_median.parquet"
+shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
+
+keeplocs = shapvals_df['VPD_F_SHAPVALS_COUNTS'] > 30
+shapvals_df = shapvals_df[keeplocs].copy()
 
 # Convert relevant columns to numeric, coercing errors to NaN
-df[binx] = pd.to_numeric(df[binx], errors='coerce')
-df[biny] = pd.to_numeric(df[biny], errors='coerce')
-df[z] = pd.to_numeric(df[z], errors='coerce')
+shapvals_df[binx] = pd.to_numeric(shapvals_df[binx], errors='coerce')
+shapvals_df[biny] = pd.to_numeric(shapvals_df[biny], errors='coerce')
+shapvals_df[z] = pd.to_numeric(shapvals_df[z], errors='coerce')
 
 # Drop rows with NaN values in the columns
-df.dropna(subset=[binx, biny, z], inplace=True)
+shapvals_df.dropna(subset=[binx, biny, z], inplace=True)
 
 # hexbin returns a PolyCollection and a ColorbarBase.
 fig, ax = plt.subplots(figsize=(10, 8))
 ax.set_facecolor("gray")
 
-hb = ax.hexbin(df[binx], df[biny], C=df[z], gridsize=40, cmap='RdYlBu_r',
-               reduce_C_function=np.median, mincnt=10)
+hb = ax.hexbin(shapvals_df[binx], shapvals_df[biny], C=shapvals_df[z], gridsize=20, cmap='RdYlBu_r',
+               # reduce_C_function=np.count_nonzero,
+               reduce_C_function=np.median,
+               mincnt=1)
 cbar = fig.colorbar(hb, ax=ax, label='z')
 
 # # Get the paths (vertices) and values of each hexagon
