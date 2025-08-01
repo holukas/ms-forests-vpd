@@ -32,7 +32,7 @@ for ix, siteconfig in siteinfo_df.iterrows():
     aggfunc = 'median'
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
-    filepath = siteconfig['_FILEPATH_SHAP_VALUES']
+    filepath = siteconfig['_FILEPATH_SHAP_VALUES_STANDARD']
 
     if filepath == '-MISSING-':
         continue
@@ -56,7 +56,7 @@ for ix, siteconfig in siteinfo_df.iterrows():
         # binning_type='quantiles',
         # binning_type='equal_width',
         # n_bins=20,
-        min_n_vals_per_bin=3,  # Number of 30MIN values
+        min_n_vals_per_bin=1,  # Number of 30MIN values
         aggfunc=aggfunc
     )
     # print(q.df_agg_wide)
@@ -102,15 +102,18 @@ for ix, siteconfig in siteinfo_df.iterrows():
     # # TODO testing --------------------
 
 df_all['BIN_COMBINED_STR'] = (df_all[binx].astype(str) + "+" + df_all[biny].astype(str))
-df_all_median = df_all.groupby('BIN_COMBINED_STR').median()
-df_all_counts = df_all.groupby('BIN_COMBINED_STR').count()
 
-df_all_median[f'{z}_COUNTS'] = df_all_counts[z].copy()
+df_all_median = df_all.groupby('BIN_COMBINED_STR').median()
+df_all_median[f'{z}_COUNTS'] = df_all.groupby('BIN_COMBINED_STR').count()[z].copy()
+df_all_median[f'{z}_P25'] = df_all.groupby('BIN_COMBINED_STR').quantile(0.25)[z].copy()
+df_all_median[f'{z}_P75'] = df_all.groupby('BIN_COMBINED_STR').quantile(0.75)[z].copy()
+
+
 
 outfilepath = dv.save_parquet(
     filename=f"2_ALLSITES_shap_values_median",
     data=df_all_median,
-    outpath=Path(settings['DIR_DATA_OUT_SHAPVALS_SITE']))
+    outpath=Path(settings['DIR_DATA_OUT_SHAPVALS_STANDARD']))
 # print(f"Saved SHAP values across all files as mean to file {outfilepath}.")
 df_all_median.to_csv(outfilepath.replace('.parquet', '.csv'))
 

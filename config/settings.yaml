@@ -3,7 +3,8 @@ DIR_DATA: ../data
 DIR_DATA_PARQUET: ../data/parquet/merged
 DIR_DATA_PARQUET_SUBSET: ../data/parquet/subset
 DIR_DATA_OUT: ../data/output
-DIR_DATA_OUT_SHAPVALS_SITE: ../data/output/04_shap_values_site
+DIR_DATA_OUT_SHAPVALS_STANDARD: ../data/output/shap_values_standard
+DIR_DATA_OUT_SHAPVALS_CONDITIONAL: ../data/output/shap_values_conditional
 
 # Files
 OUTFILE_SITEINFO: ../data/output/siteinfo.csv

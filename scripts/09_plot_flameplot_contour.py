@@ -25,10 +25,10 @@ z = f"{vpdcol}_SHAPVALS"
 binx = f"BIN_{x}"
 biny = f"BIN_{y}"
 
-filepath = Path(settings['DIR_DATA_OUT_SHAPVALS_SITE']) / "2_ALLSITES_shap_values_median.parquet"
+filepath = Path(settings['DIR_DATA_OUT_SHAPVALS_STANDARD']) / "2_ALLSITES_shap_values_median.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 
-keeplocs = shapvals_df['VPD_F_SHAPVALS_COUNTS'] > 30
+keeplocs = shapvals_df['VPD_F_SHAPVALS_COUNTS'] >= 30
 shapvals_df = shapvals_df[keeplocs].copy()
 
 # Convert relevant columns to numeric, coercing errors to NaN

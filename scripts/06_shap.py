@@ -16,7 +16,8 @@ for ix, siteconfig in _siteinfo_df.iterrows():
         settings=settings,
         siteinfo_df=siteinfo_df,
         siteconfig=siteconfig,
-        ix=ix
+        ix=ix,
+        conditional=False  # Use conditional SHAP instead of standard SHAP
     )
 
 # Save updated site info

@@ -4,7 +4,7 @@
 /data/source
 /data/_source_ALLFILES
 /data/parquet
-/data/output/04_shap_values_site/*.parquet
+/data/output/shap_values_standard/*.parquet
 
 *.xlsx
 

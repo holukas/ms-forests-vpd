@@ -1,82 +1,65 @@
-import matplotlib.pyplot as plt
+import pandas as pd
 import numpy as np
-from matplotlib.collections import PolyCollection
+import xgboost as xgb
+import shap
+import matplotlib.pyplot as plt
 
-# Generate more sample data to increase bin counts
-np.random.seed(42) # Use a fixed seed for reproducibility
-x = np.random.randn(20000) * 2 + 5 # Increased to 20,000 points
-y = np.random.randn(20000) * 1.5 + 3
+# Let's create a hypothetical dataset for this example
+np.random.seed(0)  # for reproducibility
+data = {
+    'vpd_zscore': np.concatenate([np.random.normal(loc=-1, scale=0.5, size=100), np.random.normal(loc=1.5, scale=0.5, size=100)]),
+    'temp_zscore': np.concatenate([np.random.normal(loc=-1, scale=0.5, size=100), np.random.normal(loc=1.5, scale=0.5, size=100)]),
+    'other_features': np.random.rand(200)
+}
+X = pd.DataFrame(data)
+y = 10 / (1 + np.exp(-2 * (X['vpd_zscore'] - X['temp_zscore']))) + np.random.normal(0, 0.5, 200)
 
-plt.figure(figsize=(10, 8))
+# Train an XGBoost model
+model = xgb.XGBRegressor(n_estimators=100, random_state=0).fit(X, y)
 
-# Create the hexbin plot
-hb = plt.hexbin(x, y,
-                gridsize=30,
-                cmap='viridis',
-                alpha=0.6,    # Make it semi-transparent
-                edgecolors='none', # No default edges
-                zorder=1      # Default zorder for PolyCollection is 1
-               )
+# Define a robust prediction wrapper to handle numpy arrays from shap.KernelExplainer
+def predict_wrapper(data_array):
+    # Convert numpy array back to a DataFrame with the original column names
+    data_df = pd.DataFrame(data_array, columns=X.columns)
+    return model.predict(data_df)
 
-# Get the paths (vertices) and counts of each hexagon
-paths = hb.get_paths()
-counts = hb.get_array()
+# 1. Standard SHAP (TreeExplainer)
+explainer_standard = shap.Explainer(model, X)
+shap_values_standard = explainer_standard(X.iloc[150:151, :])
 
-# --- Debugging: Print count statistics ---
-if len(counts) > 0:
-    min_count = counts.min()
-    max_count = counts.max()
-    avg_count = counts.mean()
-    median_count = np.median(counts) # Median can be more robust than mean for skewed data
+# 2. Conditional SHAP (KernelExplainer)
+background = shap.kmeans(X, 10).data
 
-    print(f"Hexbin Count Statistics:")
-    print(f"  Min Count: {min_count:.2f}")
-    print(f"  Max Count: {max_count:.2f}")
-    print(f"  Average Count: {avg_count:.2f}")
-    print(f"  Median Count: {median_count:.2f}")
-else:
-    print("No counts available from hexbin.")
-    plt.colorbar(hb, label='Hexbin Counts')
-    plt.title('Hexbin Plot (No Data for Highlighting)')
-    plt.xlabel('X-axis')
-    plt.ylabel('Y-axis')
-    plt.grid(True, linestyle=':', alpha=0.7)
-    plt.show()
-    exit() # Exit if no counts, no point in continuing
+# Pass our robust prediction wrapper to the explainer
+explainer_kernel = shap.KernelExplainer(predict_wrapper, background)
+shap_values_kernel = explainer_kernel.shap_values(X.iloc[150:151, :])
 
-# --- Adjusting the threshold calculation ---
-# Option 1: Use a lower percentile (e.g., 75th or 50th)
-# threshold = np.percentile(counts, 75) # Highlight top 25%
+# Get the SHAP values and feature names for a single instance
+instance_to_explain = X.iloc[150:151, :]
+shap_kernel = shap_values_kernel[0]
 
-# Option 2: Use a fixed number that you know will be met
-# This is good for testing the highlighting mechanism itself
-# For instance, if max_count is 20, try setting threshold to 5 or 10.
-# Let's try highlighting anything above the median count for now
-threshold = median_count
-print(f"Highlighting bins with counts >= {threshold:.2f} (Median based)")
+# --- Matplotlib Plotting ---
+fig, ax = plt.subplots(figsize=(10, 6))
 
+feature_names = X.columns
+index_to_plot = 0
 
-# Create a new PolyCollection for the highlighted outlines
-highlighted_verts = []
-for i, path in enumerate(paths):
-    if i < len(counts) and counts[i] >= threshold:
-        highlighted_verts.append(path.vertices)
+# Get the SHAP values for the instance
+shap_standard = shap_values_standard.values[index_to_plot]
 
-if highlighted_verts:
-    highlight_collection = PolyCollection(highlighted_verts,
-                                          edgecolors='red',
-                                          linewidths=2.5,
-                                          facecolors='none',
-                                          zorder=3)
-    plt.gca().add_collection(highlight_collection)
-    print(f"Added {len(highlighted_verts)} highlighted hexbins.")
-else:
-    print("No hexbins met the highlight threshold even after adjustment. Check data distribution.")
+# Create bar chart
+bar_width = 0.35
+index = np.arange(len(feature_names))
 
+bar1 = ax.bar(index, shap_standard, bar_width, label='Standard SHAP')
+bar2 = ax.bar(index + bar_width, shap_kernel, bar_width, label='Conditional SHAP')
 
-plt.colorbar(hb, label='Hexbin Counts')
-plt.title('Hexbin Plot with Specific Bins Highlighted (Threshold Adjusted)')
-plt.xlabel('X-axis')
-plt.ylabel('Y-axis')
-plt.grid(True, linestyle=':', alpha=0.7)
+# Customize plot
+ax.set_xlabel('Features')
+ax.set_ylabel('SHAP Value')
+ax.set_title('Comparison of Standard vs. Conditional SHAP Values')
+ax.set_xticks(index + bar_width / 2)
+ax.set_xticklabels(feature_names)
+ax.legend()
+plt.tight_layout()
 plt.show()
