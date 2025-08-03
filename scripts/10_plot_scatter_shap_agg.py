@@ -26,24 +26,20 @@ swincol = 'SW_IN_F'
 tacol = 'TA_F'
 vpdcol = 'VPD_F'
 
-x = tacol
-y = vpdcol
-z = f"{vpdcol}_SHAPVALS"
-
-binx = f"BIN_{x}"
-biny = f"BIN_{y}"
+x = f"BIN_{vpdcol}"
+y = f"{vpdcol}_SHAPVALS"
 aggfunc = 'median'
 
-filepath = Path(settings['DIR_DATA_OUT_SHAPVALS_STANDARD']) / "2_ALLSITES_shap_values_median.parquet"
+filepath = Path(settings['DIR_DATA_OUT_SHAPVALS_STANDARD']) / "3_AllSites_Aggregated_SHAPValues.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 
 n_sites_min = 20
-keeplocs = shapvals_df['VPD_F_SHAPVALS_COUNTS'] >= n_sites_min
+keeplocs = shapvals_df[f'{y}_COUNTS'] >= n_sites_min
 shapvals_df = shapvals_df[keeplocs].copy()
 
 # Extract the data from the DataFrame
-X_data = shapvals_df['BIN_VPD_F'].values
-Y_data = shapvals_df['VPD_F_SHAPVALS'].values
+X_data = shapvals_df[x].values
+Y_data = shapvals_df[y].values
 
 # Fit polynomial
 degree = 4
@@ -202,9 +198,9 @@ ax.text(x=1.7, y=-0.03, s='Positive effect\nincreased uptake or reduced release'
         fontsize=9, color='black', ha='left', va='top')
 
 # 426cb0
-ax.set_xlabel('VPD Z-score')
-ax.set_ylabel('SHAP value of VPD')
-# ax.set_title('Fitted Polynomial with DataFrame')
+ax.set_xlabel("Vapor pressure deficit (z-score)")
+ax.set_ylabel('SHAP value of VPD effect on NEE (z-score)')
+ax.set_title('The effect of VPD on CO$_2$ uptake and release', fontsize=14, pad=10, y=1.02)
 ax.axhline(y=0, color='black', linestyle='-', lw=1)
 ax.grid(False)
 ax.legend(frameon=False, loc='upper left')

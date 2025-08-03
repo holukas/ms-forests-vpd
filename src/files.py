@@ -66,7 +66,7 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     # Keep records where all vars available
     subset = subset.dropna()
 
-    # todo Convert z-scores, ignoring NaNs
+    # Convert z-scores, ignoring NaNs
     # z-scores are calculated from subset records
     subset = subset.apply(lambda x: zscore(x, nan_policy='omit'))
 

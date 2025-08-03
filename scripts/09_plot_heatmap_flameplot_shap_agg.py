@@ -14,6 +14,7 @@ settings = files.read_settings_file("../config/settings.yaml")
 swincol = 'SW_IN_F'
 tacol = 'TA_F'
 vpdcol = 'VPD_F'
+swccol = 'SWC_F_MDS_1'
 
 x = tacol
 y = vpdcol
@@ -23,11 +24,11 @@ binx = f"BIN_{x}"
 biny = f"BIN_{y}"
 aggfunc = 'median'
 
-filepath = Path(settings['DIR_DATA_OUT_SHAPVALS_STANDARD']) / "2_ALLSITES_shap_values_median.parquet"
+filepath = Path(settings['DIR_DATA_OUT_SHAPVALS_STANDARD']) / "3_AllSites_Aggregated_SHAPValues.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 
 n_sites_min = 20
-keeplocs = shapvals_df['VPD_F_SHAPVALS_COUNTS'] >= n_sites_min
+keeplocs = shapvals_df[f'{z}_COUNTS'] >= n_sites_min
 shapvals_df = shapvals_df[keeplocs].copy()
 
 # Heatmap
