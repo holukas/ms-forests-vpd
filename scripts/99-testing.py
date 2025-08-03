@@ -1,0 +1,198 @@
+from pathlib import Path
+
+import diive as dv
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.stats as stats
+
+import src.files as files
+
+settings = files.read_settings_file("../config/settings.yaml")
+
+swincol = 'SW_IN_F'
+tacol = 'TA_F'
+vpdcol = 'VPD_F'
+
+x = tacol
+y = vpdcol
+z = f"{vpdcol}_SHAPVALS"
+
+binx = f"BIN_{x}"
+biny = f"BIN_{y}"
+aggfunc = 'median'
+
+filepath = Path(settings['DIR_DATA_OUT_SHAPVALS_STANDARD']) / "2_ALLSITES_shap_values_median.parquet"
+shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
+
+n_sites_min = 20
+keeplocs = shapvals_df['VPD_F_SHAPVALS_COUNTS'] >= n_sites_min
+shapvals_df = shapvals_df[keeplocs].copy()
+
+# Extract the data from the DataFrame
+X_data = shapvals_df['BIN_VPD_F'].values
+Y_data = shapvals_df['VPD_F_SHAPVALS'].values
+
+# Fit polynomial
+degree = 4
+# poly_coeffs = np.polyfit(X_data, Y_data, degree)
+poly_coeffs, residuals, _, _, _ = np.polyfit(X_data, Y_data, degree, full=True)
+poly_func = np.poly1d(poly_coeffs)
+
+# Create x-range for plotting fitted curve and create fit values
+x_fit = np.linspace(X_data.min(), X_data.max(), 500)
+y_fit = poly_func(x_fit)
+
+# Calculate the prediction interval
+# ----------------------------------------------------
+n = len(X_data)  # Number of data points
+p = degree + 1  # Number of parameters (coefficients)
+alpha = 0.05  # 95% prediction interval
+
+# Calculate Mean Squared Error (MSE)
+mse = residuals[0] / (n - p)
+
+# Create Vandermonde matrix for the original data
+X_vander = np.vander(X_data, p)
+
+# Calculate the covariance matrix of the coefficients
+covariance_matrix = mse * np.linalg.inv(X_vander.T @ X_vander)
+
+# Create Vandermonde matrix for the fitted line
+x_fit_vander = np.vander(x_fit, p)
+
+# Calculate the standard error of the fitted line at each point
+se_fit = np.sqrt(np.diag(x_fit_vander @ covariance_matrix @ x_fit_vander.T))
+
+# Calculate the standard error for prediction intervals (adds the MSE)
+se_pred = np.sqrt(se_fit ** 2 + mse)
+
+# Get the t-statistic for a 95% confidence level
+t_value = stats.t.ppf(1 - alpha / 2, n - p)
+
+# Calculate the prediction interval bounds
+pi_upper = y_fit + t_value * se_pred
+pi_lower = y_fit - t_value * se_pred
+# ----------------------------------------------------
+
+fig, ax = plt.subplots(figsize=(8, 6))
+
+# Plot the original data and the fitted polynomial
+ax.scatter(X_data, Y_data, label=f'Aggregated site data (min. {n_sites_min} sites)',
+           alpha=0.3, s=40,
+           color="#6c757d",
+           # c=shapvals_df['BIN_TA_F'],
+           # cmap='RdYlBu_r',
+           edgecolors='none')
+
+# Plot fitted polynomial curve
+ax.plot(x_fit, y_fit,
+        label=f'Fitted {degree}th degree polynomial',
+        color='#004e98', linewidth=3)
+# label=rf'$y = {poly_coeffs[0]:.4f}x^4 - {poly_coeffs[1]:.4f}x^3 + {poly_coeffs[2]:.4f}x^2 + {poly_coeffs[3]:.4f}x - {poly_coeffs[4]:.4f}$'
+
+# Plot prediction interval
+ax.fill_between(x_fit, pi_lower, pi_upper, color='#004e98', alpha=0.1,
+                label='95% prediction interval')
+
+# Errorbars
+yerrlow = shapvals_df['VPD_F_SHAPVALS'].sub(shapvals_df['VPD_F_SHAPVALS_P25'])
+yerrhigh = shapvals_df['VPD_F_SHAPVALS_P75'].sub(shapvals_df['VPD_F_SHAPVALS'])
+yerr_iqr = [yerrlow.to_numpy(), yerrhigh.to_numpy()]
+ax.errorbar(X_data, Y_data, yerr=yerr_iqr, fmt='none', capsize=1, elinewidth=0,
+            ecolor='#6c757d', markerfacecolor='none', markersize=0, alpha=0.5)
+
+min_ix = np.argmin(y_fit)
+max_ix = np.argmax(y_fit)
+# Find value closest to "SHAP zero"
+idx = (np.abs(y_fit - 0)).argmin()
+
+# Plot the SHAP max point
+ax.scatter(x_fit[max_ix], y_fit[max_ix], marker='^',
+           alpha=1, s=120, c="white", zorder=99, edgecolors='#e63946', linewidths=2)
+
+# Plot the SHAP zero point
+ax.scatter(x_fit[idx], y_fit[idx],
+           alpha=1, s=100, c="white", zorder=99, edgecolors='#f77f00', linewidths=3)
+
+# Plot the SHAP min point
+ax.scatter(x_fit[min_ix], y_fit[min_ix], marker='v',
+           alpha=1, s=120, c="white", zorder=99, edgecolors='#66bb6a', linewidths=2)
+
+y_top = ax.get_ylim()[-1]
+y_bottom = ax.get_ylim()[0]
+ax.plot([x_fit[max_ix], x_fit[max_ix]], [y_bottom, y_fit[max_ix]], color='#e63946', linestyle='--', linewidth=1)
+ax.plot([x_fit[idx], x_fit[idx]], [y_bottom, y_fit[idx]], color='#f77f00', linestyle='--', linewidth=1)
+ax.plot([x_fit[min_ix], x_fit[min_ix]], [y_bottom, y_fit[min_ix]], color='#66bb6a', linestyle='--', linewidth=1)
+
+
+# Detect min/max value shown in plot, i.e. value +/- high/low y-error
+_temp = shapvals_df['VPD_F_SHAPVALS'].add(yerrhigh).max()
+_temp2 = shapvals_df['VPD_F_SHAPVALS'].sub(yerrlow).min()
+
+# Set a new y_top that is slightly higher to make room for text
+new_y_top = _temp + 0.1 * (_temp - _temp2)
+ax.set_ylim(_temp2, new_y_top)
+
+# Get the y-position for the text, slightly above the plotted points
+text_y_pos = y_fit[max_ix] + 0.05 * (_temp - _temp2)
+
+# Add text and connecting dashed lines for SHAP max, zero, and min
+ax.text(x_fit[max_ix], text_y_pos, f'SHAP max\n(x={x_fit[max_ix]:.2f})',
+        va='bottom', ha='center', color='#e63946', fontsize=9, linespacing=1.2)
+ax.plot([x_fit[max_ix], x_fit[max_ix]], [text_y_pos, y_fit[max_ix]], color='#e63946', linestyle='--', linewidth=1)
+
+ax.text(x_fit[idx], text_y_pos, f'SHAP zero\n(x={x_fit[idx]:.2f})',
+        va='bottom', ha='center', color='#f77f00', fontsize=9, linespacing=1.2)
+ax.plot([x_fit[idx], x_fit[idx]], [text_y_pos, y_fit[idx]], color='#f77f00', linestyle='--', linewidth=1)
+
+ax.text(x_fit[min_ix], text_y_pos, f'SHAP min\n(x={x_fit[min_ix]:.2f})',
+        va='bottom', ha='center', color='#66bb6a', fontsize=9, linespacing=1.2)
+ax.plot([x_fit[min_ix], x_fit[min_ix]], [text_y_pos, y_fit[min_ix]], color='#66bb6a', linestyle='--', linewidth=1)
+
+# Add an arrow to the fitted line
+# Find a point on the line to place the arrow.
+# Let's place it a little past the middle of the x-range.
+arrow_x = np.mean(x_fit) + 0.5
+arrow_y = poly_func(arrow_x)
+# Find a point slightly to the left to define the arrow direction
+tail_x = arrow_x - 0.1
+tail_y = poly_func(tail_x)
+# Calculate the angle of the line at this point to get the correct arrow orientation
+angle = np.arctan2(arrow_y - tail_y, arrow_x - tail_x) * 180 / np.pi
+ax.annotate('Fitted 4th degree polynomial',
+            xy=(arrow_x, arrow_y),
+            xytext=(arrow_x + 0.5, arrow_y + 0.2),  # Adjust text position as needed
+            arrowprops=dict(arrowstyle="->", color='#004e98', lw=1.5),
+            fontsize=10, color='#004e98', ha='left', va='center')
+
+# Add arrow to one of the IQR data points
+iqr_point_index = 50 # Choose a representative index
+iqr_x = X_data[iqr_point_index]
+iqr_y = Y_data[iqr_point_index]
+iqr_yerr_high = yerr_iqr[1][iqr_point_index]
+
+ax.annotate('IQR for site data',
+            xy=(iqr_x, iqr_y + iqr_yerr_high),
+            xytext=(iqr_x - 1, iqr_y + 0.5), # Adjust text position as needed
+            arrowprops=dict(arrowstyle="->", color='#6c757d', lw=1.5),
+            fontsize=10, color='#6c757d', ha='right', va='center')
+
+
+ax.set_xlabel('VPD Z-score')
+ax.set_ylabel('SHAP value of VPD')
+# ax.set_title('Fitted Polynomial with DataFrame')
+ax.axhline(y=0, color='black', linestyle='-', lw=1)
+ax.grid(False)
+# Hide the legend
+ax.legend().set_visible(False)
+# Hide the top and right spines
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['bottom'].set_linewidth(1)
+ax.spines['left'].set_linewidth(1)
+# Set the tick width for both x and y axes
+ax.tick_params(axis='both', which='major', width=1, length=5)
+ax.tick_params(axis='both', which='minor', width=1, length=2)
+fig.show()
+
+print(f"Polynomial coefficients: {poly_coeffs}")
