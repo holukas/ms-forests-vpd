@@ -23,8 +23,15 @@ from aggregation import aggregate_shap_values_for_site, aggregate_shap_values_ac
 # VARIABLES
 # ---------
 # 'ta_var', 'vpd_var', 'swc_var', 'swin_var'
-binx = f"BIN_VPD_F"
-biny = f"BIN_TA_F"
+# binx = f"BIN_SWC_F_MDS_1"
+# binx = f"BIN_SW_IN_F"
+binx = f"BIN_TA_F"
+# biny = f"BIN_TA_F"
+# biny = f"BIN_SWC_F_MDS_1"
+biny = f"BIN_VPD_F"
+# z = f"SW_IN_F_SHAPVALS"
+# z = f"TA_F_SHAPVALS"
+# z = f"SWC_F_MDS_1_SHAPVALS"
 z = f"VPD_F_SHAPVALS"
 
 # Load settings

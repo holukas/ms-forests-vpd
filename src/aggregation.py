@@ -51,6 +51,9 @@ def aggregate_shap_values_for_site(siteconfig, xvar, yvar, zvar, aggfunc, ix,
     # print(q.df_agg_wide)
     # print(q.df_agg_long['BIN_VPD_F'].unique())
 
+    # binx = f"BIN_VPD_F"
+    # biny = f"BIN_TA_F"
+    # z = f"VPD_F_SHAPVALS"
     # hm = dv.heatmapxyz(
     #     x=q.df_agg_long[binx],
     #     y=q.df_agg_long[biny],

@@ -25,6 +25,7 @@ settings = files.read_settings_file("../config/settings.yaml")
 swincol = 'SW_IN_F'
 tacol = 'TA_F'
 vpdcol = 'VPD_F'
+swccol = 'SWC_F_MDS_1'
 
 x = f"BIN_{vpdcol}"
 y = f"{vpdcol}_SHAPVALS"
@@ -46,6 +47,14 @@ degree = 4
 # poly_coeffs = np.polyfit(X_data, Y_data, degree)
 poly_coeffs, residuals, _, _, _ = np.polyfit(X_data, Y_data, degree, full=True)
 poly_func = np.poly1d(poly_coeffs)
+
+# Calculate r2
+ss_res = residuals[0]  # The sum of squared residuals (SS_res) is the first element of the residuals array
+y_mean = np.mean(Y_data)
+ss_tot = np.sum((Y_data - y_mean) ** 2)  # Calculate the total sum of squares (SS_tot)
+r_squared = 1 - (ss_res / ss_tot)
+# print(f"The R-squared value is: {r_squared:.4f}")
+
 
 # Create x-range for plotting fitted curve and create fit values
 x_fit = np.linspace(X_data.min(), X_data.max(), 500)
@@ -104,8 +113,8 @@ ax.fill_between(x_fit, pi_lower, pi_upper, color='#004e98', alpha=0.1,
                 label='95% prediction interval')
 
 # Errorbars
-yerrlow = shapvals_df['VPD_F_SHAPVALS'].sub(shapvals_df['VPD_F_SHAPVALS_P25'])
-yerrhigh = shapvals_df['VPD_F_SHAPVALS_P75'].sub(shapvals_df['VPD_F_SHAPVALS'])
+yerrlow = shapvals_df[y].sub(shapvals_df[f'{y}_P25'])
+yerrhigh = shapvals_df[f'{y}_P75'].sub(shapvals_df[y])
 yerr_iqr = [yerrlow.to_numpy(), yerrhigh.to_numpy()]
 ax.errorbar(X_data, Y_data, yerr=yerr_iqr, fmt='none', capsize=1, elinewidth=0,
             ecolor='#6c757d', markerfacecolor='none', markersize=0, alpha=0.5,
@@ -136,8 +145,8 @@ ax.plot([x_fit[idx], x_fit[idx]], [y_bottom, y_fit[idx]], color='#f77f00', lines
 ax.plot([x_fit[min_ix], x_fit[min_ix]], [y_bottom, y_fit[min_ix]], color='#66bb6a', linestyle='--', linewidth=1)
 
 # Detect min/max value shown in plot, i.e. value +/- high/low y-error
-_temp = shapvals_df['VPD_F_SHAPVALS'].add(yerrhigh).max()
-_temp2 = shapvals_df['VPD_F_SHAPVALS'].sub(yerrlow).min()
+_temp = shapvals_df[y].add(yerrhigh).max()
+_temp2 = shapvals_df[y].sub(yerrlow).min()
 ax.set_ylim(_temp2, _temp)
 # ax.set_ylim(y_bottom, _temp)
 
@@ -169,41 +178,44 @@ tail_x = arrow_x - 0.1
 tail_y = poly_func(tail_x)
 # Calculate the angle of the line at this point to get the correct arrow orientation
 angle = np.arctan2(arrow_y - tail_y, arrow_x - tail_x) * 180 / np.pi
-ax.annotate('Fitted 4th degree polynomial',
+ax.annotate(f'Fitted 4th degree polynomial (r$^2$={r_squared:.2f})',
             xy=(arrow_x, arrow_y),
-            xytext=(arrow_x - 2.5, arrow_y + 0.25),  # Adjust text position as needed
+            xytext=(arrow_x - 3.5, arrow_y + 0.25),  # Adjust text position as needed
             arrowprops=dict(arrowstyle="->", color='#004e98', lw=1.5),
             fontsize=10, color='#004e98', ha='left', va='center')
 
 # Add arrow to one of the IQR data points
-# for i in range (420, 430):
-iqr_point_index = 429  # Choose a representative index
+# for i in range(390, 410):
+iqr_point_index = 397  # Choose a representative index
 iqr_x = X_data[iqr_point_index]
 iqr_y = Y_data[iqr_point_index]
 iqr_yerr_low = yerr_iqr[0][iqr_point_index]
 # iqr_yerr_high = yerr_iqr[1][iqr_point_index]
 
-ax.annotate(f'IQR for site data',
-            xy=(iqr_x, iqr_y - iqr_yerr_low),
-            xytext=(iqr_x + 1, iqr_y - 0.5),  # Adjust text position as needed
-            arrowprops=dict(arrowstyle="->", color='#6c757d', lw=1.5),
-            fontsize=10, color='#6c757d', ha='right', va='center')
+ax.annotate(
+    # f'{i}',
+    f'IQR for site data',
+    xy=(iqr_x, iqr_y - iqr_yerr_low),
+    xytext=(iqr_x + 1.15, iqr_y - 0.35),  # Adjust text position as needed
+    arrowprops=dict(arrowstyle="->", color='#6c757d', lw=1.5),
+    fontsize=10, color='#6c757d', ha='right', va='center'
+)
 
 # Add text for negative effect
-ax.text(x=1.7, y=0.03, s='Negative effect\nreduced uptake or increased release',
+ax.text(x=1.7, y=0.03, s='Negative impact\nreduced uptake/increased release',
         fontsize=9, color='black', ha='left', va='bottom')
 
 # Add text for positive effect
-ax.text(x=1.7, y=-0.03, s='Positive effect\nincreased uptake or reduced release',
+ax.text(x=1.7, y=-0.03, s='Positive impact\nincreased uptake/reduced release',
         fontsize=9, color='black', ha='left', va='top')
 
 # 426cb0
 ax.set_xlabel("Vapor pressure deficit (z-score)")
 ax.set_ylabel('SHAP value of VPD effect on NEE (z-score)')
-ax.set_title('The effect of VPD on CO$_2$ uptake and release', fontsize=14, pad=10, y=1.02)
+ax.set_title('The impact of VPD on CO$_2$ uptake and release', fontsize=14, pad=10, y=1.02)
 ax.axhline(y=0, color='black', linestyle='-', lw=1)
 ax.grid(False)
-ax.legend(frameon=False, loc='upper left')
+ax.legend(bbox_to_anchor=(0.05, 0.95), loc='upper left', frameon=False)
 # Hide the top and right spines
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
