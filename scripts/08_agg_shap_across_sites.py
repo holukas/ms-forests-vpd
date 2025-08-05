@@ -18,7 +18,7 @@ from pathlib import Path
 import diive as dv
 
 import src.files as files
-from aggregation import aggregate_shap_values_for_site, aggregate_shap_values_across_all_sites
+from aggregation import aggregate_shap_values_across_all_sites
 
 # VARIABLES
 # ---------
@@ -33,12 +33,17 @@ biny = f"BIN_VPD_F"
 # z = f"TA_F_SHAPVALS"
 # z = f"SWC_F_MDS_1_SHAPVALS"
 z = f"VPD_F_SHAPVALS"
+conditional = True
 
 # Load settings
 settings = files.read_settings_file("../config/settings.yaml")
 
-filepath = Path(settings['DIR_DATA_OUT_SHAPVALS_STANDARD']) / "2_PerSite_Aggregated_SHAPValues.parquet"
+pathstr = 'DIR_DATA_OUT_SHAPVALS_CONDITIONAL' if conditional else 'DIR_DATA_OUT_SHAPVALS_STANDARD'
+filepath = Path(settings[pathstr]) / "2_PerSite_Aggregated_SHAPValues.parquet"
 shapvals_sites_agg_long_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
+
+# Remove site info, cannot be aggregated
+shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.drop('SITE', axis=1, inplace=False)
 
 # Aggregate SHAP values across all sites
 shapvals_sites_grouped_agg_df = aggregate_shap_values_across_all_sites(
@@ -49,6 +54,6 @@ shapvals_sites_grouped_agg_df = aggregate_shap_values_across_all_sites(
 outfilepath = dv.save_parquet(
     filename=f"3_AllSites_Aggregated_SHAPValues",
     data=shapvals_sites_grouped_agg_df,
-    outpath=Path(settings['DIR_DATA_OUT_SHAPVALS_STANDARD']))
+    outpath=Path(settings[pathstr]))
 # print(f"Saved SHAP values across all files as mean to file {outfilepath}.")
 shapvals_sites_grouped_agg_df.to_csv(outfilepath.replace('.parquet', '.csv'))

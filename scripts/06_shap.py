@@ -23,7 +23,7 @@ for ix, siteconfig in _siteinfo_df.iterrows():
         siteinfo_df=siteinfo_df,
         siteconfig=siteconfig,
         ix=ix, modelstxt=modelstxt,
-        conditional=False  # Use conditional SHAP instead of standard SHAP
+        conditional=True  # Use conditional SHAP instead of standard SHAP
     )
 
 # Save updated site info

@@ -12,16 +12,12 @@ import numpy as np
 import scipy.stats as stats
 
 import src.files as files
+from diive.pkgs.analyses.decoupling import SortingBinsMethod
 
-# Recommended for scientific publications
-# plt.rcParams['text.usetex'] = True
-# plt.rcParams['font.family'] = 'serif'
-# plt.rcParams['font.serif'] = 'Computer Modern Roman'
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 
 settings = files.read_settings_file("../config/settings.yaml")
-
 swincol = 'SW_IN_F'
 tacol = 'TA_F'
 vpdcol = 'VPD_F'
@@ -33,7 +29,7 @@ y = f"{vpdcol}_SHAPVALS"
 aggfunc = 'median'
 
 pathstr = 'DIR_DATA_OUT_SHAPVALS_CONDITIONAL' if conditional else 'DIR_DATA_OUT_SHAPVALS_STANDARD'
-filepath = Path(settings[pathstr]) / "3_AllSites_Aggregated_SHAPValues.parquet"
+filepath = Path(settings[pathstr]) / "2_PerSite_Aggregated_SHAPValues.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 
 n_sites_min = 20
