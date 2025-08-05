@@ -6,6 +6,7 @@
 /data/parquet
 /data/output/shap_values_standard/*.parquet
 /data/output/shap_values_conditional/*.parquet
+/data/output/shap_values_conditional/*.csv
 
 *.xlsx
 

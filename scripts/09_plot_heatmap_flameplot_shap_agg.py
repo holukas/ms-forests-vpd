@@ -20,8 +20,9 @@ swccol = 'SWC_F_MDS_1'
 
 # Used variable names, from aggregation across sites
 binx = (f"BIN_{tacol}", "median")
+# biny = (f"{swccol}", "median")
 biny = (f"BIN_{vpdcol}", "median")
-z = (f"{vpdcol}_SHAPVALS", "median")
+z = (f"{swccol}_SHAPVALS", "median")
 z_counts = (f"{vpdcol}_SHAPVALS", "count")
 conditional = True
 

@@ -26,18 +26,27 @@ swincol = 'SW_IN_F'
 tacol = 'TA_F'
 vpdcol = 'VPD_F'
 swccol = 'SWC_F_MDS_1'
+fluxcol = 'NEE_VUT_50'
+
+# Used variable names, from aggregation across sites
+# x = (f"{swccol}", "median")
+x = (f"BIN_{vpdcol}", "median")
+_y = f"{vpdcol}_SHAPVALS"
+y = (_y, "median")
+# y = f"{vpdcol}_SHAPVALS"
+y_counts = (_y, "count")
 conditional = True
 
-x = f"BIN_{vpdcol}"
-y = f"{vpdcol}_SHAPVALS"
+# Plot settings
+n_sites_min = 20
 aggfunc = 'median'
+
+# --------------------------------
 
 pathstr = 'DIR_DATA_OUT_SHAPVALS_CONDITIONAL' if conditional else 'DIR_DATA_OUT_SHAPVALS_STANDARD'
 filepath = Path(settings[pathstr]) / "3_AllSites_Aggregated_SHAPValues.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
-
-n_sites_min = 20
-keeplocs = shapvals_df[f'{y}_COUNTS'] >= n_sites_min
+keeplocs = shapvals_df[y_counts] >= n_sites_min
 shapvals_df = shapvals_df[keeplocs].copy()
 
 # Extract the data from the DataFrame
@@ -115,8 +124,8 @@ ax.fill_between(x_fit, pi_lower, pi_upper, color='#004e98', alpha=0.1,
                 label='95% prediction interval')
 
 # Errorbars
-yerrlow = shapvals_df[y].sub(shapvals_df[f'{y}_P25'])
-yerrhigh = shapvals_df[f'{y}_P75'].sub(shapvals_df[y])
+yerrlow = shapvals_df[y].sub(shapvals_df[(_y, "<lambda_0>")])  # <lambda_0> is P25
+yerrhigh = shapvals_df[(_y, "<lambda_1>")].sub(shapvals_df[y])  # <lambda_0> is P75
 yerr_iqr = [yerrlow.to_numpy(), yerrhigh.to_numpy()]
 ax.errorbar(X_data, Y_data, yerr=yerr_iqr, fmt='none', capsize=1, elinewidth=0,
             ecolor='#6c757d', markerfacecolor='none', markersize=0, alpha=0.5,
