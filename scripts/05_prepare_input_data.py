@@ -1,5 +1,5 @@
 """
-Train XGBoost model for each site and save SHAP values to file.
+Prepare input data for XGBoost models.
 """
 import src.files as files
 

@@ -6,7 +6,7 @@ import pandas as pd
 import yaml
 from scipy.stats import zscore
 
-from common import get_variable_names
+from src.common import get_variable_names
 
 
 def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
@@ -70,6 +70,22 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     # z-scores are calculated from subset records
     subset = subset.apply(lambda x: zscore(x, nan_policy='omit'))
 
+    # Rename variables to have the same var names for all sites
+    rename_dict = {
+        varnames['nee_var']: "NEE",
+        varnames['le_var']: "LE",
+        varnames['gpp_var']: "GPP",
+        varnames['reco_var']: "RECO",
+        varnames['ta_var']: "TA",
+        varnames['vpd_var']: "VPD",
+        varnames['swin_var']: "SWIN",
+        varnames['swc_var']: "SWC",
+    }
+    subset = subset.rename(columns=rename_dict, inplace=False)
+
+    # Convert NEE to NEP
+    subset['NEP'] = subset['NEE'].multiply(-1)
+
     print(f"Records: {len(subset)}")
 
     # TODO testing: Limit time range
@@ -80,7 +96,7 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     outfilepath = dv.save_parquet(
         filename=f"{siteconfig['SITE']}_subset_warmest6_qc0_daytime_zscores",
         data=subset,
-        outpath=Path(settings['DIR_DATA_PARQUET_SUBSET']))
+        outpath=Path(settings['DIR_DATA_PROC_SUBSETS']))
     print(f"Saved subset data for {siteconfig['SITE']} to file {outfilepath}.")
     siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = outfilepath
 
@@ -198,7 +214,7 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
     end = merged_df.index[-1].year
     outfilepath = dv.save_parquet(filename=f"{site}_{igbp}_{sourcetxt}_{start}-{end}",
                                   data=merged_df,
-                                  outpath=Path(settings['DIR_DATA_PARQUET']))
+                                  outpath=Path(settings['DIR_DATA_PROC_PARQUET']))
 
     siteinfo_df.loc[ix, '_FILEPATH_PARQUET'] = Path(outfilepath)
 

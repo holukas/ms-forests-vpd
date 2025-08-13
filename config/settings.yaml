@@ -1,29 +1,27 @@
 # Dirs
 DIR_DATA: ../data
-DIR_DATA_PARQUET: ../data/parquet/merged
-DIR_DATA_PARQUET_SUBSET: ../data/parquet/subset
-DIR_DATA_OUT: ../data/output
-DIR_DATA_OUT_SHAPVALS_STANDARD: ../data/output/shap_values_standard
-DIR_DATA_OUT_SHAPVALS_CONDITIONAL: ../data/output/shap_values_conditional
+DIR_DATA_RAW_ICOS: ../data/raw/icos
+DIR_DATA_RAW_FXN: ../data/raw/fluxnet
+DIR_DATA_RAW_AMF: ../data/raw/ameriflux
+DIR_DATA_PROC_PARQUET: ../data/processed/parquet_merged
+DIR_DATA_PROC_SUBSETS: ../data/processed/subsets
+DIR_DATA_OUT: ../data/outputs
+DIR_DATA_OUT_SHAP_ANALYSIS: ../data/outputs/shap_analysis
 
 # Files
-OUTFILE_SITEINFO: ../data/output/siteinfo.csv
-
+OUTFILE_SITEINFO: ../data/outputs/siteinfo.csv
 ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
 
 # ICOS (European sites)
-DIR_DATA_SOURCEFILES_ICOS: ../data/source/icos
 PATTERN_DIR_ICOS: ['ICOSETC_', '_ARCHIVE_L2']
 PATTERN_FILE_HH_ICOS: ICOSETC_*_FLUXNET_HH_L2.csv
 
 # FLUXNET (European sites)
-DIR_DATA_SOURCEFILES_FXN: ../data/source/fluxnet
 PATTERN_DIR_FXN: ['FLX_', 'FLUXNET2015_FULLSET_']
 PATTERN_FILE_HH_FXN: FLX_*_FLUXNET2015_FULLSET_HH_*.csv
 INFOFILE_FXN: ../config/FLUXNET_SitesList_20240404.csv
 
 # AMERIFLUX
-DIR_DATA_SOURCEFILES_AMF: ../data/source/ameriflux
 PATTERN_DIR_AMF: ['AMF_', 'FLUXNET_FULLSET_']
 PATTERN_FILE_HH_AMF: AMF_*_FLUXNET_FULLSET_HH_*.csv
 INFOFILE_AMF: ../config/AMERIFLUX_AA-Flx_FLUXNET-BIF_CCBY4_20241205.csv

@@ -1,12 +1,9 @@
 /.idea
 /_archive
 /X
-/data/source
-/data/_source_ALLFILES
-/data/parquet
-/data/output/shap_values_standard/*.parquet
-/data/output/shap_values_conditional/*.parquet
-/data/output/shap_values_conditional/*.csv
+/data/raw
+/data/processed
+/data/outputs/shap_analysis/*.parquet
 
 *.xlsx
 

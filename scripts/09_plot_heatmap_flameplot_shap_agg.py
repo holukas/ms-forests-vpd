@@ -22,7 +22,7 @@ swccol = 'SWC_F_MDS_1'
 binx = (f"BIN_{tacol}", "median")
 # biny = (f"{swccol}", "median")
 biny = (f"BIN_{vpdcol}", "median")
-z = (f"{swccol}_SHAPVALS", "median")
+z = (f"{vpdcol}_SHAPVALS", "median")
 z_counts = (f"{vpdcol}_SHAPVALS", "count")
 conditional = True
 

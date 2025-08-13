@@ -7,35 +7,26 @@ import shap
 import xgboost as xgb
 from sklearn.metrics import mean_squared_error
 
-from common import get_variable_names
 
-
-def train_xgboost_models_and_shap(settings: dict, siteinfo_df: pd.DataFrame, siteconfig, ix,
-                                  modelstxt, conditional=False) -> pd.DataFrame:
+def train_xgboost_models_and_shap(target: str, features: list, settings: dict, siteinfo_df: pd.DataFrame,
+                                  siteconfig, ix, modelstxt, conditional=False) -> pd.DataFrame:
     _df = siteinfo_df.copy()
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
     if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
         siteinfo_df.loc[ix, '_FILEPATH_SHAP_VALUES_STANDARD'] = '-MISSING-'
+        siteinfo_df.loc[ix, '_FILEPATH_SHAP_VALUES_CONDITIONAL'] = '-MISSING-'
         return siteinfo_df
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
     subset = dv.load_parquet(filepath, sanitize_timestamp=False)
-    # [print(c) for c in sitedata.columns if "LE" in c];
-
-    # Get variable names for this site
-    varnames = get_variable_names(siteconfig)
-
     print(f"Records: {len(subset)}")
 
     # Target and features
-    # features = [tacol, vpdcol, swincol]
-    features = [varnames['ta_var'], varnames['vpd_var'], varnames['swc_var'], varnames['swin_var']]
-    X = subset[features]
-    # y = subset[varnames['le_var']]
-    y = subset[varnames['nee_var']]
+    X = subset[features].copy()
+    y = subset[target].copy()
 
     # Initialize XGBoost Regressor
     # objective='reg:squarederror' for standard regression

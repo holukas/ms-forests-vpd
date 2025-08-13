@@ -1,0 +1,4 @@
+XGBOOST MODELS and SHAP CALCULATIONS
+Target: NEP
+Features: ['TA', 'SWIN', 'VPD', 'SWC']
+Conditional SHAP: True
