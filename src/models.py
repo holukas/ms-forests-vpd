@@ -8,16 +8,16 @@ import xgboost as xgb
 from sklearn.metrics import mean_squared_error
 
 
-def train_xgboost_models_and_shap(target: str, features: list, settings: dict, siteinfo_df: pd.DataFrame,
-                                  siteconfig, ix, modelstxt, conditional=False) -> pd.DataFrame:
-    _df = siteinfo_df.copy()
+def train_xgboost_models_and_shap(target: str, features: list,
+                                  siteconfig, ix, modelstxt, results_outdir: Path, conditional=False) -> None:
+    # TODO testing
+    if ix > 5:
+        return None
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
     if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
-        siteinfo_df.loc[ix, '_FILEPATH_SHAP_VALUES_STANDARD'] = '-MISSING-'
-        siteinfo_df.loc[ix, '_FILEPATH_SHAP_VALUES_CONDITIONAL'] = '-MISSING-'
-        return siteinfo_df
+        return None
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
@@ -53,7 +53,7 @@ def train_xgboost_models_and_shap(target: str, features: list, settings: dict, s
     rmse = np.sqrt(mean_squared_error(y, y_pred))
     print(f"R2: {r2:.4f} / RMSE: {rmse:.2f}")
     with open(modelstxt, 'a') as file:
-        file.write(f"SITE: {siteconfig['SITE']} / TARGET: {siteconfig['NEE_VAR']} "
+        file.write(f"SITE: {siteconfig['SITE']} / TARGET: {target} "
                    f"/ R2: {model.score(X, y):.4f} / RMSE: {rmse:.2f}\n")
 
     if conditional:
@@ -90,10 +90,8 @@ def train_xgboost_models_and_shap(target: str, features: list, settings: dict, s
     shapdf['SUM'] = shapdf.sum(axis=1)
     shapdf['EXPECTED'] = expected_value
     shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'].add(shapdf['SUM'])
-    # shapdf[varnames['le_var']] = y.copy()
-    shapdf[varnames['nee_var']] = y.copy()
-    # shapdf[f"{varnames['le_var']}_PRED"] = y_pred.copy()
-    shapdf[f"{varnames['nee_var']}_PRED"] = y_pred.copy()
+    shapdf[target] = y.copy()
+    shapdf[f"{target}_PRED"] = y_pred.copy()
 
     # Merge SHAP values with measured
     merged = pd.concat([X, shapdf], axis=1)
@@ -102,19 +100,12 @@ def train_xgboost_models_and_shap(target: str, features: list, settings: dict, s
     # ScatterXY(x=merged[vpd_var], y=merged[f'{vpd_var}_SHAPVALS'], nbins=20,
     #           binagg='median').plot()
 
-    if not conditional:
-        outcol = '_FILEPATH_SHAP_VALUES_STANDARD'
-        outpath = 'DIR_DATA_OUT_SHAPVALS_STANDARD'
-    else:
-        outpath = 'DIR_DATA_OUT_SHAPVALS_CONDITIONAL'
-        outcol = '_FILEPATH_SHAP_VALUES_CONDITIONAL'
-
+    substr = "conditional" if conditional else "standard"
     outfilepath = dv.save_parquet(
-        filename=f"{siteconfig['SITE']}_shap_values",
+        filename=f"{siteconfig['SITE']}_shap-{substr}_{target}",
         data=merged,
-        outpath=Path(settings[outpath]))
+        outpath=results_outdir)
     print(f"Saved SHAP values to file {outfilepath}.")
+    # siteinfo_df.loc[ix, outcol] = outfilepath
 
-    siteinfo_df.loc[ix, outcol] = outfilepath
-
-    return siteinfo_df
+    return None
