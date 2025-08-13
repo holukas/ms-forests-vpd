@@ -10,9 +10,9 @@ from sklearn.metrics import mean_squared_error
 
 def train_xgboost_models_and_shap(target: str, features: list,
                                   siteconfig, ix, modelstxt, results_outdir: Path, conditional=False) -> None:
-    # TODO testing
-    if ix > 5:
-        return None
+    # # TODO testing
+    # if ix > 5:
+    #     return None
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
