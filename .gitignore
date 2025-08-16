@@ -9,6 +9,12 @@
 /data/outputs/shap_analysis/nep/conditional/*.parquet
 /data/outputs/shap_analysis/nep/conditional/*.csv
 /data/outputs/shap_analysis/reco/conditional/*.parquet
+data/outputs/shap_analysis/gpp/conditional/1_models_xgboost_shap-conditional_GPP.txt
+data/outputs/shap_analysis/le/conditional/1_models_xgboost_shap-conditional_LE.txt
+data/outputs/shap_analysis/nep/conditional/1_models_xgboost_shap-conditional_NEP.txt
+data/outputs/shap_analysis/nep/conditional/2_PerSite_Aggregated_SHAPValues-conditional_NEP.csv
+data/outputs/shap_analysis/nep/conditional/3_AllSites_Aggregated_SHAPValues-conditional_NEP.csv
+data/outputs/shap_analysis/reco/conditional/1_models_xgboost_shap-conditional_RECO.txt
 
 *.csv
 *.xlsx
@@ -175,4 +181,3 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
-
