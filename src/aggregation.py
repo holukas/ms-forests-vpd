@@ -2,11 +2,8 @@ import diive as dv
 import numpy as np
 import pandas as pd
 
-from common import get_variable_names
-
 
 def aggregate_shap_values_across_all_sites(df, binx, biny, z) -> pd.DataFrame:
-
     print("Aggregating across all sites ...")
 
     # Remove all rows where all records are NaN,
@@ -44,24 +41,11 @@ def aggregate_shap_values_across_all_sites(df, binx, biny, z) -> pd.DataFrame:
     return df_grouped_agg
 
 
-def aggregate_shap_values_for_site(siteconfig, xvar, yvar, zvar, aggfunc, ix,
+def aggregate_shap_values_for_site(siteconfig, settings, site, filepath, flux, xvar, yvar, zvar, aggfunc, ix,
                                    conditional=False, binsize: float = 0.2):
     site_res = pd.DataFrame()
 
-    # Get variable names for this site
-    varnames = get_variable_names(siteconfig)
-
-    x = varnames[xvar]
-    y = varnames[yvar]
-    z = f"{varnames[zvar]}_SHAPVALS"
-
-    print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
-    if conditional:
-        filepath = siteconfig['_FILEPATH_SHAP_VALUES_CONDITIONAL']
-    else:
-        filepath = siteconfig['_FILEPATH_SHAP_VALUES_STANDARD']
-    if filepath == '-MISSING-' or pd.isna(filepath):
-        return site_res
+    print(f"\nLoading data for site #{ix + 1} {site} ...")
     shapvals_df = dv.load_parquet(filepath)
 
     # Round custom bins for exactly two digits after the comma
@@ -84,7 +68,7 @@ def aggregate_shap_values_for_site(siteconfig, xvar, yvar, zvar, aggfunc, ix,
     )
 
     for cix, c in enumerate(available_cols):
-        agg = dv.ga(x=shapvals_df[x], y=shapvals_df[y], z=shapvals_df[c], **ga_settings)
+        agg = dv.ga(x=shapvals_df[xvar], y=shapvals_df[yvar], z=shapvals_df[c], **ga_settings)
         res = agg.df_agg_long.copy()
         if cix == 0:
             site_res = res.copy()
@@ -92,7 +76,7 @@ def aggregate_shap_values_for_site(siteconfig, xvar, yvar, zvar, aggfunc, ix,
             site_res = pd.concat([site_res, res[c]], axis=1)
 
     # Add site name
-    site_res['SITE'] = siteconfig['SITE']
+    site_res['SITE'] = site
 
     # binx = f"BIN_VPD_F"
     # biny = f"BIN_TA_F"
@@ -101,7 +85,7 @@ def aggregate_shap_values_for_site(siteconfig, xvar, yvar, zvar, aggfunc, ix,
     #     x=q.df_agg_long[binx],
     #     y=q.df_agg_long[biny],
     #     z=q.df_agg_long[z],
-    #     title=siteconfig['SITE'],
+    #     title=site,
     #     cb_digits_after_comma=1,
     #     xlabel=f'{binx} (z-score)',
     #     ylabel=f'{biny} (z-score)',

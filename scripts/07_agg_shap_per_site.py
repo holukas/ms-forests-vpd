@@ -1,32 +1,51 @@
 from pathlib import Path
-import pandas as pd
+
 import diive as dv
+import pandas as pd
 
 import src.files as files
 from src.aggregation import aggregate_shap_values_for_site
 
-# VARIABLES (site-level)
-# ----------------------
-# 'ta_var', 'vpd_var', 'swc_var', 'swin_var'
-xvar = 'ta_var'
-yvar = 'vpd_var'
-zvar = 'vpd_var'
+# ------------------------------
+# Variables
+# NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
+FLUX = 'NEP'
+xvar = 'TA'
+yvar = 'VPD'
+zvar = 'VPD'
 aggfunc = 'median'
-conditional = True  # SHAP
+CONDITIONAL = True  # SHAP
+# ------------------------------
 
 # Load settings
 settings = files.read_settings_file("../config/settings.yaml")
-
-# Load site info
+subfolder = 'conditional' if CONDITIONAL else 'standard'
+results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / subfolder
+shap_type = 'conditional' if CONDITIONAL else 'standard'
+folder = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 siteinfo_df = files.load_siteinfo(settings)
 
 # Aggregate SHAP values for each site and collect in dataframe
 shapvals_sites_agg_long_df = None
 for ix, siteconfig in siteinfo_df.iterrows():
+
+    # # TODO testing ----
+    # if ix > 1:
+    #     break
+    # # TODO testing ----
+
+    if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
+        # Skip files that do not have a parquet subset, b/c of missing SWC
+        continue
+
+    site = siteconfig['SITE']
+    filename = f"{site}_shap-{shap_type}_{FLUX}.parquet"
+    filepath = folder / filename
+
     site_results = aggregate_shap_values_for_site(
-        siteconfig=siteconfig, ix=ix,
-        xvar=xvar, yvar=yvar, zvar=zvar, aggfunc=aggfunc,
-        conditional=conditional, binsize=0.1
+        siteconfig=siteconfig, site=site, filepath=filepath, ix=ix, settings=settings,
+        flux=FLUX, xvar=xvar, yvar=yvar, zvar=zvar, aggfunc=aggfunc,
+        conditional=CONDITIONAL, binsize=0.1
     )
     if ix == 0:
         shapvals_sites_agg_long_df = site_results.copy()
@@ -57,14 +76,8 @@ for ix, siteconfig in siteinfo_df.iterrows():
     # hm.show()
     # # ---todo testing
 
-# Save SHAP values aggregated per site to Parquet and CSV
-if conditional:
-    outpathstr = 'DIR_DATA_OUT_SHAPVALS_CONDITIONAL'
-else:
-    outpathstr = 'DIR_DATA_OUT_SHAPVALS_STANDARD'
-
 outfilepath = dv.save_parquet(
-    filename=f"2_PerSite_Aggregated_SHAPValues",
+    filename=f"2_PerSite_Aggregated_SHAPValues-{shap_type}_{FLUX}",
     data=shapvals_sites_agg_long_df,
-    outpath=Path(settings[outpathstr]))
+    outpath=folder)
 shapvals_sites_agg_long_df.to_csv(outfilepath.replace('.parquet', '.csv'))

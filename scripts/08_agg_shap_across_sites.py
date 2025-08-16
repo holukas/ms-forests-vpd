@@ -18,28 +18,28 @@ from pathlib import Path
 import diive as dv
 
 import src.files as files
-from aggregation import aggregate_shap_values_across_all_sites
+from src.aggregation import aggregate_shap_values_across_all_sites
 
-# VARIABLES
-# ---------
-# 'ta_var', 'vpd_var', 'swc_var', 'swin_var'
-# binx = f"BIN_SWC_F_MDS_1"
-# binx = f"BIN_SW_IN_F"
-binx = f"BIN_TA_F"
-# biny = f"BIN_TA_F"
-# biny = f"BIN_SWC_F_MDS_1"
-biny = f"BIN_VPD_F"
-# z = f"SW_IN_F_SHAPVALS"
-# z = f"TA_F_SHAPVALS"
-# z = f"SWC_F_MDS_1_SHAPVALS"
-z = f"VPD_F_SHAPVALS"
-conditional = True
+# ------------------------------
+# Variables
+# NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
+FLUX = 'NEP'
+xvar = 'TA'
+yvar = 'VPD'
+zvar = 'VPD'
+aggfunc = 'median'
+CONDITIONAL = True  # SHAP
+# ------------------------------
+
+binx = f"BIN_{xvar}"
+biny = f"BIN_{yvar}"
+z = f"{zvar}_SHAPVALS"
 
 # Load settings
 settings = files.read_settings_file("../config/settings.yaml")
-
-pathstr = 'DIR_DATA_OUT_SHAPVALS_CONDITIONAL' if conditional else 'DIR_DATA_OUT_SHAPVALS_STANDARD'
-filepath = Path(settings[pathstr]) / "2_PerSite_Aggregated_SHAPValues.parquet"
+shap_type = 'conditional' if CONDITIONAL else 'standard'
+results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
+filepath = Path(results_outdir) / f"2_PerSite_Aggregated_SHAPValues-{shap_type}_{FLUX}.parquet"
 shapvals_sites_agg_long_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 
 # Remove site info, cannot be aggregated
@@ -52,8 +52,8 @@ shapvals_sites_grouped_agg_df = aggregate_shap_values_across_all_sites(
 
 # Save to Parquet
 outfilepath = dv.save_parquet(
-    filename=f"3_AllSites_Aggregated_SHAPValues",
+    filename=f"3_AllSites_Aggregated_SHAPValues-{shap_type}_{FLUX}",
     data=shapvals_sites_grouped_agg_df,
-    outpath=Path(settings[pathstr]))
+    outpath=results_outdir)
 # print(f"Saved SHAP values across all files as mean to file {outfilepath}.")
 shapvals_sites_grouped_agg_df.to_csv(outfilepath.replace('.parquet', '.csv'))

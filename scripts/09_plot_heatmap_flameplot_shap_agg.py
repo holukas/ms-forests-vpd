@@ -11,29 +11,32 @@ import src.files as files
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 
-settings = files.read_settings_file("../config/settings.yaml")
-
-swincol = 'SW_IN_F'
-tacol = 'TA_F'
-vpdcol = 'VPD_F'
-swccol = 'SWC_F_MDS_1'
-
-# Used variable names, from aggregation across sites
-binx = (f"BIN_{tacol}", "median")
-# biny = (f"{swccol}", "median")
-biny = (f"BIN_{vpdcol}", "median")
-z = (f"{vpdcol}_SHAPVALS", "median")
-z_counts = (f"{vpdcol}_SHAPVALS", "count")
-conditional = True
+# ------------------------------
+# Variables
+# NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
+FLUX = 'NEP'
+xvar = 'TA'
+yvar = 'VPD'
+zvar = 'VPD'
+aggfunc = 'median'
+CONDITIONAL = True  # SHAP
 
 # Heatmap settings
 n_sites_min = 20
-aggfunc = 'median'
+# ------------------------------
 
-# --------------------------------
+binx = (f"BIN_{xvar}", aggfunc)
+biny = (f"BIN_{yvar}", aggfunc)
+z = (f"{zvar}_SHAPVALS", aggfunc)
+z_counts = (f"{zvar}_SHAPVALS", "count")
 
-pathstr = 'DIR_DATA_OUT_SHAPVALS_CONDITIONAL' if conditional else 'DIR_DATA_OUT_SHAPVALS_STANDARD'
-filepath = Path(settings[pathstr]) / "3_AllSites_Aggregated_SHAPValues.parquet"
+# Load settings
+settings = files.read_settings_file("../config/settings.yaml")
+shap_type = 'conditional' if CONDITIONAL else 'standard'
+results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
+
+# Load SHAP values aggregated across all sites
+filepath = Path(results_outdir) / f"3_AllSites_Aggregated_SHAPValues-{shap_type}_{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 keeplocs = shapvals_df[z_counts] >= n_sites_min
 shapvals_df = shapvals_df[keeplocs].copy()
@@ -61,6 +64,7 @@ hm = dv.heatmapxyz(
     # show_values_fontsize=4,
     figdpi=300,
     color_bad='white',
+    cmap='RdYlBu',
     # vmin=-3,
     # vmax=3
 )
@@ -69,7 +73,7 @@ hm.plot()
 
 # ax.set_xlabel('Air temperature (z-score)')
 # ax.set_ylabel("Vapor pressure deficit (z-score)")
-ax.set_title('The effect of VPD on CO$_2$ uptake and release', fontsize=14, pad=10, y=1.02)
+ax.set_title('The effect of VPD on NEP', fontsize=14, pad=10, y=1.02)
 
 # Hide the top and right spines
 ax.spines['top'].set_visible(False)

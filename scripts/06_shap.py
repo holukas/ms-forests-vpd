@@ -9,7 +9,7 @@ from src.models import train_xgboost_models_and_shap
 
 # ------------------------------
 # Variables
-FLUX = 'LE'  # NEP, NEE, LE, GPP, RECO
+FLUX = 'RECO'  # NEP, NEE, LE, GPP, RECO
 FEATURES = ['TA', 'SWIN', 'VPD', 'SWC']
 CONDITIONAL = True  # Use conditional SHAP instead of standard SHAP
 # ------------------------------
