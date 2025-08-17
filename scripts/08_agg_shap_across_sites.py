@@ -23,17 +23,16 @@ from src.aggregation import aggregate_shap_values_across_all_sites
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'
+FLUX = 'GPP'
 xvar = 'TA'
 yvar = 'VPD'
-zvar = 'VPD'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 # ------------------------------
 
 binx = f"BIN_{xvar}"
 biny = f"BIN_{yvar}"
-z = f"{zvar}_SHAPVALS"
+
 
 # Load settings
 settings = files.read_settings_file("../config/settings.yaml")
@@ -47,7 +46,7 @@ shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.drop('SITE', axis=1, inp
 
 # Aggregate SHAP values across all sites
 shapvals_sites_grouped_agg_df = aggregate_shap_values_across_all_sites(
-    df=shapvals_sites_agg_long_df, binx=binx, biny=biny, z=z
+    df=shapvals_sites_agg_long_df, binx=binx, biny=biny
 )
 
 # Save to Parquet

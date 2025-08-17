@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 
-def aggregate_shap_values_across_all_sites(df, binx, biny, z) -> pd.DataFrame:
+def aggregate_shap_values_across_all_sites(df, binx, biny) -> pd.DataFrame:
     print("Aggregating across all sites ...")
 
     # Remove all rows where all records are NaN,
@@ -41,8 +41,8 @@ def aggregate_shap_values_across_all_sites(df, binx, biny, z) -> pd.DataFrame:
     return df_grouped_agg
 
 
-def aggregate_shap_values_for_site(siteconfig, settings, site, filepath, flux, xvar, yvar, zvar, aggfunc, ix,
-                                   conditional=False, binsize: float = 0.2):
+def aggregate_shap_values_for_site(site, filepath, xvar, yvar, aggfunc, ix,
+                                   binsize: float = 0.2):
     site_res = pd.DataFrame()
 
     print(f"\nLoading data for site #{ix + 1} {site} ...")

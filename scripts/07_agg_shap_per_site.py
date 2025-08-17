@@ -9,10 +9,9 @@ from src.aggregation import aggregate_shap_values_for_site
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'
+FLUX = 'RECO'
 xvar = 'TA'
 yvar = 'VPD'
-zvar = 'VPD'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 # ------------------------------
@@ -43,9 +42,8 @@ for ix, siteconfig in siteinfo_df.iterrows():
     filepath = folder / filename
 
     site_results = aggregate_shap_values_for_site(
-        siteconfig=siteconfig, site=site, filepath=filepath, ix=ix, settings=settings,
-        flux=FLUX, xvar=xvar, yvar=yvar, zvar=zvar, aggfunc=aggfunc,
-        conditional=CONDITIONAL, binsize=0.1
+        site=site, filepath=filepath, ix=ix,
+        xvar=xvar, yvar=yvar, aggfunc=aggfunc, binsize=0.1
     )
     if ix == 0:
         shapvals_sites_agg_long_df = site_results.copy()

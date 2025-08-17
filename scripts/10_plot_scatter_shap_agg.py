@@ -24,12 +24,14 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
 FLUX = 'NEP'
-xvar = 'VPD'
-yvar = 'VPD'
+xvar = 'TA'
+yvar = 'TA'  # SHAP values
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
-# Heatmap settings
+# Plot settings
+show_txt_effect = False
+title = f"The effect of {yvar} on {FLUX}"
 n_sites_min = 20
 # ------------------------------
 
@@ -219,18 +221,19 @@ ax.annotate(
     fontsize=10, color='#6c757d', ha='right', va='center'
 )
 
-# Add text for negative effect
-ax.text(x=2.1, y=-0.03, s='Negative impact\nreduced uptake/increased release',
-        fontsize=9, color='black', ha='left', va='top')
+if show_txt_effect:
+    # Add text for negative effect
+    ax.text(x=2.1, y=-0.03, s='Negative impact\nreduced uptake/increased release',
+            fontsize=9, color='black', ha='left', va='top')
 
-# Add text for positive effect
-ax.text(x=2.1, y=0.03, s='Positive impact\nincreased uptake/reduced release',
-        fontsize=9, color='black', ha='left', va='bottom')
+    # Add text for positive effect
+    ax.text(x=2.1, y=0.03, s='Positive impact\nincreased uptake/reduced release',
+            fontsize=9, color='black', ha='left', va='bottom')
 
 # 426cb0
-ax.set_xlabel("Vapor pressure deficit (z-score)")
-ax.set_ylabel('SHAP value of VPD effect on NEE (z-score)')
-ax.set_title('The impact of VPD on NEP', fontsize=14, pad=10, y=1.02)
+ax.set_xlabel(f"{x} (z-score)")
+ax.set_ylabel(f"{y} effect on {FLUX} (z-score)")
+ax.set_title(title, fontsize=14, pad=10, y=1.02)
 ax.axhline(y=0, color='black', linestyle='-', lw=1)
 ax.grid(False)
 ax.legend(loc='upper right', frameon=False)

@@ -18,8 +18,8 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
 FLUX = 'NEP'
 xvar = 'TA'
-yvar = 'TA_SHAPVALS'
-zvar = 'TA'
+yvar = 'VPD_SHAPVALS'
+zvar = 'SWC'  # Classes
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
@@ -41,7 +41,7 @@ sbm = SortingBinsMethod(df=subset,
                         zvar=zvar,
                         xvar=xvar,
                         yvar=yvar,
-                        n_bins_z=50,
+                        n_bins_z=100,
                         n_bins_x=2,
                         conversion=None)
 sbm.calcbins()

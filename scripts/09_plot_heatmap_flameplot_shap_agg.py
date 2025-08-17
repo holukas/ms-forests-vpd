@@ -14,14 +14,15 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'
+FLUX = 'RECO'
 xvar = 'TA'
 yvar = 'VPD'
-zvar = 'VPD'
+zvar = 'SWIN'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
 # Heatmap settings
+title = f"The effect of {zvar} on {FLUX}"
 n_sites_min = 20
 # ------------------------------
 
@@ -73,7 +74,7 @@ hm.plot()
 
 # ax.set_xlabel('Air temperature (z-score)')
 # ax.set_ylabel("Vapor pressure deficit (z-score)")
-ax.set_title('The effect of VPD on NEP', fontsize=14, pad=10, y=1.02)
+ax.set_title(title, fontsize=14, pad=10, y=1.02)
 
 # Hide the top and right spines
 ax.spines['top'].set_visible(False)
