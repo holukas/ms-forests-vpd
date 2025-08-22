@@ -1,8 +1,5 @@
 # Dirs
 DIR_DATA: ../data
-DIR_DATA_RAW_ICOS: ../data/raw/icos
-DIR_DATA_RAW_FXN: ../data/raw/fluxnet
-DIR_DATA_RAW_AMF: ../data/raw/ameriflux
 DIR_DATA_PROC_PARQUET: ../data/processed/parquet_merged
 DIR_DATA_PROC_SUBSETS: ../data/processed/subsets
 DIR_DATA_OUT: ../data/outputs
@@ -12,16 +9,26 @@ DIR_DATA_OUT_SHAP_ANALYSIS: ../data/outputs/shap_analysis
 OUTFILE_SITEINFO: ../data/outputs/siteinfo.csv
 ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
 
-# ICOS (European sites)
+# ICOS (from Carbon Portal)
+DIR_DATA_RAW_ICOS: ../data/raw/icos
 PATTERN_DIR_ICOS: ['ICOSETC_', '_ARCHIVE_L2']
 PATTERN_FILE_HH_ICOS: ICOSETC_*_FLUXNET_HH_L2.csv
 
-# FLUXNET (European sites)
-PATTERN_DIR_FXN: ['FLX_', 'FLUXNET2015_FULLSET_']
-PATTERN_FILE_HH_FXN: FLX_*_FLUXNET2015_FULLSET_HH_*.csv
-INFOFILE_FXN: ../config/FLUXNET_SitesList_20240404.csv
+# FLUXNET (from Carbon Portal)
+DIR_DATA_RAW_FXN_CP: ../data/raw/fluxnet_from_carbonportal
+PATTERN_DIR_FXN_CP: ['FLX_', 'FLUXNET2015_FULLSET_']
+PATTERN_FILE_HH_FXN_CP: FLX_*_FLUXNET2015_FULLSET_HH_*.csv
+INFOFILE_FXN_CP: ../data/raw/fluxnet_from_carbonportal/0-info/FLUXNET_SitesList_20240404.csv
+
+# FLUXNET (from fluxnet.org)
+DIR_DATA_RAW_FXN_ORG: ../data/raw/fluxnet_from_fluxnetorg
+PATTERN_DIR_FXN_ORG: ['FLX_', 'FLUXNET2015_FULLSET_']
+PATTERN_FILE_HH_FXN_ORG: FLX_*_FLUXNET2015_FULLSET_HH_*.csv
+INFOFILE_FXN_ORG: ../data/raw/fluxnet_from_fluxnetorg/0-info/FLX_AA-Flx_BIF_HH_20200501.csv
 
 # AMERIFLUX
+DIR_DATA_RAW_AMF: ../data/raw/ameriflux
 PATTERN_DIR_AMF: ['AMF_', 'FLUXNET_FULLSET_']
 PATTERN_FILE_HH_AMF: AMF_*_FLUXNET_FULLSET_HH_*.csv
-INFOFILE_AMF: ../config/AMERIFLUX_AA-Flx_FLUXNET-BIF_CCBY4_20241205.csv
+INFOFILE_AMF: ../data/raw/ameriflux/0-info/AMF_AA-Flx_FLUXNET-BIF_CCBY4_20250804.csv
+

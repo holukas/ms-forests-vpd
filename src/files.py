@@ -178,7 +178,7 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
         # hm = dv.heatmapdatetime(series=merged_df[var], title=f"{site} ICOS+FLUXNET", vmin=-20, vmax=20)
         # hm.show()
 
-    elif origin == 'FLUXNET':
+    elif origin == 'FLUXNET_CP':
         icosdf = None
         load_fxn = dv.readfiletype(filetype="FLUXNET-FULLSET-HH-CSV-30MIN", filepath=filepath_fxn,
                                    data_nrows=data_nrows)

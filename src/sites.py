@@ -10,8 +10,8 @@ pd.set_option('display.max_rows', 3000)
 pd.set_option('display.max_columns', 3000)
 
 
-def merge_site_info(allsites_fxn, allsites_icos, allsites_amf, outfile):
-    allsites = pd.concat([allsites_fxn, allsites_icos, allsites_amf], axis=0, ignore_index=True)
+def merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn):
+    allsites = pd.concat([allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn], axis=0, ignore_index=True)
     allsites = allsites.reset_index(drop=True)
     allsites = allsites.fillna(np.nan)
     # print(allsites)
@@ -24,30 +24,68 @@ def merge_site_info(allsites_fxn, allsites_icos, allsites_amf, outfile):
         row = None
         _df = allsites.loc[allsites['SITE'] == u, :]
         n_records = len(_df)
+        has_icos = any(_df['ORIGIN'] == 'ICOS')
+        has_fxn_cp = any(_df['ORIGIN'] == 'FLUXNET_CP')
+        has_fxn_org = any(_df['ORIGIN'] == 'FLUXNET_ORG')
+        has_amf = any(_df['ORIGIN'] == 'AMERIFLUX')
 
-        # Both ICOS and FLUXNET data available
-        if n_records == 2:
-            row = _df.loc[_df['ORIGIN'] == 'ICOS']
-            row = row.set_index('SITE', drop=False)  # Set index for .fillna()
-            row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET']
-            row_fxn = row_fxn.set_index('SITE', drop=False)
-            row = row.fillna(row_fxn)
-            row['ORIGIN'] = 'ICOS+FLUXNET'
+        if n_records > 1:
+
+            # ICOS data + FLUXNET_CP data + FLUXNET data (in this order)
+            if has_icos:
+                row = _df.loc[_df['ORIGIN'] == 'ICOS']
+                row = row.set_index('SITE', drop=False)
+                originstr = "ICOS"
+                if has_fxn_cp:
+                    row_fxn_cp = _df.loc[_df['ORIGIN'] == 'FLUXNET_CP']
+                    row_fxn_cp = row_fxn_cp.set_index('SITE', drop=False)
+                    row = row.fillna(row_fxn_cp)
+                    originstr += "+FLUXNET_CP"
+                if has_fxn_org:
+                    row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
+                    row_fxn = row_fxn.set_index('SITE', drop=False)
+                    row = row.fillna(row_fxn)
+                    originstr += "+FLUXNET_ORG"
+                row['ORIGIN'] = originstr
+
+            # FLUXNET_CP data + FLUXNET data
+            elif has_fxn_cp:
+                row = _df.loc[_df['ORIGIN'] == 'FLUXNET_CP']
+                row = row.set_index('SITE', drop=False)
+                originstr = "FLUXNET_CP"
+                if has_fxn_org:
+                    row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
+                    row_fxn = row_fxn.set_index('SITE', drop=False)
+                    row = row.fillna(row_fxn)
+                    originstr += "+FLUXNET_ORG"
+                row['ORIGIN'] = originstr
+
+            # AMERIFLUX data + FLUXNET data
+            elif has_amf:
+                row = _df.loc[_df['ORIGIN'] == 'AMERIFLUX']
+                row = row.set_index('SITE', drop=False)
+                originstr = "AMERIFLUX"
+                if has_fxn_org:
+                    row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
+                    row_fxn = row_fxn.set_index('SITE', drop=False)
+                    row = row.fillna(row_fxn)
+                    originstr += "+FLUXNET_ORG"
+                row['ORIGIN'] = originstr
+
 
         # Only 1 available
         elif n_records == 1:
             if not _df.loc[_df['ORIGIN'] == 'ICOS'].empty:
                 row = _df.loc[_df['ORIGIN'] == 'ICOS']
-                # row = row.set_index('SITE', drop=False)
-            elif not _df.loc[_df['ORIGIN'] == 'FLUXNET'].empty:
-                row = _df.loc[_df['ORIGIN'] == 'FLUXNET']
-                # row = row.set_index('SITE', drop=False)
+            elif not _df.loc[_df['ORIGIN'] == 'FLUXNET_CP'].empty:
+                row = _df.loc[_df['ORIGIN'] == 'FLUXNET_CP']
+            elif not _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG'].empty:
+                row = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
             elif not _df.loc[_df['ORIGIN'] == 'AMERIFLUX'].empty:
                 row = _df.loc[_df['ORIGIN'] == 'AMERIFLUX']
-                # row = row.set_index('SITE', drop=False)
 
         else:
-            raise Exception(f"{n_records} entries not allowed, only 1 or 2.")
+            raise Exception(f"{n_records} entries not allowed, only 1,2 or 3 allowed for each site.")
 
         allsites_combined = pd.concat([allsites_combined, row], axis=0, ignore_index=True)
 
@@ -59,9 +97,9 @@ def merge_site_info(allsites_fxn, allsites_icos, allsites_amf, outfile):
     return allsites_combined
 
 
-def get_site_info_icos(pattern_icos, searchdir):
+def get_site_info_icos(pattern_icos, searchdir_icos):
     # Get info for ICOS sites
-    icos = SiteList(searchdir=searchdir, identifiers=pattern_icos, origin='ICOS')
+    icos = SiteList(searchdir=searchdir_icos, identifiers=pattern_icos, origin='ICOS')
     icos.run()
     allsites_icos = icos.get_site_info()
 
@@ -92,9 +130,9 @@ def get_site_info_icos(pattern_icos, searchdir):
     return allsites_icos
 
 
-def get_site_info_fxn(searchdir, pattern_fxn, infofile_fxn) -> pd.DataFrame:
+def get_site_info_fxn_cp(searchdir_cp, pattern_fxn_cp, infofile_fxn_cp) -> pd.DataFrame:
     # Get info for FLUXNET sites
-    fxn = SiteList(searchdir=searchdir, identifiers=pattern_fxn, origin="FLUXNET")
+    fxn = SiteList(searchdir=searchdir_cp, identifiers=pattern_fxn_cp, origin="FLUXNET_CP")
     fxn.run()
     allsites_fxn = fxn.get_site_info()
 
@@ -102,7 +140,7 @@ def get_site_info_fxn(searchdir, pattern_fxn, infofile_fxn) -> pd.DataFrame:
         return allsites_fxn
 
     # Read CSV with additional site info from EFDC / FLUXNET
-    siteinfo_fxn = pd.read_csv(infofile_fxn)
+    siteinfo_fxn = pd.read_csv(infofile_fxn_cp)
     siteinfo_fxn = siteinfo_fxn[['Site Code', 'IGBP Code', 'Site Latitude', 'Site Longitude']].copy()
 
     # Add info to site df
@@ -120,46 +158,47 @@ def get_site_info_fxn(searchdir, pattern_fxn, infofile_fxn) -> pd.DataFrame:
     return allsites_fxn
 
 
-def get_site_info_ameriflux(searchdir, pattern_amf, infofile_amf) -> pd.DataFrame:
+def get_site_info_fluxnet_ameriflux(searchdir, pattern, infofile, origin) -> pd.DataFrame:
+    """FLUXNET_ORG and AMERIFLUX files have the same structure."""
     # Get info for AMERIFLUX sites
-    amf = SiteList(searchdir=searchdir, identifiers=pattern_amf, origin='AMERIFLUX')
-    amf.run()
-    allsites_amf = amf.get_site_info()
+    sitelist = SiteList(searchdir=searchdir, identifiers=pattern, origin=origin)
+    sitelist.run()
+    allsites = sitelist.get_site_info()
 
     # Read CSV with additional site info from EFDC / FLUXNET
 
-    info_amf = pd.read_csv(infofile_amf)
+    info = pd.read_csv(infofile)
 
-    for ix, row in allsites_amf.iterrows():
+    for ix, row in allsites.iterrows():
         site = row['SITE']
-        sitelocs = info_amf['SITE_ID'] == site
-        siteinfo = info_amf[sitelocs].copy()
+        sitelocs = info['SITE_ID'] == site
+        siteinfo = info[sitelocs].copy()
 
         try:
-            elev_amf = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_ELEV']['DATAVALUE'].iloc[0]
+            elev = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_ELEV']['DATAVALUE'].iloc[0]
         except IndexError:
-            elev_amf = np.nan
+            elev = np.nan
 
         try:
-            lon_amf = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LONG']['DATAVALUE'].iloc[0]
+            lon = float(siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LONG']['DATAVALUE'].iloc[0])
         except IndexError:
-            lon_amf = np.nan
+            lon = np.nan
 
         try:
-            lat_amf = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LAT']['DATAVALUE'].iloc[0]
+            lat = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LAT']['DATAVALUE'].iloc[0]
         except IndexError:
-            lat_amf = np.nan
+            lat = np.nan
 
         try:
-            igbp_amf = siteinfo[siteinfo['VARIABLE'] == 'IGBP']['DATAVALUE'].iloc[0]
+            igbp = siteinfo[siteinfo['VARIABLE'] == 'IGBP']['DATAVALUE'].iloc[0]
         except IndexError:
-            igbp_amf = np.nan
+            igbp = np.nan
 
-        allsites_amf.loc[allsites_amf['SITE'] == site, 'ELEVATION'] = elev_amf
-        allsites_amf.loc[allsites_amf['SITE'] == site, 'LON'] = lon_amf
-        allsites_amf.loc[allsites_amf['SITE'] == site, 'LAT'] = lat_amf
-        allsites_amf.loc[allsites_amf['SITE'] == site, 'IGBP'] = igbp_amf
-        return allsites_amf
+        allsites.loc[allsites['SITE'] == site, 'ELEVATION'] = elev
+        allsites.loc[allsites['SITE'] == site, 'LON'] = lon
+        allsites.loc[allsites['SITE'] == site, 'LAT'] = lat
+        allsites.loc[allsites['SITE'] == site, 'IGBP'] = igbp
+    return allsites
 
 
 class SiteList:
@@ -198,9 +237,12 @@ class SiteList:
 
         for v in self.valid_folders:
             site = np.nan
-            dirpath_fxn = np.nan
-            dirname_fxn = np.nan
-            filepath_fxn = np.nan
+            dirpath_fxn_cp = np.nan
+            dirname_fxn_cp = np.nan
+            filepath_fxn_cp = np.nan
+            dirpath_fxn_org = np.nan
+            dirname_fxn_org = np.nan
+            filepath_fxn_org = np.nan
             dirpath_icos = np.nan
             dirname_icos = np.nan
             filepath_icos = np.nan
@@ -208,14 +250,14 @@ class SiteList:
             dirname_amf = np.nan
             filepath_amf = np.nan
 
-            if self.origin == 'FLUXNET':
+            if self.origin == 'FLUXNET_CP':
                 # FLX_FI-Var_FLUXNET2015_FULLSET_HH_2017-2023_1-3.csv
-                dirpath_fxn = Path(v)
-                dirname_fxn = dirpath_fxn.name
-                site = self._extract_sitename(dirname=dirname_fxn)
+                dirpath_fxn_cp = Path(v)
+                dirname_fxn_cp = dirpath_fxn_cp.name
+                site = self._extract_sitename(dirname=dirname_fxn_cp)
                 filepattern = 'FLX_*_FLUXNET2015_FULLSET_HH_*.csv'
-                foundfile = search_files(searchdirs=str(dirpath_fxn), pattern=filepattern)
-                filepath_fxn = foundfile[0]
+                foundfile = search_files(searchdirs=str(dirpath_fxn_cp), pattern=filepattern)
+                filepath_fxn_cp = foundfile[0]
 
             elif self.origin == 'ICOS':
                 dirpath_icos = Path(v)
@@ -237,12 +279,29 @@ class SiteList:
                     foundfile = search_files(searchdirs=str(dirpath_amf), pattern=filepattern)
                 filepath_amf = foundfile[0]
 
+            elif self.origin == 'FLUXNET_ORG':
+                dirpath_fxn_org = Path(v)
+                dirname_fxn_org = dirpath_fxn_org.name
+                site = self._extract_sitename(dirname=dirname_fxn_org)
+                filepattern = 'FLX_*_FLUXNET2015_FULLSET_HH_*.csv'
+                foundfile = search_files(searchdirs=str(dirpath_fxn_org), pattern=filepattern)
+                if not foundfile:
+                    # Few sites have hourly instead of half-hourly data
+                    filepattern = 'FLX_*_FLUXNET2015_FULLSET_HR_*.csv'
+                    foundfile = search_files(searchdirs=str(dirpath_fxn_org), pattern=filepattern)
+                    # TODO check
+                    # raise Exception("Script tried to find hourly data.")
+                filepath_fxn_org = foundfile[0]
+
             d = {
                 'SITE': [site],
                 'ORIGIN': self.origin,
-                '_DIRNAME_FXN': [dirname_fxn],
-                '_DIRPATH_FXN': [dirpath_fxn],
-                '_FILEPATH_FXN': [filepath_fxn],
+                '_DIRNAME_FXN_CP': [dirname_fxn_cp],
+                '_DIRPATH_FXN_CP': [dirpath_fxn_cp],
+                '_FILEPATH_FXN_CP': [filepath_fxn_cp],
+                '_DIRNAME_FXN_ORG': [dirname_fxn_org],
+                '_DIRPATH_FXN_ORG': [dirpath_fxn_org],
+                '_FILEPATH_FXN_ORG': [filepath_fxn_org],
                 '_DIRNAME_ICOS': [dirname_icos],
                 '_DIRPATH_ICOS': [dirpath_icos],
                 '_FILEPATH_ICOS': [filepath_icos],
