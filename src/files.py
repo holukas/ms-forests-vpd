@@ -117,108 +117,175 @@ def load_siteinfo(settings: dict) -> pd.DataFrame:
     return siteinfo_df
 
 
+def readfile(filetype, filepath_icos, data_nrows):
+    data = dv.readfiletype(filetype=filetype, filepath=filepath_icos, data_nrows=data_nrows)
+    df, _ = data.get_filedata()
+    return df
+
+
+def _compare_years(primary_df, secondary_df, first_year_primary):
+    qcseries_primary = primary_df.loc[primary_df.index.year == first_year_primary, 'NEE_VUT_REF_QC']
+    n_measured_primary = qcseries_primary[qcseries_primary == 0].count()
+    qcseries_secondary = secondary_df.loc[secondary_df.index.year == first_year_primary, 'NEE_VUT_REF_QC']
+    n_measured_secondary = qcseries_secondary[qcseries_secondary == 0].count()
+
+    # In case secondary has more records for the first common year,
+    # remove year from primary
+    if n_measured_secondary > n_measured_primary:
+        keeplocs_primary = primary_df.index.year > first_year_primary
+        primary_df = primary_df.loc[keeplocs_primary].copy()
+    # In case primary has more records, remove year from secondary
+    elif n_measured_primary > n_measured_secondary:
+        keeplocs_secondary = secondary_df.index.year < first_year_primary
+        secondary_df = secondary_df.loc[keeplocs_secondary].copy()
+
+    # Generally, only keep records from secondary that are not in primary
+    keeplocs_secondary = secondary_df.index < primary_df.index[0]
+    secondary_df = secondary_df[keeplocs_secondary].copy()
+
+    return primary_df, secondary_df
+
+
 def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> pd.DataFrame:
     site = siteconfig['SITE']
+
+    # --- TODO testing
+    if site != "IT-Cp2":
+        return pd.DataFrame()
+    # --- TODO testing
+
     igbp = siteconfig['IGBP']
     origin = siteconfig['ORIGIN']
+    filetype = "FLUXNET-FULLSET-HH-CSV-30MIN"
     filepath_icos = siteconfig['_FILEPATH_ICOS']
-    filepath_fxn = siteconfig['_FILEPATH_FXN']
+    filepath_fxn_cp = siteconfig['_FILEPATH_FXN_CP']
+    filepath_fxn_org = siteconfig['_FILEPATH_FXN_ORG']
     filepath_amf = siteconfig['_FILEPATH_AMF']
 
-    # Load data
-    if origin == 'ICOS+FLUXNET':
-        load_icos = dv.readfiletype(filetype="FLUXNET-FULLSET-HH-CSV-30MIN", filepath=filepath_icos,
-                                    data_nrows=data_nrows)
-        icosdf, _ = load_icos.get_filedata()
-        load_fxn = dv.readfiletype(filetype="FLUXNET-FULLSET-HH-CSV-30MIN", filepath=filepath_fxn,
-                                   data_nrows=data_nrows)
-        fxndf, _ = load_fxn.get_filedata()
+    icos_df = None
+    fxn_cp_df = None
+    fxn_org_df = None
+    amf_df = None
+    icos_yrs = None
+    fxn_cp_yrs = None
+    fxn_org_yrs = None
+    amf_yrs = None
+    icos_firstyr = None
+    fxn_cp_firstyr = None
+    fxn_org_firstyr = None
+    amf_firstyr = None
 
-        # Check for overlapping years
-        # Find the first overlapping year between the two datasets.
-        # The logic is that the first year of ICOS measurements for a site can
-        # be incomplete, but from the second year onwards it should be fine.
-        # In case more records are available for the FLUXNET dataset, the FLUXNET dataset is used
-        # for this year. Otherwise ICOS.
-        # Count number of directly measured NEE values to decide which dataset to use for this year.
-        yrs_icos = list(set(icosdf.index.year))
-        yrs_fxn = list(set(fxndf.index.year))
-        firstyr_icos = yrs_icos[0]
+    # Read available files
+    print(f"Reading data for {site}...")
+    if isinstance(filepath_icos, str):
+        icos_df = readfile(filetype, filepath_icos, data_nrows)
+        icos_df['ORIGIN'] = 'ICOS'  # Add origin for each data record
+        icos_yrs = list(set(icos_df.index.year))
+        icos_firstyr = icos_df.index.year[0]
 
-        if firstyr_icos in yrs_fxn:
-            qcseries_icos = icosdf.loc[icosdf.index.year == firstyr_icos, 'NEE_VUT_REF_QC']
-            n_measured_icos = qcseries_icos[qcseries_icos == 0].count()
-            qcseries_fxn = fxndf.loc[fxndf.index.year == firstyr_icos, 'NEE_VUT_REF_QC']
-            n_measured_fxn = qcseries_fxn[qcseries_fxn == 0].count()
+    if isinstance(filepath_fxn_cp, str):
+        fxn_cp_df = readfile(filetype, filepath_fxn_cp, data_nrows)
+        fxn_cp_df['ORIGIN'] = 'FLUXNET-CP'
+        fxn_cp_yrs = list(set(fxn_cp_df.index.year))
+        fxn_cp_firstyr = fxn_cp_df.index.year[0]
 
-            # In case FXN has more records for the first common year, remove year from ICOS
-            if n_measured_fxn > n_measured_icos:
-                keeplocs_icos = icosdf.index.year > firstyr_icos
-                icosdf = icosdf.loc[keeplocs_icos]
-            # In case ICOS has more records, remove year from FXN
-            elif n_measured_icos > n_measured_fxn:
-                keeplocs_fxn = fxndf.index.year < firstyr_icos
-                fxndf = fxndf.loc[keeplocs_fxn]
+    if isinstance(filepath_fxn_org, str):
+        fxn_org_df = readfile(filetype, filepath_fxn_org, data_nrows)
+        fxn_cp_df['ORIGIN'] = 'FLUXNET-ORG'
+        fxn_org_yrs = list(set(fxn_org_df.index.year))
+        fxn_org_firstyr = fxn_org_df.index.year[0]
 
-        # Generally, only keep records from FLUXNET data that are not in ICOS data
-        keeplocs_fxn = fxndf.index < icosdf.index[0]
-        fxndf = fxndf[keeplocs_fxn].copy()
+    if isinstance(filepath_amf, str):
+        amf_df = readfile(filetype, filepath_amf, data_nrows)
+        fxn_cp_df['ORIGIN'] = 'AMERIFLUX'
+        amf_yrs = list(set(amf_df.index.year))
+        amf_firstyr = amf_df.index.year[0]
 
-        # Merge ICOS and FLUXNET data
-        merged_df = pd.concat([icosdf, fxndf], axis=0)
+    # Check for overlapping years
+    # Find the first overlapping year between the two datasets.
+    # The logic is that the first year of ICOS measurements for a site can
+    # be incomplete, but from the second year onwards it should be fine.
+    # In case more records are available for the FLUXNET dataset, the FLUXNET dataset is used
+    # for this year. Otherwise ICOS.
+    # Count number of directly measured NEE values to decide which dataset to use for this year.
+    if (
+            isinstance(icos_df, pd.DataFrame)
+            and isinstance(fxn_cp_df, pd.DataFrame)
+            and isinstance(fxn_org_df, pd.DataFrame)
+            and not isinstance(amf_df, pd.DataFrame)
+    ):
+        # Check if the first ICOS year appears in the FXN CP dataset
+        # If yes, keep data from the dataset with more directly measured values for that year
+        if icos_firstyr in fxn_cp_yrs:
+            icos_df, fxn_cp_df = _compare_years(
+                primary_df=icos_df,
+                secondary_df=fxn_cp_df,
+                first_year_primary=icos_firstyr)
+        merged_df = pd.concat([icos_df, fxn_cp_df], axis=0)
+
+        # Now check if the first merged year appears in the FXN ORG dataset
+        if merged_df.index.year.min() in fxn_org_yrs:
+            merged_df, fxn_org_df = _compare_years(
+                primary_df=merged_df,
+                secondary_df=fxn_org_df,
+                first_year_primary=merged_df.index.year.min())
+        merged_df = pd.concat([merged_df, fxn_org_df], axis=0)
         merged_df = merged_df.sort_index()
-        sourcetxt = "ICOS+FXN"
+        sourcetxt = "ICOS+FXN-CP+FXN-ORG"
 
-        # # Heatmap plots
-        # var = 'NEE_VUT_REF'
-        # hm = dv.heatmapdatetime(series=icosdf[var], title=f"{site} ICOS (2025)", vmin=-20, vmax=20)
-        # hm.show()
-        # hm = dv.heatmapdatetime(series=fxndf[var], title=f"{site} FLUXNET (2024)", vmin=-20, vmax=20)
-        # hm.show()
-        # hm = dv.heatmapdatetime(series=merged_df[var], title=f"{site} ICOS+FLUXNET", vmin=-20, vmax=20)
-        # hm.show()
+        # Heatmap plots
+        var = 'NEE_VUT_REF'
+        _icos_df = icos_df.reindex(merged_df.index)
+        hm = dv.heatmapdatetime(series=icos_df[var], title=f"{site} ICOS", vmin=-20, vmax=20)
+        hm.show()
+        hm = dv.heatmapdatetime(series=fxn_cp_df[var], title=f"{site} FLUXNET-CP", vmin=-20, vmax=20)
+        hm.show()
+        hm = dv.heatmapdatetime(series=fxn_org_df[var], title=f"{site} FLUXNET-ORG", vmin=-20, vmax=20)
+        hm.show()
+        hm = dv.heatmapdatetime(series=merged_df[var], title=f"{site} {sourcetxt}", vmin=-20, vmax=20)
+        hm.show()
 
-    elif origin == 'FLUXNET_CP':
-        icosdf = None
-        load_fxn = dv.readfiletype(filetype="FLUXNET-FULLSET-HH-CSV-30MIN", filepath=filepath_fxn,
-                                   data_nrows=data_nrows)
-        merged_df, _ = load_fxn.get_filedata()
-        sourcetxt = "FXN"
-
-    elif origin == 'ICOS':
-        fxndf = None
-        load_icos = dv.readfiletype(filetype="FLUXNET-FULLSET-HH-CSV-30MIN", filepath=filepath_icos,
-                                    data_nrows=data_nrows)
-        merged_df, _ = load_icos.get_filedata()
-        sourcetxt = "ICOS"
-
-    elif origin == 'AMERIFLUX':
-        fxndf = None
-        filename = Path(filepath_amf).name
-        # Some files are at 60MIN time resolution
-        if "_FLUXNET_FULLSET_HH_" in filename:
-            filetype = "FLUXNET-FULLSET-HH-CSV-30MIN"
-        elif "_FLUXNET_FULLSET_HR_" in filename:
-            filetype = "FLUXNET-FULLSET-HR-CSV-60MIN"
-        else:
-            raise NotImplementedError
-        load_amf = dv.readfiletype(filetype=filetype, filepath=filepath_amf, data_nrows=data_nrows)
-        merged_df, _ = load_amf.get_filedata()
-        sourcetxt = "AMERIFLUX"
-
-    else:
-        raise Exception("Unknown origin.")
-
-    # Save merged data to parquet file
-    start = merged_df.index[0].year
-    end = merged_df.index[-1].year
-    outfilepath = dv.save_parquet(filename=f"{site}_{igbp}_{sourcetxt}_{start}-{end}",
-                                  data=merged_df,
-                                  outpath=Path(settings['DIR_DATA_PROC_PARQUET']))
-
-    siteinfo_df.loc[ix, '_FILEPATH_PARQUET'] = Path(outfilepath)
-
-    return siteinfo_df
+    # elif origin == 'FLUXNET_CP':
+    #     icosdf = None
+    #     load_fxn = dv.readfiletype(filetype="FLUXNET-FULLSET-HH-CSV-30MIN", filepath=filepath_fxn_cp,
+    #                                data_nrows=data_nrows)
+    #     merged_df, _ = load_fxn.get_filedata()
+    #     sourcetxt = "FXN"
+    #
+    # elif origin == 'ICOS':
+    #     fxndf = None
+    #     load_icos = dv.readfiletype(filetype="FLUXNET-FULLSET-HH-CSV-30MIN", filepath=filepath_icos,
+    #                                 data_nrows=data_nrows)
+    #     merged_df, _ = load_icos.get_filedata()
+    #     sourcetxt = "ICOS"
+    #
+    # elif origin == 'AMERIFLUX':
+    #     fxndf = None
+    #     filename = Path(filepath_amf).name
+    #     # Some files are at 60MIN time resolution
+    #     if "_FLUXNET_FULLSET_HH_" in filename:
+    #         filetype = "FLUXNET-FULLSET-HH-CSV-30MIN"
+    #     elif "_FLUXNET_FULLSET_HR_" in filename:
+    #         filetype = "FLUXNET-FULLSET-HR-CSV-60MIN"
+    #     else:
+    #         raise NotImplementedError
+    #     load_amf = dv.readfiletype(filetype=filetype, filepath=filepath_amf, data_nrows=data_nrows)
+    #     merged_df, _ = load_amf.get_filedata()
+    #     sourcetxt = "AMERIFLUX"
+    #
+    # else:
+    #     raise Exception("Unknown origin.")
+    #
+    # # Save merged data to parquet file
+    # start = merged_df.index[0].year
+    # end = merged_df.index[-1].year
+    # outfilepath = dv.save_parquet(filename=f"{site}_{igbp}_{sourcetxt}_{start}-{end}",
+    #                               data=merged_df,
+    #                               outpath=Path(settings['DIR_DATA_PROC_PARQUET']))
+    #
+    # siteinfo_df.loc[ix, '_FILEPATH_PARQUET'] = Path(outfilepath)
+    #
+    # return siteinfo_df
 
 
 # def convert_datafiles_to_parquet(filepatterns: list, filetype: str, searchdir: str, outpath: str):

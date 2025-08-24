@@ -236,19 +236,19 @@ class SiteList:
         sites = pd.DataFrame()
 
         for v in self.valid_folders:
-            site = np.nan
-            dirpath_fxn_cp = np.nan
-            dirname_fxn_cp = np.nan
-            filepath_fxn_cp = np.nan
-            dirpath_fxn_org = np.nan
-            dirname_fxn_org = np.nan
-            filepath_fxn_org = np.nan
-            dirpath_icos = np.nan
-            dirname_icos = np.nan
-            filepath_icos = np.nan
-            dirpath_amf = np.nan
-            dirname_amf = np.nan
-            filepath_amf = np.nan
+            site = None
+            dirpath_fxn_cp = None
+            dirname_fxn_cp = None
+            filepath_fxn_cp = None
+            dirpath_fxn_org = None
+            dirname_fxn_org = None
+            filepath_fxn_org = None
+            dirpath_icos = None
+            dirname_icos = None
+            filepath_icos = None
+            dirpath_amf = None
+            dirname_amf = None
+            filepath_amf = None
 
             if self.origin == 'FLUXNET_CP':
                 # FLX_FI-Var_FLUXNET2015_FULLSET_HH_2017-2023_1-3.csv

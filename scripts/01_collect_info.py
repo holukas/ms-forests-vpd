@@ -6,10 +6,6 @@ import src.sites as sites
 # Settings
 settings = files.read_settings_file("../config/settings.yaml")
 
-# # TODO testing dir ---
-# TESTDIR = str(Path(r"F:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\data\source\testing"))
-# # TODO --- testing dir
-
 ecosystems = settings['ECOSYSTEMS']
 
 # ICOS

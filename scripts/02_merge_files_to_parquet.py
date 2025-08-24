@@ -19,4 +19,4 @@ for ix, siteconfig in _siteinfo_df.iterrows():
     )
 
 # Save updated site info
-files.save_siteinfo(siteinfo_df=siteinfo_df, settings=settings)
+# TODO files.save_siteinfo(siteinfo_df=siteinfo_df, settings=settings)
