@@ -97,9 +97,9 @@ def merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn):
     return allsites_combined
 
 
-def get_site_info_icos(pattern_icos, searchdir_icos):
+def get_site_info_icos(pattern_dir, searchdir, pattern_file):
     # Get info for ICOS sites
-    icos = SiteList(searchdir=searchdir_icos, identifiers=pattern_icos, origin='ICOS')
+    icos = SiteList(searchdir=searchdir, identifiers=pattern_dir, pattern_file=pattern_file, origin='ICOS')
     icos.run()
     allsites_icos = icos.get_site_info()
 
@@ -130,9 +130,9 @@ def get_site_info_icos(pattern_icos, searchdir_icos):
     return allsites_icos
 
 
-def get_site_info_fxn_cp(searchdir_cp, pattern_fxn_cp, infofile_fxn_cp) -> pd.DataFrame:
+def get_site_info_fxn_cp(searchdir, pattern_dir, infofile, pattern_file) -> pd.DataFrame:
     # Get info for FLUXNET sites
-    fxn = SiteList(searchdir=searchdir_cp, identifiers=pattern_fxn_cp, origin="FLUXNET_CP")
+    fxn = SiteList(searchdir=searchdir, identifiers=pattern_dir, origin="FLUXNET_CP", pattern_file=pattern_file)
     fxn.run()
     allsites_fxn = fxn.get_site_info()
 
@@ -140,7 +140,7 @@ def get_site_info_fxn_cp(searchdir_cp, pattern_fxn_cp, infofile_fxn_cp) -> pd.Da
         return allsites_fxn
 
     # Read CSV with additional site info from EFDC / FLUXNET
-    siteinfo_fxn = pd.read_csv(infofile_fxn_cp)
+    siteinfo_fxn = pd.read_csv(infofile)
     siteinfo_fxn = siteinfo_fxn[['Site Code', 'IGBP Code', 'Site Latitude', 'Site Longitude']].copy()
 
     # Add info to site df
@@ -158,10 +158,10 @@ def get_site_info_fxn_cp(searchdir_cp, pattern_fxn_cp, infofile_fxn_cp) -> pd.Da
     return allsites_fxn
 
 
-def get_site_info_fluxnet_ameriflux(searchdir, pattern, infofile, origin) -> pd.DataFrame:
+def get_site_info_fluxnet_ameriflux(searchdir, pattern_dir, infofile, origin, pattern_file) -> pd.DataFrame:
     """FLUXNET_ORG and AMERIFLUX files have the same structure."""
     # Get info for AMERIFLUX sites
-    sitelist = SiteList(searchdir=searchdir, identifiers=pattern, origin=origin)
+    sitelist = SiteList(searchdir=searchdir, identifiers=pattern_dir, origin=origin, pattern_file=pattern_file)
     sitelist.run()
     allsites = sitelist.get_site_info()
 
@@ -206,10 +206,12 @@ class SiteList:
     def __init__(self,
                  searchdir: str,
                  identifiers: list,
+                 pattern_file: str,
                  origin: str):
 
         self.searchdir = searchdir
         self.identifiers = identifiers
+        self.pattern_file = pattern_file
         self.origin = origin
 
         self.valid_folders = []
@@ -255,24 +257,24 @@ class SiteList:
                 dirpath_fxn_cp = Path(v)
                 dirname_fxn_cp = dirpath_fxn_cp.name
                 site = self._extract_sitename(dirname=dirname_fxn_cp)
-                filepattern = 'FLX_*_FLUXNET2015_FULLSET_HH_*.csv'
-                foundfile = search_files(searchdirs=str(dirpath_fxn_cp), pattern=filepattern)
+                # filepattern = 'FLX_*_FLUXNET2015_FULLSET_HH_*.csv'
+                foundfile = search_files(searchdirs=str(dirpath_fxn_cp), pattern=self.pattern_file)
                 filepath_fxn_cp = foundfile[0]
 
             elif self.origin == 'ICOS':
                 dirpath_icos = Path(v)
                 dirname_icos = dirpath_icos.name
                 site = self._extract_sitename(dirname=dirname_icos)
-                filepattern = 'ICOSETC_*_FLUXNET_HH_L2.csv'
-                foundfile = search_files(searchdirs=str(dirpath_icos), pattern=filepattern)
+                # filepattern = 'ICOSETC_*_FLUXNET_HH_L2.csv'
+                foundfile = search_files(searchdirs=str(dirpath_icos), pattern=self.pattern_file)
                 filepath_icos = foundfile[0]
 
             elif self.origin == 'AMERIFLUX':
                 dirpath_amf = Path(v)
                 dirname_amf = dirpath_amf.name
                 site = self._extract_sitename(dirname=dirname_amf)
-                filepattern = 'AMF_*_FLUXNET_FULLSET_HH_*.csv'
-                foundfile = search_files(searchdirs=str(dirpath_amf), pattern=filepattern)
+                # filepattern = 'AMF_*_FLUXNET_FULLSET_HH_*.csv'
+                foundfile = search_files(searchdirs=str(dirpath_amf), pattern=self.pattern_file)
                 if not foundfile:
                     # Few sites have hourly instead of half-hourly data
                     filepattern = 'AMF_*_FLUXNET_FULLSET_HR_*.csv'
@@ -283,8 +285,8 @@ class SiteList:
                 dirpath_fxn_org = Path(v)
                 dirname_fxn_org = dirpath_fxn_org.name
                 site = self._extract_sitename(dirname=dirname_fxn_org)
-                filepattern = 'FLX_*_FLUXNET2015_FULLSET_HH_*.csv'
-                foundfile = search_files(searchdirs=str(dirpath_fxn_org), pattern=filepattern)
+                # filepattern = 'FLX_*_FLUXNET2015_FULLSET_HH_*.csv'
+                foundfile = search_files(searchdirs=str(dirpath_fxn_org), pattern=self.pattern_file)
                 if not foundfile:
                     # Few sites have hourly instead of half-hourly data
                     filepattern = 'FLX_*_FLUXNET2015_FULLSET_HR_*.csv'

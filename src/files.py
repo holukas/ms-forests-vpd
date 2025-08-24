@@ -1,6 +1,8 @@
 from pathlib import Path
 
 import diive as dv
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import yaml
@@ -124,35 +126,66 @@ def readfile(filetype, filepath_icos, data_nrows):
 
 
 def _compare_years(primary_df, secondary_df, first_year_primary):
-    qcseries_primary = primary_df.loc[primary_df.index.year == first_year_primary, 'NEE_VUT_REF_QC']
-    n_measured_primary = qcseries_primary[qcseries_primary == 0].count()
-    qcseries_secondary = secondary_df.loc[secondary_df.index.year == first_year_primary, 'NEE_VUT_REF_QC']
-    n_measured_secondary = qcseries_secondary[qcseries_secondary == 0].count()
+    """
+    Reconciles two pandas DataFrames by adjusting them based on a common year.
 
-    # In case secondary has more records for the first common year,
-    # remove year from primary
-    if n_measured_secondary > n_measured_primary:
-        keeplocs_primary = primary_df.index.year > first_year_primary
-        primary_df = primary_df.loc[keeplocs_primary].copy()
-    # In case primary has more records, remove year from secondary
-    elif n_measured_primary > n_measured_secondary:
-        keeplocs_secondary = secondary_df.index.year < first_year_primary
-        secondary_df = secondary_df.loc[keeplocs_secondary].copy()
+    This function compares the number of valid records in a specified common year (`first_year_primary`)
+    for two dataframes, `primary_df` and `secondary_df`. It truncates the dataframe with fewer
+    records to remove that year's data. Afterward, it truncates the secondary dataframe
+    to include only records that occurred before the start of the primary dataframe.
 
-    # Generally, only keep records from secondary that are not in primary
-    keeplocs_secondary = secondary_df.index < primary_df.index[0]
-    secondary_df = secondary_df[keeplocs_secondary].copy()
+    Parameters:
+        primary_df (pd.DataFrame): The primary DataFrame with a DatetimeIndex.
+        secondary_df (pd.DataFrame): The secondary DataFrame with a DatetimeIndex.
+        first_year_primary (int): The common year used for the initial comparison.
+
+    Returns:
+        tuple: A tuple containing the reconciled primary and secondary DataFrames.
+               (primary_df, secondary_df)
+
+    Raises:
+        TypeError: If either DataFrame does not have a pandas DatetimeIndex.
+        IndexError: If primary_df becomes empty, preventing subsequent operations.
+    """
+    # Ensure indices are datetime-like to allow year-based comparisons
+    if not isinstance(primary_df.index, pd.DatetimeIndex) or not isinstance(secondary_df.index, pd.DatetimeIndex):
+        raise TypeError("DataFrames must have a DatetimeIndex.")
+
+    # Get the number of measured records for the specific year in each DataFrame
+    n_measured_primary = (primary_df.loc[primary_df.index.year == first_year_primary, 'NEE_VUT_REF_QC'] == 0).sum()
+    n_measured_secondary = (
+            secondary_df.loc[secondary_df.index.year == first_year_primary, 'NEE_VUT_REF_QC'] == 0).sum()
+
+    # Compare the number of records and truncate the appropriate DataFrame
+    if n_measured_primary > n_measured_secondary:
+        # If primary has more records, truncate secondary to remove the first year's data
+        secondary_df = secondary_df[secondary_df.index.year > first_year_primary].copy()
+    elif n_measured_secondary > n_measured_primary:
+        # If secondary has more records, truncate primary to remove the first year's data
+        primary_df = primary_df[primary_df.index.year > first_year_primary].copy()
+
+    # If primary_df is empty after truncation, the next line will fail.
+    # We must handle this edge case to prevent an IndexError.
+    if primary_df.empty:
+        return primary_df, secondary_df
+
+    # Truncate secondary_df to only keep records that precede the start of primary_df
+    # This logic assumes primary_df is chronologically later than secondary_df
+    secondary_df = secondary_df[secondary_df.index < primary_df.index.min()].copy()
 
     return primary_df, secondary_df
+
+
+import pandas as pd
 
 
 def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> pd.DataFrame:
     site = siteconfig['SITE']
 
-    # --- TODO testing
-    if site != "IT-Cp2":
-        return pd.DataFrame()
-    # --- TODO testing
+    # # --- TODO testing
+    # if site != "AU-Tum":
+    #     return pd.DataFrame()
+    # # --- TODO testing
 
     igbp = siteconfig['IGBP']
     origin = siteconfig['ORIGIN']
@@ -166,6 +199,7 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
     fxn_cp_df = None
     fxn_org_df = None
     amf_df = None
+    merged_df = None
     icos_yrs = None
     fxn_cp_yrs = None
     fxn_org_yrs = None
@@ -174,6 +208,7 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
     fxn_cp_firstyr = None
     fxn_org_firstyr = None
     amf_firstyr = None
+    sourcetxt = "-NO-SOURCE-ERROR-"
 
     # Read available files
     print(f"Reading data for {site}...")
@@ -190,17 +225,25 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
         fxn_cp_firstyr = fxn_cp_df.index.year[0]
 
     if isinstance(filepath_fxn_org, str):
+        # Sometime hourly data
+        if '_FULLSET_HR_' in Path(filepath_fxn_org).name:
+            filetype = "FLUXNET-FULLSET-HR-CSV-60MIN"
         fxn_org_df = readfile(filetype, filepath_fxn_org, data_nrows)
-        fxn_cp_df['ORIGIN'] = 'FLUXNET-ORG'
+        fxn_org_df['ORIGIN'] = 'FLUXNET-ORG'
         fxn_org_yrs = list(set(fxn_org_df.index.year))
         fxn_org_firstyr = fxn_org_df.index.year[0]
 
     if isinstance(filepath_amf, str):
+        # Sometime hourly data
+        if '_FULLSET_HR_' in Path(filepath_amf).name:
+            filetype = "FLUXNET-FULLSET-HR-CSV-60MIN"
         amf_df = readfile(filetype, filepath_amf, data_nrows)
-        fxn_cp_df['ORIGIN'] = 'AMERIFLUX'
+        amf_df['ORIGIN'] = 'AMERIFLUX'
         amf_yrs = list(set(amf_df.index.year))
         amf_firstyr = amf_df.index.year[0]
 
+    # ---------------------------------------------
+    # ICOS + FXN-CP + FXN-ORG
     # Check for overlapping years
     # Find the first overlapping year between the two datasets.
     # The logic is that the first year of ICOS measurements for a site can
@@ -208,12 +251,10 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
     # In case more records are available for the FLUXNET dataset, the FLUXNET dataset is used
     # for this year. Otherwise ICOS.
     # Count number of directly measured NEE values to decide which dataset to use for this year.
-    if (
-            isinstance(icos_df, pd.DataFrame)
+    if (isinstance(icos_df, pd.DataFrame)
             and isinstance(fxn_cp_df, pd.DataFrame)
             and isinstance(fxn_org_df, pd.DataFrame)
-            and not isinstance(amf_df, pd.DataFrame)
-    ):
+            and not isinstance(amf_df, pd.DataFrame)):
         # Check if the first ICOS year appears in the FXN CP dataset
         # If yes, keep data from the dataset with more directly measured values for that year
         if icos_firstyr in fxn_cp_yrs:
@@ -230,20 +271,112 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
                 secondary_df=fxn_org_df,
                 first_year_primary=merged_df.index.year.min())
         merged_df = pd.concat([merged_df, fxn_org_df], axis=0)
-        merged_df = merged_df.sort_index()
         sourcetxt = "ICOS+FXN-CP+FXN-ORG"
 
-        # Heatmap plots
-        var = 'NEE_VUT_REF'
-        _icos_df = icos_df.reindex(merged_df.index)
-        hm = dv.heatmapdatetime(series=icos_df[var], title=f"{site} ICOS", vmin=-20, vmax=20)
-        hm.show()
-        hm = dv.heatmapdatetime(series=fxn_cp_df[var], title=f"{site} FLUXNET-CP", vmin=-20, vmax=20)
-        hm.show()
-        hm = dv.heatmapdatetime(series=fxn_org_df[var], title=f"{site} FLUXNET-ORG", vmin=-20, vmax=20)
-        hm.show()
-        hm = dv.heatmapdatetime(series=merged_df[var], title=f"{site} {sourcetxt}", vmin=-20, vmax=20)
-        hm.show()
+    # ---------------------------------------------
+    # ICOS + FXN-CP
+    elif (isinstance(icos_df, pd.DataFrame)
+          and isinstance(fxn_cp_df, pd.DataFrame)
+          and not isinstance(fxn_org_df, pd.DataFrame)
+          and not isinstance(amf_df, pd.DataFrame)):
+        if icos_firstyr in fxn_cp_yrs:
+            icos_df, fxn_cp_df = _compare_years(
+                primary_df=icos_df,
+                secondary_df=fxn_cp_df,
+                first_year_primary=icos_firstyr)
+        merged_df = pd.concat([icos_df, fxn_cp_df], axis=0)
+        sourcetxt = "ICOS+FXN-CP"
+
+    # ---------------------------------------------
+    # ICOS + FXN-ORG
+    elif (isinstance(icos_df, pd.DataFrame)
+          and not isinstance(fxn_cp_df, pd.DataFrame)
+          and isinstance(fxn_org_df, pd.DataFrame)
+          and not isinstance(amf_df, pd.DataFrame)):
+        if icos_firstyr in fxn_cp_yrs:
+            icos_df, fxn_org_df = _compare_years(
+                primary_df=icos_df,
+                secondary_df=fxn_org_df,
+                first_year_primary=icos_firstyr)
+        merged_df = pd.concat([icos_df, fxn_org_df], axis=0)
+        sourcetxt = "ICOS+FXN-ORG"
+
+    # ---------------------------------------------
+    # FXN-CP + FXN-ORG
+    elif (not isinstance(icos_df, pd.DataFrame)
+          and isinstance(fxn_cp_df, pd.DataFrame)
+          and isinstance(fxn_org_df, pd.DataFrame)
+          and not isinstance(amf_df, pd.DataFrame)):
+        if fxn_cp_firstyr in fxn_org_yrs:
+            fxn_cp_df, fxn_org_df = _compare_years(
+                primary_df=fxn_cp_df,
+                secondary_df=fxn_org_df,
+                first_year_primary=fxn_cp_firstyr)
+        merged_df = pd.concat([fxn_cp_df, fxn_org_df], axis=0)
+        sourcetxt = "FXN-CP+FXN-ORG"
+
+    # ---------------------------------------------
+    # AMF + FXN-ORG
+    elif (not isinstance(icos_df, pd.DataFrame)
+          and not isinstance(fxn_cp_df, pd.DataFrame)
+          and isinstance(fxn_org_df, pd.DataFrame)
+          and isinstance(amf_df, pd.DataFrame)):
+        if fxn_cp_firstyr in fxn_org_yrs:
+            amf_df, fxn_org_df = _compare_years(
+                primary_df=amf_df,
+                secondary_df=fxn_org_df,
+                first_year_primary=amf_firstyr)
+        merged_df = pd.concat([amf_df, fxn_org_df], axis=0)
+        sourcetxt = "AMF+FXN-ORG"
+
+    # ---------------------------------------------
+    # ICOS only
+    elif (isinstance(icos_df, pd.DataFrame)
+          and not isinstance(fxn_cp_df, pd.DataFrame)
+          and not isinstance(fxn_org_df, pd.DataFrame)
+          and not isinstance(amf_df, pd.DataFrame)):
+        merged_df = icos_df.copy()
+        sourcetxt = "ICOS"
+
+    # ---------------------------------------------
+    # FXN-CP only
+    elif (not isinstance(icos_df, pd.DataFrame)
+          and isinstance(fxn_cp_df, pd.DataFrame)
+          and not isinstance(fxn_org_df, pd.DataFrame)
+          and not isinstance(amf_df, pd.DataFrame)):
+        merged_df = fxn_cp_df.copy()
+        sourcetxt = "FXN-CP"
+
+    # ---------------------------------------------
+    # FXN-ORG only
+    elif (not isinstance(icos_df, pd.DataFrame)
+          and not isinstance(fxn_cp_df, pd.DataFrame)
+          and isinstance(fxn_org_df, pd.DataFrame)
+          and not isinstance(amf_df, pd.DataFrame)):
+        merged_df = fxn_org_df.copy()
+        sourcetxt = "FXN-ORG"
+
+    # ---------------------------------------------
+    # AMF only
+    elif (not isinstance(icos_df, pd.DataFrame)
+          and not isinstance(fxn_cp_df, pd.DataFrame)
+          and not isinstance(fxn_org_df, pd.DataFrame)
+          and isinstance(amf_df, pd.DataFrame)):
+        merged_df = amf_df.copy()
+        sourcetxt = "AMF"
+
+
+    # Save merged data to parquet file
+    merged_df = merged_df.sort_index()
+    start = merged_df.index[0].year
+    end = merged_df.index[-1].year
+    outname = f"{site}_{igbp}_{sourcetxt}_{start}-{end}"
+    outfilepath = dv.save_parquet(filename=outname,
+                                  data=merged_df,
+                                  outpath=Path(settings['DIR_DATA_PROC_PARQUET']))
+    _save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df, site, igbp, sourcetxt, settings)
+    siteinfo_df.loc[ix, '_FILEPATH_PARQUET'] = Path(outfilepath)
+    return siteinfo_df
 
     # elif origin == 'FLUXNET_CP':
     #     icosdf = None
@@ -301,6 +434,57 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
 #         loaddatafile = ReadFileType(filetype=filetype, filepath=f, data_nrows=None)
 #         data_df, metadata_df = loaddatafile.get_filedata()
 #         filepath = save_parquet(filename=filename, data=data_df, outpath=outpath)
+
+def _save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df,
+                    site, igbp, sourcetxt, settings):
+    # Heatmap plots
+    outfile = Path(settings['DIR_DATA_PROC_PARQUET_PLOTS']) / outname
+    print(f"Saving heatmap plot to {outfile} ...")
+    var = 'NEE_VUT_REF'
+    fig = plt.figure(facecolor='white', figsize=(21, 9), dpi=72)
+    gs = gridspec.GridSpec(1, 5)  # rows, cols
+    gs.update(wspace=0.5, hspace=0.3, left=0.05, right=0.95, top=0.95, bottom=0.07)
+    ax_icos = fig.add_subplot(gs[0, 0])
+    ax_fxn_cp = fig.add_subplot(gs[0, 1], sharey=ax_icos)
+    ax_fxn_org = fig.add_subplot(gs[0, 2], sharey=ax_icos)
+    ax_amf = fig.add_subplot(gs[0, 3], sharey=ax_icos)
+    ax_merged = fig.add_subplot(gs[0, 4], sharey=ax_icos)
+
+    # Heatmaps
+    plotkwargs = dict(zlabel=f"{var}", cb_digits_after_comma=0, vmin=-20, vmax=20)
+    if isinstance(icos_df, pd.DataFrame):
+        if not icos_df.empty:
+            dv.heatmapdatetime(ax=ax_icos, series=icos_df[var], **plotkwargs).plot()
+    if isinstance(fxn_cp_df, pd.DataFrame):
+        if not fxn_cp_df.empty:
+            dv.heatmapdatetime(ax=ax_fxn_cp, series=fxn_cp_df[var], **plotkwargs).plot()
+    if isinstance(fxn_org_df, pd.DataFrame):
+        if not fxn_org_df.empty:
+            dv.heatmapdatetime(ax=ax_fxn_org, series=fxn_org_df[var], **plotkwargs).plot()
+    if isinstance(amf_df, pd.DataFrame):
+        if not amf_df.empty:
+            dv.heatmapdatetime(ax=ax_amf, series=amf_df[var], **plotkwargs).plot()
+    if isinstance(merged_df, pd.DataFrame):
+        if not merged_df.empty:
+            dv.heatmapdatetime(ax=ax_merged, series=merged_df[var], **plotkwargs).plot()
+
+    # Titles
+    ax_icos.set_title(f"{site} ICOS\nused data", color='black')
+    ax_fxn_cp.set_title(f"{site} FLUXNET-CP\nused data", color='black')
+    ax_fxn_org.set_title(f"{site} FLUXNET-ORG\nused data", color='black')
+    ax_amf.set_title(f"{site} AMERIFLUX\nused data", color='black')
+    ax_merged.set_title(f"{site} {sourcetxt}\nmerged data", color='black')
+
+    tickkwargs = dict(labeltop=False, labelbottom=True, top=False, bottom=True,
+                      left=True, right=False)
+    ax_icos.tick_params(labelleft=True, labelright=False, **tickkwargs)
+    ax_fxn_cp.tick_params(labelleft=True, labelright=False, **tickkwargs)
+    ax_fxn_org.tick_params(labelleft=True, labelright=False, **tickkwargs)
+    ax_amf.tick_params(labelleft=True, labelright=False, **tickkwargs)
+    ax_merged.tick_params(labelleft=True, labelright=False, **tickkwargs)
+
+    fig.savefig(outfile, dpi=72)
+    fig.show()
 
 
 def read_settings_file(filepath_settings) -> dict:

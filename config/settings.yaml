@@ -1,6 +1,7 @@
 # Dirs
 DIR_DATA: ../data
 DIR_DATA_PROC_PARQUET: ../data/processed/parquet_merged
+DIR_DATA_PROC_PARQUET_PLOTS: ../data/processed/parquet_merged_plots
 DIR_DATA_PROC_SUBSETS: ../data/processed/subsets
 DIR_DATA_OUT: ../data/outputs
 DIR_DATA_OUT_SHAP_ANALYSIS: ../data/outputs/shap_analysis
