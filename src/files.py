@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import yaml
+from diive.core.times.times import insert_timestamp
 from scipy.stats import zscore
 
 from src.common import get_variable_names
@@ -176,16 +177,24 @@ def _compare_years(primary_df, secondary_df, first_year_primary):
     return primary_df, secondary_df
 
 
-import pandas as pd
+def _resample_to_lower_freq(higher, lower, origin):
+    higher = higher.drop('ORIGIN', axis=1).resample(lower.index.freq, closed='left', label='right').mean()
+    higher.index.name = 'TIMESTAMP_END'
+    higher = insert_timestamp(data=higher, convention='middle', insert_as_first_col=True, verbose=True)
+    higher = higher.set_index('TIMESTAMP_MIDDLE', inplace=False, drop=True)
+    higher['ORIGIN'] = origin
+    return higher
 
 
-def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> pd.DataFrame:
+def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, showplot=False) -> pd.DataFrame:
     site = siteconfig['SITE']
 
-    # # --- TODO testing
-    # if site != "AU-Tum":
+    # # # --- TODO testing
+    # # if site != "US-UMB":
+    # #     return pd.DataFrame()
+    # if ix < 166:
     #     return pd.DataFrame()
-    # # --- TODO testing
+    # # # --- TODO testing
 
     igbp = siteconfig['IGBP']
     origin = siteconfig['ORIGIN']
@@ -211,7 +220,7 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
     sourcetxt = "-NO-SOURCE-ERROR-"
 
     # Read available files
-    print(f"Reading data for {site}...")
+    print(f"Reading data for #{ix + 1} {site}...")
     if isinstance(filepath_icos, str):
         icos_df = readfile(filetype, filepath_icos, data_nrows)
         icos_df['ORIGIN'] = 'ICOS'  # Add origin for each data record
@@ -226,8 +235,8 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
 
     if isinstance(filepath_fxn_org, str):
         # Sometime hourly data
-        if '_FULLSET_HR_' in Path(filepath_fxn_org).name:
-            filetype = "FLUXNET-FULLSET-HR-CSV-60MIN"
+        filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(Path(
+            filepath_fxn_org).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
         fxn_org_df = readfile(filetype, filepath_fxn_org, data_nrows)
         fxn_org_df['ORIGIN'] = 'FLUXNET-ORG'
         fxn_org_yrs = list(set(fxn_org_df.index.year))
@@ -235,8 +244,8 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
 
     if isinstance(filepath_amf, str):
         # Sometime hourly data
-        if '_FULLSET_HR_' in Path(filepath_amf).name:
-            filetype = "FLUXNET-FULLSET-HR-CSV-60MIN"
+        filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(Path(
+            filepath_amf).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
         amf_df = readfile(filetype, filepath_amf, data_nrows)
         amf_df['ORIGIN'] = 'AMERIFLUX'
         amf_yrs = list(set(amf_df.index.year))
@@ -255,6 +264,8 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
             and isinstance(fxn_cp_df, pd.DataFrame)
             and isinstance(fxn_org_df, pd.DataFrame)
             and not isinstance(amf_df, pd.DataFrame)):
+        if len(set([icos_df.index.freqstr, fxn_cp_df.index.freqstr, fxn_org_df.index.freqstr])) > 1:
+            raise Exception("Frequency mismatch between ICOS, FXN-CP and FXN-ORG not implemented yet")
         # Check if the first ICOS year appears in the FXN CP dataset
         # If yes, keep data from the dataset with more directly measured values for that year
         if icos_firstyr in fxn_cp_yrs:
@@ -279,6 +290,8 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
           and isinstance(fxn_cp_df, pd.DataFrame)
           and not isinstance(fxn_org_df, pd.DataFrame)
           and not isinstance(amf_df, pd.DataFrame)):
+        if len(set([icos_df.index.freqstr, fxn_cp_df.index.freqstr])) > 1:
+            raise Exception("Frequency mismatch between ICOS and FXN-CP not implemented yet")
         if icos_firstyr in fxn_cp_yrs:
             icos_df, fxn_cp_df = _compare_years(
                 primary_df=icos_df,
@@ -293,7 +306,9 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
           and not isinstance(fxn_cp_df, pd.DataFrame)
           and isinstance(fxn_org_df, pd.DataFrame)
           and not isinstance(amf_df, pd.DataFrame)):
-        if icos_firstyr in fxn_cp_yrs:
+        if len(set([icos_df.index.freqstr, fxn_org_df.index.freqstr])) > 1:
+            raise Exception("Frequency mismatch between ICOS and FXN-ORG not implemented yet")
+        if icos_firstyr in fxn_org_yrs:
             icos_df, fxn_org_df = _compare_years(
                 primary_df=icos_df,
                 secondary_df=fxn_org_df,
@@ -307,6 +322,8 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
           and isinstance(fxn_cp_df, pd.DataFrame)
           and isinstance(fxn_org_df, pd.DataFrame)
           and not isinstance(amf_df, pd.DataFrame)):
+        if len(set([fxn_cp_df.index.freqstr, fxn_org_df.index.freqstr])) > 1:
+            raise Exception("Frequency mismatch between FXN-CP and FXN-ORG not implemented yet")
         if fxn_cp_firstyr in fxn_org_yrs:
             fxn_cp_df, fxn_org_df = _compare_years(
                 primary_df=fxn_cp_df,
@@ -321,13 +338,27 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
           and not isinstance(fxn_cp_df, pd.DataFrame)
           and isinstance(fxn_org_df, pd.DataFrame)
           and isinstance(amf_df, pd.DataFrame)):
-        if fxn_cp_firstyr in fxn_org_yrs:
+
+        # Dataframes need to have the same time resolution
+        # It is possible that one of the dataframes is in hourly time resolution,
+        # and the other in half-hourly time resolution. In such a case, resample
+        # the dataframe with the higher resolution to the frequency of the dataframe
+        # with the lower resolution. Typically, this means that the half-hourly
+        # dataframe is resampled to hourly.
+        if amf_df.index.freq != fxn_org_df.index.freq:
+            if fxn_org_df.index.freq > amf_df.index.freq:
+                amf_df = _resample_to_lower_freq(higher=amf_df, lower=fxn_org_df, origin='AMERIFLUX')
+            elif fxn_org_df.index.freq < amf_df.index.freq:
+                fxn_org_df = _resample_to_lower_freq(higher=fxn_org_df, lower=amf_df, origin='FLUXNET-ORG')
+
+        if amf_firstyr in fxn_org_yrs:
             amf_df, fxn_org_df = _compare_years(
                 primary_df=amf_df,
                 secondary_df=fxn_org_df,
                 first_year_primary=amf_firstyr)
         merged_df = pd.concat([amf_df, fxn_org_df], axis=0)
         sourcetxt = "AMF+FXN-ORG"
+
 
     # ---------------------------------------------
     # ICOS only
@@ -365,7 +396,6 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
         merged_df = amf_df.copy()
         sourcetxt = "AMF"
 
-
     # Save merged data to parquet file
     merged_df = merged_df.sort_index()
     start = merged_df.index[0].year
@@ -374,69 +404,15 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix) -> p
     outfilepath = dv.save_parquet(filename=outname,
                                   data=merged_df,
                                   outpath=Path(settings['DIR_DATA_PROC_PARQUET']))
-    _save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df, site, igbp, sourcetxt, settings)
+
+    _save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df,
+                    site, igbp, sourcetxt, settings, showplot)
     siteinfo_df.loc[ix, '_FILEPATH_PARQUET'] = Path(outfilepath)
     return siteinfo_df
 
-    # elif origin == 'FLUXNET_CP':
-    #     icosdf = None
-    #     load_fxn = dv.readfiletype(filetype="FLUXNET-FULLSET-HH-CSV-30MIN", filepath=filepath_fxn_cp,
-    #                                data_nrows=data_nrows)
-    #     merged_df, _ = load_fxn.get_filedata()
-    #     sourcetxt = "FXN"
-    #
-    # elif origin == 'ICOS':
-    #     fxndf = None
-    #     load_icos = dv.readfiletype(filetype="FLUXNET-FULLSET-HH-CSV-30MIN", filepath=filepath_icos,
-    #                                 data_nrows=data_nrows)
-    #     merged_df, _ = load_icos.get_filedata()
-    #     sourcetxt = "ICOS"
-    #
-    # elif origin == 'AMERIFLUX':
-    #     fxndf = None
-    #     filename = Path(filepath_amf).name
-    #     # Some files are at 60MIN time resolution
-    #     if "_FLUXNET_FULLSET_HH_" in filename:
-    #         filetype = "FLUXNET-FULLSET-HH-CSV-30MIN"
-    #     elif "_FLUXNET_FULLSET_HR_" in filename:
-    #         filetype = "FLUXNET-FULLSET-HR-CSV-60MIN"
-    #     else:
-    #         raise NotImplementedError
-    #     load_amf = dv.readfiletype(filetype=filetype, filepath=filepath_amf, data_nrows=data_nrows)
-    #     merged_df, _ = load_amf.get_filedata()
-    #     sourcetxt = "AMERIFLUX"
-    #
-    # else:
-    #     raise Exception("Unknown origin.")
-    #
-    # # Save merged data to parquet file
-    # start = merged_df.index[0].year
-    # end = merged_df.index[-1].year
-    # outfilepath = dv.save_parquet(filename=f"{site}_{igbp}_{sourcetxt}_{start}-{end}",
-    #                               data=merged_df,
-    #                               outpath=Path(settings['DIR_DATA_PROC_PARQUET']))
-    #
-    # siteinfo_df.loc[ix, '_FILEPATH_PARQUET'] = Path(outfilepath)
-    #
-    # return siteinfo_df
-
-
-# def convert_datafiles_to_parquet(filepatterns: list, filetype: str, searchdir: str, outpath: str):
-#     filelist = []
-#     for filepattern in filepatterns:
-#         _filelist = search_files(
-#             searchdirs=searchdir,
-#             pattern=filepattern)
-#         filelist = filelist + _filelist
-#
-#     for f in filelist:
-#         filename = f.name
-#         loaddatafile = ReadFileType(filetype=filetype, filepath=f, data_nrows=None)
-#         data_df, metadata_df = loaddatafile.get_filedata()
-#         filepath = save_parquet(filename=filename, data=data_df, outpath=outpath)
 
 def _save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df,
-                    site, igbp, sourcetxt, settings):
+                    site, igbp, sourcetxt, settings, showplot):
     # Heatmap plots
     outfile = Path(settings['DIR_DATA_PROC_PARQUET_PLOTS']) / outname
     print(f"Saving heatmap plot to {outfile} ...")
@@ -484,7 +460,8 @@ def _save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df,
     ax_merged.tick_params(labelleft=True, labelright=False, **tickkwargs)
 
     fig.savefig(outfile, dpi=72)
-    fig.show()
+    if showplot:
+        fig.show()
 
 
 def read_settings_file(filepath_settings) -> dict:

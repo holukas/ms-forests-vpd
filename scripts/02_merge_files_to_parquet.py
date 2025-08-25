@@ -15,8 +15,9 @@ for ix, siteconfig in _siteinfo_df.iterrows():
         data_nrows=data_nrows,
         settings=settings,
         siteconfig=siteconfig,
-        ix=ix
+        ix=ix,
+        showplot=True
     )
 
 # Save updated site info
-# TODO files.save_siteinfo(siteinfo_df=siteinfo_df, settings=settings)
+files.save_siteinfo(siteinfo_df=siteinfo_df, settings=settings)
