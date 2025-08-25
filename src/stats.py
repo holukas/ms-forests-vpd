@@ -7,6 +7,11 @@ from common import get_variable_names
 def basic_stats(siteinfo_df, siteconfig, ix) -> pd.DataFrame:
     _df = siteinfo_df.copy()
 
+    # # -- TODO testing
+    # if siteconfig['SITE'] != 'AU-Cum':
+    #     return siteinfo_df
+    # # -- TODO testing
+
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
     filepath = siteconfig['_FILEPATH_PARQUET']

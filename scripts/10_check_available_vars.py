@@ -24,6 +24,12 @@ required_vars = dict(
 
 _siteinfo_df = siteinfo_df.copy()
 for ix, site in _siteinfo_df.iterrows():
+
+    # # --- TODO testing
+    # if site['SITE'] != 'AU-Cum':
+    #     continue
+    # # --- TODO testing
+
     print(f"\nLoading data for site #{ix + 1} {site['SITE']} ...")
     filepath = site['_FILEPATH_PARQUET']
     sitedata = load_parquet(filepath)
@@ -38,9 +44,12 @@ for ix, site in _siteinfo_df.iterrows():
             found_one = False
             for alt_name in expected_col_name:
                 if alt_name in available_vars:
-                    found_one = True
-                    expected_col_name = alt_name
-                    break
+                    if len(sitedata[alt_name].dropna()) > 0:
+                        found_one = True
+                        expected_col_name = alt_name
+                        break
+                    else:
+                        found_one = False
             if not found_one:
                 expected_col_name = '-MISSING-'
                 # raise Exception(f"Required variable '{expected_col_name}' not found in site data for site #{ix} {row['SITE']}.")

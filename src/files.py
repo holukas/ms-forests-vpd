@@ -15,6 +15,11 @@ from src.common import get_variable_names
 def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
+    # # --- TODO testing
+    # if siteconfig['SITE'] != 'AU-Cum':
+    #     return siteinfo_df
+    # # --- TODO testing
+
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET']
     sitedata = dv.load_parquet(filepath)
