@@ -17,13 +17,15 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 FLUX = 'RECO'
 xvar = 'TA'
 yvar = 'VPD'
-zvar = 'SWIN'
+zvar = 'VPD'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
 # Heatmap settings
 title = f"The effect of {zvar} on {FLUX}"
 n_sites_min = 20
+# cmap = 'RdYlBu'
+cmap = 'RdYlBu_r'
 # ------------------------------
 
 binx = (f"BIN_{xvar}", aggfunc)
@@ -65,11 +67,14 @@ hm = dv.heatmapxyz(
     # show_values_fontsize=4,
     figdpi=300,
     color_bad='white',
-    cmap='RdYlBu',
+    cmap=cmap,
     # vmin=-3,
     # vmax=3
 )
 hm.plot()
+hm.export_borderless_heatmap(
+    name="TEST",
+    outpath=r"F:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\data\outputs\borderless_heatmaps")
 # ax = hm.get_ax()
 
 # ax.set_xlabel('Air temperature (z-score)')

@@ -23,7 +23,7 @@ from src.aggregation import aggregate_shap_values_across_all_sites
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'GPP'
+FLUX = 'RECO'
 xvar = 'TA'
 yvar = 'VPD'
 aggfunc = 'median'

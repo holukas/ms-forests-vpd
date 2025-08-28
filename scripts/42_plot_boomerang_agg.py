@@ -17,14 +17,14 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
 FLUX = 'NEP'
-xvar = 'TA'
-yvar = 'VPD_SHAPVALS'
-zvar = 'SWC'  # Classes
+xvar = 'VPD'
+yvar = 'NEP'
+zvar = 'TA'  # Classes
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
 # Heatmap settings
-n_sites_min = 20
+# n_sites_min = 20
 # ------------------------------
 
 # Load settings

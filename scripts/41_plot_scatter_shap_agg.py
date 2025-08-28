@@ -23,7 +23,7 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'
+FLUX = 'GPP'
 xvar = 'TA'
 yvar = 'TA'  # SHAP values
 aggfunc = 'median'
