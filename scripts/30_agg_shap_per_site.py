@@ -9,8 +9,8 @@ from src.aggregation import aggregate_shap_values_for_site
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'RECO'
-xvar = 'TA'
+FLUX = 'LE'
+xvar = 'SWC'
 yvar = 'VPD'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
@@ -75,7 +75,7 @@ for ix, siteconfig in siteinfo_df.iterrows():
     # # ---todo testing
 
 outfilepath = dv.save_parquet(
-    filename=f"2_PerSite_Aggregated_SHAPValues-{shap_type}_{FLUX}",
+    filename=f"2_PerSite_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}",
     data=shapvals_sites_agg_long_df,
     outpath=folder)
-shapvals_sites_agg_long_df.to_csv(outfilepath.replace('.parquet', '.csv'))
+# shapvals_sites_agg_long_df.to_csv(outfilepath.replace('.parquet', '.csv'))

@@ -13,9 +13,9 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 
 # ------------------------------
 # Variables
-# NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN,
+# NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
 FLUX = 'NEP'
-xvar = 'TA'
+xvar = 'SWC'
 yvar = 'VPD'
 zvar = 'SWC'
 aggfunc = 'median'
@@ -23,6 +23,9 @@ CONDITIONAL = True  # SHAP
 
 # Heatmap settings
 title = f"The effect of {zvar} on {FLUX}"
+xlabel = f'{xvar} (z-score)'
+ylabel = f'{yvar} (z-score)'
+zlabel = f'{aggfunc} SHAP value of {zvar} (z-score)'
 n_sites_min = 10
 cmap = 'RdYlBu'
 # cmap = 'RdYlBu_r'
@@ -39,7 +42,7 @@ shap_type = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 
 # Load SHAP values aggregated across all sites
-filepath = Path(results_outdir) / f"3_AllSites_Aggregated_SHAPValues-{shap_type}_{FLUX}.parquet"
+filepath = Path(results_outdir) / f"3_AllSites_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 keeplocs = shapvals_df[z_counts] >= n_sites_min
 shapvals_df = shapvals_df[keeplocs].copy()
@@ -59,9 +62,9 @@ hm = dv.heatmapxyz(
     y=subset.iloc[:, 1],
     z=subset.iloc[:, 2],
     cb_digits_after_comma=1,
-    xlabel=f'{binx} (z-score)',
-    ylabel=f'{biny} (z-score)',
-    zlabel=f'{aggfunc} {z} (z-score)',
+    xlabel=xlabel,
+    ylabel=ylabel,
+    zlabel=zlabel,
     # show_values_n_dec_places=1,
     # show_values=True,
     # show_values_fontsize=4,
@@ -79,7 +82,7 @@ hm.plot()
 
 # ax.set_xlabel('Air temperature (z-score)')
 # ax.set_ylabel("Vapor pressure deficit (z-score)")
-ax.set_title(title, fontsize=14, pad=10, y=1.02)
+ax.set_title(title, fontsize=18, pad=10, y=1.02)
 
 # Hide the top and right spines
 ax.spines['top'].set_visible(False)
