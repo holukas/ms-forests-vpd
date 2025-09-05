@@ -16,6 +16,7 @@ site_info_icos = sites.get_site_info_icos(
     # searchdir=TESTDIR  # todo testing
     searchdir=settings['DIR_DATA_RAW_ICOS']
 )
+site_info_icos = site_info_icos[site_info_icos['IGBP'].isin(ecosystems)].copy()
 # print(site_info_icos)
 
 # FLUXNET (from Carbon Portal)
@@ -27,6 +28,7 @@ site_info_fxn_cp = sites.get_site_info_fxn_cp(
     # searchdir=TESTDIR  # todo testing
     searchdir=settings['DIR_DATA_RAW_FXN_CP']
 )
+site_info_fxn_cp = site_info_fxn_cp[site_info_fxn_cp['IGBP'].isin(ecosystems)].copy()
 # print(site_info_fxn_cp)
 
 # FLUXNET (from fluxnet.org)
@@ -52,6 +54,7 @@ site_info_ameriflux = sites.get_site_info_fluxnet_ameriflux(
     searchdir=settings['DIR_DATA_RAW_AMF'],
     origin='AMERIFLUX'
 )
+site_info_ameriflux = site_info_ameriflux[site_info_ameriflux['IGBP'].isin(ecosystems)].copy()
 # print(site_info_ameriflux)
 
 
