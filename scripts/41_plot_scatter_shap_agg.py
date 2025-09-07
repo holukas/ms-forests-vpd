@@ -12,7 +12,8 @@ import numpy as np
 import scipy.stats as stats
 
 import src.files as files
-
+import pandas as pd
+import matplotlib.colors
 # Recommended for scientific publications
 # plt.rcParams['text.usetex'] = True
 # plt.rcParams['font.family'] = 'serif'
@@ -23,21 +24,31 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'GPP'
-xvar = 'TA'
-yvar = 'TA'  # SHAP values
+FLUX = 'NEP'
+xvar = 'VPD'
+yvar = 'VPD'  # SHAP values
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
+filename_x = 'TA'
+zvar = 'TA'  # Colors
+
 # Plot settings
-show_txt_effect = False
 title = f"The effect of {yvar} on {FLUX}"
+xlabel = f"{xvar} (z-score)"
+ylabel = f"SHAP value of {yvar} (z-score)"
 n_sites_min = 20
+
+show_txt_effect = True
+show_shap_thresholds = True
+show_z_colors = False
+show_fit = True
 # ------------------------------
 
 x = (f"BIN_{xvar}", aggfunc)
 y = (f"{yvar}_SHAPVALS", aggfunc)
 y_counts = (f"{yvar}_SHAPVALS", "count")
+z = (f"BIN_{zvar}", aggfunc)
 
 # Load settings
 settings = files.read_settings_file("../config/settings.yaml")
@@ -45,7 +56,7 @@ shap_type = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 
 # Load SHAP values aggregated across all sites
-filepath = Path(results_outdir) / f"3_AllSites_Aggregated_SHAPValues-{shap_type}_{FLUX}.parquet"
+filepath = Path(results_outdir) / f"3_AllSites_Aggregated_SHAPValues-{shap_type}_BIN-{filename_x}_BIN-{yvar}_{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 keeplocs = shapvals_df[y_counts] >= n_sites_min
 shapvals_df = shapvals_df[keeplocs].copy()
@@ -53,6 +64,14 @@ shapvals_df = shapvals_df[keeplocs].copy()
 # Extract the data from the DataFrame
 X_data = shapvals_df[x].values
 Y_data = shapvals_df[y].values
+Z_data = shapvals_df[z].values
+
+# Bin z data into 5 categories
+binned_z = pd.cut(Z_data, bins=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
+
+# z_series = shapvals_df[z].copy()
+# z_binned = pd.cut(z_series, bins=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
+
 
 # Fit polynomial
 degree = 4
@@ -104,26 +123,53 @@ pi_upper = y_fit + t_value * se_pred
 pi_lower = y_fit - t_value * se_pred
 # ----------------------------------------------------
 
+# Custom colormap for z-values
+colors_list = ['#1565C0', '#26C6DA', '#546E7A', '#FF9800', '#C62828']
+custom_cmap = matplotlib.colors.ListedColormap(colors_list)
+
+
 fig, ax = plt.subplots(figsize=(8, 6), dpi=300)
+
+c = binned_z.codes if show_z_colors else None
+color = None if show_z_colors else "#6c757d"
 
 # Plot the original data and the fitted polynomial
 ax.scatter(X_data, Y_data, label=f'Aggregated site data (min. {n_sites_min} sites)',
-           alpha=0.4, s=40,
+           alpha=0.4, s=30,
            # color="#004e98",
-           color="#6c757d",
+           c=c,
+           color=color,
            # c=shapvals_df['BIN_TA_F'],
+           cmap=custom_cmap,
            # cmap='RdYlBu_r',
-           edgecolors='none')
+           edgecolors='none',
+           zorder=98)
 
-# Plot fitted polynomial curve
-ax.plot(x_fit, y_fit,
-        # label=f'Fitted {degree}th degree polynomial',
-        color='#004e98', linewidth=3)
-# label=rf'$y = {poly_coeffs[0]:.4f}x^4 - {poly_coeffs[1]:.4f}x^3 + {poly_coeffs[2]:.4f}x^2 + {poly_coeffs[3]:.4f}x - {poly_coeffs[4]:.4f}$'
 
-# Plot prediction interval
-ax.fill_between(x_fit, pi_lower, pi_upper, color='#004e98', alpha=0.2,
-                label='95% prediction interval', zorder=1)
+if show_fit:
+    # Plot fitted polynomial curve
+    ax.plot(x_fit, y_fit, color='#004e98', linewidth=3, zorder=99)
+    # label=rf'$y = {poly_coeffs[0]:.4f}x^4 - {poly_coeffs[1]:.4f}x^3 + {poly_coeffs[2]:.4f}x^2 + {poly_coeffs[3]:.4f}x - {poly_coeffs[4]:.4f}$'
+
+    # Plot prediction interval
+    ax.fill_between(x_fit, pi_lower, pi_upper, color='#004e98', alpha=0.2,
+                    label='95% prediction interval', zorder=1)
+
+    # Add an arrow to the fitted line
+    # Find a point on the line to place the arrow.
+    # Let's place it a little past the middle of the x-range.
+    arrow_x = 3
+    arrow_y = poly_func(arrow_x)
+    # Find a point slightly to the left to define the arrow direction
+    tail_x = arrow_x - 0.1
+    tail_y = poly_func(tail_x)
+    # Calculate the angle of the line at this point to get the correct arrow orientation
+    angle = np.arctan2(arrow_y - tail_y, arrow_x - tail_x) * 180 / np.pi
+    ax.annotate(f'Fitted 4th degree\npolynomial (r$^2$={r_squared:.2f})',
+                xy=(arrow_x, arrow_y),
+                xytext=(arrow_x - 2.5, arrow_y - 0.4),  # Adjust text position as needed
+                arrowprops=dict(arrowstyle="->", color='#004e98', lw=1.5),
+                fontsize=10, color='#004e98', ha='left', va='center')
 
 # IQR
 # yerrlow = shapvals_df[y].sub(shapvals_df[(yvar, "<lambda_0>")])  # <lambda_0> is P25
@@ -144,17 +190,7 @@ max_ix = np.argmax(y_fit)
 # Find value closest to "SHAP zero"
 idx = (np.abs(y_fit - 0)).argmin()
 
-ax.scatter(x_fit[max_ix], y_fit[max_ix],
-           # label=f'SHAP max (x={x_fit[max_ix]:.2f})',
-           marker='^', alpha=1, s=120, c="white", zorder=99, edgecolors='#e63946', linewidths=2)
 
-ax.scatter(x_fit[idx], y_fit[idx],
-           # label=f'SHAP zero (x={x_fit[idx]:.2f})',
-           alpha=1, s=100, c="white", zorder=99, edgecolors='#f77f00', linewidths=3)
-
-ax.scatter(x_fit[min_ix], y_fit[min_ix],
-           # label=f'SHAP min (x={x_fit[min_ix]:.2f})',
-           marker='v', alpha=1, s=120, c="white", zorder=99, edgecolors='#66bb6a', linewidths=2)
 
 # Detect min/max value shown in plot
 _temp = iqr_high75.max() * 1.2
@@ -167,45 +203,44 @@ text_y_pos_zero = y_fit[idx] - 0.3 * (_temp - _temp2)
 text_y_pos_min = y_fit[min_ix] - 0.2 * (_temp - _temp2)
 
 # Add text and connecting dashed lines for SHAP max, zero, and min
-y_top = ax.get_ylim()[-1]
-y_bottom = ax.get_ylim()[0]
+if show_shap_thresholds:
+    ax.scatter(x_fit[max_ix], y_fit[max_ix],
+               # label=f'SHAP max (x={x_fit[max_ix]:.2f})',
+               marker='^', alpha=1, s=120, c="white", zorder=99, edgecolors='#66bb6a', linewidths=2)
 
-ax.text(x_fit[max_ix], text_y_pos_max, f'SHAP max\n(x={x_fit[max_ix]:.2f})',
-        va='bottom', ha='center', color='#e63946', fontsize=9, linespacing=1.2)
-ax.plot([x_fit[max_ix], x_fit[max_ix]], [text_y_pos_max + 0.15, y_fit[max_ix]], color='#e63946', linestyle='--',
-        linewidth=1)
-ax.plot([x_fit[max_ix], x_fit[max_ix]], [y_bottom, text_y_pos_max], color='#e63946', linestyle='--', linewidth=1)
+    ax.scatter(x_fit[idx], y_fit[idx],
+               # label=f'SHAP zero (x={x_fit[idx]:.2f})',
+               alpha=1, s=100, c="white", zorder=99, edgecolors='#f77f00', linewidths=3)
 
-ax.text(x_fit[idx], text_y_pos_zero, f'SHAP zero\n(x={x_fit[idx]:.2f})',
-        va='bottom', ha='center', color='#f77f00', fontsize=9, linespacing=1.2)
-ax.plot([x_fit[idx], x_fit[idx]], [text_y_pos_zero + 0.15, y_fit[idx]], color='#f77f00', linestyle='--', linewidth=1)
-ax.plot([x_fit[idx], x_fit[idx]], [y_bottom, text_y_pos_zero], color='#f77f00', linestyle='--', linewidth=1)
+    ax.scatter(x_fit[min_ix], y_fit[min_ix],
+               # label=f'SHAP min (x={x_fit[min_ix]:.2f})',
+               marker='v', alpha=1, s=120, c="white", zorder=99, edgecolors='#e63946', linewidths=2)
 
-ax.text(x_fit[min_ix], text_y_pos_min, f'SHAP min\n(x={x_fit[min_ix]:.2f})',
-        va='bottom', ha='center', color='#66bb6a', fontsize=9, linespacing=1.2)
-ax.plot([x_fit[min_ix], x_fit[min_ix]], [text_y_pos_min + 0.15, y_fit[min_ix]], color='#66bb6a', linestyle='--',
-        linewidth=1)
-ax.plot([x_fit[min_ix], x_fit[min_ix]], [y_bottom, text_y_pos_min], color='#66bb6a', linestyle='--', linewidth=1)
+    y_top = ax.get_ylim()[-1]
+    y_bottom = ax.get_ylim()[0]
 
-# Add an arrow to the fitted line
-# Find a point on the line to place the arrow.
-# Let's place it a little past the middle of the x-range.
-arrow_x = 3
-arrow_y = poly_func(arrow_x)
-# Find a point slightly to the left to define the arrow direction
-tail_x = arrow_x - 0.1
-tail_y = poly_func(tail_x)
-# Calculate the angle of the line at this point to get the correct arrow orientation
-angle = np.arctan2(arrow_y - tail_y, arrow_x - tail_x) * 180 / np.pi
-ax.annotate(f'Fitted 4th degree polynomial (r$^2$={r_squared:.2f})',
-            xy=(arrow_x, arrow_y),
-            xytext=(arrow_x - 2.5, arrow_y - 0.6),  # Adjust text position as needed
-            arrowprops=dict(arrowstyle="->", color='#004e98', lw=1.5),
-            fontsize=10, color='#004e98', ha='left', va='center')
+    ax.text(x_fit[max_ix], text_y_pos_max, f'SHAP max\n(x={x_fit[max_ix]:.2f})',
+            va='bottom', ha='center', color='#66bb6a', fontsize=9, linespacing=1.2)
+    ax.plot([x_fit[max_ix], x_fit[max_ix]], [text_y_pos_max + 0.15, y_fit[max_ix]], color='#66bb6a', linestyle='--',
+            linewidth=1)
+    ax.plot([x_fit[max_ix], x_fit[max_ix]], [y_bottom, text_y_pos_max], color='#66bb6a', linestyle='--', linewidth=1)
+
+    ax.text(x_fit[idx], text_y_pos_zero, f'SHAP zero\n(x={x_fit[idx]:.2f})',
+            va='bottom', ha='center', color='#f77f00', fontsize=9, linespacing=1.2)
+    ax.plot([x_fit[idx], x_fit[idx]], [text_y_pos_zero + 0.15, y_fit[idx]], color='#f77f00', linestyle='--', linewidth=1)
+    ax.plot([x_fit[idx], x_fit[idx]], [y_bottom, text_y_pos_zero], color='#f77f00', linestyle='--', linewidth=1)
+
+    ax.text(x_fit[min_ix], text_y_pos_min, f'SHAP min\n(x={x_fit[min_ix]:.2f})',
+            va='bottom', ha='center', color='#e63946', fontsize=9, linespacing=1.2)
+    ax.plot([x_fit[min_ix], x_fit[min_ix]], [text_y_pos_min + 0.15, y_fit[min_ix]], color='#e63946', linestyle='--',
+            linewidth=1)
+    ax.plot([x_fit[min_ix], x_fit[min_ix]], [y_bottom, text_y_pos_min], color='#e63946', linestyle='--', linewidth=1)
+
+
 
 # # TODO Add arrow to one of the IQR data points
 # for i in range(800, 805):
-iqr_point_index = 804  # Choose a representative index
+iqr_point_index = 102  # Choose a representative index
 iqr_point_index = iqr_point_index if iqr_point_index < len(X_data) else 0
 iqr_x = X_data[iqr_point_index]
 iqr_y = iqr_low25[iqr_point_index]
@@ -216,7 +251,7 @@ ax.annotate(
     f'IQR for site data',
     xy=(iqr_x, iqr_y),
     # xy=(iqr_x, iqr_y - iqr_yerr_low),
-    xytext=(iqr_x + 0.1, iqr_y - 0.3),  # Adjust text position as needed
+    xytext=(iqr_x + 0.3, iqr_y - 0.3),  # Adjust text position as needed
     arrowprops=dict(arrowstyle="->", color='#6c757d', lw=1.5),
     fontsize=10, color='#6c757d', ha='right', va='center'
 )
@@ -231,8 +266,9 @@ if show_txt_effect:
             fontsize=9, color='black', ha='left', va='bottom')
 
 # 426cb0
-ax.set_xlabel(f"{x} (z-score)")
-ax.set_ylabel(f"{y} effect on {FLUX} (z-score)")
+
+ax.set_xlabel(xlabel)
+ax.set_ylabel(ylabel)
 ax.set_title(title, fontsize=14, pad=10, y=1.02)
 ax.axhline(y=0, color='black', linestyle='-', lw=1)
 ax.grid(False)

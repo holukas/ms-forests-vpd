@@ -15,9 +15,9 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
 FLUX = 'NEP'
-xvar = 'SWC'
+xvar = 'TA'
 yvar = 'VPD'
-zvar = 'SWC'
+zvar = 'TA'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 

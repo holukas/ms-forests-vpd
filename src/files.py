@@ -15,10 +15,10 @@ from src.common import get_variable_names
 def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
-    # # --- TODO testing
-    # if siteconfig['SITE'] != 'AU-Cum':
-    #     return siteinfo_df
-    # # --- TODO testing
+    # --- TODO testing
+    if siteconfig['SITE'] != 'CH-Dav':
+        return siteinfo_df
+    # --- TODO testing
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET']
@@ -77,6 +77,11 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     # Convert z-scores, ignoring NaNs
     # z-scores are calculated from subset records
     subset = subset.apply(lambda x: zscore(x, nan_policy='omit'))
+
+    # To store the originally measured values
+    subset_meas = subset.copy()
+    plt.plot(subset_meas['VPD_F'], subset['VPD_F'])
+    plt.show()
 
     # Rename variables to have the same var names for all sites
     rename_dict = {
