@@ -10,8 +10,9 @@ pd.set_option('display.max_rows', 3000)
 pd.set_option('display.max_columns', 3000)
 
 
-def merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn):
-    allsites = pd.concat([allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn], axis=0, ignore_index=True)
+def merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn, allsites_jpf):
+    allsites = pd.concat([allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn, allsites_jpf],
+                         axis=0, ignore_index=True)
     allsites = allsites.reset_index(drop=True)
     allsites = allsites.fillna(np.nan)
     # print(allsites)
@@ -28,6 +29,7 @@ def merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn):
         has_fxn_cp = any(_df['ORIGIN'] == 'FLUXNET_CP')
         has_fxn_org = any(_df['ORIGIN'] == 'FLUXNET_ORG')
         has_amf = any(_df['ORIGIN'] == 'AMERIFLUX')
+        has_jpf = any(_df['ORIGIN'] == 'JAPANFLUX')
 
         if n_records > 1:
 
@@ -47,6 +49,8 @@ def merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn):
                     row = row.fillna(row_fxn)
                     originstr += "+FLUXNET_ORG"
                 row['ORIGIN'] = originstr
+
+
 
             # FLUXNET_CP data + FLUXNET data
             elif has_fxn_cp:
@@ -72,6 +76,18 @@ def merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn):
                     originstr += "+FLUXNET_ORG"
                 row['ORIGIN'] = originstr
 
+            # JAPANFLUX data + FLUXNET data
+            elif has_jpf:
+                row = _df.loc[_df['ORIGIN'] == 'JAPANFLUX']
+                row = row.set_index('SITE', drop=False)
+                originstr = "JAPANFLUX"
+                if has_fxn_org:
+                    row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
+                    row_fxn = row_fxn.set_index('SITE', drop=False)
+                    row = row.fillna(row_fxn)
+                    originstr += "+FLUXNET_ORG"
+                row['ORIGIN'] = originstr
+
 
         # Only 1 available
         elif n_records == 1:
@@ -83,6 +99,8 @@ def merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn):
                 row = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
             elif not _df.loc[_df['ORIGIN'] == 'AMERIFLUX'].empty:
                 row = _df.loc[_df['ORIGIN'] == 'AMERIFLUX']
+            elif not _df.loc[_df['ORIGIN'] == 'JAPANFLUX'].empty:
+                row = _df.loc[_df['ORIGIN'] == 'JAPANFLUX']
 
         else:
             raise Exception(f"{n_records} entries not allowed, only 1,2 or 3 allowed for each site.")
@@ -118,10 +136,10 @@ def get_site_info_icos(pattern_dir, searchdir, pattern_file):
         if site != checksite:
             raise Exception("Site does not match.")
 
-        elev_icos = info_icos[info_icos['VARIABLE'] == 'LOCATION_ELEV']['DATAVALUE'].iloc[0]
-        lon_icos = info_icos[info_icos['VARIABLE'] == 'LOCATION_LONG']['DATAVALUE'].iloc[0]
-        lat_icos = info_icos[info_icos['VARIABLE'] == 'LOCATION_LAT']['DATAVALUE'].iloc[0]
-        igbp_icos = info_icos[info_icos['VARIABLE'] == 'IGBP']['DATAVALUE'].iloc[0]
+        elev_icos = float(info_icos[info_icos['VARIABLE'] == 'LOCATION_ELEV']['DATAVALUE'].iloc[0])
+        lon_icos = float(info_icos[info_icos['VARIABLE'] == 'LOCATION_LONG']['DATAVALUE'].iloc[0])
+        lat_icos = float(info_icos[info_icos['VARIABLE'] == 'LOCATION_LAT']['DATAVALUE'].iloc[0])
+        igbp_icos = str(info_icos[info_icos['VARIABLE'] == 'IGBP']['DATAVALUE'].iloc[0])
 
         allsites_icos.loc[allsites_icos['SITE'] == site, 'ELEVATION'] = elev_icos
         allsites_icos.loc[allsites_icos['SITE'] == site, 'LON'] = lon_icos
@@ -170,26 +188,28 @@ def get_site_info_japanflux(searchdir, pattern_dir, infofile, origin, pattern_fi
 
     for ix, row in allsites.iterrows():
         site = row['SITE']
-        sitelocs = info['SITE_ID'] == site
+        sitelocs = info['Site Code'] == site
         siteinfo = info[sitelocs].copy()
 
         try:
-            elev = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_ELEV']['DATAVALUE'].iloc[0]
+            elev = siteinfo['Elevation'].iloc[0]
+            elev = elev.replace('m', '')
+            elev = float(elev)
         except IndexError:
             elev = np.nan
 
         try:
-            lon = float(siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LONG']['DATAVALUE'].iloc[0])
+            lon = float(siteinfo['Longitude'].iloc[0])
         except IndexError:
             lon = np.nan
 
         try:
-            lat = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LAT']['DATAVALUE'].iloc[0]
+            lat = float(siteinfo['Latitude'].iloc[0])
         except IndexError:
             lat = np.nan
 
         try:
-            igbp = siteinfo[siteinfo['VARIABLE'] == 'IGBP']['DATAVALUE'].iloc[0]
+            igbp = str(siteinfo['IGBP (land use)'].iloc[0])
         except IndexError:
             igbp = np.nan
 
@@ -217,7 +237,7 @@ def get_site_info_fluxnet_ameriflux(searchdir, pattern_dir, infofile, origin, pa
         siteinfo = info[sitelocs].copy()
 
         try:
-            elev = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_ELEV']['DATAVALUE'].iloc[0]
+            elev = float(siteinfo[siteinfo['VARIABLE'] == 'LOCATION_ELEV']['DATAVALUE'].iloc[0])
         except IndexError:
             elev = np.nan
 
@@ -227,12 +247,12 @@ def get_site_info_fluxnet_ameriflux(searchdir, pattern_dir, infofile, origin, pa
             lon = np.nan
 
         try:
-            lat = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LAT']['DATAVALUE'].iloc[0]
+            lat = float(siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LAT']['DATAVALUE'].iloc[0])
         except IndexError:
             lat = np.nan
 
         try:
-            igbp = siteinfo[siteinfo['VARIABLE'] == 'IGBP']['DATAVALUE'].iloc[0]
+            igbp = str(siteinfo[siteinfo['VARIABLE'] == 'IGBP']['DATAVALUE'].iloc[0])
         except IndexError:
             igbp = np.nan
 
