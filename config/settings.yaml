@@ -10,6 +10,12 @@ DIR_DATA_OUT_SHAP_ANALYSIS: ../data/outputs/shap_analysis
 OUTFILE_SITEINFO: ../data/outputs/siteinfo.csv
 ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
 
+# JAPANFLUX (JapanFlux2024 dataset)
+DIR_DATA_RAW_JPF: ../data/raw/japanflux
+PATTERN_DIR_JPF: ['JPF_']
+PATTERN_FILE_HH_JPF: FLX_*_JapanFLUX2024_ALLVARS_HH_*.csv
+INFOFILE_JPF: ../data/raw/japanflux/0-info/JapanFlux2024_SiteList_20250910.csv
+
 # ICOS (from Carbon Portal)
 DIR_DATA_RAW_ICOS: ../data/raw/icos
 PATTERN_DIR_ICOS: ['ICOSETC_', '_ARCHIVE_L2']

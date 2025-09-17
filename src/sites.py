@@ -1,10 +1,10 @@
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from diive.core.funcs.funcs import filter_strings_by_elements
 from diive.core.io.filereader import search_files
-from diive.core.io.filereader import search_folders
 
 pd.set_option('display.max_rows', 3000)
 pd.set_option('display.max_columns', 3000)
@@ -158,6 +158,48 @@ def get_site_info_fxn_cp(searchdir, pattern_dir, infofile, pattern_file) -> pd.D
     return allsites_fxn
 
 
+def get_site_info_japanflux(searchdir, pattern_dir, infofile, origin, pattern_file) -> pd.DataFrame:
+    """JapanFlux2024"""
+
+    # Read site info from JapanFlux2024
+    info = pd.read_csv(infofile)
+    sitelist = SiteList(searchdir=searchdir, identifiers=pattern_dir, origin=origin, pattern_file=pattern_file,
+                        info=info)
+    sitelist.run()
+    allsites = sitelist.get_site_info()
+
+    for ix, row in allsites.iterrows():
+        site = row['SITE']
+        sitelocs = info['SITE_ID'] == site
+        siteinfo = info[sitelocs].copy()
+
+        try:
+            elev = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_ELEV']['DATAVALUE'].iloc[0]
+        except IndexError:
+            elev = np.nan
+
+        try:
+            lon = float(siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LONG']['DATAVALUE'].iloc[0])
+        except IndexError:
+            lon = np.nan
+
+        try:
+            lat = siteinfo[siteinfo['VARIABLE'] == 'LOCATION_LAT']['DATAVALUE'].iloc[0]
+        except IndexError:
+            lat = np.nan
+
+        try:
+            igbp = siteinfo[siteinfo['VARIABLE'] == 'IGBP']['DATAVALUE'].iloc[0]
+        except IndexError:
+            igbp = np.nan
+
+        allsites.loc[allsites['SITE'] == site, 'ELEVATION'] = elev
+        allsites.loc[allsites['SITE'] == site, 'LON'] = lon
+        allsites.loc[allsites['SITE'] == site, 'LAT'] = lat
+        allsites.loc[allsites['SITE'] == site, 'IGBP'] = igbp
+    return allsites
+
+
 def get_site_info_fluxnet_ameriflux(searchdir, pattern_dir, infofile, origin, pattern_file) -> pd.DataFrame:
     """FLUXNET_ORG and AMERIFLUX files have the same structure."""
     # Get info for AMERIFLUX sites
@@ -207,12 +249,14 @@ class SiteList:
                  searchdir: str,
                  identifiers: list,
                  pattern_file: str,
-                 origin: str):
+                 origin: str,
+                 info: pd.DataFrame = None):
 
         self.searchdir = searchdir
         self.identifiers = identifiers
         self.pattern_file = pattern_file
         self.origin = origin
+        self.info_df = info  # Only needed for JPF, contains site names in connection with ID number
 
         self.valid_folders = []
         self.sites = pd.DataFrame()
@@ -221,7 +265,11 @@ class SiteList:
         return self.sites
 
     def _search_folders(self) -> list:
-        found_folders = search_folders(searchdirs=self.searchdir)
+        """Search for folders in searchdir that contain the identifiers."""
+        root = self.searchdir
+        found_folders = [f.name for f in os.scandir(root) if f.is_dir()]
+        found_folders = [os.path.join(root, folder) for folder in found_folders]
+        found_folders = [str(Path(folder)) for folder in found_folders]
         valid_folders = filter_strings_by_elements(found_folders, self.identifiers)
         return valid_folders
 
@@ -239,27 +287,45 @@ class SiteList:
 
         for v in self.valid_folders:
             site = None
+
             dirpath_fxn_cp = None
             dirname_fxn_cp = None
             filepath_fxn_cp = None
+
             dirpath_fxn_org = None
             dirname_fxn_org = None
             filepath_fxn_org = None
+
             dirpath_icos = None
             dirname_icos = None
             filepath_icos = None
+
             dirpath_amf = None
             dirname_amf = None
             filepath_amf = None
+
+            dirpath_jpf = None
+            dirname_jpf = None
+            filepath_jpf = None
 
             if self.origin == 'FLUXNET_CP':
                 # FLX_FI-Var_FLUXNET2015_FULLSET_HH_2017-2023_1-3.csv
                 dirpath_fxn_cp = Path(v)
                 dirname_fxn_cp = dirpath_fxn_cp.name
                 site = self._extract_sitename(dirname=dirname_fxn_cp)
+                # site = self._extract_sitename(dirname=dirname_fxn_cp)
                 # filepattern = 'FLX_*_FLUXNET2015_FULLSET_HH_*.csv'
                 foundfile = search_files(searchdirs=str(dirpath_fxn_cp), pattern=self.pattern_file)
                 filepath_fxn_cp = foundfile[0]
+
+            elif self.origin == 'JAPANFLUX':
+                dirpath_jpf = Path(v)
+                dirname_jpf = dirpath_jpf.name
+                id_jpf = str(dirpath_jpf.name).replace('JPF_', '')  # Site ID number
+                site = self.info_df.loc[self.info_df['Metadata ID'] == id_jpf, 'Site Code'].values[0]
+                # filepattern = 'FLX_*_JapanFLUX2024_ALLVARS_HH_*.csv'
+                foundfile = search_files(searchdirs=str(dirpath_jpf), pattern=self.pattern_file)
+                filepath_jpf = foundfile[0]
 
             elif self.origin == 'ICOS':
                 dirpath_icos = Path(v)
@@ -309,7 +375,10 @@ class SiteList:
                 '_FILEPATH_ICOS': [filepath_icos],
                 '_DIRNAME_AMF': [dirname_amf],
                 '_DIRPATH_AMF': [dirpath_amf],
-                '_FILEPATH_AMF': [filepath_amf]
+                '_FILEPATH_AMF': [filepath_amf],
+                '_DIRNAME_JPF': [dirname_jpf],
+                '_DIRPATH_JPF': [dirpath_jpf],
+                '_FILEPATH_JPF': [filepath_jpf]
             }
             site = pd.DataFrame.from_dict(d, orient='columns')
             sites = pd.concat([sites, site], axis=0, ignore_index=True)

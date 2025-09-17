@@ -8,6 +8,19 @@ settings = files.read_settings_file("../config/settings.yaml")
 
 ecosystems = settings['ECOSYSTEMS']
 
+# JapanFlux2024
+print("Collecting site info from JapanFlux2024...")
+site_info_japanflux = sites.get_site_info_japanflux(
+    pattern_dir=settings['PATTERN_DIR_JPF'],
+    infofile=settings['INFOFILE_JPF'],
+    pattern_file=settings['PATTERN_FILE_HH_JPF'],
+    # searchdir=TESTDIR  # todo testing
+    searchdir=settings['DIR_DATA_RAW_JPF'],
+    origin='JAPANFLUX'
+)
+site_info_japanflux = site_info_japanflux[site_info_japanflux['IGBP'].isin(ecosystems)].copy()
+# print(site_info_japanflux)
+
 # ICOS
 print("Collecting site info from ICOS...")
 site_info_icos = sites.get_site_info_icos(
