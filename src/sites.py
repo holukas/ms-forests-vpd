@@ -407,3 +407,35 @@ class SiteList:
     def run(self):
         self.valid_folders = self._search_folders()
         self.sites = self._collect_info()
+
+def consolidate_duplicate_site_entries_amf(site_info_ameriflux):
+    # Get all rows that are duplicates (including the first occurrence)
+    duplicates = site_info_ameriflux[site_info_ameriflux['SITE'].duplicated(keep=False)]
+    # Get the unique site names from the duplicated rows
+    duplicate_site_names = duplicates['SITE'].unique()
+
+    # Define a function to combine unique values into a list
+    def combine_unique_values(series):
+        unique_values = series.dropna().unique().tolist()
+        if len(unique_values) == 1:
+            return unique_values[0]
+        if not unique_values:
+            return None
+        return unique_values
+
+    for d in duplicate_site_names:
+        subset = site_info_ameriflux.loc[site_info_ameriflux['SITE'] == d].copy()
+
+        # Remove the duplicates from site info
+        index_to_drop = site_info_ameriflux[site_info_ameriflux['SITE'] == d].index
+        site_info_ameriflux = site_info_ameriflux.drop(index_to_drop, inplace=False)
+
+        # Group by the 'SITE' column and apply the aggregation
+        # Create a dictionary for aggregation, applying the custom function to all columns except 'SITE'
+        agg_dict = {col: combine_unique_values for col in subset.columns if col != 'SITE'}
+        combined_entry = subset.groupby('SITE', as_index=False).agg(agg_dict)
+
+        # Add new (consolidated) record back to dataframe
+        site_info_ameriflux = pd.concat([site_info_ameriflux, combined_entry], ignore_index=True)
+
+    return site_info_ameriflux

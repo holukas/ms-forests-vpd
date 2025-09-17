@@ -62,6 +62,7 @@ site_info_ameriflux = sites.get_site_info_fluxnet_ameriflux(
     searchdir=settings['DIR_DATA_RAW_AMF'],
     origin='AMERIFLUX'
 )
+site_info_ameriflux = sites.consolidate_duplicate_site_entries_amf(site_info_ameriflux)
 site_info_ameriflux = site_info_ameriflux[site_info_ameriflux['IGBP'].isin(ecosystems)].copy()
 # print(site_info_ameriflux)
 
@@ -78,7 +79,14 @@ siteinfo_df = sites.merge_site_info(
 
 # After combining all site info, check for duplicates
 if siteinfo_df['SITE'].duplicated().sum() > 0:
-    raise ValueError("Duplicate sites found in site info dataframe.")
+    # Get all rows that are duplicates (including the first occurrence)
+    duplicates = siteinfo_df[siteinfo_df['SITE'].duplicated(keep=False)]
+    # Get the unique site names from the duplicated rows
+    duplicate_site_names = duplicates['SITE'].unique()
+    # Format the names for error message
+    duplicate_sites_str = ", ".join(duplicate_site_names)
+    # Raise the error with the names of the duplicate sites
+    raise ValueError(f"Duplicate sites found in site info dataframe: {duplicate_sites_str}")
 
 siteinfo_df.to_csv(outfile, index=False)
 print(f"Saved site info to file {outfile}.")
