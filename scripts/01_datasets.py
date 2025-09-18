@@ -61,9 +61,14 @@ datasets_ameriflux = sites.get_dataset_info_fluxnet_ameriflux(
 datasets_df = pd.concat([datasets_fxn_cp, datasets_ameriflux, datasets_icos, datasets_fxn_org, datasets_japanflux],
                         axis=0, ignore_index=True)
 datasets_df = datasets_df.reset_index(drop=True)
-datasets_df = datasets_df.fillna(np.nan)
+# datasets_df = datasets_df.fillna("n.a.")
 datasets_df = datasets_df.sort_values(by=['SITE'], inplace=False)
 datasets_df = datasets_df[datasets_df['IGBP'].isin(ecosystems)].copy()
+
+# Set dataset priority for merging of overlapping datasets, 1=top priority when datasets overlap
+priority = dict(ICOS=1, AMERIFLUX=1, JAPANFLUX=1, FLUXNET_CP=2, FLUXNET_ORG=3)
+# Map the 'ORIGIN' column to the integer values
+datasets_df['PRIORITY'] = datasets_df['ORIGIN'].map(priority)
 
 # Save to file
 outfile = Path('../data/outputs/01_datasets.csv')

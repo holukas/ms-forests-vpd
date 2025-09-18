@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 import diive as dv
@@ -10,7 +11,7 @@ from diive.core.times.times import insert_timestamp
 from scipy.stats import zscore
 
 from src.common import get_variable_names
-import ast
+
 
 def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
@@ -136,7 +137,7 @@ def readfile(filetype, filepath_icos, data_nrows):
     return df
 
 
-def _compare_years(primary_df, secondary_df, first_year_primary):
+def _compare_years(primary_df, secondary_df):
     """
     Reconciles two pandas DataFrames by adjusting them based on a common year.
 
@@ -148,7 +149,6 @@ def _compare_years(primary_df, secondary_df, first_year_primary):
     Parameters:
         primary_df (pd.DataFrame): The primary DataFrame with a DatetimeIndex.
         secondary_df (pd.DataFrame): The secondary DataFrame with a DatetimeIndex.
-        first_year_primary (int): The common year used for the initial comparison.
 
     Returns:
         tuple: A tuple containing the reconciled primary and secondary DataFrames.
@@ -158,6 +158,9 @@ def _compare_years(primary_df, secondary_df, first_year_primary):
         TypeError: If either DataFrame does not have a pandas DatetimeIndex.
         IndexError: If primary_df becomes empty, preventing subsequent operations.
     """
+
+    first_year_primary = primary_df.index.year.min()
+
     # Ensure indices are datetime-like to allow year-based comparisons
     if not isinstance(primary_df.index, pd.DatetimeIndex) or not isinstance(secondary_df.index, pd.DatetimeIndex):
         raise TypeError("DataFrames must have a DatetimeIndex.")
@@ -196,7 +199,78 @@ def _resample_to_lower_freq(higher, lower, origin):
     return higher
 
 
-def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, showplot=False) -> pd.DataFrame:
+def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
+                         site, origin, filepath, showplot=False):
+    if site in sites_done:
+        return datasets_df, sites_done
+
+    # todo testing
+    if site != "BE-Bra":
+        return datasets_df, sites_done
+    # todo testing
+
+    igbp = None
+
+    filetype = "FLUXNET-FULLSET-HH-CSV-30MIN"
+    if '_FULLSET_HR_' in str(Path(filepath).name):
+        filetype = "FLUXNET-FULLSET-HR-CSV-60MIN"
+
+    merged_df = None
+    sourcetxt = ""
+    datasetinfo_updated = None  # Consolidates site info across multiple datasets (e.g. IGBP can be different)
+
+    subset = datasets_df.loc[datasets_df['SITE'] == site].copy()
+
+    print(f"Reading dataset for #{ix + 1} {site} ({origin})...")
+
+    if len(subset) > 1:
+        subset = subset.sort_values(by='PRIORITY', ascending=True, inplace=False)
+        subset = subset.reset_index(drop=True)
+        for ix, datasetinfo in subset.iterrows():
+            if ix == 0:
+                merged_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
+                merged_df['ORIGIN'] = datasetinfo['ORIGIN']
+                sourcetxt += datasetinfo['ORIGIN']
+                igbp = datasetinfo['IGBP']  # Use IGBP from highest priority
+                datasetinfo_updated = datasetinfo.copy()  # Use info from highest priority
+            else:
+                incoming_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
+                incoming_df['ORIGIN'] = datasetinfo['ORIGIN']
+                merged_df, incoming_df = _compare_years(primary_df=merged_df, secondary_df=incoming_df)
+                merged_df = pd.concat([merged_df, incoming_df], axis=0)
+                sourcetxt += f"+{datasetinfo['ORIGIN']}"
+                datasetinfo_updated['ORIGIN'] = sourcetxt
+                datasetinfo_updated = datasetinfo_updated.fillna(datasetinfo)  # Fill gaps w/ lower priority
+
+    elif len(subset) == 1:
+        merged_df = readfile(filetype, filepath, data_nrows)
+        merged_df['ORIGIN'] = origin  # Add origin for each data record
+        sourcetxt += origin
+
+    # Save merged data to parquet file
+    merged_df = merged_df.sort_index()
+    start = merged_df.index[0].year
+    end = merged_df.index[-1].year
+    outname = f"{site}_{igbp}_{sourcetxt}_{start}-{end}"
+    outfilepath = dv.save_parquet(filename=outname,
+                                  data=merged_df,
+                                  outpath=Path(settings['DIR_DATA_PROC_PARQUET']))
+
+    # _save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df,
+    #                 site, igbp, sourcetxt, settings, showplot)
+
+    # Add updated dataset info
+    datasetinfo_updated['_FILEPATH_PARQUET'] = Path(outfilepath)  # Add filepath to parquet file
+    datasetinfo_updated = datasetinfo_updated.to_frame().transpose()
+    datasets_df = datasets_df[~datasets_df['SITE'].str.contains(site)]  # Remove old dataset info (often multiple)
+    datasets_df = pd.concat([datasets_df, datasetinfo_updated], ignore_index=True)  # Add updated info at end of df
+
+    sites_done.append(site)
+
+    return datasets_df, sites_done
+
+
+def old_create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, showplot=False) -> pd.DataFrame:
     site = siteconfig['SITE']
 
     # # --- TODO testing
@@ -214,10 +288,6 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, show
     filepath_fxn_org = siteconfig['_FILEPATH_FXN_ORG']
     filepath_amf = ast.literal_eval(siteconfig['_FILEPATH_AMF'])
     filepath_jpf = siteconfig['_FILEPATH_JPF']
-
-    isinstance(siteconfig['_FILEPATH_AMF'], list)
-
-
 
     icos_df = None
     fxn_cp_df = None

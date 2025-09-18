@@ -10,109 +10,109 @@ pd.set_option('display.max_rows', 3000)
 pd.set_option('display.max_columns', 3000)
 
 
-def old_merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn, allsites_jpf):
-    allsites = pd.concat([allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn, allsites_jpf],
-                         axis=0, ignore_index=True)
-    allsites = allsites.reset_index(drop=True)
-    allsites = allsites.fillna(np.nan)
-    # print(allsites)
-
-    allsites_combined = pd.DataFrame(columns=allsites.columns)
-
-    uniq_sites = list(set(allsites['SITE'].tolist()))
-
-    for ix, u in enumerate(uniq_sites):
-        row = None
-        _df = allsites.loc[allsites['SITE'] == u, :]
-        n_records = len(_df)
-        has_icos = any(_df['ORIGIN'] == 'ICOS')
-        has_fxn_cp = any(_df['ORIGIN'] == 'FLUXNET_CP')
-        has_fxn_org = any(_df['ORIGIN'] == 'FLUXNET_ORG')
-        has_amf = any(_df['ORIGIN'] == 'AMERIFLUX')
-        has_jpf = any(_df['ORIGIN'] == 'JAPANFLUX')
-
-        if n_records > 1:
-
-            # ICOS data + FLUXNET_CP data + FLUXNET data (in this order)
-            if has_icos:
-                row = _df.loc[_df['ORIGIN'] == 'ICOS']
-                row = row.set_index('SITE', drop=False)
-                originstr = "ICOS"
-                if has_fxn_cp:
-                    row_fxn_cp = _df.loc[_df['ORIGIN'] == 'FLUXNET_CP']
-                    row_fxn_cp = row_fxn_cp.set_index('SITE', drop=False)
-                    row = row.fillna(row_fxn_cp)
-                    originstr += "+FLUXNET_CP"
-                if has_fxn_org:
-                    row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
-                    row_fxn = row_fxn.set_index('SITE', drop=False)
-                    row = row.fillna(row_fxn)
-                    originstr += "+FLUXNET_ORG"
-                row['ORIGIN'] = originstr
-
-
-
-            # FLUXNET_CP data + FLUXNET data
-            elif has_fxn_cp:
-                row = _df.loc[_df['ORIGIN'] == 'FLUXNET_CP']
-                row = row.set_index('SITE', drop=False)
-                originstr = "FLUXNET_CP"
-                if has_fxn_org:
-                    row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
-                    row_fxn = row_fxn.set_index('SITE', drop=False)
-                    row = row.fillna(row_fxn)
-                    originstr += "+FLUXNET_ORG"
-                row['ORIGIN'] = originstr
-
-            # AMERIFLUX data + FLUXNET data
-            elif has_amf:
-                row = _df.loc[_df['ORIGIN'] == 'AMERIFLUX']
-                row = row.set_index('SITE', drop=False)
-                originstr = "AMERIFLUX"
-                if has_fxn_org:
-                    row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
-                    row_fxn = row_fxn.set_index('SITE', drop=False)
-                    row = row.fillna(row_fxn)
-                    originstr += "+FLUXNET_ORG"
-                row['ORIGIN'] = originstr
-
-            # JAPANFLUX data + FLUXNET data
-            elif has_jpf:
-                row = _df.loc[_df['ORIGIN'] == 'JAPANFLUX']
-                row = row.set_index('SITE', drop=False)
-                originstr = "JAPANFLUX"
-                if has_fxn_org:
-                    row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
-                    row_fxn = row_fxn.set_index('SITE', drop=False)
-                    row = row.fillna(row_fxn)
-                    originstr += "+FLUXNET_ORG"
-                row['ORIGIN'] = originstr
-
-
-        # Only 1 available
-        elif n_records == 1:
-            if not _df.loc[_df['ORIGIN'] == 'ICOS'].empty:
-                row = _df.loc[_df['ORIGIN'] == 'ICOS']
-            elif not _df.loc[_df['ORIGIN'] == 'FLUXNET_CP'].empty:
-                row = _df.loc[_df['ORIGIN'] == 'FLUXNET_CP']
-            elif not _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG'].empty:
-                row = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
-            elif not _df.loc[_df['ORIGIN'] == 'AMERIFLUX'].empty:
-                row = _df.loc[_df['ORIGIN'] == 'AMERIFLUX']
-            elif not _df.loc[_df['ORIGIN'] == 'JAPANFLUX'].empty:
-                row = _df.loc[_df['ORIGIN'] == 'JAPANFLUX']
-
-        else:
-            raise Exception(f"{n_records} entries not allowed, only 1,2 or 3 allowed for each site.")
-
-        allsites_combined = pd.concat([allsites_combined, row], axis=0, ignore_index=True)
-
-    cols = [c for c in allsites_combined.columns if not str(c).startswith('_')]
-    auxcols = [cols.append(c) for c in allsites_combined.columns if str(c).startswith('_')]
-    allsites_combined = allsites_combined[cols]
-    allsites_combined = allsites_combined.sort_values(by='SITE', inplace=False, ascending=True, ignore_index=True)
-
-    return allsites_combined
+# def old_merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn, allsites_jpf):
+#     allsites = pd.concat([allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn, allsites_jpf],
+#                          axis=0, ignore_index=True)
+#     allsites = allsites.reset_index(drop=True)
+#     allsites = allsites.fillna(np.nan)
+#     # print(allsites)
+#
+#     allsites_combined = pd.DataFrame(columns=allsites.columns)
+#
+#     uniq_sites = list(set(allsites['SITE'].tolist()))
+#
+#     for ix, u in enumerate(uniq_sites):
+#         row = None
+#         _df = allsites.loc[allsites['SITE'] == u, :]
+#         n_records = len(_df)
+#         has_icos = any(_df['ORIGIN'] == 'ICOS')
+#         has_fxn_cp = any(_df['ORIGIN'] == 'FLUXNET_CP')
+#         has_fxn_org = any(_df['ORIGIN'] == 'FLUXNET_ORG')
+#         has_amf = any(_df['ORIGIN'] == 'AMERIFLUX')
+#         has_jpf = any(_df['ORIGIN'] == 'JAPANFLUX')
+#
+#         if n_records > 1:
+#
+#             # ICOS data + FLUXNET_CP data + FLUXNET data (in this order)
+#             if has_icos:
+#                 row = _df.loc[_df['ORIGIN'] == 'ICOS']
+#                 row = row.set_index('SITE', drop=False)
+#                 originstr = "ICOS"
+#                 if has_fxn_cp:
+#                     row_fxn_cp = _df.loc[_df['ORIGIN'] == 'FLUXNET_CP']
+#                     row_fxn_cp = row_fxn_cp.set_index('SITE', drop=False)
+#                     row = row.fillna(row_fxn_cp)
+#                     originstr += "+FLUXNET_CP"
+#                 if has_fxn_org:
+#                     row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
+#                     row_fxn = row_fxn.set_index('SITE', drop=False)
+#                     row = row.fillna(row_fxn)
+#                     originstr += "+FLUXNET_ORG"
+#                 row['ORIGIN'] = originstr
+#
+#
+#
+#             # FLUXNET_CP data + FLUXNET data
+#             elif has_fxn_cp:
+#                 row = _df.loc[_df['ORIGIN'] == 'FLUXNET_CP']
+#                 row = row.set_index('SITE', drop=False)
+#                 originstr = "FLUXNET_CP"
+#                 if has_fxn_org:
+#                     row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
+#                     row_fxn = row_fxn.set_index('SITE', drop=False)
+#                     row = row.fillna(row_fxn)
+#                     originstr += "+FLUXNET_ORG"
+#                 row['ORIGIN'] = originstr
+#
+#             # AMERIFLUX data + FLUXNET data
+#             elif has_amf:
+#                 row = _df.loc[_df['ORIGIN'] == 'AMERIFLUX']
+#                 row = row.set_index('SITE', drop=False)
+#                 originstr = "AMERIFLUX"
+#                 if has_fxn_org:
+#                     row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
+#                     row_fxn = row_fxn.set_index('SITE', drop=False)
+#                     row = row.fillna(row_fxn)
+#                     originstr += "+FLUXNET_ORG"
+#                 row['ORIGIN'] = originstr
+#
+#             # JAPANFLUX data + FLUXNET data
+#             elif has_jpf:
+#                 row = _df.loc[_df['ORIGIN'] == 'JAPANFLUX']
+#                 row = row.set_index('SITE', drop=False)
+#                 originstr = "JAPANFLUX"
+#                 if has_fxn_org:
+#                     row_fxn = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
+#                     row_fxn = row_fxn.set_index('SITE', drop=False)
+#                     row = row.fillna(row_fxn)
+#                     originstr += "+FLUXNET_ORG"
+#                 row['ORIGIN'] = originstr
+#
+#
+#         # Only 1 available
+#         elif n_records == 1:
+#             if not _df.loc[_df['ORIGIN'] == 'ICOS'].empty:
+#                 row = _df.loc[_df['ORIGIN'] == 'ICOS']
+#             elif not _df.loc[_df['ORIGIN'] == 'FLUXNET_CP'].empty:
+#                 row = _df.loc[_df['ORIGIN'] == 'FLUXNET_CP']
+#             elif not _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG'].empty:
+#                 row = _df.loc[_df['ORIGIN'] == 'FLUXNET_ORG']
+#             elif not _df.loc[_df['ORIGIN'] == 'AMERIFLUX'].empty:
+#                 row = _df.loc[_df['ORIGIN'] == 'AMERIFLUX']
+#             elif not _df.loc[_df['ORIGIN'] == 'JAPANFLUX'].empty:
+#                 row = _df.loc[_df['ORIGIN'] == 'JAPANFLUX']
+#
+#         else:
+#             raise Exception(f"{n_records} entries not allowed, only 1,2 or 3 allowed for each site.")
+#
+#         allsites_combined = pd.concat([allsites_combined, row], axis=0, ignore_index=True)
+#
+#     cols = [c for c in allsites_combined.columns if not str(c).startswith('_')]
+#     auxcols = [cols.append(c) for c in allsites_combined.columns if str(c).startswith('_')]
+#     allsites_combined = allsites_combined[cols]
+#     allsites_combined = allsites_combined.sort_values(by='SITE', inplace=False, ascending=True, ignore_index=True)
+#
+#     return allsites_combined
 
 
 def get_dataset_info_icos(pattern_dir, searchdir, pattern_file):
@@ -322,7 +322,7 @@ class SiteList:
             if self.origin in ['FLUXNET_CP', 'JAPANFLUX', 'ICOS']:
                 foundfile = search_files(searchdirs=str(dirpath), pattern=self.pattern_file)
                 filepath = str(foundfile[0])
-            elif self.origin == ['AMERIFLUX', 'FLUXNET_ORG']:
+            elif self.origin in ['AMERIFLUX', 'FLUXNET_ORG']:
                 foundfile = search_files(searchdirs=str(dirpath), pattern=self.pattern_file)
                 if not foundfile:
                     # Few sites have hourly instead of half-hourly data
@@ -353,35 +353,3 @@ class SiteList:
         self.sites = self._collect_info()
 
 
-def old_consolidate_duplicate_site_entries_amf(site_info_ameriflux):
-    """Handle different data versions for the same site."""
-    # Get all rows that are duplicates (including the first occurrence)
-    duplicates = site_info_ameriflux[site_info_ameriflux['SITE'].duplicated(keep=False)]
-    # Get the unique site names from the duplicated rows
-    duplicate_site_names = duplicates['SITE'].unique()
-
-    # Define a function to combine unique values into a list
-    def combine_unique_values(series):
-        unique_values = series.dropna().unique().tolist()
-        if len(unique_values) == 1:
-            return unique_values[0]
-        if not unique_values:
-            return None
-        return unique_values
-
-    for d in duplicate_site_names:
-        subset = site_info_ameriflux.loc[site_info_ameriflux['SITE'] == d].copy()
-
-        # Remove the duplicates from site info
-        index_to_drop = site_info_ameriflux[site_info_ameriflux['SITE'] == d].index
-        site_info_ameriflux = site_info_ameriflux.drop(index_to_drop, inplace=False)
-
-        # Group by the 'SITE' column and apply the aggregation
-        # Create a dictionary for aggregation, applying the custom function to all columns except 'SITE'
-        agg_dict = {col: combine_unique_values for col in subset.columns if col != 'SITE'}
-        combined_entry = subset.groupby('SITE', as_index=False).agg(agg_dict)
-
-        # Add new (consolidated) record back to dataframe
-        site_info_ameriflux = pd.concat([site_info_ameriflux, combined_entry], ignore_index=True)
-
-    return site_info_ameriflux
