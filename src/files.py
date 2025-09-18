@@ -10,7 +10,7 @@ from diive.core.times.times import insert_timestamp
 from scipy.stats import zscore
 
 from src.common import get_variable_names
-
+import ast
 
 def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
@@ -199,12 +199,12 @@ def _resample_to_lower_freq(higher, lower, origin):
 def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, showplot=False) -> pd.DataFrame:
     site = siteconfig['SITE']
 
-    # # # --- TODO testing
-    # # if site != "US-UMB":
-    # #     return pd.DataFrame()
+    # # --- TODO testing
+    if site != "CA-Ca1":
+        return pd.DataFrame()
     # if ix < 166:
     #     return pd.DataFrame()
-    # # # --- TODO testing
+    # # --- TODO testing
 
     igbp = siteconfig['IGBP']
     origin = siteconfig['ORIGIN']
@@ -212,21 +212,32 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, show
     filepath_icos = siteconfig['_FILEPATH_ICOS']
     filepath_fxn_cp = siteconfig['_FILEPATH_FXN_CP']
     filepath_fxn_org = siteconfig['_FILEPATH_FXN_ORG']
-    filepath_amf = siteconfig['_FILEPATH_AMF']
+    filepath_amf = ast.literal_eval(siteconfig['_FILEPATH_AMF'])
+    filepath_jpf = siteconfig['_FILEPATH_JPF']
+
+    isinstance(siteconfig['_FILEPATH_AMF'], list)
+
+
 
     icos_df = None
     fxn_cp_df = None
     fxn_org_df = None
     amf_df = None
+    jpf_df = None
     merged_df = None
+
     icos_yrs = None
     fxn_cp_yrs = None
     fxn_org_yrs = None
+    jpf_yrs = None
     amf_yrs = None
+
     icos_firstyr = None
     fxn_cp_firstyr = None
     fxn_org_firstyr = None
+    jpf_firstyr = None
     amf_firstyr = None
+
     sourcetxt = "-NO-SOURCE-ERROR-"
 
     # Read available files
@@ -244,7 +255,7 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, show
         fxn_cp_firstyr = fxn_cp_df.index.year[0]
 
     if isinstance(filepath_fxn_org, str):
-        # Sometime hourly data
+        # Sometimes hourly data
         filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(Path(
             filepath_fxn_org).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
         fxn_org_df = readfile(filetype, filepath_fxn_org, data_nrows)
@@ -253,9 +264,14 @@ def create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, show
         fxn_org_firstyr = fxn_org_df.index.year[0]
 
     if isinstance(filepath_amf, str):
-        # Sometime hourly data
+        # Sometimes hourly data
         filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(Path(
             filepath_amf).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
+        # todo
+
+        filepath_amf_copy = filepath_amf
+        filepath_amf = ast.literal_eval(str(filepath_amf))
+
         amf_df = readfile(filetype, filepath_amf, data_nrows)
         amf_df['ORIGIN'] = 'AMERIFLUX'
         amf_yrs = list(set(amf_df.index.year))

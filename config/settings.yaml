@@ -7,7 +7,6 @@ DIR_DATA_OUT: ../data/outputs
 DIR_DATA_OUT_SHAP_ANALYSIS: ../data/outputs/shap_analysis
 
 # Files
-OUTFILE_SITEINFO: ../data/outputs/siteinfo.csv
 ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
 
 # JAPANFLUX (JapanFlux2024 dataset)

@@ -10,7 +10,7 @@ pd.set_option('display.max_rows', 3000)
 pd.set_option('display.max_columns', 3000)
 
 
-def merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn, allsites_jpf):
+def old_merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn, allsites_jpf):
     allsites = pd.concat([allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn, allsites_jpf],
                          axis=0, ignore_index=True)
     allsites = allsites.reset_index(drop=True)
@@ -115,7 +115,7 @@ def merge_site_info(allsites_fxn_cp, allsites_icos, allsites_amf, allsites_fxn, 
     return allsites_combined
 
 
-def get_site_info_icos(pattern_dir, searchdir, pattern_file):
+def get_dataset_info_icos(pattern_dir, searchdir, pattern_file):
     # Get info for ICOS sites
     icos = SiteList(searchdir=searchdir, identifiers=pattern_dir, pattern_file=pattern_file, origin='ICOS')
     icos.run()
@@ -128,7 +128,7 @@ def get_site_info_icos(pattern_dir, searchdir, pattern_file):
 
         # Get info from this site's ICOS SITEINFO file
         infofile_icos = f"ICOSETC_{site}_SITEINFO_L2.csv"
-        infofile_icos_path = Path(row['_DIRPATH_ICOS']) / infofile_icos
+        infofile_icos_path = Path(row['_DIRPATH']) / infofile_icos
         info_icos = pd.read_csv(infofile_icos_path)
 
         # Check if sites match
@@ -148,7 +148,7 @@ def get_site_info_icos(pattern_dir, searchdir, pattern_file):
     return allsites_icos
 
 
-def get_site_info_fxn_cp(searchdir, pattern_dir, infofile, pattern_file) -> pd.DataFrame:
+def get_dataset_info_fxn_cp(searchdir, pattern_dir, infofile, pattern_file) -> pd.DataFrame:
     # Get info for FLUXNET sites
     fxn = SiteList(searchdir=searchdir, identifiers=pattern_dir, origin="FLUXNET_CP", pattern_file=pattern_file)
     fxn.run()
@@ -176,7 +176,7 @@ def get_site_info_fxn_cp(searchdir, pattern_dir, infofile, pattern_file) -> pd.D
     return allsites_fxn
 
 
-def get_site_info_japanflux(searchdir, pattern_dir, infofile, origin, pattern_file) -> pd.DataFrame:
+def get_dataset_info_japanflux(searchdir, pattern_dir, infofile, origin, pattern_file) -> pd.DataFrame:
     """JapanFlux2024"""
 
     # Read site info from JapanFlux2024
@@ -220,7 +220,7 @@ def get_site_info_japanflux(searchdir, pattern_dir, infofile, origin, pattern_fi
     return allsites
 
 
-def get_site_info_fluxnet_ameriflux(searchdir, pattern_dir, infofile, origin, pattern_file) -> pd.DataFrame:
+def get_dataset_info_fluxnet_ameriflux(searchdir, pattern_dir, infofile, origin, pattern_file) -> pd.DataFrame:
     """FLUXNET_ORG and AMERIFLUX files have the same structure."""
     # Get info for AMERIFLUX sites
     sitelist = SiteList(searchdir=searchdir, identifiers=pattern_dir, origin=origin, pattern_file=pattern_file)
@@ -304,103 +304,47 @@ class SiteList:
 
     def _collect_info(self):
         sites = pd.DataFrame()
+        filepath = None
 
         for v in self.valid_folders:
-            site = None
 
-            dirpath_fxn_cp = None
-            dirname_fxn_cp = None
-            filepath_fxn_cp = None
+            dirpath = Path(v)
+            dirname = dirpath.name
+            dirname = str(dirname)
 
-            dirpath_fxn_org = None
-            dirname_fxn_org = None
-            filepath_fxn_org = None
-
-            dirpath_icos = None
-            dirname_icos = None
-            filepath_icos = None
-
-            dirpath_amf = None
-            dirname_amf = None
-            filepath_amf = None
-
-            dirpath_jpf = None
-            dirname_jpf = None
-            filepath_jpf = None
-
-            if self.origin == 'FLUXNET_CP':
-                # FLX_FI-Var_FLUXNET2015_FULLSET_HH_2017-2023_1-3.csv
-                dirpath_fxn_cp = Path(v)
-                dirname_fxn_cp = dirpath_fxn_cp.name
-                site = self._extract_sitename(dirname=dirname_fxn_cp)
-                # site = self._extract_sitename(dirname=dirname_fxn_cp)
-                # filepattern = 'FLX_*_FLUXNET2015_FULLSET_HH_*.csv'
-                foundfile = search_files(searchdirs=str(dirpath_fxn_cp), pattern=self.pattern_file)
-                filepath_fxn_cp = foundfile[0]
-
-            elif self.origin == 'JAPANFLUX':
-                dirpath_jpf = Path(v)
-                dirname_jpf = dirpath_jpf.name
-                id_jpf = str(dirpath_jpf.name).replace('JPF_', '')  # Site ID number
+            # Get site name
+            if self.origin != 'JAPANFLUX':
+                site = self._extract_sitename(dirname=dirname)
+            else:
+                id_jpf = str(dirpath.name).replace('JPF_', '')  # Site ID number
                 site = self.info_df.loc[self.info_df['Metadata ID'] == id_jpf, 'Site Code'].values[0]
-                # filepattern = 'FLX_*_JapanFLUX2024_ALLVARS_HH_*.csv'
-                foundfile = search_files(searchdirs=str(dirpath_jpf), pattern=self.pattern_file)
-                filepath_jpf = foundfile[0]
 
-            elif self.origin == 'ICOS':
-                dirpath_icos = Path(v)
-                dirname_icos = dirpath_icos.name
-                site = self._extract_sitename(dirname=dirname_icos)
-                # filepattern = 'ICOSETC_*_FLUXNET_HH_L2.csv'
-                foundfile = search_files(searchdirs=str(dirpath_icos), pattern=self.pattern_file)
-                filepath_icos = foundfile[0]
-
-            elif self.origin == 'AMERIFLUX':
-                dirpath_amf = Path(v)
-                dirname_amf = dirpath_amf.name
-                site = self._extract_sitename(dirname=dirname_amf)
-                # filepattern = 'AMF_*_FLUXNET_FULLSET_HH_*.csv'
-                foundfile = search_files(searchdirs=str(dirpath_amf), pattern=self.pattern_file)
+            if self.origin in ['FLUXNET_CP', 'JAPANFLUX', 'ICOS']:
+                foundfile = search_files(searchdirs=str(dirpath), pattern=self.pattern_file)
+                filepath = str(foundfile[0])
+            elif self.origin == ['AMERIFLUX', 'FLUXNET_ORG']:
+                foundfile = search_files(searchdirs=str(dirpath), pattern=self.pattern_file)
                 if not foundfile:
                     # Few sites have hourly instead of half-hourly data
-                    filepattern = 'AMF_*_FLUXNET_FULLSET_HR_*.csv'
-                    foundfile = search_files(searchdirs=str(dirpath_amf), pattern=filepattern)
-                filepath_amf = foundfile[0]
+                    if self.origin == 'AMERIFLUX':
+                        filepattern = 'AMF_*_FLUXNET_FULLSET_HR_*.csv'
+                    elif self.origin == 'FLUXNET_ORG':
+                        filepattern = 'FLX_*_FLUXNET2015_FULLSET_HR_*.csv'
+                    else:
+                        raise Exception("Origin not allowed.")
+                    foundfile = search_files(searchdirs=str(dirpath), pattern=filepattern)
+                filepath = str(foundfile[0])
 
-            elif self.origin == 'FLUXNET_ORG':
-                dirpath_fxn_org = Path(v)
-                dirname_fxn_org = dirpath_fxn_org.name
-                site = self._extract_sitename(dirname=dirname_fxn_org)
-                # filepattern = 'FLX_*_FLUXNET2015_FULLSET_HH_*.csv'
-                foundfile = search_files(searchdirs=str(dirpath_fxn_org), pattern=self.pattern_file)
-                if not foundfile:
-                    # Few sites have hourly instead of half-hourly data
-                    filepattern = 'FLX_*_FLUXNET2015_FULLSET_HR_*.csv'
-                    foundfile = search_files(searchdirs=str(dirpath_fxn_org), pattern=filepattern)
-                    # TODO check
-                    # raise Exception("Script tried to find hourly data.")
-                filepath_fxn_org = foundfile[0]
 
             d = {
-                'SITE': [site],
-                'ORIGIN': self.origin,
-                '_DIRNAME_FXN_CP': [dirname_fxn_cp],
-                '_DIRPATH_FXN_CP': [dirpath_fxn_cp],
-                '_FILEPATH_FXN_CP': [filepath_fxn_cp],
-                '_DIRNAME_FXN_ORG': [dirname_fxn_org],
-                '_DIRPATH_FXN_ORG': [dirpath_fxn_org],
-                '_FILEPATH_FXN_ORG': [filepath_fxn_org],
-                '_DIRNAME_ICOS': [dirname_icos],
-                '_DIRPATH_ICOS': [dirpath_icos],
-                '_FILEPATH_ICOS': [filepath_icos],
-                '_DIRNAME_AMF': [dirname_amf],
-                '_DIRPATH_AMF': [dirpath_amf],
-                '_FILEPATH_AMF': [filepath_amf],
-                '_DIRNAME_JPF': [dirname_jpf],
-                '_DIRPATH_JPF': [dirpath_jpf],
-                '_FILEPATH_JPF': [filepath_jpf]
+                'SITE': str(site),
+                'ORIGIN': str(self.origin),
+                '_DIRNAME': str(dirname),
+                '_DIRPATH': str(dirpath),
+                '_FILEPATH': str(filepath)
             }
-            site = pd.DataFrame.from_dict(d, orient='columns')
+            # site = pd.DataFrame.from_dict(d, orient='columns')
+            site = pd.DataFrame.from_dict(d, orient='index').T
             sites = pd.concat([sites, site], axis=0, ignore_index=True)
         return sites
 
@@ -408,7 +352,9 @@ class SiteList:
         self.valid_folders = self._search_folders()
         self.sites = self._collect_info()
 
-def consolidate_duplicate_site_entries_amf(site_info_ameriflux):
+
+def old_consolidate_duplicate_site_entries_amf(site_info_ameriflux):
+    """Handle different data versions for the same site."""
     # Get all rows that are duplicates (including the first occurrence)
     duplicates = site_info_ameriflux[site_info_ameriflux['SITE'].duplicated(keep=False)]
     # Get the unique site names from the duplicated rows
