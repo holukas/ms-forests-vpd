@@ -23,8 +23,6 @@ for ix, datasetinfo in _datasets_df.iterrows():
         data_nrows=data_nrows,
         settings=settings,
         site=datasetinfo['SITE'],
-        origin=datasetinfo['ORIGIN'],
-        filepath=datasetinfo['_FILEPATH'],
         ix=ix,
         sites_done=sites_done,
         showplot=True

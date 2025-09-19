@@ -194,7 +194,8 @@ def resample_to_lower_freq(higher, lower):
     higher_numeric_cols.index.name = 'TIMESTAMP_END'
 
     # Resample ONLY the 'ORIGIN' column and apply the last value
-    higher_origin_col = higher['ORIGIN'].resample(resample_to, closed='left', label='right').last().to_frame()  # .to_frame() converts Series back to DataFrame
+    higher_origin_col = higher['ORIGIN'].resample(resample_to, closed='left',
+                                                  label='right').last().to_frame()  # .to_frame() converts Series back to DataFrame
     higher_origin_col.index.name = 'TIMESTAMP_END'
 
     # Combine results and add middle timestamp
@@ -206,14 +207,14 @@ def resample_to_lower_freq(higher, lower):
 
 
 def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
-                         site, origin, filepath, showplot=False):
+                         site, showplot=False):
     if site in sites_done:
         return datasets_df, sites_done
 
-    # todo testing
-    if site != "US-UMB":
-        return datasets_df, sites_done
-    # todo testing
+    # # todo testing
+    # if site != "BE-Bra":
+    #     return datasets_df, sites_done
+    # # todo testing
 
     igbp = None
     merged_df = None
@@ -225,45 +226,45 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
 
     print(f"Merging datasets for #{ix + 1} {site} ({len(subset)} datasets)...")
 
-    if len(subset) > 1:
-        subset = subset.sort_values(by='PRIORITY', ascending=True, inplace=False)
-        subset = subset.reset_index(drop=True)
-        for ix, datasetinfo in subset.iterrows():
-            if ix == 0:
-                filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
-                    Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
-                merged_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
-                merged_df['ORIGIN'] = datasetinfo['ORIGIN']
-                sourcetxt += datasetinfo['ORIGIN']
-                igbp = datasetinfo['IGBP']  # Use IGBP from highest priority
-                datasetinfo_updated = datasetinfo.copy()  # Use info from highest priority
-            else:
-                filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
-                    Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
-                incoming_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
-                incoming_df['ORIGIN'] = datasetinfo['ORIGIN']
+    subset = subset.sort_values(by='PRIORITY', ascending=True, inplace=False)
+    subset = subset.reset_index(drop=True)
+    for ix, datasetinfo in subset.iterrows():
 
-                freq_merged = merged_df.index.freq
-                freq_incoming = incoming_df.index.freq
+        # Handle the highest priority dataset first
+        # This section also handles sites with only one dataset
+        if ix == 0:
+            filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
+                Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
+            merged_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
+            merged_df['ORIGIN'] = datasetinfo['ORIGIN']
+            sourcetxt += datasetinfo['ORIGIN']
+            igbp = datasetinfo['IGBP']  # Use IGBP from highest priority
+            datasetinfo_updated = datasetinfo.copy()  # Use info from highest priority
 
-                if freq_merged != freq_incoming:
-                    if freq_merged < freq_incoming:  # < means higher freq
-                        merged_df = resample_to_lower_freq(higher=merged_df, lower=incoming_df)
-                    elif freq_merged > freq_incoming:  # > means lower freq
-                        incoming_df = resample_to_lower_freq(higher=incoming_df, lower=merged_df)
+        # Handle lower priority datasets
+        else:
+            filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
+                Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
+            incoming_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
+            incoming_df['ORIGIN'] = datasetinfo['ORIGIN']
 
-                merged_df, incoming_df = _compare_years(primary_df=merged_df, secondary_df=incoming_df)
-                merged_df = pd.concat([merged_df, incoming_df], axis=0)
-                sourcetxt += f"+{datasetinfo['ORIGIN']}"
-                datasetinfo_updated['ORIGIN'] = sourcetxt
-                datasetinfo_updated = datasetinfo_updated.fillna(datasetinfo)  # Fill gaps w/ lower priority
+            freq_merged = merged_df.index.freq
+            freq_incoming = incoming_df.index.freq
 
-    elif len(subset) == 1:
-        filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
-            Path(filepath).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
-        merged_df = readfile(filetype, filepath, data_nrows)
-        merged_df['ORIGIN'] = origin  # Add origin for each data record
-        sourcetxt += origin
+            if freq_merged != freq_incoming:
+                if freq_merged < freq_incoming:  # < means higher freq
+                    merged_df = resample_to_lower_freq(higher=merged_df, lower=incoming_df)
+                elif freq_merged > freq_incoming:  # > means lower freq
+                    incoming_df = resample_to_lower_freq(higher=incoming_df, lower=merged_df)
+
+            merged_df, incoming_df = _compare_years(primary_df=merged_df, secondary_df=incoming_df)
+            merged_df = pd.concat([merged_df, incoming_df], axis=0)
+            merged_df.index = pd.to_datetime(merged_df.index)
+            merged_df = merged_df.sort_index()
+            merged_df.index.freq = pd.infer_freq(merged_df.index)
+            sourcetxt += f"+{datasetinfo['ORIGIN']}"
+            datasetinfo_updated['ORIGIN'] = sourcetxt
+            datasetinfo_updated = datasetinfo_updated.fillna(datasetinfo)  # Fill gaps w/ lower priority
 
     # Save merged data to parquet file
     merged_df = merged_df.sort_index()
