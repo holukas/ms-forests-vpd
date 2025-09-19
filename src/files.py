@@ -212,8 +212,13 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
         return datasets_df, sites_done
 
     # # todo testing
-    # if site != "BE-Bra":
+    # if site != "JP-Ako":
     #     return datasets_df, sites_done
+    # # todo testing
+
+    # # todo testing
+    if ix + 1 < 162:
+        return datasets_df, sites_done
     # # todo testing
 
     igbp = None
@@ -530,8 +535,12 @@ def save_heatmap_plot(df, outname, site, igbp, sourcetxt, settings, showplot):
     outfile = Path(settings['DIR_DATA_PROC_PARQUET_PLOTS']) / outname
     print(f"Saving heatmap plot to {outfile} ...")
 
-    fluxvar = df['NEE_VUT_50'].copy()
-    fluxvar_qc = df.loc[df['NEE_VUT_50_QC'] == 0, 'NEE_VUT_50'].copy()
+    fluxvar = 'NEE_VUT_50'
+    if fluxvar not in df.columns:
+        fluxvar = 'NEE_vUT_USTAR50'  # Found for site CN-Lsh (JapanFlux2024)
+
+    flux = df[fluxvar].copy()  # Gap-filled fluxes
+    flux_qc = df.loc[df[f'{fluxvar}_QC'] == 0, fluxvar].copy()  # Measured fluxes
 
     fig = plt.figure(facecolor='white', figsize=(12, 12), dpi=72)
     gs = gridspec.GridSpec(1, 2)  # rows, cols
@@ -542,8 +551,8 @@ def save_heatmap_plot(df, outname, site, igbp, sourcetxt, settings, showplot):
     plotkwargs = dict(cb_digits_after_comma=0, vmin=-20, vmax=20)
     if isinstance(df, pd.DataFrame):
         if not df.empty:
-            dv.heatmapdatetime(ax=ax, series=fluxvar, zlabel=f"{fluxvar.name}", **plotkwargs).plot()
-            dv.heatmapdatetime(ax=ax2, series=fluxvar_qc, zlabel=f"{fluxvar_qc.name}", **plotkwargs).plot()
+            dv.heatmapdatetime(ax=ax, series=flux, zlabel=f"{flux.name}", **plotkwargs).plot()
+            dv.heatmapdatetime(ax=ax2, series=flux_qc, zlabel=f"{flux_qc.name}", **plotkwargs).plot()
 
     # Titles
     ax.set_title(f"{site} ({igbp})\n{sourcetxt}\nmerged data (gap-filled)")
