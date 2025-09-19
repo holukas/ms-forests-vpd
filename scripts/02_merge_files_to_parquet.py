@@ -14,11 +14,10 @@ datasets_df = pd.read_csv(infile)
 datasets_df = datasets_df.fillna(np.nan)
 
 # Create parquet files
-data_nrows = 100  # for testing
+data_nrows = None  # for testing
 sites_done = []  # List of sites that were already processed
 _datasets_df = datasets_df.copy()
 for ix, datasetinfo in _datasets_df.iterrows():
-    # todo skip already processed sites in datasets_df
     datasets_df, sites_done = files.create_parquet_files(
         datasets_df=datasets_df,
         data_nrows=data_nrows,

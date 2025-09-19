@@ -16,10 +16,10 @@ from src.common import get_variable_names
 def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
-    # --- TODO testing
-    if siteconfig['SITE'] != 'CH-Dav':
-        return siteinfo_df
-    # --- TODO testing
+    # # --- TODO testing
+    # if siteconfig['SITE'] != 'CH-Dav':
+    #     return siteinfo_df
+    # # --- TODO testing
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET']
@@ -205,35 +205,36 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
         return datasets_df, sites_done
 
     # todo testing
-    if site != "BE-Bra":
+    if site != "US-UMB":
         return datasets_df, sites_done
     # todo testing
 
     igbp = None
-
-    filetype = "FLUXNET-FULLSET-HH-CSV-30MIN"
-    if '_FULLSET_HR_' in str(Path(filepath).name):
-        filetype = "FLUXNET-FULLSET-HR-CSV-60MIN"
-
     merged_df = None
     sourcetxt = ""
     datasetinfo_updated = None  # Consolidates site info across multiple datasets (e.g. IGBP can be different)
 
+    # Found datasets for this site
     subset = datasets_df.loc[datasets_df['SITE'] == site].copy()
 
-    print(f"Reading dataset for #{ix + 1} {site} ({origin})...")
+    print(f"Merging datasets for #{ix + 1} {site} ({len(subset)} datasets)...")
 
     if len(subset) > 1:
         subset = subset.sort_values(by='PRIORITY', ascending=True, inplace=False)
         subset = subset.reset_index(drop=True)
         for ix, datasetinfo in subset.iterrows():
             if ix == 0:
+                filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
+                    Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
                 merged_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
                 merged_df['ORIGIN'] = datasetinfo['ORIGIN']
                 sourcetxt += datasetinfo['ORIGIN']
                 igbp = datasetinfo['IGBP']  # Use IGBP from highest priority
                 datasetinfo_updated = datasetinfo.copy()  # Use info from highest priority
             else:
+                # todo check if all years merged
+                filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
+                    Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
                 incoming_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
                 incoming_df['ORIGIN'] = datasetinfo['ORIGIN']
                 merged_df, incoming_df = _compare_years(primary_df=merged_df, secondary_df=incoming_df)
@@ -243,6 +244,8 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
                 datasetinfo_updated = datasetinfo_updated.fillna(datasetinfo)  # Fill gaps w/ lower priority
 
     elif len(subset) == 1:
+        filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
+            Path(filepath).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
         merged_df = readfile(filetype, filepath, data_nrows)
         merged_df['ORIGIN'] = origin  # Add origin for each data record
         sourcetxt += origin
@@ -256,8 +259,7 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
                                   data=merged_df,
                                   outpath=Path(settings['DIR_DATA_PROC_PARQUET']))
 
-    # _save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df,
-    #                 site, igbp, sourcetxt, settings, showplot)
+    save_heatmap_plot(merged_df, outname, site, igbp, sourcetxt, settings, showplot)
 
     # Add updated dataset info
     datasetinfo_updated['_FILEPATH_PARQUET'] = Path(outfilepath)  # Add filepath to parquet file
@@ -501,14 +503,48 @@ def old_create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, 
                                   data=merged_df,
                                   outpath=Path(settings['DIR_DATA_PROC_PARQUET']))
 
-    _save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df,
-                    site, igbp, sourcetxt, settings, showplot)
+    old_save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df,
+                       site, igbp, sourcetxt, settings, showplot)
     siteinfo_df.loc[ix, '_FILEPATH_PARQUET'] = Path(outfilepath)
     return siteinfo_df
 
 
-def _save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df,
-                    site, igbp, sourcetxt, settings, showplot):
+def save_heatmap_plot(df, outname, site, igbp, sourcetxt, settings, showplot):
+    # Heatmap plots
+    outfile = Path(settings['DIR_DATA_PROC_PARQUET_PLOTS']) / outname
+    print(f"Saving heatmap plot to {outfile} ...")
+
+    fluxvar = df['NEE_VUT_50'].copy()
+    fluxvar_qc = df.loc[df['NEE_VUT_50_QC'] == 0, 'NEE_VUT_50'].copy()
+
+    fig = plt.figure(facecolor='white', figsize=(12, 12), dpi=72)
+    gs = gridspec.GridSpec(1, 2)  # rows, cols
+    gs.update(wspace=0.7, hspace=0.3, left=0.1, right=0.9, top=0.9, bottom=0.07)
+    ax = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1], sharey=ax)
+
+    plotkwargs = dict(cb_digits_after_comma=0, vmin=-20, vmax=20)
+    if isinstance(df, pd.DataFrame):
+        if not df.empty:
+            dv.heatmapdatetime(ax=ax, series=fluxvar, zlabel=f"{fluxvar.name}", **plotkwargs).plot()
+            dv.heatmapdatetime(ax=ax2, series=fluxvar_qc, zlabel=f"{fluxvar_qc.name}", **plotkwargs).plot()
+
+    # Titles
+    ax.set_title(f"{site} ({igbp})\n{sourcetxt}\nmerged data (gap-filled)")
+    ax2.set_title(f"{site} ({igbp})\n{sourcetxt}\nmerged data (only measured)")
+
+    tickkwargs = dict(labeltop=False, labelbottom=True, top=False, bottom=True,
+                      left=True, right=False)
+    ax.tick_params(labelleft=True, labelright=False, **tickkwargs)
+    ax2.tick_params(labelleft=True, labelright=False, **tickkwargs)
+
+    fig.savefig(outfile, dpi=72)
+    if showplot:
+        fig.show()
+
+
+def old_save_mergeplot(outname, icos_df, fxn_cp_df, fxn_org_df, amf_df, merged_df,
+                       site, igbp, sourcetxt, settings, showplot):
     # Heatmap plots
     outfile = Path(settings['DIR_DATA_PROC_PARQUET_PLOTS']) / outname
     print(f"Saving heatmap plot to {outfile} ...")
