@@ -172,16 +172,12 @@ def _compare_years(primary_df, secondary_df):
 
     # Compare the number of records and truncate the appropriate DataFrame
     if n_measured_primary > n_measured_secondary:
-        # If primary has more records, truncate secondary to remove the first year's data
-        secondary_df = secondary_df[secondary_df.index.year > first_year_primary].copy()
-    elif n_measured_secondary > n_measured_primary:
-        # If secondary has more records, truncate primary to remove the first year's data
-        primary_df = primary_df[primary_df.index.year > first_year_primary].copy()
+        # If primary df has more records for its first year, remove data for that year from secondary df
+        secondary_df = secondary_df[secondary_df.index.year != first_year_primary].copy()
 
-    # If primary_df is empty after truncation, the next line will fail.
-    # We must handle this edge case to prevent an IndexError.
-    if primary_df.empty:
-        return primary_df, secondary_df
+    elif n_measured_secondary > n_measured_primary:
+        # If secondary df has more records for the first year in primary df, remove data for that year from primary df
+        primary_df = primary_df[primary_df.index.year != first_year_primary].copy()
 
     # Truncate secondary_df to only keep records that precede the start of primary_df
     # This logic assumes primary_df is chronologically later than secondary_df
@@ -190,13 +186,23 @@ def _compare_years(primary_df, secondary_df):
     return primary_df, secondary_df
 
 
-def _resample_to_lower_freq(higher, lower, origin):
-    higher = higher.drop('ORIGIN', axis=1).resample(lower.index.freq, closed='left', label='right').mean()
-    higher.index.name = 'TIMESTAMP_END'
-    higher = insert_timestamp(data=higher, convention='middle', insert_as_first_col=True, verbose=True)
-    higher = higher.set_index('TIMESTAMP_MIDDLE', inplace=False, drop=True)
-    higher['ORIGIN'] = origin
-    return higher
+def resample_to_lower_freq(higher, lower):
+    resample_to = lower.index.freq
+
+    # Resample all columns EXCEPT 'ORIGIN' (string) and apply the mean
+    higher_numeric_cols = higher.drop(columns=['ORIGIN']).resample(resample_to, closed='left', label='right').mean()
+    higher_numeric_cols.index.name = 'TIMESTAMP_END'
+
+    # Resample ONLY the 'ORIGIN' column and apply the last value
+    higher_origin_col = higher['ORIGIN'].resample(resample_to, closed='left', label='right').last().to_frame()  # .to_frame() converts Series back to DataFrame
+    higher_origin_col.index.name = 'TIMESTAMP_END'
+
+    # Combine results and add middle timestamp
+    higher_resampled = higher_numeric_cols.join(higher_origin_col)
+    higher_resampled = insert_timestamp(data=higher_resampled, convention='middle',
+                                        insert_as_first_col=True, verbose=True)
+    higher_resampled = higher_resampled.set_index('TIMESTAMP_MIDDLE', inplace=False, drop=True)
+    return higher_resampled
 
 
 def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
@@ -232,11 +238,20 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
                 igbp = datasetinfo['IGBP']  # Use IGBP from highest priority
                 datasetinfo_updated = datasetinfo.copy()  # Use info from highest priority
             else:
-                # todo check if all years merged
                 filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
                     Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
                 incoming_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
                 incoming_df['ORIGIN'] = datasetinfo['ORIGIN']
+
+                freq_merged = merged_df.index.freq
+                freq_incoming = incoming_df.index.freq
+
+                if freq_merged != freq_incoming:
+                    if freq_merged < freq_incoming:  # < means higher freq
+                        merged_df = resample_to_lower_freq(higher=merged_df, lower=incoming_df)
+                    elif freq_merged > freq_incoming:  # > means lower freq
+                        incoming_df = resample_to_lower_freq(higher=incoming_df, lower=merged_df)
+
                 merged_df, incoming_df = _compare_years(primary_df=merged_df, secondary_df=incoming_df)
                 merged_df = pd.concat([merged_df, incoming_df], axis=0)
                 sourcetxt += f"+{datasetinfo['ORIGIN']}"
@@ -445,9 +460,9 @@ def old_create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, 
         # dataframe is resampled to hourly.
         if amf_df.index.freq != fxn_org_df.index.freq:
             if fxn_org_df.index.freq > amf_df.index.freq:
-                amf_df = _resample_to_lower_freq(higher=amf_df, lower=fxn_org_df, origin='AMERIFLUX')
+                amf_df = resample_to_lower_freq(higher=amf_df, lower=fxn_org_df, origin='AMERIFLUX')
             elif fxn_org_df.index.freq < amf_df.index.freq:
-                fxn_org_df = _resample_to_lower_freq(higher=fxn_org_df, lower=amf_df, origin='FLUXNET-ORG')
+                fxn_org_df = resample_to_lower_freq(higher=fxn_org_df, lower=amf_df, origin='FLUXNET-ORG')
 
         if amf_firstyr in fxn_org_yrs:
             amf_df, fxn_org_df = _compare_years(
