@@ -181,7 +181,11 @@ def _compare_years(primary_df, secondary_df, fluxvar):
 
     # Truncate secondary_df to only keep records that precede the start of primary_df
     # This logic assumes primary_df is chronologically later than secondary_df
-    secondary_df = secondary_df[secondary_df.index < primary_df.index.min()].copy()
+    if not primary_df.empty:
+        # If primary contains only one year, it can be empty here
+        secondary_df = secondary_df[secondary_df.index < primary_df.index.min()].copy()
+    else:
+        pass
 
     return primary_df, secondary_df
 
@@ -212,12 +216,12 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
         return datasets_df, sites_done
 
     # # todo testing
-    if site != "NL-Loo":  # todo check this site, and also check used fluxvar and make consistent
-        return datasets_df, sites_done
+    # if site != "US-Wi5":  # todo check this site, and also check used fluxvar and make consistent
+    #     return datasets_df, sites_done
     # # todo testing
 
     # # todo testing
-    # if ix + 1 < 169:
+    # if ix + 1 < 298:
     #     return datasets_df, sites_done
     # # todo testing
 
@@ -225,6 +229,7 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
     merged_df = None
     sourcetxt = ""
     datasetinfo_updated = None  # Consolidates site info across multiple datasets (e.g. IGBP can be different)
+    fluxvar = None  # Detected later
 
     # Found datasets for this site
     subset = datasets_df.loc[datasets_df['SITE'] == site].copy()
@@ -246,6 +251,12 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
             igbp = datasetinfo['IGBP']  # Use IGBP from highest priority
             datasetinfo_updated = datasetinfo.copy()  # Use info from highest priority
 
+            # Set flux variable
+            # This assumes that incoming_df also has this variable available
+            fluxvar = 'NEE_VUT_50'
+            if fluxvar not in merged_df.columns:
+                fluxvar = 'NEE_vUT_USTAR50'  # Found for JapanFlux2024 sites
+
         # Handle lower priority datasets
         else:
             filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
@@ -261,11 +272,6 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
                     merged_df = resample_to_lower_freq(higher=merged_df, lower=incoming_df)
                 elif freq_merged > freq_incoming:  # > means lower freq
                     incoming_df = resample_to_lower_freq(higher=incoming_df, lower=merged_df)
-
-            # todo check when different in merged and incoming
-            fluxvar = 'NEE_VUT_50'
-            # if fluxvar not in primary_df.columns:
-            #     fluxvar = 'NEE_vUT_USTAR50'  # Found for site CN-Lsh (JapanFlux2024)
 
             merged_df, incoming_df = _compare_years(primary_df=merged_df, secondary_df=incoming_df, fluxvar=fluxvar)
             merged_df = pd.concat([merged_df, incoming_df], axis=0)
@@ -285,7 +291,7 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
                                   data=merged_df,
                                   outpath=Path(settings['DIR_DATA_PROC_PARQUET']))
 
-    save_heatmap_plot(merged_df, outname, site, igbp, sourcetxt, settings, showplot)
+    save_heatmap_plot(merged_df, outname, site, igbp, sourcetxt, settings, showplot, fluxvar)
 
     # Add updated dataset info
     datasetinfo_updated['_FILEPATH_PARQUET'] = Path(outfilepath)  # Add filepath to parquet file
@@ -535,14 +541,12 @@ def old_create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, 
     return siteinfo_df
 
 
-def save_heatmap_plot(df, outname, site, igbp, sourcetxt, settings, showplot):
+def save_heatmap_plot(df, outname, site, igbp, sourcetxt, settings, showplot, fluxvar):
     # Heatmap plots
     outfile = Path(settings['DIR_DATA_PROC_PARQUET_PLOTS']) / outname
     print(f"Saving heatmap plot to {outfile} ...")
 
-    fluxvar = 'NEE_VUT_50'
-    if fluxvar not in df.columns:
-        fluxvar = 'NEE_vUT_USTAR50'  # Found for site CN-Lsh (JapanFlux2024)
+
 
     flux = df[fluxvar].copy()  # Gap-filled fluxes
     flux_qc = df.loc[df[f'{fluxvar}_QC'] == 0, fluxvar].copy()  # Measured fluxes
