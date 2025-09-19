@@ -137,7 +137,7 @@ def readfile(filetype, filepath_icos, data_nrows):
     return df
 
 
-def _compare_years(primary_df, secondary_df):
+def _compare_years(primary_df, secondary_df, fluxvar):
     """
     Reconciles two pandas DataFrames by adjusting them based on a common year.
 
@@ -166,9 +166,9 @@ def _compare_years(primary_df, secondary_df):
         raise TypeError("DataFrames must have a DatetimeIndex.")
 
     # Get the number of measured records for the specific year in each DataFrame
-    n_measured_primary = (primary_df.loc[primary_df.index.year == first_year_primary, 'NEE_VUT_REF_QC'] == 0).sum()
+    n_measured_primary = (primary_df.loc[primary_df.index.year == first_year_primary, f'{fluxvar}_QC'] == 0).sum()
     n_measured_secondary = (
-            secondary_df.loc[secondary_df.index.year == first_year_primary, 'NEE_VUT_REF_QC'] == 0).sum()
+            secondary_df.loc[secondary_df.index.year == first_year_primary, f'{fluxvar}_QC'] == 0).sum()
 
     # Compare the number of records and truncate the appropriate DataFrame
     if n_measured_primary > n_measured_secondary:
@@ -212,13 +212,13 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
         return datasets_df, sites_done
 
     # # todo testing
-    # if site != "JP-Ako":
-    #     return datasets_df, sites_done
+    if site != "NL-Loo":  # todo check this site, and also check used fluxvar and make consistent
+        return datasets_df, sites_done
     # # todo testing
 
     # # todo testing
-    if ix + 1 < 162:
-        return datasets_df, sites_done
+    # if ix + 1 < 169:
+    #     return datasets_df, sites_done
     # # todo testing
 
     igbp = None
@@ -229,7 +229,7 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
     # Found datasets for this site
     subset = datasets_df.loc[datasets_df['SITE'] == site].copy()
 
-    print(f"Merging datasets for #{ix + 1} {site} ({len(subset)} datasets)...")
+    print(f"\nMerging datasets for #{ix + 1} {site} ({len(subset)} datasets)...")
 
     subset = subset.sort_values(by='PRIORITY', ascending=True, inplace=False)
     subset = subset.reset_index(drop=True)
@@ -262,7 +262,12 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
                 elif freq_merged > freq_incoming:  # > means lower freq
                     incoming_df = resample_to_lower_freq(higher=incoming_df, lower=merged_df)
 
-            merged_df, incoming_df = _compare_years(primary_df=merged_df, secondary_df=incoming_df)
+            # todo check when different in merged and incoming
+            fluxvar = 'NEE_VUT_50'
+            # if fluxvar not in primary_df.columns:
+            #     fluxvar = 'NEE_vUT_USTAR50'  # Found for site CN-Lsh (JapanFlux2024)
+
+            merged_df, incoming_df = _compare_years(primary_df=merged_df, secondary_df=incoming_df, fluxvar=fluxvar)
             merged_df = pd.concat([merged_df, incoming_df], axis=0)
             merged_df.index = pd.to_datetime(merged_df.index)
             merged_df = merged_df.sort_index()
