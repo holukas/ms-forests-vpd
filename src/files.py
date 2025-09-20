@@ -79,10 +79,10 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     # z-scores are calculated from subset records
     subset = subset.apply(lambda x: zscore(x, nan_policy='omit'))
 
-    # To store the originally measured values
-    subset_meas = subset.copy()
-    plt.plot(subset_meas['VPD_F'], subset['VPD_F'])
-    plt.show()
+    # # To store the originally measured values
+    # subset_meas = subset.copy()
+    # plt.plot(subset_meas['VPD_F'], subset['VPD_F'])
+    # plt.show()
 
     # Rename variables to have the same var names for all sites
     rename_dict = {
