@@ -1,20 +1,21 @@
+from pathlib import Path
+
+import pandas as pd
 from diive.core.io.files import load_parquet
 
 import src.files as files
 
-# Load settings
-settings = files.read_settings_file("../config/settings.yaml")
-
-# Load site info
-siteinfo_df = files.load_siteinfo(settings)
+# Load datasets info
+infile = Path('../data/outputs/02_datasets_parquet.csv')
+datasets_df = pd.read_csv(infile)
 
 required_vars = dict(
-    NEE_VAR='NEE_VUT_50',
-    NEE_QC_VAR='NEE_VUT_50_QC',
+    NEE_VAR=['NEE_VUT_50', 'NEE_vUT_USTAR50'],
+    NEE_QC_VAR=['NEE_VUT_50_QC', 'NEE_vUT_USTAR50'],
     LE_VAR='LE_F_MDS',
     LE_QC_VAR='LE_F_MDS_QC',
-    GPP_VAR='GPP_NT_VUT_50',
-    RECO_VAR='RECO_NT_VUT_50',
+    GPP_VAR=['GPP_NT_VUT_50', 'GPP_NT_vUT_USTAR50'],
+    RECO_VAR=['RECO_NT_VUT_50', 'RECO_NT_vUT_USTAR50'],
     SWIN_VAR='SW_IN_F',
     TA_VAR='TA_F',
     VPD_VAR='VPD_F',
@@ -22,8 +23,8 @@ required_vars = dict(
     SWC_VAR=['SWC_F_MDS_1', 'SWC_F_MDS_2']
 )
 
-_siteinfo_df = siteinfo_df.copy()
-for ix, site in _siteinfo_df.iterrows():
+_datasets_df = datasets_df.copy()
+for ix, site in _datasets_df.iterrows():
 
     # # --- TODO testing
     # if site['SITE'] != 'AU-Cum':
@@ -54,7 +55,11 @@ for ix, site in _siteinfo_df.iterrows():
                 expected_col_name = '-MISSING-'
                 # raise Exception(f"Required variable '{expected_col_name}' not found in site data for site #{ix} {row['SITE']}.")
 
-        siteinfo_df.loc[ix, var_key] = expected_col_name
+        datasets_df.loc[ix, var_key] = expected_col_name
 
-# Save updated site info
-files.save_siteinfo(siteinfo_df=siteinfo_df, settings=settings)
+# Save to file
+datasets_df = datasets_df.reset_index(drop=True)
+datasets_df = datasets_df.sort_values(by=['SITE'], inplace=False)
+outfile = Path('../data/outputs/03_datasets_parquet_vars.csv')
+print(f"\n{'-' * 80}\nSaving info about {len(datasets_df)} datasets to file {outfile}.\n{'-' * 80}")
+datasets_df.to_csv(outfile, index=False)
