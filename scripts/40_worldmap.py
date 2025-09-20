@@ -2,12 +2,11 @@ from pathlib import Path
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import pandas as pd
 
-import src.files as files
-
-# Load settings and site info
-settings = files.read_settings_file("../config/settings.yaml")
-siteinfo_df = files.load_siteinfo(settings)
+# Load datasets info
+infile = Path('../data/outputs/02_datasets_parquet.csv')
+datasets_df = pd.read_csv(infile)
 
 # Define the path to your locally saved world map shapefile
 shapefile_path = str(
@@ -16,8 +15,8 @@ world = gpd.read_file(shapefile_path)
 
 # Create a GeoDataFrame from your site data
 gdf = gpd.GeoDataFrame(
-    siteinfo_df,
-    geometry=gpd.points_from_xy(siteinfo_df.LON, siteinfo_df.LAT),
+    datasets_df,
+    geometry=gpd.points_from_xy(datasets_df.LON, datasets_df.LAT),
     crs="EPSG:4326"
 )
 
