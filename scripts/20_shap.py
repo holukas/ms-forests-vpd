@@ -4,12 +4,14 @@ Train XGBoost model for each site and save SHAP values to file.
 
 from pathlib import Path
 
+import pandas as pd
+
 import src.files as files
 from src.models import train_xgboost_models_and_shap
 
 # ------------------------------
 # Variables
-FLUX = 'RECO'  # NEP, NEE, LE, GPP, RECO
+FLUX = 'NEP'  # NEP, NEE, LE, GPP, RECO
 FEATURES = ['TA', 'SWIN', 'VPD', 'SWC']
 CONDITIONAL = True  # Use conditional SHAP instead of standard SHAP
 # ------------------------------
@@ -19,8 +21,9 @@ settings = files.read_settings_file("../config/settings.yaml")
 subfolder = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / subfolder
 
-# Load site info
-siteinfo_df = files.load_siteinfo(settings)
+# Load datasets info
+infile = Path('../data/outputs/12_datasets_parquet_vars_stats_subsets.csv')
+datasets_df = pd.read_csv(infile)
 
 # Write to file (overwrites if file exists, creates if not)
 substr = "conditional" if CONDITIONAL else "standard"
@@ -32,8 +35,8 @@ with open(modelstxt, 'w') as file:
     file.write(f"Features: {FEATURES}\n")
     file.write(f"Conditional SHAP: {CONDITIONAL}\n")
 
-_siteinfo_df = siteinfo_df.copy()
-for ix, siteconfig in _siteinfo_df.iterrows():
+_datasets_df = datasets_df.copy()
+for ix, siteconfig in _datasets_df.iterrows():
     train_xgboost_models_and_shap(
         features=FEATURES,
         target=FLUX,
@@ -42,6 +45,3 @@ for ix, siteconfig in _siteinfo_df.iterrows():
         conditional=CONDITIONAL,
         results_outdir=results_outdir
     )
-
-# # Save updated site info
-# files.save_siteinfo(siteinfo_df=siteinfo_df, settings=settings)
