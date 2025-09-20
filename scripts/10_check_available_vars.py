@@ -3,8 +3,6 @@ from pathlib import Path
 import pandas as pd
 from diive.core.io.files import load_parquet
 
-import src.files as files
-
 # Load datasets info
 infile = Path('../data/outputs/02_datasets_parquet.csv')
 datasets_df = pd.read_csv(infile)
@@ -14,8 +12,8 @@ required_vars = dict(
     NEE_QC_VAR=['NEE_VUT_50_QC', 'NEE_vUT_USTAR50'],
     LE_VAR='LE_F_MDS',
     LE_QC_VAR='LE_F_MDS_QC',
-    GPP_VAR=['GPP_NT_VUT_50', 'GPP_NT_vUT_USTAR50'],
-    RECO_VAR=['RECO_NT_VUT_50', 'RECO_NT_vUT_USTAR50'],
+    GPP_VAR=['GPP_NT_VUT_50', 'GPP_NT_vUT_USTAR50', 'GPP_DT_VUT_50', 'GPP_DT_vUT_USTAR50'],
+    RECO_VAR=['RECO_NT_VUT_50', 'RECO_NT_vUT_USTAR50', 'RECO_DT_VUT_50', 'RECO_DT_vUT_USTAR50'],
     SWIN_VAR='SW_IN_F',
     TA_VAR='TA_F',
     VPD_VAR='VPD_F',
@@ -60,6 +58,6 @@ for ix, site in _datasets_df.iterrows():
 # Save to file
 datasets_df = datasets_df.reset_index(drop=True)
 datasets_df = datasets_df.sort_values(by=['SITE'], inplace=False)
-outfile = Path('../data/outputs/03_datasets_parquet_vars.csv')
+outfile = Path('../data/outputs/10_datasets_parquet_vars.csv')
 print(f"\n{'-' * 80}\nSaving info about {len(datasets_df)} datasets to file {outfile}.\n{'-' * 80}")
 datasets_df.to_csv(outfile, index=False)

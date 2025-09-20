@@ -1,7 +1,7 @@
 import pandas as pd
 from diive.core.io.files import load_parquet
 
-from common import get_variable_names
+from src.common import get_variable_names
 
 
 def basic_stats(siteinfo_df, siteconfig, ix) -> pd.DataFrame:
@@ -9,6 +9,8 @@ def basic_stats(siteinfo_df, siteconfig, ix) -> pd.DataFrame:
 
     # # -- TODO testing
     # if siteconfig['SITE'] != 'AU-Cum':
+    #     return siteinfo_df
+    # if ix + 1 < 128:
     #     return siteinfo_df
     # # -- TODO testing
 

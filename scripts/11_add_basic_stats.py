@@ -1,11 +1,12 @@
-import src.files as files
+from pathlib import Path
+
+import pandas as pd
+
 import src.stats as stats
 
-# Load settings
-settings = files.read_settings_file("../config/settings.yaml")
-
-# Load site info
-siteinfo_df = files.load_siteinfo(settings)
+# Load datasets info
+infile = Path('../data/outputs/10_datasets_parquet_vars.csv')
+datasets_df = pd.read_csv(infile)
 
 # # Number of IGBPs
 # # {'ENF': 72, 'DBF': 47, 'MF': 12, 'DNF': 2, 'EBF': 3, 'OSH': 1}
@@ -14,12 +15,16 @@ siteinfo_df = files.load_siteinfo(settings)
 # print(dict(counts_igbps))
 
 # Calculate basic stats
-_siteinfo_df = siteinfo_df.copy()
-for ix, siteconfig in _siteinfo_df.iterrows():
-    siteinfo_df = stats.basic_stats(
-        siteinfo_df=siteinfo_df,
+_datasets_df = datasets_df.copy()
+for ix, siteconfig in _datasets_df.iterrows():
+    datasets_df = stats.basic_stats(
+        siteinfo_df=datasets_df,
         siteconfig=siteconfig,
         ix=ix)
 
-# Save updated site info
-files.save_siteinfo(siteinfo_df=siteinfo_df, settings=settings)
+# Save to file
+datasets_df = datasets_df.reset_index(drop=True)
+datasets_df = datasets_df.sort_values(by=['SITE'], inplace=False)
+outfile = Path('../data/outputs/11_datasets_parquet_vars_stats.csv')
+print(f"\n{'-' * 80}\nSaving info about {len(datasets_df)} datasets to file {outfile}.\n{'-' * 80}")
+datasets_df.to_csv(outfile, index=False)
