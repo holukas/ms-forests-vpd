@@ -5,8 +5,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Load datasets info
-infile = Path('../data/outputs/02_datasets_parquet.csv')
+infile = Path('../data/outputs/12_datasets_parquet_vars_stats_subsets.csv')
 datasets_df = pd.read_csv(infile)
+
+# Keep datasets where SWC is available
+datasets_df = datasets_df.loc[datasets_df['SWC_AVG'] != '-MISSING-'].copy()
+
+# Remove DNF sites (only 2 sites)
+datasets_df = datasets_df.loc[datasets_df['IGBP'] != 'DNF'].copy()
 
 # Define the path to your locally saved world map shapefile
 shapefile_path = str(
@@ -44,8 +50,10 @@ fig, ax_world = plt.subplots(1, 1, figsize=(15, 8))
 world.plot(ax=ax_world, color='lightgray', edgecolor='#a0a0a0')
 
 # Plot the sites, colored by IGBP class
+found_igbp = {}
 for igbp_class, styles in igbp_markers.items():
     subset = gdf[gdf['IGBP'] == igbp_class]
+    found_igbp[igbp_class] = len(subset)
     if not subset.empty:
         subset.plot(ax=ax_world,
                     marker=styles['marker'],
@@ -53,7 +61,7 @@ for igbp_class, styles in igbp_markers.items():
                     edgecolor=styles['edgecolor'],
                     markersize=styles['markersize'],
                     alpha=1,
-                    label=labels[igbp_class])
+                    label=f"{labels[igbp_class]} ({len(subset)} sites)")
 
 # Set plot titles and labels
 ax_world.set_title('Worldwide Eddy Covariance Site Locations', fontsize=16)
