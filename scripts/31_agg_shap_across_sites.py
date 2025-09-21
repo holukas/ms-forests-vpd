@@ -23,11 +23,11 @@ from src.aggregation import aggregate_shap_values_across_all_sites
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'  # Go to FLUX folder
+# FLUX = 'NEP'  # Go to FLUX folder
 # FLUX = 'GPP'  # Go to FLUX folder
 # FLUX = 'RECO'  # Go to FLUX folder
-# FLUX = 'LE'  # Go to FLUX folder
-xvar = 'SWC'
+FLUX = 'LE'  # Go to FLUX folder
+xvar = 'TA'
 yvar = 'VPD'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP

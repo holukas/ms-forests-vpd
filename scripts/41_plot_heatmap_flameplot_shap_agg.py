@@ -14,10 +14,10 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'
-xvar = 'SWC'
+FLUX = 'LE'
+xvar = 'TA'
 yvar = 'VPD'
-zvar = 'TA'
+zvar = 'VPD'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
@@ -26,7 +26,7 @@ title = f"The effect of {zvar} on {FLUX}"
 xlabel = f'{xvar} (z-score)'
 ylabel = f'{yvar} (z-score)'
 zlabel = f'{aggfunc} SHAP value of {zvar} (z-score)'
-n_sites_min = 10
+n_sites_min = 30
 cmap = 'RdYlBu'
 # cmap = 'RdYlBu_r'
 # ------------------------------

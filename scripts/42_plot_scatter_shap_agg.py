@@ -37,7 +37,7 @@ zvar = 'TA'  # Colors
 title = f"The effect of {yvar} on {FLUX}"
 xlabel = f"{xvar} (z-score)"
 ylabel = f"SHAP value of {yvar} (z-score)"
-n_sites_min = 20
+n_sites_min = 30
 
 show_txt_effect = True
 show_shap_thresholds = True

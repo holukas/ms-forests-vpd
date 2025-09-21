@@ -9,8 +9,11 @@ from src.aggregation import aggregate_shap_values_for_site
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'LE'
-xvar = 'SWC'
+# FLUX = 'NEP'
+# FLUX = 'LE'
+# FLUX = 'GPP'
+FLUX = 'RECO'
+xvar = 'TA'
 yvar = 'VPD'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
@@ -22,11 +25,14 @@ subfolder = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / subfolder
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 folder = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
-siteinfo_df = files.load_siteinfo(settings)
+
+# Load datasets info
+infile = Path('../data/outputs/12_datasets_parquet_vars_stats_subsets.csv')
+datasets_df = pd.read_csv(infile)
 
 # Aggregate SHAP values for each site and collect in dataframe
 shapvals_sites_agg_long_df = None
-for ix, siteconfig in siteinfo_df.iterrows():
+for ix, siteconfig in datasets_df.iterrows():
 
     # # TODO testing ----
     # if ix > 1:
