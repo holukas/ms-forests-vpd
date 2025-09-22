@@ -4,6 +4,9 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
 
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
+
 # Load datasets info
 infile = Path('../data/outputs/12_datasets_parquet_vars_stats_subsets.csv')
 datasets_df = pd.read_csv(infile)
@@ -13,6 +16,8 @@ datasets_df = datasets_df.loc[datasets_df['SWC_AVG'] != '-MISSING-'].copy()
 
 # Remove DNF sites (only 2 sites)
 datasets_df = datasets_df.loc[datasets_df['IGBP'] != 'DNF'].copy()
+
+n_sites_total = len(datasets_df)
 
 # Define the path to your locally saved world map shapefile
 shapefile_path = str(
@@ -36,11 +41,11 @@ igbp_markers = {
 }
 
 labels = dict(
-    ENF='evergreen needleleaf forests (ENF)',
-    DBF='deciduous broadleaf forests (DBF)',
-    MF='mixed forests (MF)',
-    EBF='evergreen broadleaf forests (EBF)',
-    DNF='deciduous needleleaf forests (DNF)',
+    ENF='ENF, evergreen needleleaf forests (',
+    DBF='DBF, deciduous broadleaf forests (',
+    MF='MF, mixed forests (',
+    EBF='EBF, evergreen broadleaf forests (',
+    DNF='DNF, deciduous needleleaf forests (',
 )
 
 # Create a single figure and axes for the world map
@@ -61,10 +66,10 @@ for igbp_class, styles in igbp_markers.items():
                     edgecolor=styles['edgecolor'],
                     markersize=styles['markersize'],
                     alpha=1,
-                    label=f"{labels[igbp_class]} ({len(subset)} sites)")
+                    label=f"{labels[igbp_class]}n={len(subset)})")
 
 # Set plot titles and labels
-ax_world.set_title('Worldwide Eddy Covariance Site Locations', fontsize=16)
+ax_world.set_title(f'Eddy covariance sites (n={n_sites_total})', fontsize=16)
 ax_world.set_xlabel('Longitude', fontsize=12)
 ax_world.set_ylabel('Latitude', fontsize=12)
 ax_world.set_facecolor('lightblue')

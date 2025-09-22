@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 
-def aggregate_shap_values_across_all_sites(df, binx, biny) -> pd.DataFrame:
+def aggregate_shap_values_across_sites(df, binx, biny) -> pd.DataFrame:
     print("Aggregating across all sites ...")
 
     # Remove all rows where all records are NaN,
@@ -41,9 +41,9 @@ def aggregate_shap_values_across_all_sites(df, binx, biny) -> pd.DataFrame:
     return df_grouped_agg
 
 
-def aggregate_shap_values_for_site(site, filepath, xvar, yvar, aggfunc, ix,
+def aggregate_shap_values_for_site(site, igbp, filepath, xvar, yvar, aggfunc, ix,
                                    binsize: float = 0.2):
-    site_res = pd.DataFrame()
+    shapvals_agg_df = pd.DataFrame()
 
     print(f"\nLoading data for site #{ix + 1} {site} ...")
     shapvals_df = dv.load_parquet(filepath)
@@ -71,12 +71,13 @@ def aggregate_shap_values_for_site(site, filepath, xvar, yvar, aggfunc, ix,
         agg = dv.ga(x=shapvals_df[xvar], y=shapvals_df[yvar], z=shapvals_df[c], **ga_settings)
         res = agg.df_agg_long.copy()
         if cix == 0:
-            site_res = res.copy()
+            shapvals_agg_df = res.copy()
         else:
-            site_res = pd.concat([site_res, res[c]], axis=1)
+            shapvals_agg_df = pd.concat([shapvals_agg_df, res[c]], axis=1)
 
     # Add site name
-    site_res['SITE'] = site
+    shapvals_agg_df['SITE'] = site
+    shapvals_agg_df['IGBP'] = igbp
 
     # binx = f"BIN_VPD_F"
     # biny = f"BIN_TA_F"
@@ -95,4 +96,4 @@ def aggregate_shap_values_for_site(site, filepath, xvar, yvar, aggfunc, ix,
     # )
     # hm.show()
 
-    return site_res
+    return shapvals_agg_df

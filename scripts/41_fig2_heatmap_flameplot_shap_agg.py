@@ -4,9 +4,11 @@ Flame plot.
 from pathlib import Path
 
 import diive as dv
+import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 
 import src.files as files
+import src.plot as plot
 
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
@@ -52,44 +54,17 @@ subset = shapvals_df[[binx, biny, z]].copy()
 # Create new flattened column names by joining the MultiIndex levels
 subset.columns = ['_'.join(col).strip() for col in subset.columns.values]
 
-fig, ax = plt.subplots(figsize=(8, 6), dpi=300, facecolor="white")
+fig = plt.figure(figsize=(36, 18), dpi=72, facecolor="white")
+gs = gridspec.GridSpec(2, 4)  # rows, cols
+gs.update(wspace=.2, hspace=.1, left=0.1, right=0.9, top=0.9, bottom=0.1)
+ax1 = fig.add_subplot(gs[0:2, 0:2])
+ax2 = fig.add_subplot(gs[0, 2])
+ax3 = fig.add_subplot(gs[0, 3])
+ax4 = fig.add_subplot(gs[1, 2])
+ax5 = fig.add_subplot(gs[1, 3])
 
-# Heatmap
-hm = dv.heatmapxyz(
-    ax=ax,
-    title="All sites",
-    x=subset.iloc[:, 0],
-    y=subset.iloc[:, 1],
-    z=subset.iloc[:, 2],
-    cb_digits_after_comma=1,
-    xlabel=xlabel,
-    ylabel=ylabel,
-    zlabel=zlabel,
-    # show_values_n_dec_places=1,
-    # show_values=True,
-    # show_values_fontsize=4,
-    figdpi=300,
-    color_bad='white',
-    cmap=cmap,
-    # vmin=-3,
-    # vmax=3
-)
-hm.plot()
-# hm.export_borderless_heatmap(
-#     name="TEST",
-#     outpath=r"F:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\data\outputs\borderless_heatmaps")
-# ax = hm.get_ax()
+plot.flameplot(
+    df=subset, fig=fig, ax=ax1, cmap=cmap,
+    title=title, xlabel=xlabel, ylabel=ylabel, zlabel=zlabel)
 
-# ax.set_xlabel('Air temperature (z-score)')
-# ax.set_ylabel("Vapor pressure deficit (z-score)")
-ax.set_title(title, fontsize=18, pad=10, y=1.02)
-
-# Hide the top and right spines
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-ax.spines['bottom'].set_linewidth(1)
-ax.spines['left'].set_linewidth(1)
-ax.tick_params(axis='both', which='major', width=1, length=5)
-ax.tick_params(axis='both', which='minor', width=1, length=2)
-# ax.axvline(x=0, color='black', linestyle='-', lw=99)
 fig.show()

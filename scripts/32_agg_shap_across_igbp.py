@@ -1,18 +1,3 @@
-"""
-Aggregation of SHAP Values
-
-    This script aggregates **SHAP (SHapley Additive exPlanations) values** from multiple
-    sites to create a consolidated dataset. It iterates through a collection of individual
-    site data files, which contain SHAP values for each data point. For each site, it bins
-    the SHAP values based on two key variables, `xvar` and `yvar`, and then calculates the
-    median (or aggregation function defined in `aggfunc`) SHAP value for each bin.
-
-    After processing all sites, the script combines the binned data and performs a final
-    aggregation to calculate the median, 25th percentile, 75th percentile, and the total
-    count of SHAP values for each unique bin combination across all sites. The final output
-    is saved to both a Parquet and a CSV file, providing a summary of how the variables'
-    contributions, as measured by SHAP values, are distributed across the predefined bins.
-"""
 from pathlib import Path
 
 import diive as dv
@@ -26,7 +11,7 @@ from src.aggregation import aggregate_shap_values_across_sites
 # FLUX = 'NEP'  # Go to FLUX folder
 # FLUX = 'GPP'  # Go to FLUX folder
 # FLUX = 'RECO'  # Go to FLUX folder
-FLUX = 'LE'  # Go to FLUX folder
+FLUX = 'NEP'  # Go to FLUX folder
 xvar = 'TA'
 yvar = 'VPD'
 aggfunc = 'median'
@@ -36,7 +21,6 @@ CONDITIONAL = True  # SHAP
 binx = f"BIN_{xvar}"
 biny = f"BIN_{yvar}"
 
-
 # Load settings
 settings = files.read_settings_file("../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
@@ -44,7 +28,7 @@ results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 filepath = Path(results_outdir) / f"2_PerSite_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}.parquet"
 shapvals_sites_agg_long_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 
-# Remove site info and IGBP, cannot be aggregated (strings)
+# Remove site info and IGBP, cannot be aggregated
 shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.drop('SITE', axis=1, inplace=False)
 shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.drop('IGBP', axis=1, inplace=False)
 

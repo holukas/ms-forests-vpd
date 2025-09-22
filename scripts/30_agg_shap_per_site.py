@@ -11,8 +11,8 @@ from src.aggregation import aggregate_shap_values_for_site
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
 # FLUX = 'NEP'
 # FLUX = 'LE'
-# FLUX = 'GPP'
-FLUX = 'RECO'
+FLUX = 'GPP'
+# FLUX = 'RECO'
 xvar = 'TA'
 yvar = 'VPD'
 aggfunc = 'median'
@@ -44,11 +44,12 @@ for ix, siteconfig in datasets_df.iterrows():
         continue
 
     site = siteconfig['SITE']
+    igbp = siteconfig['IGBP']
     filename = f"{site}_shap-{shap_type}_{FLUX}.parquet"
     filepath = folder / filename
 
     site_results = aggregate_shap_values_for_site(
-        site=site, filepath=filepath, ix=ix,
+        site=site, igbp=igbp, filepath=filepath, ix=ix,
         xvar=xvar, yvar=yvar, aggfunc=aggfunc, binsize=0.1
     )
     if ix == 0:
