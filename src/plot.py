@@ -3,14 +3,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def flameplot(df: pd.DataFrame, fig, ax: plt.axis,
-              xlabel: str, ylabel: str, zlabel: str, title: str, cmap: str = "RdYlBu_r"):
+def flameplot(df: pd.DataFrame, fig, ax: plt.axis, vmin: float = None, vmax: float = None, show_colormap: bool = True,
+              xlabel: str = None, ylabel: str = None, zlabel: str = None, title: str = None, cmap: str = "RdYlBu_r"):
 
 
     # Heatmap
     hm = dv.heatmapxyz(
         ax=ax,
-        title="All sites",
+        title=title,
         x=df.iloc[:, 0],
         y=df.iloc[:, 1],
         z=df.iloc[:, 2],
@@ -24,8 +24,9 @@ def flameplot(df: pd.DataFrame, fig, ax: plt.axis,
         figdpi=300,
         color_bad='white',
         cmap=cmap,
-        # vmin=-3,
-        # vmax=3
+        vmin=vmin,
+        vmax=vmax,
+        show_colormap=show_colormap
     )
     hm.plot()
     # hm.export_borderless_heatmap(
@@ -35,7 +36,8 @@ def flameplot(df: pd.DataFrame, fig, ax: plt.axis,
 
     # ax.set_xlabel('Air temperature (z-score)')
     # ax.set_ylabel("Vapor pressure deficit (z-score)")
-    ax.set_title(title, fontsize=18, pad=10, y=1.02)
+    if title:
+        ax.set_title(title, fontsize=18, pad=10, y=1.02)
 
     # Hide the top and right spines
     ax.spines['top'].set_visible(False)

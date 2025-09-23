@@ -11,7 +11,7 @@ from src.aggregation import aggregate_shap_values_across_sites
 # FLUX = 'NEP'  # Go to FLUX folder
 # FLUX = 'GPP'  # Go to FLUX folder
 # FLUX = 'RECO'  # Go to FLUX folder
-FLUX = 'NEP'  # Go to FLUX folder
+FLUX = 'LE'  # Go to FLUX folder
 xvar = 'TA'
 yvar = 'VPD'
 aggfunc = 'median'
@@ -30,17 +30,22 @@ shapvals_sites_agg_long_df = dv.load_parquet(filepath, sanitize_timestamp=False,
 
 # Remove site info and IGBP, cannot be aggregated
 shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.drop('SITE', axis=1, inplace=False)
-shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.drop('IGBP', axis=1, inplace=False)
 
-# Aggregate SHAP values across all sites
-shapvals_sites_grouped_agg_df = aggregate_shap_values_across_sites(
-    df=shapvals_sites_agg_long_df, binx=binx, biny=biny
-)
+igbps = shapvals_sites_agg_long_df['IGBP'].unique()
 
-# Save to Parquet
-outfilepath = dv.save_parquet(
-    filename=f"3_AllSites_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}",
-    data=shapvals_sites_grouped_agg_df,
-    outpath=results_outdir)
-# print(f"Saved SHAP values across all files as mean to file {outfilepath}.")
-# shapvals_sites_grouped_agg_df.to_csv(outfilepath.replace('.parquet', '.csv'))
+for i in igbps:
+    subset = shapvals_sites_agg_long_df.loc[shapvals_sites_agg_long_df['IGBP'] == i].copy()
+    subset = subset.drop('IGBP', axis=1, inplace=False)
+
+    # Aggregate SHAP values per IGBP
+    subset_agg_df = aggregate_shap_values_across_sites(
+        df=subset, binx=binx, biny=biny
+    )
+
+    # Save to Parquet
+    outfilepath = dv.save_parquet(
+        filename=f"4_All-{i}_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}",
+        data=subset_agg_df,
+        outpath=results_outdir)
+    # print(f"Saved SHAP values across all files as mean to file {outfilepath}.")
+    # shapvals_sites_grouped_agg_df.to_csv(outfilepath.replace('.parquet', '.csv'))
