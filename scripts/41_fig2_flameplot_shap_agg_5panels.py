@@ -17,23 +17,24 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-# FLUX = 'NEP'
+FLUX = 'NEP'
 # FLUX = 'LE'
 # FLUX = 'GPP'
-FLUX = 'RECO'
-xvar = 'TA'
+# FLUX = 'RECO'
+xvar = 'SWC'
 yvar = 'VPD'
-zvar = 'VPD'
+zvar = 'SWC'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
 # Heatmap settings
-title = f"The effect of {zvar} on {FLUX}"
 xlabel = f'{xvar} (z-score)'
 ylabel = f'{yvar} (z-score)'
 zlabel = f'{aggfunc} SHAP value of {zvar} (z-score)'
 n_sites_min = 30
+n_sites_used = 171
 cmap = 'RdYlBu'
+cb_digits_after_comma = 2
 # cmap = 'RdYlBu_r'
 # ------------------------------
 
@@ -69,14 +70,15 @@ vmin = subset_all[z].min()
 vmax = subset_all[z].max()
 subset_all.columns = ['_'.join(col).strip() for col in subset_all.columns.values]  # Heatmap needs flat column index
 plot.flameplot(df=subset_all, fig=fig, ax=ax_all, cmap=cmap,
-               title=None,
+               title=None, cb_digits_after_comma=cb_digits_after_comma,
                xlabel=xlabel, ylabel=ylabel, zlabel=zlabel)
-ax_all.text(0.1, 0.95, f"(a) All sites (n={n_sites_all_max}, min. {n_sites_all_min})",
+ax_all.text(0.1, 0.95, f"(a) All sites (n={n_sites_used}, min. {n_sites_all_min})",
             transform=ax_all.transAxes, color='black', size=theme.AX_LABELS_FONTSIZE,
             ha='left', va='bottom', zorder=99)
 
 # Load SHAP values aggregated per IGBP
 igbps = ['ENF', 'DBF', 'MF', 'EBF']
+igbps_n_sites = [87, 56, 14, 14]  # Counted in #33
 axes = [ax2, ax3, ax4, ax5]
 xlabels = [" ", " ", xlabel, xlabel]
 ylabels = [ylabel, " ", ylabel, " "]
@@ -97,7 +99,8 @@ for ix, i in enumerate(igbps):
     plot.flameplot(df=data_per_igbp[i], fig=fig, ax=axes[ix], cmap=cmap,
                    title=None, show_colormap=False,
                    vmin=vmin, vmax=vmax, xlabel=xlabels[ix], ylabel=ylabels[ix])
-    axes[ix].text(0.1, 1, f"({letter[ix]}) {i} (n={n_sites_igbp_max}, min. {n_sites_igbp_min})",
+    title = f"({letter[ix]}) {i} (n={igbps_n_sites[ix]}, min. {n_sites_igbp_min})"
+    axes[ix].text(0.1, 1, title,
                   transform=axes[ix].transAxes, color='black', size=theme.AX_LABELS_FONTSIZE,
                   ha='left', va='top', zorder=99)
 

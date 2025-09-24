@@ -4,7 +4,8 @@ import pandas as pd
 
 
 def flameplot(df: pd.DataFrame, fig, ax: plt.axis, vmin: float = None, vmax: float = None, show_colormap: bool = True,
-              xlabel: str = None, ylabel: str = None, zlabel: str = None, title: str = None, cmap: str = "RdYlBu_r"):
+              xlabel: str = None, ylabel: str = None, zlabel: str = None, title: str = None, cmap: str = "RdYlBu_r",
+              cb_digits_after_comma: int = 1, show_grid: bool = False):
 
 
     # Heatmap
@@ -14,7 +15,7 @@ def flameplot(df: pd.DataFrame, fig, ax: plt.axis, vmin: float = None, vmax: flo
         x=df.iloc[:, 0],
         y=df.iloc[:, 1],
         z=df.iloc[:, 2],
-        cb_digits_after_comma=1,
+        cb_digits_after_comma=cb_digits_after_comma,
         xlabel=xlabel,
         ylabel=ylabel,
         zlabel=zlabel,
@@ -26,7 +27,8 @@ def flameplot(df: pd.DataFrame, fig, ax: plt.axis, vmin: float = None, vmax: flo
         cmap=cmap,
         vmin=vmin,
         vmax=vmax,
-        show_colormap=show_colormap
+        show_colormap=show_colormap,
+        show_grid=show_grid
     )
     hm.plot()
     # hm.export_borderless_heatmap(
@@ -47,4 +49,6 @@ def flameplot(df: pd.DataFrame, fig, ax: plt.axis, vmin: float = None, vmax: flo
     ax.tick_params(axis='both', which='major', width=1, length=5)
     ax.tick_params(axis='both', which='minor', width=1, length=2)
     # ax.axvline(x=0, color='black', linestyle='-', lw=99)
+
+    return hm.p  # Return the pcolormesh object
 

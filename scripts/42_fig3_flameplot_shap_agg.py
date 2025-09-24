@@ -17,69 +17,77 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-# FLUX = 'NEP'
-# FLUX = 'LE'
-# FLUX = 'GPP'
-# FLUX = 'RECO'
 FLUXES = ['NEP', 'LE', 'GPP', 'RECO']
-xvar = 'TA'
-yvar = 'VPD'
-zvar = 'VPD'
+xvars = ['SWC', 'TA', 'TA', 'TA']
+yvars = ['VPD', 'VPD', 'VPD', 'VPD']
+zvars = ['VPD', 'VPD', 'VPD', 'VPD']
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
 # Heatmap settings
-xlabel = f'{xvar} (z-score)'
-ylabel = f'{yvar} (z-score)'
-zlabel = f'{aggfunc} SHAP value of {zvar} (z-score)'
 n_sites_min = 30
 cmap = 'RdYlBu'
 # cmap = 'RdYlBu_r'
-# ------------------------------
-
-binx = (f"BIN_{xvar}", aggfunc)
-biny = (f"BIN_{yvar}", aggfunc)
-z = (f"{zvar}_SHAPVALS", aggfunc)
-z_counts = (f"{zvar}_SHAPVALS", "count")
+xlabels = [f'{xvar} (z-score)' for xvar in xvars]
+ylabels = [f'{yvar} (z-score)' for yvar in yvars]
+zlabels = [f'{aggfunc} SHAP value of {zvar} (z-score)' for zvar in zvars]
+binsx = [(f"BIN_{xvar}", aggfunc) for xvar in xvars]
+binsy = [(f"BIN_{yvar}", aggfunc) for yvar in yvars]
+zs = [(f"{zvar}_SHAPVALS", aggfunc) for zvar in zvars]
+zs_counts = [(f"{zvar}_SHAPVALS", "count") for zvar in zvars]
 
 # Load settings
 settings = files.read_settings_file("../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 
 # Start figure
-fig = plt.figure(figsize=(21, 6), dpi=150, facecolor="white")
-gs = gridspec.GridSpec(1, 3)  # rows, cols
-# gs.update(wspace=.2, hspace=.3, left=0.1, right=0.9, top=0.9, bottom=0.1)
-ax_le = fig.add_subplot(gs[0, 0])
-ax_gpp = fig.add_subplot(gs[0, 1], sharex=ax_le, sharey=ax_le)
-ax_reco = fig.add_subplot(gs[0, 2], sharex=ax_le, sharey=ax_le)
-axes = [None, ax_le, ax_gpp, ax_reco]
-letter = [None, 'a', 'b', 'c']
+fig = plt.figure(figsize=(28, 6), dpi=150, facecolor="white")
+gs = gridspec.GridSpec(1, 21)  # rows, cols
+# gs.update(wspace=.3,
+#           hspace=.2,
+#           left=0.03,
+#           right=0.94,
+#           top=0.97,
+#           bottom=0.04)
+ax_nep_swc_vpd = fig.add_subplot(gs[0, 0:5])
+ax_gpp_ta_vpd = fig.add_subplot(gs[0, 5:10], sharey=ax_nep_swc_vpd)
+ax_reco_ta_vpd = fig.add_subplot(gs[0, 10:15], sharex=ax_gpp_ta_vpd, sharey=ax_nep_swc_vpd)
+ax_le_ta_vpd = fig.add_subplot(gs[0, 15:20], sharex=ax_gpp_ta_vpd, sharey=ax_nep_swc_vpd)
+ax_cbar = fig.add_subplot(gs[0, 20])
+axes = [ax_nep_swc_vpd, ax_le_ta_vpd, ax_gpp_ta_vpd, ax_reco_ta_vpd]
+letter = ['a', 'b', 'c', 'd']
 vmin = None  # Will be detected from NEP below
 vmax = None
+p = None
 
 for ix, flux in enumerate(FLUXES):
     # Load SHAP values aggregated across all sites
     results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / flux / shap_type
     filepath = Path(
-        results_outdir) / f"3_AllSites_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{flux}.parquet"
+        results_outdir) / f"3_AllSites_Aggregated_SHAPValues-{shap_type}_BIN-{xvars[ix]}_BIN-{yvars[ix]}_{flux}.parquet"
     shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
-    keeplocs = shapvals_df[z_counts] >= n_sites_min
+    keeplocs = shapvals_df[zs_counts[ix]] >= n_sites_min
     shapvals_df = shapvals_df[keeplocs].copy()
-    n_sites_all_min = shapvals_df[z_counts].min()
-    n_sites_all_max = shapvals_df[z_counts].max()
-    subset_all = shapvals_df[[binx, biny, z]].copy()
+    n_sites_all_min = shapvals_df[zs_counts[ix]].min()
+    n_sites_all_max = shapvals_df[zs_counts[ix]].max()
+    subset_all = shapvals_df[[binsx[ix], binsy[ix], zs[ix]]].copy()
     if ix == 0:  # NEP is only used to get the scaling numbers
-        vmin = subset_all[z].min()
-        vmax = subset_all[z].max()
-        continue
+        vmin = subset_all[zs[ix]].min()
+        vmax = subset_all[zs[ix]].max()
     subset_all.columns = ['_'.join(col).strip() for col in subset_all.columns.values]  # Heatmap needs flat column index
-    plot.flameplot(df=subset_all, fig=fig, ax=axes[ix], cmap=cmap,
-                   title=None, vmin=vmin, vmax=vmax,
-                   xlabel=xlabel, ylabel=ylabel, zlabel=zlabel)
-    axes[ix].text(0.1, 0.95, f"({letter[ix]}) All sites, {flux}\n    (n={n_sites_all_max}, min. {n_sites_all_min})",
+    p = plot.flameplot(df=subset_all, fig=fig, ax=axes[ix], cmap=cmap,
+                       title=None, vmin=vmin, vmax=vmax, show_colormap=False,
+                       xlabel=xlabels[ix], ylabel=ylabels[ix], zlabel=zlabels[ix], show_grid=False)
+    axes[ix].text(0.1, 0.95, f"({letter[ix]}) All sites, {flux} (n={n_sites_all_max}, min. {n_sites_all_min})",
                   transform=axes[ix].transAxes, color='black', size=theme.AX_LABELS_FONTSIZE,
                   ha='left', va='bottom', zorder=99)
+    axes[ix].set_aspect('equal')
+    # Create the colorbar on the dedicated axis
+
+# Colorbar for all subplots
+cbar = fig.colorbar(p, cax=ax_cbar, label='XXX')
+cbar.ax.tick_params(labelsize=theme.AX_LABELS_FONTSIZE)
+cbar.set_label(zlabels[0], fontsize=theme.AX_LABELS_FONTSIZE, labelpad=20)
 
 # # Load SHAP values aggregated per IGBP
 # igbps = ['ENF', 'DBF', 'MF', 'EBF']

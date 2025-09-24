@@ -7,6 +7,8 @@ import pandas as pd
 
 import src.files as files
 
+# datasets_df: pd.DataFrame
+
 # Load datasets info
 infile = Path('../data/outputs/11_datasets_parquet_vars_stats.csv')
 datasets_df = pd.read_csv(infile)

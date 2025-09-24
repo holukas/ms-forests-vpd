@@ -6,15 +6,7 @@ import pandas as pd
 def aggregate_shap_values_across_sites(df, binx, biny) -> pd.DataFrame:
     print("Aggregating across all sites ...")
 
-    # Remove all rows where all records are NaN,
-    # binx and biny columns are ignored for this check
-    cols_to_ignore = [binx, biny]
-    cols_to_check = [col for col in df.columns if col not in cols_to_ignore]
-
-    # Filter out rows where all values in the selected columns are NaN
-    df_cleaned = df.loc[~df[cols_to_check].isna().all(axis=1)].copy()
-
-    df_cleaned['BIN_COMBINED_STR'] = df_cleaned[binx].astype(str) + "+" + df_cleaned[biny].astype(str)
+    df['BIN_COMBINED_STR'] = df[binx].astype(str) + "+" + df[biny].astype(str)
 
     # Aggregations for all columns, excluding binx and biny
     other_aggregations = ['mean', 'median', 'max', 'min', 'count', 'std',
@@ -27,7 +19,7 @@ def aggregate_shap_values_across_sites(df, binx, biny) -> pd.DataFrame:
     agg_dict = {}
 
     # Get list of columns to apply the 'other_aggregations' to
-    cols_for_other_agg = [col for col in df_cleaned.columns if col not in [binx, biny, 'BIN_COMBINED_STR']]
+    cols_for_other_agg = [col for col in df.columns if col not in [binx, biny, 'BIN_COMBINED_STR']]
 
     agg_dict[binx] = bin_aggregations
     agg_dict[biny] = bin_aggregations
@@ -37,7 +29,7 @@ def aggregate_shap_values_across_sites(df, binx, biny) -> pd.DataFrame:
         agg_dict[col] = other_aggregations
 
     # Group and aggregate using the aggregation dictionary
-    df_grouped_agg = df_cleaned.groupby('BIN_COMBINED_STR').agg(agg_dict)
+    df_grouped_agg = df.groupby('BIN_COMBINED_STR').agg(agg_dict)
     return df_grouped_agg
 
 

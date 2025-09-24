@@ -11,10 +11,10 @@ from src.aggregation import aggregate_shap_values_for_site
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
 # FLUX = 'NEP'
 # FLUX = 'LE'
-FLUX = 'GPP'
-# FLUX = 'RECO'
+# FLUX = 'GPP'
+FLUX = 'RECO'
 xvar = 'TA'
-yvar = 'VPD'
+yvar = 'SWC'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 # ------------------------------
