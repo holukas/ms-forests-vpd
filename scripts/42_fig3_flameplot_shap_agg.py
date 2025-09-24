@@ -43,12 +43,7 @@ shap_type = 'conditional' if CONDITIONAL else 'standard'
 # Start figure
 fig = plt.figure(figsize=(28, 6), dpi=150, facecolor="white")
 gs = gridspec.GridSpec(1, 21)  # rows, cols
-# gs.update(wspace=.3,
-#           hspace=.2,
-#           left=0.03,
-#           right=0.94,
-#           top=0.97,
-#           bottom=0.04)
+gs.update(wspace=.3, hspace=.2, left=0.03, right=0.94, top=0.97, bottom=0.04)
 ax_nep_swc_vpd = fig.add_subplot(gs[0, 0:5])
 ax_gpp_ta_vpd = fig.add_subplot(gs[0, 5:10], sharey=ax_nep_swc_vpd)
 ax_reco_ta_vpd = fig.add_subplot(gs[0, 10:15], sharex=ax_gpp_ta_vpd, sharey=ax_nep_swc_vpd)
