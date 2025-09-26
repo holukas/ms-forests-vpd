@@ -12,8 +12,8 @@ from sklearn.model_selection import train_test_split
 def train_xgboost_models_and_shap(target: str, features: list,
                                   siteconfig, ix, modelstxt, results_outdir: Path, conditional=False) -> None:
     # # TODO testing
-    # if ix > 5:
-    #     return None
+    if ix < 40:
+        return None
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
@@ -73,7 +73,11 @@ def train_xgboost_models_and_shap(target: str, features: list,
     if conditional:
         print("Calculating conditional SHAP values using PartitionExplainer...")
         # Background data should represent the data the model was trained on.
-        background_data = shap.kmeans(X_for_training, 500).data
+        # OLD: background_data = shap.kmeans(X_for_training, 500).data
+        # Dynamically determine the number of samples for the background dataset, safeguard for short datasets
+        n_background_samples = min(300, len(X_for_training))
+        print(f"Using {n_background_samples} samples for SHAP background data...")
+        background_data = shap.kmeans(X_for_training, n_background_samples).data
         explainer = shap.PartitionExplainer(model.predict, background_data)
         shap_explanation = explainer(X)  # Explain the ENTIRE dataset
         shap_values = shap_explanation.values

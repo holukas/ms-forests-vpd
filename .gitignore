@@ -5,12 +5,12 @@
 /data/processed
 /data/outputs/shap_analysis/*.parquet
 /data/outputs/shap_analysis/gpp/conditional/*.parquet
-/data/outputs/shap_analysis/le/conditional/*.parquet
+/data/outputs/shap_analysis/et/conditional/*.parquet
 /data/outputs/shap_analysis/nep/conditional/*.parquet
 /data/outputs/shap_analysis/nep/conditional/*.csv
 /data/outputs/shap_analysis/reco/conditional/*.parquet
 data/outputs/shap_analysis/gpp/conditional/1_models_xgboost_shap-conditional_GPP.txt
-data/outputs/shap_analysis/le/conditional/1_models_xgboost_shap-conditional_LE.txt
+data/outputs/shap_analysis/et/conditional/1_models_xgboost_shap-conditional_ET.txt
 data/outputs/shap_analysis/nep/conditional/1_models_xgboost_shap-conditional_NEP.txt
 data/outputs/shap_analysis/nep/conditional/2_PerSite_Aggregated_SHAPValues-conditional_NEP.csv
 data/outputs/shap_analysis/nep/conditional/3_AllSites_Aggregated_SHAPValues-conditional_NEP.csv
