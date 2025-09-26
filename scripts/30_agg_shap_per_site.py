@@ -8,15 +8,16 @@ from src.aggregation import aggregate_shap_values_for_site
 
 # ------------------------------
 # Variables
-# NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
+# NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
 # FLUX = 'NEP'
-# FLUX = 'LE'
+# FLUX = 'ET'
 # FLUX = 'GPP'
 FLUX = 'RECO'
 xvar = 'TA'
 yvar = 'SWC'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
+# Agg groups: [X]TA/VPD [X]SWIN/TA [X]SWC/VPD [X]SWIN/VPD [X]TA/SWC
 # ------------------------------
 
 # Load settings

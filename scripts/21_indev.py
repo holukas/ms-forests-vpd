@@ -10,9 +10,9 @@ import src.files as files
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-# FLUX = 'NEP'
+FLUX = 'NEP'
 # FLUX = 'LE'
-FLUX = 'GPP'
+# FLUX = 'GPP'
 # FLUX = 'RECO'
 xvar = 'TA'
 yvar = 'VPD'
@@ -56,9 +56,12 @@ for ix, siteconfig in datasets_df.iterrows():
     print(f"\nLoading data for site #{ix + 1} {site} ...")
     shapvals_df = dv.load_parquet(filepath)
 
+    # shapvals_df = shapvals_df.loc[shapvals_df['SWC'] < 1].copy()
     shapvals_df = shapvals_df.loc[shapvals_df['SWC'] < -1].copy()
     shapvals_df = shapvals_df.loc[shapvals_df['TA'] > 1].copy()
+    # shapvals_df = shapvals_df.loc[shapvals_df['TA'] > -1].copy()
     shapvals_df = shapvals_df.loc[shapvals_df['VPD'] > 1].copy()
+    # shapvals_df = shapvals_df.loc[shapvals_df['VPD'] > -1].copy()
     # shapvals_df[['SWIN_SHAPVALS', 'VPD_SHAPVALS']].cumsum().plot()
     # plt.show()
 

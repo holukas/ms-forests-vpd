@@ -22,15 +22,16 @@ from src.aggregation import aggregate_shap_values_across_sites
 
 # ------------------------------
 # Variables
-# NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'  # Go to FLUX folder
+# NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
+# FLUX = 'NEP'  # Go to FLUX folder
 # FLUX = 'GPP'  # Go to FLUX folder
 # FLUX = 'RECO'  # Go to FLUX folder
-# FLUX = 'LE'  # Go to FLUX folder
+FLUX = 'ET'  # Go to FLUX folder
 xvar = 'SWC'
 yvar = 'VPD'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
+# Agg groups: [X]TA/VPD []SWIN/TA [X]SWC/VPD []SWIN/VPD []TA/SWC
 # ------------------------------
 
 binx = f"BIN_{xvar}"

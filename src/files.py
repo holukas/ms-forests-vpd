@@ -75,15 +75,6 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     # Keep records where all vars available
     subset = subset.dropna()
 
-    # Convert z-scores, ignoring NaNs
-    # z-scores are calculated from subset records
-    subset = subset.apply(lambda x: zscore(x, nan_policy='omit'))
-
-    # # To store the originally measured values
-    # subset_meas = subset.copy()
-    # plt.plot(subset_meas['VPD_F'], subset['VPD_F'])
-    # plt.show()
-
     # Rename variables to have the same var names for all sites
     rename_dict = {
         varnames['nee_var']: "NEE",
@@ -97,15 +88,22 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     }
     subset = subset.rename(columns=rename_dict, inplace=False)
 
+    # Calculate ET from LE and TA
+    subset['ET'] = dv.et_from_le(le=subset['LE'], ta=subset['TA'])
+
     # Convert NEE to NEP
     subset['NEP'] = subset['NEE'].multiply(-1)
 
-    print(f"Records: {len(subset)}")
+    # Store originally measured values before z-score conversion
+    subset_meas = subset.copy()
+    # plt.plot(subset_meas['VPD_F'], subset['VPD_F'])
+    # plt.show()
 
-    # TODO testing: Limit time range
-    # subset = subset.loc[subset.index.year == 2019].copy()
-    # subset = subset.loc[subset.index.month == 7].copy()
-    # TODO testing: Limit time range
+    # Convert z-scores, ignoring NaNs
+    # z-scores are calculated from subset records
+    subset = subset.apply(lambda x: zscore(x, nan_policy='omit'))
+
+    print(f"Records: {len(subset)}")
 
     outfilepath = dv.save_parquet(
         filename=f"{siteconfig['SITE']}_subset_warmest6_qc0_daytime_zscores",
@@ -545,8 +543,6 @@ def save_heatmap_plot(df, outname, site, igbp, sourcetxt, settings, showplot, fl
     # Heatmap plots
     outfile = Path(settings['DIR_DATA_PROC_PARQUET_PLOTS']) / outname
     print(f"Saving heatmap plot to {outfile} ...")
-
-
 
     flux = df[fluxvar].copy()  # Gap-filled fluxes
     flux_qc = df.loc[df[f'{fluxvar}_QC'] == 0, fluxvar].copy()  # Measured fluxes

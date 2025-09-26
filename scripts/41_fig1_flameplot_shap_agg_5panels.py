@@ -16,14 +16,14 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 
 # ------------------------------
 # Variables
-# NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'
-# FLUX = 'LE'
+# NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
+# FLUX = 'NEP'
+FLUX = 'ET'
 # FLUX = 'GPP'
 # FLUX = 'RECO'
-xvar = 'SWC'
+xvar = 'TA'
 yvar = 'VPD'
-zvar = 'SWC'
+zvar = 'VPD'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
@@ -34,7 +34,7 @@ zlabel = f'{aggfunc} SHAP value of {zvar} (z-score)'
 n_sites_min = 30
 n_sites_used = 171
 cmap = 'RdYlBu'
-cb_digits_after_comma = 2
+cb_digits_after_comma = 1
 # cmap = 'RdYlBu_r'
 # ------------------------------
 

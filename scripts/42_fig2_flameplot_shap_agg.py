@@ -16,8 +16,8 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 
 # ------------------------------
 # Variables
-# NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUXES = ['NEP', 'LE', 'GPP', 'RECO']
+# NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
+FLUXES = ['NEP', 'GPP', 'RECO', 'ET']
 xvars = ['SWC', 'TA', 'TA', 'TA']
 yvars = ['VPD', 'VPD', 'VPD', 'VPD']
 zvars = ['VPD', 'VPD', 'VPD', 'VPD']
@@ -41,15 +41,15 @@ settings = files.read_settings_file("../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 
 # Start figure
-fig = plt.figure(figsize=(28, 6), dpi=150, facecolor="white")
+fig = plt.figure(figsize=(30.4, 6.4), dpi=150, facecolor="white")
 gs = gridspec.GridSpec(1, 21)  # rows, cols
-gs.update(wspace=.3, hspace=.2, left=0.03, right=0.94, top=0.97, bottom=0.04)
+# gs.update(wspace=.3, hspace=.2, left=0.03, right=0.94, top=0.97, bottom=0.04)
 ax_nep_swc_vpd = fig.add_subplot(gs[0, 0:5])
 ax_gpp_ta_vpd = fig.add_subplot(gs[0, 5:10], sharey=ax_nep_swc_vpd)
 ax_reco_ta_vpd = fig.add_subplot(gs[0, 10:15], sharex=ax_gpp_ta_vpd, sharey=ax_nep_swc_vpd)
-ax_le_ta_vpd = fig.add_subplot(gs[0, 15:20], sharex=ax_gpp_ta_vpd, sharey=ax_nep_swc_vpd)
+ax_et_ta_vpd = fig.add_subplot(gs[0, 15:20], sharex=ax_gpp_ta_vpd, sharey=ax_nep_swc_vpd)
 ax_cbar = fig.add_subplot(gs[0, 20])
-axes = [ax_nep_swc_vpd, ax_le_ta_vpd, ax_gpp_ta_vpd, ax_reco_ta_vpd]
+axes = [ax_nep_swc_vpd, ax_gpp_ta_vpd, ax_reco_ta_vpd, ax_et_ta_vpd]
 letter = ['a', 'b', 'c', 'd']
 vmin = None  # Will be detected from NEP below
 vmax = None
@@ -73,7 +73,7 @@ for ix, flux in enumerate(FLUXES):
     p = plot.flameplot(df=subset_all, fig=fig, ax=axes[ix], cmap=cmap,
                        title=None, vmin=vmin, vmax=vmax, show_colormap=False,
                        xlabel=xlabels[ix], ylabel=ylabels[ix], zlabel=zlabels[ix], show_grid=False)
-    axes[ix].text(0.1, 0.95, f"({letter[ix]}) All sites, {flux} (n={n_sites_all_max}, min. {n_sites_all_min})",
+    axes[ix].text(0.1, 0.95, f"({letter[ix]}) All sites, {flux} (n=171, min. {n_sites_all_min})",
                   transform=axes[ix].transAxes, color='black', size=theme.AX_LABELS_FONTSIZE,
                   ha='left', va='bottom', zorder=99)
     axes[ix].set_aspect('equal')
