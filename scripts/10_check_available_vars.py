@@ -8,9 +8,9 @@ infile = Path('../data/outputs/02_datasets_parquet.csv')
 datasets_df = pd.read_csv(infile)
 
 required_vars = dict(
-    NEE_VAR=['NEE_VUT_50', 'NEE_vUT_USTAR50'],
+    NEE_VAR=['NEE_VUT_50', 'NEE_vUT_USTAR50'],  # Used to calculate NEP
     NEE_QC_VAR=['NEE_VUT_50_QC', 'NEE_vUT_USTAR50'],
-    LE_VAR='LE_F_MDS',
+    LE_VAR='LE_F_MDS',  # Used to calculate ET
     LE_QC_VAR='LE_F_MDS_QC',
     GPP_VAR=['GPP_NT_VUT_50', 'GPP_NT_vUT_USTAR50', 'GPP_DT_VUT_50', 'GPP_DT_vUT_USTAR50'],
     RECO_VAR=['RECO_NT_VUT_50', 'RECO_NT_vUT_USTAR50', 'RECO_DT_VUT_50', 'RECO_DT_vUT_USTAR50'],
@@ -18,7 +18,8 @@ required_vars = dict(
     TA_VAR='TA_F',
     VPD_VAR='VPD_F',
     PREC_VAR='P_F',
-    SWC_VAR=['SWC_F_MDS_1', 'SWC_F_MDS_2']
+    SWC_VAR=['SWC_F_MDS_1', 'SWC_F_MDS_2'],
+    RH_VAR=['RH', 'RH_F', 'RH_1_1_1'],
 )
 
 _datasets_df = datasets_df.copy()

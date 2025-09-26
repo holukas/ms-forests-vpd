@@ -32,6 +32,9 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     if varnames['swc_var'] == '-MISSING-':
         siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = '-MISSING-'
         return siteinfo_df
+    if varnames['rh_var'] == '-MISSING-':
+        siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = '-MISSING-'
+        return siteinfo_df
 
     # Make subset
     subset = sitedata[
@@ -42,7 +45,7 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
             varnames['reco_var'],
             varnames['swinpot_var'], varnames['swin_var'],
             varnames['ta_var'], varnames['vpd_var'],
-            varnames['swc_var']
+            varnames['swc_var'], varnames['rh_var']
         ]
     ].copy()
 
@@ -54,7 +57,7 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     warmest6 = monthly_avg.head(6).index.to_list()
     subset = subset.loc[sitedata.index.month.isin(warmest6)].copy()
 
-    # Keep directly measured fluxes, no gap-filled data
+    # Keep directly measured NEE fluxes, no gap-filled flux data
     if varnames['nee_qc_var'] is not None:
         subset = subset.loc[subset[varnames['nee_qc_var']] == 0].copy()
 
@@ -68,7 +71,7 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
             varnames['le_var'], varnames['gpp_var'], varnames['reco_var'],
             varnames['ta_var'],
             varnames['vpd_var'], varnames['swin_var'],
-            varnames['swc_var']
+            varnames['swc_var'], varnames['rh_var']
         ]
     ].copy()
 
@@ -85,6 +88,7 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
         varnames['vpd_var']: "VPD",
         varnames['swin_var']: "SWIN",
         varnames['swc_var']: "SWC",
+        varnames['rh_var']: "RH",
     }
     subset = subset.rename(columns=rename_dict, inplace=False)
 
@@ -105,12 +109,20 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
 
     print(f"Records: {len(subset)}")
 
+    # Save subset data with z-scores to parquet file
     outfilepath = dv.save_parquet(
         filename=f"{siteconfig['SITE']}_subset_warmest6_qc0_daytime_zscores",
         data=subset,
         outpath=Path(settings['DIR_DATA_PROC_SUBSETS']))
-    print(f"Saved subset data for {siteconfig['SITE']} to file {outfilepath}.")
+    print(f"Saved subset data (z-scores) for {siteconfig['SITE']} to file {outfilepath}.")
     siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = outfilepath
+
+    # Save subset data with measures values to parquet file
+    _outfilepath = dv.save_parquet(
+        filename=f"{siteconfig['SITE']}_subset_warmest6_qc0_daytime_measured",
+        data=subset_meas,
+        outpath=Path(settings['DIR_DATA_PROC_SUBSETS']))
+    print(f"Saved subset data (measured values) for {siteconfig['SITE']} to file {_outfilepath}.")
 
     return siteinfo_df
 

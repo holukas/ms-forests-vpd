@@ -59,4 +59,12 @@ def basic_stats(siteinfo_df, siteconfig, ix) -> pd.DataFrame:
         siteinfo_df.loc[ix, 'SWC_AVG'] = '-MISSING-'
         siteinfo_df.loc[ix, 'SWC_N_RECORDS'] = '-MISSING-'
 
+    # RH is missing for one site (My-)
+    if siteconfig['RH_VAR'] != '-MISSING-':
+        siteinfo_df.loc[ix, 'RH_AVG'] = sitedata[varnames['rh_var']].mean()
+        siteinfo_df.loc[ix, 'RH_N_RECORDS'] = sitedata[varnames['rh_var']].dropna().count()
+    else:
+        siteinfo_df.loc[ix, 'RH_AVG'] = '-MISSING-'
+        siteinfo_df.loc[ix, 'RH_N_RECORDS'] = '-MISSING-'
+
     return siteinfo_df
