@@ -6,6 +6,7 @@ import pandas as pd
 import shap
 import xgboost as xgb
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
 
 
 def train_xgboost_models_and_shap(target: str, features: list,
@@ -28,6 +29,16 @@ def train_xgboost_models_and_shap(target: str, features: list,
     X = subset[features].copy()
     y = subset[target].copy()
 
+    # Train/test data, NOT for final testing, only to guide the training process.
+    # Model still trained on the majority (85%) of the data.
+    # create a small validation set to guide the early stopping process.
+    # The model will train on the majority of the data and use this small,
+    # separate slice to know when to stop. The goal of explaining the full dataset
+    # is still achieved.
+    X_for_training, X_val, y_for_training, y_val = train_test_split(
+        X, y, test_size=0.15, random_state=42
+    )
+
     # Initialize XGBoost Regressor
     # objective='reg:squarederror' for standard regression
     # n_estimators: number of boosting rounds (trees)
@@ -36,7 +47,7 @@ def train_xgboost_models_and_shap(target: str, features: list,
     # Initialize and train the XGBoost Regressor model
     model = xgb.XGBRegressor(objective='reg:squarederror',  # For regression tasks
                              n_estimators=1000,  # Number of boosting rounds
-                             learning_rate=0.5,  # Step size shrinkage to prevent overfitting
+                             learning_rate=0.1,  # Step size shrinkage to prevent overfitting
                              max_depth=6,  # Maximum depth of a tree
                              subsample=.9,  # Subsample ratio of the training instance
                              colsample_bytree=.9,  # Subsample ratio of columns when constructing each tree
@@ -45,41 +56,32 @@ def train_xgboost_models_and_shap(target: str, features: list,
                              n_jobs=-1)  # Use all available CPU cores
 
     # Train the model
-    model.fit(X, y, eval_set=[(X, y)], verbose=False)
+    print("Training model with early stopping based on a validation set...")
+    model.fit(X_for_training, y_for_training, eval_set=[(X_val, y_val)], verbose=False)
+    # OLD: model.fit(X, y, eval_set=[(X, y)], verbose=False)
 
     # Evaluate model performance on the test set
+    print("Evaluating model and calculating SHAP for the ENTIRE dataset...")
     y_pred = model.predict(X)
     r2 = model.score(X, y)
     rmse = np.sqrt(mean_squared_error(y, y_pred))
-    print(f"R2: {r2:.4f} / RMSE: {rmse:.2f}")
+    print(f"FULL DATASET -> R2: {r2:.4f} / RMSE: {rmse:.2f}")
     with open(modelstxt, 'a') as file:
         file.write(f"SITE: {siteconfig['SITE']} / TARGET: {target} "
                    f"/ R2: {model.score(X, y):.4f} / RMSE: {rmse:.2f}\n")
 
     if conditional:
-        print("Calculating conditional SHAP values using KernelExplainer...")
-
-        # Create a representative background dataset
-        # We use shap.kmeans to select a small, representative sample of 100 instances.
-        # This is a good balance between accuracy and computational efficiency.
-        background_data = shap.kmeans(X, 100).data
-
-        # Define a robust prediction wrapper function
-        # KernelExplainer passes data as a NumPy array, but XGBoost expects a DataFrame
-        # with the original column names. This wrapper handles the conversion.
-        def predict_wrapper(data_array):
-            data_df = pd.DataFrame(data_array, columns=X.columns)
-            return model.predict(data_df)
-
-        # Initialize the KernelExplainer
-        # We pass the prediction wrapper and the background data.
-        explainer = shap.KernelExplainer(predict_wrapper, background_data)
-        shap_values = explainer.shap_values(X)
-        expected_value = explainer.expected_value
+        print("Calculating conditional SHAP values using PartitionExplainer...")
+        # Background data should represent the data the model was trained on.
+        background_data = shap.kmeans(X_for_training, 500).data
+        explainer = shap.PartitionExplainer(model.predict, background_data)
+        shap_explanation = explainer(X)  # Explain the ENTIRE dataset
+        shap_values = shap_explanation.values
+        expected_value = shap_explanation.base_values[0]
     else:
-        # Create SHAP TreeExplainer for the trained XGBoost model and get SHAP values
         print("Calculating SHAP values using TreeExplainer ...")
         explainer = shap.TreeExplainer(model)
+        # Explain the entire dataset
         shap_values = explainer.shap_values(X)
         expected_value = explainer.expected_value
 
@@ -106,6 +108,6 @@ def train_xgboost_models_and_shap(target: str, features: list,
         data=merged,
         outpath=results_outdir)
     print(f"Saved SHAP values to file {outfilepath}.")
-    # siteinfo_df.loc[ix, outcol] = outfilepath
+    merged.to_csv(outfilepath.replace('.parquet', '.csv'))
 
     return None
