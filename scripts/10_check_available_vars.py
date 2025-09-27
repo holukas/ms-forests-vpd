@@ -19,7 +19,7 @@ required_vars = dict(
     VPD_VAR='VPD_F',
     PREC_VAR='P_F',
     SWC_VAR=['SWC_F_MDS_1', 'SWC_F_MDS_2'],
-    RH_VAR=['RH', 'RH_F', 'RH_1_1_1'],
+    # RH_VAR=['RH', 'RH_F', 'RH_1_1_1'],
 )
 
 _datasets_df = datasets_df.copy()

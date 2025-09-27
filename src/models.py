@@ -12,8 +12,8 @@ from sklearn.model_selection import train_test_split
 def train_xgboost_models_and_shap(target: str, features: list,
                                   siteconfig, ix, modelstxt, results_outdir: Path, conditional=False) -> None:
     # # TODO testing
-    if ix < 40:
-        return None
+    # if ix < 40:
+    #     return None
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
@@ -31,7 +31,7 @@ def train_xgboost_models_and_shap(target: str, features: list,
 
     # Train/test data, NOT for final testing, only to guide the training process.
     # Model still trained on the majority (85%) of the data.
-    # create a small validation set to guide the early stopping process.
+    # Create small validation set to guide the early stopping process.
     # The model will train on the majority of the data and use this small,
     # separate slice to know when to stop. The goal of explaining the full dataset
     # is still achieved.

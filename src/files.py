@@ -32,9 +32,9 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
     if varnames['swc_var'] == '-MISSING-':
         siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = '-MISSING-'
         return siteinfo_df
-    if varnames['rh_var'] == '-MISSING-':
-        siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = '-MISSING-'
-        return siteinfo_df
+    # if varnames['rh_var'] == '-MISSING-':
+    #     siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = '-MISSING-'
+    #     return siteinfo_df
 
     # Make subset
     subset = sitedata[
@@ -45,7 +45,8 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
             varnames['reco_var'],
             varnames['swinpot_var'], varnames['swin_var'],
             varnames['ta_var'], varnames['vpd_var'],
-            varnames['swc_var'], varnames['rh_var']
+            varnames['swc_var'],
+            # varnames['rh_var']
         ]
     ].copy()
 
@@ -71,7 +72,8 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
             varnames['le_var'], varnames['gpp_var'], varnames['reco_var'],
             varnames['ta_var'],
             varnames['vpd_var'], varnames['swin_var'],
-            varnames['swc_var'], varnames['rh_var']
+            varnames['swc_var'],
+            # varnames['rh_var']
         ]
     ].copy()
 
@@ -88,7 +90,7 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
         varnames['vpd_var']: "VPD",
         varnames['swin_var']: "SWIN",
         varnames['swc_var']: "SWC",
-        varnames['rh_var']: "RH",
+        # varnames['rh_var']: "RH",
     }
     subset = subset.rename(columns=rename_dict, inplace=False)
 

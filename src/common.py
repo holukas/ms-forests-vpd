@@ -21,5 +21,5 @@ def get_variable_names(siteconfig):
         'swc_var': str(siteconfig['SWC_VAR']),
         'swinpot_var': 'SW_IN_POT',
         'prec_var': 'P_F',
-        'rh_var': str(siteconfig['RH_VAR']),
+        # 'rh_var': str(siteconfig['RH_VAR']),
     }
