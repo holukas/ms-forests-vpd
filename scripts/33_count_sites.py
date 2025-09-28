@@ -6,7 +6,7 @@ import src.files as files
 
 FLUX = 'NEP'  # Go to FLUX folder
 xvar = 'TA'
-yvar = 'SWC'
+yvar = 'VPD'
 CONDITIONAL = True  # SHAP
 
 binx = f"BIN_{xvar}"

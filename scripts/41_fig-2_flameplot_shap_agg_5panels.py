@@ -17,8 +17,8 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
-# FLUX = 'NEP'
-FLUX = 'ET'
+FLUX = 'NEP'
+# FLUX = 'ET'
 # FLUX = 'GPP'
 # FLUX = 'RECO'
 xvar = 'TA'
@@ -88,8 +88,15 @@ for ix, i in enumerate(igbps):
     filepath = Path(
         results_outdir) / f"4_All-{i}_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}.parquet"
     igbp_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
-    # keeplocs = igbp_df[z_counts] >= n_sites_min
+    # keeplocs = igbp_df[z_counts] >= 1
+    # Next line uses the same keeplocs like above, i.e. for each site we
+    # get the same locations as for the overall (all sites) plot.
     igbp_df = igbp_df[keeplocs].copy()
+
+    # XXX
+    availablelocs = igbp_df[z_counts] >= 1
+    igbp_df = igbp_df[availablelocs].copy()
+
     n_sites_igbp_min = igbp_df[z_counts].min()
     n_sites_igbp_max = igbp_df[z_counts].max()
     data_per_igbp[i] = igbp_df[[binx, biny, z]].copy()
