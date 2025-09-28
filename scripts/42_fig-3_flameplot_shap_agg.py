@@ -17,12 +17,17 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
-FLUXES = ['NEP', 'GPP', 'RECO', 'ET']
-xvars = ['SWC', 'TA', 'TA', 'TA']
+FLUXES = ['GPP', 'RECO', 'ET', 'GPP']
+xvars = ['TA', 'TA', 'TA', 'TA']
 yvars = ['VPD', 'VPD', 'VPD', 'VPD']
-zvars = ['VPD', 'VPD', 'VPD', 'VPD']
+zvars = ['GPP', 'RECO', 'ET', 'GPP']
+# FLUXES = ['NEP', 'GPP', 'RECO', 'ET']
+# xvars = ['SWC', 'TA', 'TA', 'TA']
+# yvars = ['VPD', 'VPD', 'VPD', 'VPD']
+# zvars = ['VPD', 'VPD', 'VPD', 'VPD']
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
+zvar_is_shap = False
 
 # Heatmap settings
 n_sites_min = 30
@@ -33,8 +38,13 @@ ylabels = [f'{yvar} (z-score)' for yvar in yvars]
 zlabels = [f'{aggfunc} SHAP value of {zvar} (z-score)' for zvar in zvars]
 binsx = [(f"BIN_{xvar}", aggfunc) for xvar in xvars]
 binsy = [(f"BIN_{yvar}", aggfunc) for yvar in yvars]
-zs = [(f"{zvar}_SHAPVALS", aggfunc) for zvar in zvars]
-zs_counts = [(f"{zvar}_SHAPVALS", "count") for zvar in zvars]
+
+if zvar_is_shap:
+    zs = [(f"{zvar}_SHAPVALS", aggfunc) for zvar in zvars]
+    zs_counts = [(f"{zvar}_SHAPVALS", "count") for zvar in zvars]
+else:
+    zs = [(f"{zvar}", aggfunc) for zvar in zvars]
+    zs_counts = [(f"{zvar}", "count") for zvar in zvars]
 
 # Load settings
 settings = files.read_settings_file("../config/settings.yaml")
@@ -66,7 +76,7 @@ for ix, flux in enumerate(FLUXES):
     n_sites_all_min = shapvals_df[zs_counts[ix]].min()
     n_sites_all_max = shapvals_df[zs_counts[ix]].max()
     subset_all = shapvals_df[[binsx[ix], binsy[ix], zs[ix]]].copy()
-    if ix == 0:  # NEP is only used to get the scaling numbers
+    if ix == 0:  # NEP used to get the scaling numbers
         vmin = subset_all[zs[ix]].min()
         vmax = subset_all[zs[ix]].max()
     subset_all.columns = ['_'.join(col).strip() for col in subset_all.columns.values]  # Heatmap needs flat column index

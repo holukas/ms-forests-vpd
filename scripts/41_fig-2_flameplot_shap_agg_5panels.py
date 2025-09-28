@@ -17,9 +17,9 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'
+# FLUX = 'NEP'
 # FLUX = 'ET'
-# FLUX = 'GPP'
+FLUX = 'GPP'
 # FLUX = 'RECO'
 xvar = 'TA'
 yvar = 'VPD'
@@ -88,12 +88,16 @@ for ix, i in enumerate(igbps):
     filepath = Path(
         results_outdir) / f"4_All-{i}_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}.parquet"
     igbp_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
-    # keeplocs = igbp_df[z_counts] >= 1
-    # Next line uses the same keeplocs like above, i.e. for each site we
+
+    # Next line uses the same keeplocs like defined above, i.e. for each site we
     # get the same locations as for the overall (all sites) plot.
     igbp_df = igbp_df[keeplocs].copy()
 
-    # XXX
+    # Now we only want to keep those locations where at least 1 value
+    # is available. This way the correct min. value is shown in the plot.
+    # It is important to note that there are more locations (bins) available
+    # for each IGBP that are not shown in the IGBP plots, only the same
+    # locations as in the overall plot.
     availablelocs = igbp_df[z_counts] >= 1
     igbp_df = igbp_df[availablelocs].copy()
 
