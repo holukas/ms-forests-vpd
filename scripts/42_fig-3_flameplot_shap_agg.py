@@ -17,14 +17,10 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
-FLUXES = ['GPP', 'RECO', 'ET', 'GPP']
-xvars = ['TA', 'TA', 'TA', 'TA']
+FLUXES = ['NEP', 'GPP', 'RECO', 'ET']
+xvars = ['SWC', 'TA', 'TA', 'TA']
 yvars = ['VPD', 'VPD', 'VPD', 'VPD']
-zvars = ['GPP', 'RECO', 'ET', 'GPP']
-# FLUXES = ['NEP', 'GPP', 'RECO', 'ET']
-# xvars = ['SWC', 'TA', 'TA', 'TA']
-# yvars = ['VPD', 'VPD', 'VPD', 'VPD']
-# zvars = ['VPD', 'VPD', 'VPD', 'VPD']
+zvars = ['VPD', 'VPD', 'VPD', 'VPD']
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 zvar_is_shap = False
