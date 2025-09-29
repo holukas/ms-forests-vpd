@@ -5,7 +5,7 @@ import pandas as pd
 
 def flameplot(df: pd.DataFrame, fig, ax: plt.axis, vmin: float = None, vmax: float = None, show_colormap: bool = True,
               xlabel: str = None, ylabel: str = None, zlabel: str = None, title: str = None, cmap: str = "RdYlBu_r",
-              cb_digits_after_comma: int = 1, show_grid: bool = False):
+              cb_digits_after_comma: int = 1, show_grid: bool = False, cb_extend: str = 'both'):
 
 
     # Heatmap
@@ -28,7 +28,8 @@ def flameplot(df: pd.DataFrame, fig, ax: plt.axis, vmin: float = None, vmax: flo
         vmin=vmin,
         vmax=vmax,
         show_colormap=show_colormap,
-        show_grid=show_grid
+        show_grid=show_grid,
+        cb_extend=cb_extend
     )
     hm.plot()
     # hm.export_borderless_heatmap(

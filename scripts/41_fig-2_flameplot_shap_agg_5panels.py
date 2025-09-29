@@ -69,12 +69,25 @@ subset_all = shapvals_df[[binx, biny, z]].copy()
 vmin = subset_all[z].min()
 vmax = subset_all[z].max()
 subset_all.columns = ['_'.join(col).strip() for col in subset_all.columns.values]  # Heatmap needs flat column index
-plot.flameplot(df=subset_all, fig=fig, ax=ax_all, cmap=cmap,
+p = plot.flameplot(df=subset_all, fig=fig, ax=ax_all, cmap=cmap,
                title=None, cb_digits_after_comma=cb_digits_after_comma,
-               xlabel=xlabel, ylabel=ylabel, zlabel=zlabel)
+               xlabel=xlabel, ylabel=ylabel, zlabel=zlabel, cb_extend='both')
+ax_all.set_aspect('equal')
+
 ax_all.text(0.1, 0.95, f"(a) All sites (n={n_sites_used}, min. {n_sites_all_min})",
             transform=ax_all.transAxes, color='black', size=theme.AX_LABELS_FONTSIZE,
-            ha='left', va='bottom', zorder=99)
+            ha='left', va='bottom', zorder=99, backgroundcolor='white')
+ax_all.axhline(0, color='black', linestyle='--', linewidth=1, zorder=100)
+ax_all.axvline(0, color='black', linestyle='--', linewidth=1, zorder=100)
+# ax_all.text(x=2.1, y=-0.03, s='Negative impact\nreduced uptake/increased release',
+#         fontsize=9, color='black', ha='left', va='top', zorder=100)
+
+# Info texts
+params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
+ax_all.text(2, 0.1, r"$\uparrow$ dry", horizontalalignment='left', verticalalignment='bottom', **params)
+ax_all.text(2, -0.1, r"$\downarrow$ wet", horizontalalignment='left', verticalalignment='top', **params)
+ax_all.text(-0.1, 3.5, r"$\leftarrow$ cool", horizontalalignment='right', verticalalignment='center', **params)
+ax_all.text(0.1, 3.5, r"warm $\rightarrow$", horizontalalignment='left', verticalalignment='center', **params)
 
 # Load SHAP values aggregated per IGBP
 igbps = ['ENF', 'DBF', 'MF', 'EBF']
@@ -113,7 +126,10 @@ for ix, i in enumerate(igbps):
     title = f"({letter[ix]}) {i} (n={igbps_n_sites[ix]}, min. {n_sites_igbp_min})"
     axes[ix].text(0.1, 1, title,
                   transform=axes[ix].transAxes, color='black', size=theme.AX_LABELS_FONTSIZE,
-                  ha='left', va='top', zorder=99)
+                  ha='left', va='top', zorder=100, backgroundcolor='white')
+    axes[ix].axhline(0, color='black', linestyle='--', linewidth=1, zorder=99)
+    axes[ix].axvline(0, color='black', linestyle='--', linewidth=1, zorder=99)
+    axes[ix].set_aspect('equal')
 
 fig.tight_layout()
 fig.show()
