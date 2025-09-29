@@ -6,7 +6,12 @@ from pathlib import Path
 import diive as dv
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from diive.core.plotting.styles import LightTheme as theme
+# from scipy import ndimage
+from scipy.spatial import cKDTree
+
 
 import src.files as files
 import src.plot as plot
@@ -70,8 +75,8 @@ vmin = subset_all[z].min()
 vmax = subset_all[z].max()
 subset_all.columns = ['_'.join(col).strip() for col in subset_all.columns.values]  # Heatmap needs flat column index
 p = plot.flameplot(df=subset_all, fig=fig, ax=ax_all, cmap=cmap,
-               title=None, cb_digits_after_comma=cb_digits_after_comma,
-               xlabel=xlabel, ylabel=ylabel, zlabel=zlabel, cb_extend='both')
+                   title=None, cb_digits_after_comma=cb_digits_after_comma,
+                   xlabel=xlabel, ylabel=ylabel, zlabel=zlabel, cb_extend='both')
 ax_all.set_aspect('equal')
 
 ax_all.text(0.1, 0.95, f"(a) All sites (n={n_sites_used}, min. {n_sites_all_min})",
@@ -88,6 +93,141 @@ ax_all.text(2, 0.1, r"$\uparrow$ dry", horizontalalignment='left', verticalalign
 ax_all.text(2, -0.1, r"$\downarrow$ wet", horizontalalignment='left', verticalalignment='top', **params)
 ax_all.text(-0.1, 3.5, r"$\leftarrow$ cool", horizontalalignment='right', verticalalignment='center', **params)
 ax_all.text(0.1, 3.5, r"warm $\rightarrow$", horizontalalignment='left', verticalalignment='center', **params)
+
+
+
+# 2. Prepare Coordinates and Data
+heatmap_df = subset_all.pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
+k = 9
+data_array = heatmap_df.values
+rows, cols = data_array.shape
+
+# Create a list of all (row, col) coordinates in the grid
+all_coords = np.indices((rows, cols)).reshape(2, -1).T
+
+# 3. Build and Query the k-D Tree
+# Build a KD-Tree, which is a special data structure for fast neighbor searches.
+# This cKDTree method is the most accurate and robust way to implement your request, guaranteeing that every point's value is derived from its true 9 nearest neighbors, regardless of its position in the grid.
+tree = cKDTree(all_coords)
+
+# Query the tree to find the k nearest neighbors for EVERY point.
+# `neighbor_indices` will contain the index of each neighbor in the `all_coords` list.
+distances, neighbor_indices = tree.query(all_coords, k=k)
+
+# 4. Use Indices to Get Neighbor Values and Calculate Means
+# Get the actual coordinates of the neighbors
+neighbor_coords = all_coords[neighbor_indices]
+
+# Use the neighbor coordinates to get the values from the original data array.
+# This uses advanced NumPy indexing to fetch all neighbor values at once.
+neighbor_values = data_array[neighbor_coords[:, :, 0], neighbor_coords[:, :, 1]]
+
+# Calculate the mean for each set of 9 neighbors, ignoring NaNs
+# The result is a 1D array of means.
+means = np.nanmean(neighbor_values, axis=1)
+
+# 5. Reshape Results Back to the Grid
+# Reshape the 1D means array back into the original 2D grid shape.
+result_array = means.reshape(rows, cols)
+
+# Use the original data as a mask. Where it was NaN, make the result NaN.
+result_array[np.isnan(data_array)] = np.nan
+
+# Convert the final array back to a DataFrame
+true_knn_df = pd.DataFrame(
+    result_array,
+    index=heatmap_df.index,
+    columns=heatmap_df.columns
+)
+
+# Find the maximum value in the entire DataFrame
+max_value = true_knn_df.stack().max()
+min_value = true_knn_df.stack().min()
+
+# Find the location (row, column) of that maximum value
+max_location = true_knn_df.stack().idxmax()
+min_location = true_knn_df.stack().idxmin()
+
+ax_all.scatter(max_location[0] + 0.05, max_location[1] + 0.05, color='none', edgecolors='#18FFFF', s=300, zorder=100)
+ax_all.scatter(min_location[0] + 0.05, min_location[1] + 0.05, color='none', edgecolors='#18FFFF', s=300, zorder=100)
+
+print(f"Maximum found at {max_location[0], max_location[1]}")
+print(f"Minimum found at {min_location[0], min_location[1]}")
+
+# # Find local minimum/maximum
+# heatmap_df = subset_all.pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
+#
+# min_required_values = 9
+#
+#
+# # 2. CREATE A MORE ADVANCED FILTER FUNCTION
+# def create_mean_calculator(min_vals):
+#     """This function returns another function that will be used by the filter."""
+#     def calculate_mean_if_valid(arr):
+#         """
+#         Calculates the mean only if the number of valid points
+#         in the window meets the threshold.
+#         """
+#         # Count the number of non-NaN values in the current window (arr)
+#         valid_count = np.count_nonzero(~np.isnan(arr))
+#
+#         # If the count is sufficient, return the mean. Otherwise, return NaN.
+#         if valid_count >= min_vals:
+#             return np.nanmean(arr)
+#         else:
+#             return np.nan
+#     return calculate_mean_if_valid
+#
+# # 3. APPLY THE FILTER WITH THE NEW FUNCTION
+# # Create the specific calculator function with our threshold
+# mean_calculator_func = create_mean_calculator(min_required_values)
+#
+# # Apply the filter to the DataFrame's values
+# # The result is a NumPy array
+# neighbor_means_array = ndimage.generic_filter(
+#     heatmap_df.values,
+#     function=mean_calculator_func,
+#     size=(3,3),  # 36 values in total
+#     mode='constant',  # How to handle edges
+#     cval=np.nan  # Fill value for edges
+# )
+#
+# # Convert the result back to a DataFrame for clarity
+# neighbor_means_df = pd.DataFrame(
+#     neighbor_means_array,
+#     index=heatmap_df.index,
+#     columns=heatmap_df.columns
+# )
+#
+# print("\n--- DataFrame of Neighbor Means ---")
+# print(neighbor_means_df)
+#
+# # Find the flattened index of the maximum value in the NumPy array
+# max_idx_flat = np.nanargmax(neighbor_means_array)
+# min_idx_flat = np.nanargmin(neighbor_means_array)
+#
+# # Convert the flattened index to (row, column) coordinates
+# max_coords = np.unravel_index(max_idx_flat, neighbor_means_array.shape)
+# min_coords = np.unravel_index(min_idx_flat, neighbor_means_array.shape)
+# max_row_idx, max_col_idx = max_coords
+# min_row_idx, min_col_idx = min_coords
+#
+# # Get the labels (index and column name) from the original DataFrame
+# max_mean_loc_index = heatmap_df.index[max_row_idx]
+# max_mean_loc_column = heatmap_df.columns[max_col_idx]
+# min_mean_loc_index = heatmap_df.index[min_row_idx]
+# min_mean_loc_column = heatmap_df.columns[min_col_idx]
+#
+# # Get the original value and the calculated mean
+# original_value_max = heatmap_df.iloc[max_row_idx, max_col_idx]
+# original_value_min = heatmap_df.iloc[min_row_idx, min_col_idx]
+# max_neighbor_mean = neighbor_means_array[max_row_idx, max_col_idx]
+# min_neighbor_mean = neighbor_means_array[min_row_idx, min_col_idx]
+#
+# ax_all.scatter(max_mean_loc_index, max_mean_loc_column, color='none', edgecolors='#18FFFF', s=300, zorder=100)
+# ax_all.scatter(min_mean_loc_index, min_mean_loc_column, color='none', edgecolors='#18FFFF', s=300, zorder=100)
+# print(f"Maximum found at {max_mean_loc_index, max_mean_loc_column}")
+# print(f"Minimum found at {min_mean_loc_index, min_mean_loc_column}")
 
 # Load SHAP values aggregated per IGBP
 igbps = ['ENF', 'DBF', 'MF', 'EBF']
