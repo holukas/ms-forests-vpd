@@ -1,3 +1,76 @@
+import numpy as np
+import pandas as pd
+from scipy.spatial import cKDTree
+
+
+def findpoi(df, k: int = 9, agg: str = 'mean', what: str = 'max'):
+    """Find point of interest (POI) in a DataFrame grid.
+
+    Calculates a local aggregation (e.g., mean) for each point based on its
+    k-nearest neighbors (including the point itself) and then finds the
+    maximum or minimum of these aggregated values.
+    """
+    # Prepare Coordinates and Data
+    data_array = df.values
+    rows, cols = data_array.shape
+
+    # Create a list of all (row, col) coordinates in the grid
+    all_coords = np.indices((rows, cols)).reshape(2, -1).T
+
+    # Build a KD-Tree for fast neighbor searches
+    # The cKDTree method is the most accurate and robust way to derive every point's value
+    # from its true 9 nearest neighbors, regardless of its position in the grid.
+    tree = cKDTree(all_coords)
+
+    # Query the tree to find the k nearest neighbors for EVERY point.
+    # IMPORTANT: Since the query points are the same as the data points,
+    # the first neighbor (index 0) for any point is ALWAYS the point itself.
+    # So, with k=9, you get the center point + its 8 closest neighbors.
+    distances, neighbor_indices = tree.query(all_coords, k=k)
+
+    # Use indices to get neighbor values and calculate aggregations
+    # Get the coordinates of the neighbors using the indices from the query
+    neighbor_coords = all_coords[neighbor_indices]
+
+    # Use the neighbor coordinates to get the values from the original data array.
+    # This uses advanced NumPy indexing to fetch all neighbor values at once.
+    neighbor_values = data_array[neighbor_coords[:, :, 0], neighbor_coords[:, :, 1]]
+
+    # Calculate the aggregation for each set of 9 neighbors, ignoring NaNs
+    # The result is a 1D array of aggregations.
+    if agg == 'mean':
+        aggs = np.nanmean(neighbor_values, axis=1)
+    else:
+        raise NotImplementedError(f"{agg} not supported.")
+
+    # Reshape Results Back to the Grid
+    # Reshape the 1D means array back into the original 2D grid shape.
+    result_array = aggs.reshape(rows, cols)
+
+    # Use the original data as a mask. Where it was NaN, make the result NaN.
+    result_array[np.isnan(data_array)] = np.nan
+
+    # Convert the final array back to a DataFrame
+    true_knn_df = pd.DataFrame(
+        result_array,
+        index=df.index,
+        columns=df.columns
+    )
+
+    # Find the maximum value in the entire DataFrame
+    if what == 'max':
+        value = true_knn_df.stack().max()
+        # Find the location (row, column) of maximum value
+        location = true_knn_df.stack().idxmax()
+    elif what == 'min':
+        value = true_knn_df.stack().min()
+        location = true_knn_df.stack().idxmin()
+    else:
+        raise NotImplementedError(f"{what} not implemented.")
+
+    return location, value
+
+
 def get_variable_names(siteconfig):
     """
     Get variable names for this site.

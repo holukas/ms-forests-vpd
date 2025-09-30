@@ -6,14 +6,12 @@ from pathlib import Path
 import diive as dv
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 from diive.core.plotting.styles import LightTheme as theme
-# from scipy import ndimage
-from scipy.spatial import cKDTree
 
 import src.files as files
 import src.plot as plot
+# from scipy import ndimage
+from src.common import findpoi
 
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
@@ -78,13 +76,11 @@ p = plot.flameplot(df=subset_all, fig=fig, ax=ax_all, cmap=cmap,
                    xlabel=xlabel, ylabel=ylabel, zlabel=zlabel, cb_extend='both')
 ax_all.set_aspect('equal')
 
-ax_all.text(0.1, 0.95, f"(a) All sites (n={n_sites_used}, min. {n_sites_all_min})",
+ax_all.text(0.03, 0.98, f"(a) All sites (n={n_sites_used}, min. {n_sites_all_min})",
             transform=ax_all.transAxes, color='black', size=theme.AX_LABELS_FONTSIZE,
             ha='left', va='bottom', zorder=99, backgroundcolor='white')
 ax_all.axhline(0, color='black', linestyle='--', linewidth=1, zorder=100)
 ax_all.axvline(0, color='black', linestyle='--', linewidth=1, zorder=100)
-# ax_all.text(x=2.1, y=-0.03, s='Negative impact\nreduced uptake/increased release',
-#         fontsize=9, color='black', ha='left', va='top', zorder=100)
 
 # Info texts
 params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
@@ -93,89 +89,18 @@ ax_all.text(2, -0.1, r"$\downarrow$ humid", horizontalalignment='left', vertical
 ax_all.text(-0.1, 3.5, r"$\leftarrow$ cool", horizontalalignment='right', verticalalignment='center', **params)
 ax_all.text(0.1, 3.5, r"warm $\rightarrow$", horizontalalignment='left', verticalalignment='center', **params)
 
-
-# Highlight points of interest
-def findpoi(df, k: int = 9, agg: str = 'mean', what: str = 'max'):
-    """Find point of interest (POI) in a DataFrame grid.
-
-    Calculates a local aggregation (e.g., mean) for each point based on its
-    k-nearest neighbors (including the point itself) and then finds the
-    maximum or minimum of these aggregated values.
-    """
-    # Prepare Coordinates and Data
-    data_array = df.values
-    rows, cols = data_array.shape
-
-    # Create a list of all (row, col) coordinates in the grid
-    all_coords = np.indices((rows, cols)).reshape(2, -1).T
-
-    # Build a KD-Tree for fast neighbor searches
-    # The cKDTree method is the most accurate and robust way to derive every point's value
-    # from its true 9 nearest neighbors, regardless of its position in the grid.
-    tree = cKDTree(all_coords)
-
-    # Query the tree to find the k nearest neighbors for EVERY point.
-    # IMPORTANT: Since the query points are the same as the data points,
-    # the first neighbor (index 0) for any point is ALWAYS the point itself.
-    # So, with k=9, you get the center point + its 8 closest neighbors.
-    distances, neighbor_indices = tree.query(all_coords, k=k)
-
-    # Use indices to get neighbor values and calculate aggregations
-    # Get the coordinates of the neighbors using the indices from the query
-    neighbor_coords = all_coords[neighbor_indices]
-
-    # Use the neighbor coordinates to get the values from the original data array.
-    # This uses advanced NumPy indexing to fetch all neighbor values at once.
-    neighbor_values = data_array[neighbor_coords[:, :, 0], neighbor_coords[:, :, 1]]
-
-    # Calculate the aggregation for each set of 9 neighbors, ignoring NaNs
-    # The result is a 1D array of aggregations.
-    if agg == 'mean':
-        aggs = np.nanmean(neighbor_values, axis=1)
-    else:
-        raise NotImplementedError(f"{agg} not supported.")
-
-    # Reshape Results Back to the Grid
-    # Reshape the 1D means array back into the original 2D grid shape.
-    result_array = aggs.reshape(rows, cols)
-
-    # Use the original data as a mask. Where it was NaN, make the result NaN.
-    result_array[np.isnan(data_array)] = np.nan
-
-    # Convert the final array back to a DataFrame
-    true_knn_df = pd.DataFrame(
-        result_array,
-        index=df.index,
-        columns=df.columns
-    )
-
-    # Find the maximum value in the entire DataFrame
-    if what == 'max':
-        value = true_knn_df.stack().max()
-        # Find the location (row, column) of maximum value
-        location = true_knn_df.stack().idxmax()
-    elif what == 'min':
-        value = true_knn_df.stack().min()
-        location = true_knn_df.stack().idxmin()
-    else:
-        raise NotImplementedError(f"{what} not implemented.")
-
-    return location, value
-
-
 # Find optimum and pessimum
 pivot_df = subset_all.pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
-max_location, max_value = findpoi(df=pivot_df, k=9, agg='mean', what='max')
-min_location, min_value = findpoi(df=pivot_df, k=9, agg='mean', what='min')
+max_location, max_value = findpoi(df=pivot_df, k=25, agg='mean', what='max')
+min_location, min_value = findpoi(df=pivot_df, k=25, agg='mean', what='min')
 
 # Optimum (smallest SHAP)
 x = max_location[0] + 0.05
 y = max_location[1] + 0.05
 params_max = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
 color = "#90A4AE"
-ax_all.text(x, y, r'$\oplus$', horizontalalignment='center', verticalalignment='center',
-            color="white", size=30, zorder=100, alpha=.7)
-# ax_all.scatter(x, y, color='white', marker='+', edgecolors=color, linewidth=3, s=500, zorder=100, alpha=0.9)
+ax_all.scatter(x, y, color='white', marker='+', edgecolors='none', linewidth=3, s=450, zorder=100, alpha=0.5)
+ax_all.scatter(x, y, color='none', marker='o', edgecolor='white', linewidth=3, s=450, zorder=100, alpha=0.5)
 ax_all.plot([x - 0.15, -2.5], [y, y], color=color, linestyle='--', linewidth=1, zorder=100)
 ax_all.plot([-2.5, -2.5], [y, 1], color=color, linestyle='--', linewidth=1, zorder=100)
 params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
@@ -186,15 +111,14 @@ print(f"Minimum found at {min_location[0], min_location[1]}")
 x = min_location[0] + 0.05
 y = min_location[1] + 0.05
 color = "#90A4AE"
-ax_all.text(x, y, r'$\ominus$', horizontalalignment='center',
-            verticalalignment='center', color="black", size=30, zorder=100, alpha=.7)
-# ax_all.scatter(x, y, color='none', marker='v', edgecolors=color, linewidth=2, s=500, zorder=100)
-# , alpha=1, s=120, c="white", zorder=99, edgecolors='#e63946'
-# ax_all.scatter(x, y, color='none', edgecolors=color, linewidth=2, s=300, zorder=100)
-ax_all.plot([x - 0.15, -2.5], [y, y], color=color, linestyle='--', linewidth=1, zorder=100)
-ax_all.plot([-2.5, -2.5], [y, 2], color=color, linestyle='--', linewidth=1, zorder=100)
-params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
-ax_all.text(-3, 1.9, "highest NEP decrease", horizontalalignment='left', verticalalignment='top', **params)
+ax_all.scatter(x, y, color='black', marker='_', edgecolors='none', linewidth=3, s=450, zorder=100, alpha=0.5)
+ax_all.scatter(x, y, color='none', marker='o', edgecolor='black', linewidth=3, s=450, zorder=100, alpha=0.5)
+# ax_all.plot([x - 0.15, -2.5], [y, y], color=color, linestyle='--', linewidth=1, zorder=100)
+# ax_all.plot([-2.5, -2.5], [y, 2], color=color, linestyle='--', linewidth=1, zorder=100)
+# params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
+# ax_all.text(-3, 1.9, "highest NEP decrease", horizontalalignment='left', verticalalignment='top', **params)
+ax_all.text(x + 0.1, y + 0.25, "highest NEP decrease", horizontalalignment='right', verticalalignment='center',
+            **params)
 print(f"Maximum found at {max_location[0], max_location[1]}")
 
 # Load SHAP values aggregated per IGBP
@@ -240,22 +164,25 @@ for ix, i in enumerate(igbps):
     axes[ix].set_aspect('equal')
 
     pivot_df = data_per_igbp[i].pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
-    max_location, max_value = findpoi(df=pivot_df, k=9, agg='mean', what='max')
-    min_location, min_value = findpoi(df=pivot_df, k=9, agg='mean', what='min')
+    max_location, max_value = findpoi(df=pivot_df, k=25, agg='mean', what='max')
+    min_location, min_value = findpoi(df=pivot_df, k=25, agg='mean', what='min')
 
     # Optimum (smallest SHAP)
     x = max_location[0] + 0.05
     y = max_location[1] + 0.05
-    axes[ix].text(x, y, r'$\oplus$', horizontalalignment='center',
-                verticalalignment='center', color="white", size=30, zorder=100, alpha=.7)
-    # axes[ix].scatter(x, y, color='none', marker='o', edgecolors=color, linewidth=2, s=500, zorder=100)
+    # axes[ix].text(x, y, r'$\oplus$', horizontalalignment='center',
+    #               verticalalignment='center', color="white", size=30, zorder=100, alpha=.7)
+    axes[ix].scatter(x, y, color='white', marker='+', edgecolors='none', linewidth=3, s=450, zorder=100, alpha=0.5)
+    axes[ix].scatter(x, y, color='none', marker='o', edgecolor='white', linewidth=3, s=450, zorder=100, alpha=0.5)
 
     # Pessimum (largest SHAP)
     x = min_location[0] + 0.05
     y = min_location[1] + 0.05
-    axes[ix].text(x, y, r'$\ominus$', horizontalalignment='center',
-                verticalalignment='center', color="black", size=30, zorder=100, alpha=.7)
+    # axes[ix].text(x, y, r'$\ominus$', horizontalalignment='center',
+    #               verticalalignment='center', color="black", size=30, zorder=100, alpha=.7)
     # axes[ix].scatter(x, y, color='none', edgecolors=color, linewidth=2, s=500, zorder=100)
+    axes[ix].scatter(x, y, color='black', marker='_', edgecolors='none', linewidth=3, s=450, zorder=100, alpha=0.5)
+    axes[ix].scatter(x, y, color='none', marker='o', edgecolor='black', linewidth=3, s=450, zorder=100, alpha=0.5)
 
 fig.tight_layout()
 fig.show()

@@ -23,17 +23,17 @@ FLUXES = ['NEP', 'GPP', 'RECO', 'ET',
           'NEP', 'GPP', 'RECO', 'ET',
           'NEP', 'GPP', 'RECO', 'ET']
 xvars = ['TA', 'TA', 'TA', 'TA',
-         'SWC', 'SWC', 'SWC', 'SWC',
-         'SWIN', 'SWIN', 'SWIN', 'SWIN']
+         'TA', 'TA', 'TA', 'TA',
+         'TA', 'TA', 'TA', 'TA']
 yvars = ['VPD', 'VPD', 'VPD', 'VPD',
          'VPD', 'VPD', 'VPD', 'VPD',
          'VPD', 'VPD', 'VPD', 'VPD', ]
-zvars = ['NEP', 'GPP', 'RECO', 'ET',
-         'NEP', 'GPP', 'RECO', 'ET',
-         'NEP', 'GPP', 'RECO', 'ET']
-zvar_is_shap = [False, False, False, False,
-                False, False, False, False,
-                False, False, False, False]
+zvars = ['VPD', 'VPD', 'VPD', 'VPD',
+         'TA', 'TA', 'TA', 'TA',
+         'SWC', 'SWC', 'SWC', 'SWC']
+zvar_is_shap = [True, True, True, True,
+                True, True, True, True,
+                True, True, True, True]
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
@@ -69,7 +69,8 @@ ax9 = fig.add_subplot(gs[2, 0:5], sharey=ax1)
 ax10 = fig.add_subplot(gs[2, 5:10], sharex=ax9, sharey=ax1)
 ax11 = fig.add_subplot(gs[2, 10:15], sharex=ax9, sharey=ax1)
 ax12 = fig.add_subplot(gs[2, 15:20], sharex=ax9, sharey=ax1)
-ax_cbar = fig.add_subplot(gs[1, 20])
+ax_cbar_shap_vpd = fig.add_subplot(gs[0, 20])
+ax_cbar_shap_ta = fig.add_subplot(gs[1, 20])
 axes = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9, ax10, ax11, ax12]
 letter = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']
 vmin = None  # Will be detected from NEP below
@@ -79,7 +80,7 @@ p = None
 for ix, flux in enumerate(FLUXES):
 
     # TODO testing ---
-    # if ix > 0:
+    # if ix > 7:
     #     continue
     # TODO testing ---
 
@@ -101,14 +102,14 @@ for ix, flux in enumerate(FLUXES):
     n_sites_all_min = shapvals_df[zs_counts[ix]].min()
     n_sites_all_max = shapvals_df[zs_counts[ix]].max()
     subset_all = shapvals_df[[binsx[ix], binsy[ix], zs[ix]]].copy()
-    if ix == 0:  # NEP used to get the scaling numbers
+    if any([ix == 0, ix == 4, ix == 8]):  # Used to get the scaling numbers
         ymin = subset_all.iloc[:, 1].min() * 1.05
         ymax = subset_all.iloc[:, 1].max() * 1.05
         axes[ix].set_ylim(ymin, ymax)
-    # vmin = subset_all[zs[ix]].min()
-    # vmax = subset_all[zs[ix]].max()
-    vmin = -1.2
-    vmax = 1.2
+        vmin = subset_all[zs[ix]].min()
+        vmax = subset_all[zs[ix]].max()
+    # vmin = -1.2
+    # vmax = 1.2
     subset_all.columns = ['_'.join(col).strip() for col in subset_all.columns.values]  # Heatmap needs flat column index
     ylabel = ylabels[ix] if any([ix == 0, ix == 4, ix == 8]) else " "
 
@@ -164,10 +165,10 @@ for ix, flux in enumerate(FLUXES):
         axes[ix].plot([minx, -2.5], [2.1, 2.1], color=color, linestyle='--', linewidth=1, zorder=100)
 
 # Colorbar for all subplots
-cbar = fig.colorbar(p, cax=ax_cbar, label='XXX', extend='both')
+cbar = fig.colorbar(p, cax=ax_cbar_shap_vpd, label='XXX', extend='both')
 cbar.ax.tick_params(labelsize=FONTSIZE)
 cbar.set_label(cbar_zlabel, fontsize=FONTSIZE, labelpad=20)
-tick_locations = np.linspace(-1.2, 1.2, 13)
+tick_locations = np.linspace(-0.9, 0.3, 13)
 cbar.set_ticks(tick_locations)  # This is the key line
 
 fig.tight_layout()
