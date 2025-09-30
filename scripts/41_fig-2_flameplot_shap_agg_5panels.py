@@ -89,13 +89,19 @@ ax_all.axvline(0, color='black', linestyle='--', linewidth=1, zorder=100)
 # Info texts
 params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
 ax_all.text(2, 0.1, r"$\uparrow$ dry", horizontalalignment='left', verticalalignment='bottom', **params)
-ax_all.text(2, -0.1, r"$\downarrow$ wet", horizontalalignment='left', verticalalignment='top', **params)
+ax_all.text(2, -0.1, r"$\downarrow$ humid", horizontalalignment='left', verticalalignment='top', **params)
 ax_all.text(-0.1, 3.5, r"$\leftarrow$ cool", horizontalalignment='right', verticalalignment='center', **params)
 ax_all.text(0.1, 3.5, r"warm $\rightarrow$", horizontalalignment='left', verticalalignment='center', **params)
 
 
 # Highlight points of interest
 def findpoi(df, k: int = 9, agg: str = 'mean', what: str = 'max'):
+    """Find point of interest (POI) in a DataFrame grid.
+
+    Calculates a local aggregation (e.g., mean) for each point based on its
+    k-nearest neighbors (including the point itself) and then finds the
+    maximum or minimum of these aggregated values.
+    """
     # Prepare Coordinates and Data
     data_array = df.values
     rows, cols = data_array.shape
@@ -103,18 +109,19 @@ def findpoi(df, k: int = 9, agg: str = 'mean', what: str = 'max'):
     # Create a list of all (row, col) coordinates in the grid
     all_coords = np.indices((rows, cols)).reshape(2, -1).T
 
-    # Build and Query k-D Tree
-    # Build a KD-Tree (special data structure for fast neighbor searches)
+    # Build a KD-Tree for fast neighbor searches
     # The cKDTree method is the most accurate and robust way to derive every point's value
     # from its true 9 nearest neighbors, regardless of its position in the grid.
     tree = cKDTree(all_coords)
 
     # Query the tree to find the k nearest neighbors for EVERY point.
-    # `neighbor_indices` will contain the index of each neighbor in the `all_coords` list.
+    # IMPORTANT: Since the query points are the same as the data points,
+    # the first neighbor (index 0) for any point is ALWAYS the point itself.
+    # So, with k=9, you get the center point + its 8 closest neighbors.
     distances, neighbor_indices = tree.query(all_coords, k=k)
 
-    # Use Indices to Get Neighbor Values and Calculate aggregations
-    # Get the actual coordinates of the neighbors
+    # Use indices to get neighbor values and calculate aggregations
+    # Get the coordinates of the neighbors using the indices from the query
     neighbor_coords = all_coords[neighbor_indices]
 
     # Use the neighbor coordinates to get the values from the original data array.
@@ -155,6 +162,7 @@ def findpoi(df, k: int = 9, agg: str = 'mean', what: str = 'max'):
 
     return location, value
 
+
 # Find optimum and pessimum
 pivot_df = subset_all.pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
 max_location, max_value = findpoi(df=pivot_df, k=9, agg='mean', what='max')
@@ -164,28 +172,93 @@ min_location, min_value = findpoi(df=pivot_df, k=9, agg='mean', what='min')
 x = max_location[0] + 0.05
 y = max_location[1] + 0.05
 params_max = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
-color = "#66bb6a"
-ax_all.scatter(x, y, color='white', marker='^', edgecolors=color, linewidth=3, s=500, zorder=100, alpha=0.9)
-# marker='^', alpha=1, s=120, c="white", zorder=99, edgecolors='#66bb6a'
+color = "#90A4AE"
+ax_all.text(x, y, r'$\oplus$', horizontalalignment='center', verticalalignment='center',
+            color="white", size=30, zorder=100, alpha=.7)
+# ax_all.scatter(x, y, color='white', marker='+', edgecolors=color, linewidth=3, s=500, zorder=100, alpha=0.9)
 ax_all.plot([x - 0.15, -2.5], [y, y], color=color, linestyle='--', linewidth=1, zorder=100)
 ax_all.plot([-2.5, -2.5], [y, 1], color=color, linestyle='--', linewidth=1, zorder=100)
 params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
 ax_all.text(-3, 1.1, "highest NEP increase", horizontalalignment='left', verticalalignment='bottom', **params)
+print(f"Minimum found at {min_location[0], min_location[1]}")
 
 # Pessimum (largest SHAP)
 x = min_location[0] + 0.05
 y = min_location[1] + 0.05
-color = "#e63946"
-ax_all.scatter(x, y, color='none', marker='v', edgecolors=color, linewidth=2, s=500, zorder=100)
+color = "#90A4AE"
+ax_all.text(x, y, r'$\ominus$', horizontalalignment='center',
+            verticalalignment='center', color="black", size=30, zorder=100, alpha=.7)
+# ax_all.scatter(x, y, color='none', marker='v', edgecolors=color, linewidth=2, s=500, zorder=100)
 # , alpha=1, s=120, c="white", zorder=99, edgecolors='#e63946'
 # ax_all.scatter(x, y, color='none', edgecolors=color, linewidth=2, s=300, zorder=100)
 ax_all.plot([x - 0.15, -2.5], [y, y], color=color, linestyle='--', linewidth=1, zorder=100)
 ax_all.plot([-2.5, -2.5], [y, 2], color=color, linestyle='--', linewidth=1, zorder=100)
 params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
 ax_all.text(-3, 1.9, "highest NEP decrease", horizontalalignment='left', verticalalignment='top', **params)
-
 print(f"Maximum found at {max_location[0], max_location[1]}")
-print(f"Minimum found at {min_location[0], min_location[1]}")
+
+# Load SHAP values aggregated per IGBP
+igbps = ['ENF', 'DBF', 'MF', 'EBF']
+igbps_n_sites = [87, 56, 14, 14]  # Counted in #33
+axes = [ax2, ax3, ax4, ax5]
+xlabels = [" ", " ", xlabel, xlabel]
+ylabels = [ylabel, " ", ylabel, " "]
+letter = ['b', 'c', 'd', 'e']
+data_per_igbp = {}
+for ix, i in enumerate(igbps):
+    filepath = Path(
+        results_outdir) / f"4_All-{i}_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}.parquet"
+    igbp_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
+
+    # Next line uses the same keeplocs like defined above, i.e. for each site we
+    # get the same locations as for the overall (all sites) plot.
+    igbp_df = igbp_df[keeplocs].copy()
+
+    # Now we only want to keep those locations where at least 1 value
+    # is available. This way the correct min. value is shown in the plot.
+    # It is important to note that there are more locations (bins) available
+    # for each IGBP that are not shown in the IGBP plots, only the same
+    # locations as in the overall plot.
+    availablelocs = igbp_df[z_counts] >= 1
+    igbp_df = igbp_df[availablelocs].copy()
+
+    n_sites_igbp_min = igbp_df[z_counts].min()
+    n_sites_igbp_max = igbp_df[z_counts].max()
+    data_per_igbp[i] = igbp_df[[binx, biny, z]].copy()
+    data_per_igbp[i].columns = ['_'.join(col).strip() for col in data_per_igbp[i].columns.values]  # Flat
+    xlabel = xlabel
+    ylabel = ylabel
+    plot.flameplot(df=data_per_igbp[i], fig=fig, ax=axes[ix], cmap=cmap,
+                   title=None, show_colormap=False,
+                   vmin=vmin, vmax=vmax, xlabel=xlabels[ix], ylabel=ylabels[ix])
+    title = f"({letter[ix]}) {i} (n={igbps_n_sites[ix]}, min. {n_sites_igbp_min})"
+    axes[ix].text(0.1, 1, title,
+                  transform=axes[ix].transAxes, color='black', size=theme.AX_LABELS_FONTSIZE,
+                  ha='left', va='top', zorder=100, backgroundcolor='white')
+    axes[ix].axhline(0, color='black', linestyle='--', linewidth=1, zorder=99)
+    axes[ix].axvline(0, color='black', linestyle='--', linewidth=1, zorder=99)
+    axes[ix].set_aspect('equal')
+
+    pivot_df = data_per_igbp[i].pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
+    max_location, max_value = findpoi(df=pivot_df, k=9, agg='mean', what='max')
+    min_location, min_value = findpoi(df=pivot_df, k=9, agg='mean', what='min')
+
+    # Optimum (smallest SHAP)
+    x = max_location[0] + 0.05
+    y = max_location[1] + 0.05
+    axes[ix].text(x, y, r'$\oplus$', horizontalalignment='center',
+                verticalalignment='center', color="white", size=30, zorder=100, alpha=.7)
+    # axes[ix].scatter(x, y, color='none', marker='o', edgecolors=color, linewidth=2, s=500, zorder=100)
+
+    # Pessimum (largest SHAP)
+    x = min_location[0] + 0.05
+    y = min_location[1] + 0.05
+    axes[ix].text(x, y, r'$\ominus$', horizontalalignment='center',
+                verticalalignment='center', color="black", size=30, zorder=100, alpha=.7)
+    # axes[ix].scatter(x, y, color='none', edgecolors=color, linewidth=2, s=500, zorder=100)
+
+fig.tight_layout()
+fig.show()
 
 # # Find local minimum/maximum
 # heatmap_df = subset_all.pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
@@ -261,64 +334,3 @@ print(f"Minimum found at {min_location[0], min_location[1]}")
 # ax_all.scatter(min_mean_loc_index, min_mean_loc_column, color='none', edgecolors='#18FFFF', s=300, zorder=100)
 # print(f"Maximum found at {max_mean_loc_index, max_mean_loc_column}")
 # print(f"Minimum found at {min_mean_loc_index, min_mean_loc_column}")
-
-# Load SHAP values aggregated per IGBP
-igbps = ['ENF', 'DBF', 'MF', 'EBF']
-igbps_n_sites = [87, 56, 14, 14]  # Counted in #33
-axes = [ax2, ax3, ax4, ax5]
-xlabels = [" ", " ", xlabel, xlabel]
-ylabels = [ylabel, " ", ylabel, " "]
-letter = ['b', 'c', 'd', 'e']
-data_per_igbp = {}
-for ix, i in enumerate(igbps):
-    filepath = Path(
-        results_outdir) / f"4_All-{i}_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}.parquet"
-    igbp_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
-
-    # Next line uses the same keeplocs like defined above, i.e. for each site we
-    # get the same locations as for the overall (all sites) plot.
-    igbp_df = igbp_df[keeplocs].copy()
-
-    # Now we only want to keep those locations where at least 1 value
-    # is available. This way the correct min. value is shown in the plot.
-    # It is important to note that there are more locations (bins) available
-    # for each IGBP that are not shown in the IGBP plots, only the same
-    # locations as in the overall plot.
-    availablelocs = igbp_df[z_counts] >= 1
-    igbp_df = igbp_df[availablelocs].copy()
-
-    n_sites_igbp_min = igbp_df[z_counts].min()
-    n_sites_igbp_max = igbp_df[z_counts].max()
-    data_per_igbp[i] = igbp_df[[binx, biny, z]].copy()
-    data_per_igbp[i].columns = ['_'.join(col).strip() for col in data_per_igbp[i].columns.values]  # Flat
-    xlabel = xlabel
-    ylabel = ylabel
-    plot.flameplot(df=data_per_igbp[i], fig=fig, ax=axes[ix], cmap=cmap,
-                   title=None, show_colormap=False,
-                   vmin=vmin, vmax=vmax, xlabel=xlabels[ix], ylabel=ylabels[ix])
-    title = f"({letter[ix]}) {i} (n={igbps_n_sites[ix]}, min. {n_sites_igbp_min})"
-    axes[ix].text(0.1, 1, title,
-                  transform=axes[ix].transAxes, color='black', size=theme.AX_LABELS_FONTSIZE,
-                  ha='left', va='top', zorder=100, backgroundcolor='white')
-    axes[ix].axhline(0, color='black', linestyle='--', linewidth=1, zorder=99)
-    axes[ix].axvline(0, color='black', linestyle='--', linewidth=1, zorder=99)
-    axes[ix].set_aspect('equal')
-
-    pivot_df = data_per_igbp[i].pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
-    max_location, max_value = findpoi(df=pivot_df, k=9, agg='mean', what='max')
-    min_location, min_value = findpoi(df=pivot_df, k=9, agg='mean', what='min')
-
-    # Optimum (smallest SHAP)
-    x = max_location[0] + 0.05
-    y = max_location[1] + 0.05
-    color = "#78909C"
-    axes[ix].scatter(x, y, color='none', marker='o', edgecolors=color, linewidth=2, s=500, zorder=100)
-
-    # Pessimum (largest SHAP)
-    x = min_location[0] + 0.05
-    y = min_location[1] + 0.05
-    color = "#78909C"
-    axes[ix].scatter(x, y, color='none', edgecolors=color, linewidth=2, s=500, zorder=100)
-
-fig.tight_layout()
-fig.show()
