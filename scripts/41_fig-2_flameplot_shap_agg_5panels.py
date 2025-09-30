@@ -12,7 +12,6 @@ from diive.core.plotting.styles import LightTheme as theme
 # from scipy import ndimage
 from scipy.spatial import cKDTree
 
-
 import src.files as files
 import src.plot as plot
 
@@ -95,61 +94,95 @@ ax_all.text(-0.1, 3.5, r"$\leftarrow$ cool", horizontalalignment='right', vertic
 ax_all.text(0.1, 3.5, r"warm $\rightarrow$", horizontalalignment='left', verticalalignment='center', **params)
 
 
+# Highlight points of interest
+def findpoi(df, k: int = 9, agg: str = 'mean', what: str = 'max'):
+    # Prepare Coordinates and Data
+    data_array = df.values
+    rows, cols = data_array.shape
 
-# 2. Prepare Coordinates and Data
-heatmap_df = subset_all.pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
-k = 9
-data_array = heatmap_df.values
-rows, cols = data_array.shape
+    # Create a list of all (row, col) coordinates in the grid
+    all_coords = np.indices((rows, cols)).reshape(2, -1).T
 
-# Create a list of all (row, col) coordinates in the grid
-all_coords = np.indices((rows, cols)).reshape(2, -1).T
+    # Build and Query k-D Tree
+    # Build a KD-Tree (special data structure for fast neighbor searches)
+    # The cKDTree method is the most accurate and robust way to derive every point's value
+    # from its true 9 nearest neighbors, regardless of its position in the grid.
+    tree = cKDTree(all_coords)
 
-# 3. Build and Query the k-D Tree
-# Build a KD-Tree, which is a special data structure for fast neighbor searches.
-# This cKDTree method is the most accurate and robust way to implement your request, guaranteeing that every point's value is derived from its true 9 nearest neighbors, regardless of its position in the grid.
-tree = cKDTree(all_coords)
+    # Query the tree to find the k nearest neighbors for EVERY point.
+    # `neighbor_indices` will contain the index of each neighbor in the `all_coords` list.
+    distances, neighbor_indices = tree.query(all_coords, k=k)
 
-# Query the tree to find the k nearest neighbors for EVERY point.
-# `neighbor_indices` will contain the index of each neighbor in the `all_coords` list.
-distances, neighbor_indices = tree.query(all_coords, k=k)
+    # Use Indices to Get Neighbor Values and Calculate aggregations
+    # Get the actual coordinates of the neighbors
+    neighbor_coords = all_coords[neighbor_indices]
 
-# 4. Use Indices to Get Neighbor Values and Calculate Means
-# Get the actual coordinates of the neighbors
-neighbor_coords = all_coords[neighbor_indices]
+    # Use the neighbor coordinates to get the values from the original data array.
+    # This uses advanced NumPy indexing to fetch all neighbor values at once.
+    neighbor_values = data_array[neighbor_coords[:, :, 0], neighbor_coords[:, :, 1]]
 
-# Use the neighbor coordinates to get the values from the original data array.
-# This uses advanced NumPy indexing to fetch all neighbor values at once.
-neighbor_values = data_array[neighbor_coords[:, :, 0], neighbor_coords[:, :, 1]]
+    # Calculate the aggregation for each set of 9 neighbors, ignoring NaNs
+    # The result is a 1D array of aggregations.
+    if agg == 'mean':
+        aggs = np.nanmean(neighbor_values, axis=1)
+    else:
+        raise NotImplementedError(f"{agg} not supported.")
 
-# Calculate the mean for each set of 9 neighbors, ignoring NaNs
-# The result is a 1D array of means.
-means = np.nanmean(neighbor_values, axis=1)
+    # Reshape Results Back to the Grid
+    # Reshape the 1D means array back into the original 2D grid shape.
+    result_array = aggs.reshape(rows, cols)
 
-# 5. Reshape Results Back to the Grid
-# Reshape the 1D means array back into the original 2D grid shape.
-result_array = means.reshape(rows, cols)
+    # Use the original data as a mask. Where it was NaN, make the result NaN.
+    result_array[np.isnan(data_array)] = np.nan
 
-# Use the original data as a mask. Where it was NaN, make the result NaN.
-result_array[np.isnan(data_array)] = np.nan
+    # Convert the final array back to a DataFrame
+    true_knn_df = pd.DataFrame(
+        result_array,
+        index=df.index,
+        columns=df.columns
+    )
 
-# Convert the final array back to a DataFrame
-true_knn_df = pd.DataFrame(
-    result_array,
-    index=heatmap_df.index,
-    columns=heatmap_df.columns
-)
+    # Find the maximum value in the entire DataFrame
+    if what == 'max':
+        value = true_knn_df.stack().max()
+        # Find the location (row, column) of maximum value
+        location = true_knn_df.stack().idxmax()
+    elif what == 'min':
+        value = true_knn_df.stack().min()
+        location = true_knn_df.stack().idxmin()
+    else:
+        raise NotImplementedError(f"{what} not implemented.")
 
-# Find the maximum value in the entire DataFrame
-max_value = true_knn_df.stack().max()
-min_value = true_knn_df.stack().min()
+    return location, value
 
-# Find the location (row, column) of that maximum value
-max_location = true_knn_df.stack().idxmax()
-min_location = true_knn_df.stack().idxmin()
+# Find optimum and pessimum
+pivot_df = subset_all.pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
+max_location, max_value = findpoi(df=pivot_df, k=9, agg='mean', what='max')
+min_location, min_value = findpoi(df=pivot_df, k=9, agg='mean', what='min')
 
-ax_all.scatter(max_location[0] + 0.05, max_location[1] + 0.05, color='none', edgecolors='#18FFFF', s=300, zorder=100)
-ax_all.scatter(min_location[0] + 0.05, min_location[1] + 0.05, color='none', edgecolors='#18FFFF', s=300, zorder=100)
+# Optimum (smallest SHAP)
+x = max_location[0] + 0.05
+y = max_location[1] + 0.05
+params_max = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
+color = "#66bb6a"
+ax_all.scatter(x, y, color='white', marker='^', edgecolors=color, linewidth=3, s=500, zorder=100, alpha=0.9)
+# marker='^', alpha=1, s=120, c="white", zorder=99, edgecolors='#66bb6a'
+ax_all.plot([x - 0.15, -2.5], [y, y], color=color, linestyle='--', linewidth=1, zorder=100)
+ax_all.plot([-2.5, -2.5], [y, 1], color=color, linestyle='--', linewidth=1, zorder=100)
+params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
+ax_all.text(-3, 1.1, "highest NEP increase", horizontalalignment='left', verticalalignment='bottom', **params)
+
+# Pessimum (largest SHAP)
+x = min_location[0] + 0.05
+y = min_location[1] + 0.05
+color = "#e63946"
+ax_all.scatter(x, y, color='none', marker='v', edgecolors=color, linewidth=2, s=500, zorder=100)
+# , alpha=1, s=120, c="white", zorder=99, edgecolors='#e63946'
+# ax_all.scatter(x, y, color='none', edgecolors=color, linewidth=2, s=300, zorder=100)
+ax_all.plot([x - 0.15, -2.5], [y, y], color=color, linestyle='--', linewidth=1, zorder=100)
+ax_all.plot([-2.5, -2.5], [y, 2], color=color, linestyle='--', linewidth=1, zorder=100)
+params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
+ax_all.text(-3, 1.9, "highest NEP decrease", horizontalalignment='left', verticalalignment='top', **params)
 
 print(f"Maximum found at {max_location[0], max_location[1]}")
 print(f"Minimum found at {min_location[0], min_location[1]}")
@@ -270,6 +303,22 @@ for ix, i in enumerate(igbps):
     axes[ix].axhline(0, color='black', linestyle='--', linewidth=1, zorder=99)
     axes[ix].axvline(0, color='black', linestyle='--', linewidth=1, zorder=99)
     axes[ix].set_aspect('equal')
+
+    pivot_df = data_per_igbp[i].pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
+    max_location, max_value = findpoi(df=pivot_df, k=9, agg='mean', what='max')
+    min_location, min_value = findpoi(df=pivot_df, k=9, agg='mean', what='min')
+
+    # Optimum (smallest SHAP)
+    x = max_location[0] + 0.05
+    y = max_location[1] + 0.05
+    color = "#78909C"
+    axes[ix].scatter(x, y, color='none', marker='o', edgecolors=color, linewidth=2, s=500, zorder=100)
+
+    # Pessimum (largest SHAP)
+    x = min_location[0] + 0.05
+    y = min_location[1] + 0.05
+    color = "#78909C"
+    axes[ix].scatter(x, y, color='none', edgecolors=color, linewidth=2, s=500, zorder=100)
 
 fig.tight_layout()
 fig.show()
