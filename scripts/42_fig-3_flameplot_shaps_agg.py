@@ -6,7 +6,6 @@ from pathlib import Path
 import diive as dv
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
-import numpy as np
 from diive.core.plotting.styles import LightTheme as theme
 
 import src.files as files
@@ -24,7 +23,7 @@ FLUXES = ['NEP', 'GPP', 'RECO', 'ET',
           'NEP', 'GPP', 'RECO', 'ET']
 xvars = ['TA', 'TA', 'TA', 'TA',
          'TA', 'TA', 'TA', 'TA',
-         'TA', 'TA', 'TA', 'TA']
+         'SWC', 'SWC', 'SWC', 'SWC']
 yvars = ['VPD', 'VPD', 'VPD', 'VPD',
          'VPD', 'VPD', 'VPD', 'VPD',
          'VPD', 'VPD', 'VPD', 'VPD', ]
@@ -54,28 +53,42 @@ settings = files.read_settings_file("../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 
 # Start figure
-fig = plt.figure(figsize=(22.4, 16.8), dpi=150, facecolor="white")
+fig = plt.figure(figsize=(26, 16.8), dpi=150, facecolor="white")
 gs = gridspec.GridSpec(3, 21)  # rows, cols
 # gs.update(wspace=.3, hspace=.2, left=0.03, right=0.94, top=0.97, bottom=0.04)
+
+# Row 1
 ax1 = fig.add_subplot(gs[0, 0:5])
 ax2 = fig.add_subplot(gs[0, 5:10], sharex=ax1, sharey=ax1)
 ax3 = fig.add_subplot(gs[0, 10:15], sharex=ax1, sharey=ax1)
 ax4 = fig.add_subplot(gs[0, 15:20], sharex=ax1, sharey=ax1)
+
+# Row 2
 ax5 = fig.add_subplot(gs[1, 0:5], sharey=ax1)
 ax6 = fig.add_subplot(gs[1, 5:10], sharex=ax5, sharey=ax1)
 ax7 = fig.add_subplot(gs[1, 10:15], sharex=ax5, sharey=ax1)
 ax8 = fig.add_subplot(gs[1, 15:20], sharex=ax5, sharey=ax1)
+
+# Row 3
 ax9 = fig.add_subplot(gs[2, 0:5], sharey=ax1)
 ax10 = fig.add_subplot(gs[2, 5:10], sharex=ax9, sharey=ax1)
 ax11 = fig.add_subplot(gs[2, 10:15], sharex=ax9, sharey=ax1)
 ax12 = fig.add_subplot(gs[2, 15:20], sharex=ax9, sharey=ax1)
+
+# Colorbars
 ax_cbar_shap_vpd = fig.add_subplot(gs[0, 20])
 ax_cbar_shap_ta = fig.add_subplot(gs[1, 20])
+ax_cbar_shap_swc = fig.add_subplot(gs[2, 20])
+
 axes = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9, ax10, ax11, ax12]
 letter = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']
-vmin = None  # Will be detected from NEP below
-vmax = None
+
+vmin = 9999  # Will be detected from NEP below
+vmax = -9999
 p = None
+mesh_obj = {}  # Store pcolormesh objects for scaling later
+vmins = []
+vmaxs = []
 
 for ix, flux in enumerate(FLUXES):
 
@@ -102,20 +115,24 @@ for ix, flux in enumerate(FLUXES):
     n_sites_all_min = shapvals_df[zs_counts[ix]].min()
     n_sites_all_max = shapvals_df[zs_counts[ix]].max()
     subset_all = shapvals_df[[binsx[ix], binsy[ix], zs[ix]]].copy()
-    if any([ix == 0, ix == 4, ix == 8]):  # Used to get the scaling numbers
+
+    if ix == 0:
         ymin = subset_all.iloc[:, 1].min() * 1.05
         ymax = subset_all.iloc[:, 1].max() * 1.05
         axes[ix].set_ylim(ymin, ymax)
-        vmin = subset_all[zs[ix]].min()
-        vmax = subset_all[zs[ix]].max()
-    # vmin = -1.2
-    # vmax = 1.2
+
+    # Collect min and max values for scaling later
+    vmins.append(subset_all[zs[ix]].min())
+    vmaxs.append(subset_all[zs[ix]].max())
+
     subset_all.columns = ['_'.join(col).strip() for col in subset_all.columns.values]  # Heatmap needs flat column index
     ylabel = ylabels[ix] if any([ix == 0, ix == 4, ix == 8]) else " "
 
-    p = plot.flameplot(df=subset_all, fig=fig, ax=axes[ix], cmap=cmap,
-                       title=None, vmin=vmin, vmax=vmax, show_colormap=False,
-                       xlabel=xlabels[ix], ylabel=ylabel, zlabel=None, show_grid=False)
+    # Store pcolormesh objects in dict, used later for scaling and colorbars
+    mesh_obj[ix] = plot.flameplot(df=subset_all, fig=fig, ax=axes[ix], cmap=cmap,
+                                  title=None, vmin=vmin, vmax=vmax, show_colormap=False,
+                                  xlabel=xlabels[ix], ylabel=ylabel, zlabel=None, show_grid=False)
+
     text = f"({letter[ix]}) {flux}"
     # text = f"({letter[ix]}) All sites, {flux} (n=171, min. {n_sites_all_min})"
     axes[ix].axhline(0, color='black', linestyle='--', linewidth=1, zorder=100)
@@ -124,7 +141,6 @@ for ix, flux in enumerate(FLUXES):
                   transform=axes[ix].transAxes, color='black', size=FONTSIZE,
                   ha='left', va='bottom', zorder=99)
     axes[ix].set_aspect('equal')
-    # axes[ix]
 
     # Find optimum and pessimum
     _index = f"{binsx[ix][0]}_{binsx[ix][1]}"
@@ -164,12 +180,39 @@ for ix, flux in enumerate(FLUXES):
         axes[ix].plot([minx, minx], [miny + 0.2, 2.1], color=color, linestyle='--', linewidth=1, zorder=100)
         axes[ix].plot([minx, -2.5], [2.1, 2.1], color=color, linestyle='--', linewidth=1, zorder=100)
 
-# Colorbar for all subplots
-cbar = fig.colorbar(p, cax=ax_cbar_shap_vpd, label='XXX', extend='both')
+vmin_firstrow = -0.9069341723818797  # Use same scaling as in #41
+vmax_firstrow = 0.3076493751085945  # Use same scaling as in #41
+vmin_secondrow = min(vmins[4:8])
+vmax_secondrow = max(vmaxs[4:8])
+vmin_thirdrow = min(vmins[8:12])
+vmax_thirdrow = max(vmaxs[8:12])
+for ix, m in mesh_obj.items():
+    if ix < 4:
+        m.set_clim(vmin=vmin_firstrow, vmax=vmax_firstrow)
+    elif 4 <= ix < 8:
+        m.set_clim(vmin=vmin_secondrow, vmax=vmax_secondrow)
+    else:
+        m.set_clim(vmin=vmin_thirdrow, vmax=vmax_thirdrow)
+    print(f"ax{ix}: {m.get_clim()=}")
+
+# Colorbars
+cbar = fig.colorbar(mesh_obj[0], cax=ax_cbar_shap_vpd, label='XXX', extend='both')
 cbar.ax.tick_params(labelsize=FONTSIZE)
 cbar.set_label(cbar_zlabel, fontsize=FONTSIZE, labelpad=20)
-tick_locations = np.linspace(-0.9, 0.3, 13)
-cbar.set_ticks(tick_locations)  # This is the key line
+# tick_locations = np.linspace(-0.9, 0.3, 13)
+# cbar.set_ticks(tick_locations)
+
+cbar = fig.colorbar(mesh_obj[4], cax=ax_cbar_shap_ta, label='XXX', extend='both')
+cbar.ax.tick_params(labelsize=FONTSIZE)
+cbar.set_label("zlabel", fontsize=FONTSIZE, labelpad=20)
+# tick_locations = np.linspace(-0.9, 0.3, 13)
+# cbar.set_ticks(tick_locations)
+
+cbar = fig.colorbar(mesh_obj[8], cax=ax_cbar_shap_swc, label='XXX', extend='both')
+cbar.ax.tick_params(labelsize=FONTSIZE)
+cbar.set_label("zlabel", fontsize=FONTSIZE, labelpad=20)
+# tick_locations = np.linspace(-0.9, 0.3, 13)
+# cbar.set_ticks(tick_locations)
 
 fig.tight_layout()
 gs.update(wspace=0.5, hspace=.2)
