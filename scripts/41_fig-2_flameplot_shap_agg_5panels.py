@@ -19,9 +19,9 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
-# FLUX = 'NEP'
+FLUX = 'NEP'
 # FLUX = 'ET'
-FLUX = 'GPP'
+# FLUX = 'GPP'
 # FLUX = 'RECO'
 xvar = 'TA'
 yvar = 'VPD'
@@ -30,9 +30,11 @@ aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
 # Heatmap settings
-xlabel = f'{xvar} (z-score)'
-ylabel = f'{yvar} (z-score)'
-zlabel = f'{aggfunc} SHAP value of {zvar} (z-score)'
+label_longforms = dict(TA='Air temperature', VPD='Vapor pressure deficit', SWC='Soil water content')
+xlabel = f'{label_longforms[xvar]} (z-score)'
+ylabel = f'{label_longforms[yvar]} (z-score)'
+zlabel = f'Impact of {zvar} on predicted {FLUX} (SHAP {aggfunc} z-score)'
+# zlabel = f'{aggfunc} SHAP value of {zvar} (z-score)'
 n_sites_min = 30
 n_sites_used = 171
 cmap = 'RdYlBu'
@@ -51,7 +53,7 @@ shap_type = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 
 # Start figure
-fig = plt.figure(figsize=(21, 9), dpi=150, facecolor="white")
+fig = plt.figure(figsize=(21, 9.5), dpi=150, facecolor="white")
 gs = gridspec.GridSpec(2, 4)  # rows, cols
 # gs.update(wspace=.2, hspace=.3, left=0.1, right=0.9, top=0.9, bottom=0.1)
 ax_all = fig.add_subplot(gs[0:2, 0:2])
@@ -104,7 +106,7 @@ ax_all.scatter(x, y, color='none', marker='o', edgecolor='white', linewidth=3, s
 ax_all.plot([x - 0.15, -2.5], [y, y], color=color, linestyle='--', linewidth=1, zorder=100)
 ax_all.plot([-2.5, -2.5], [y, 1], color=color, linestyle='--', linewidth=1, zorder=100)
 params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
-ax_all.text(-3, 1.1, "highest NEP increase", horizontalalignment='left', verticalalignment='bottom', **params)
+ax_all.text(-3, 1.1, f"highest {FLUX} increase", horizontalalignment='left', verticalalignment='bottom', **params)
 print(f"Minimum found at {min_location[0], min_location[1]}")
 
 # Pessimum (largest SHAP)
@@ -117,7 +119,7 @@ ax_all.scatter(x, y, color='none', marker='o', edgecolor='black', linewidth=3, s
 # ax_all.plot([-2.5, -2.5], [y, 2], color=color, linestyle='--', linewidth=1, zorder=100)
 # params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
 # ax_all.text(-3, 1.9, "highest NEP decrease", horizontalalignment='left', verticalalignment='top', **params)
-ax_all.text(x + 0.1, y + 0.25, "highest NEP decrease", horizontalalignment='right', verticalalignment='center',
+ax_all.text(x + 0.1, y + 0.25, f"highest {FLUX} decrease", horizontalalignment='right', verticalalignment='center',
             **params)
 print(f"Maximum found at {max_location[0], max_location[1]}")
 
@@ -185,6 +187,7 @@ for ix, i in enumerate(igbps):
     axes[ix].scatter(x, y, color='none', marker='o', edgecolor='black', linewidth=3, s=450, zorder=100, alpha=0.5)
 
 fig.tight_layout()
+gs.update(wspace=.2)
 fig.show()
 
 # # Find local minimum/maximum
