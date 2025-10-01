@@ -31,9 +31,11 @@ CONDITIONAL = True  # SHAP
 
 # Heatmap settings
 label_longforms = dict(TA='Air temperature', VPD='Vapor pressure deficit', SWC='Soil water content')
-xlabel = f'{label_longforms[xvar]} (z-score)'
-ylabel = f'{label_longforms[yvar]} (z-score)'
-zlabel = f'Impact of {zvar} on predicted {FLUX} (SHAP {aggfunc} z-score)'
+xlabel = f'{xvar} (z-score)'
+ylabel = f'{yvar} (z-score)'
+# xlabel = f'{label_longforms[xvar]} (z-score)'
+# ylabel = f'{label_longforms[yvar]} (z-score)'
+zlabel = f'Impact of {zvar} on {FLUX} (SHAP {aggfunc} z-score)'
 # zlabel = f'{aggfunc} SHAP value of {zvar} (z-score)'
 n_sites_min = 30
 n_sites_used = 171
@@ -77,6 +79,13 @@ p = plot.flameplot(df=subset_all, fig=fig, ax=ax_all, cmap=cmap,
                    title=None, cb_digits_after_comma=cb_digits_after_comma,
                    xlabel=xlabel, ylabel=ylabel, zlabel=zlabel, cb_extend='both')
 ax_all.set_aspect('equal')
+
+ymin = subset_all.iloc[:, 1].min() * 1.05
+ymax = subset_all.iloc[:, 1].max() * 1.05
+ax_all.set_ylim(ymin, ymax)
+xmin = subset_all.iloc[:, 0].min() * 1.1
+xmax = subset_all.iloc[:, 0].max() * 1.1
+ax_all.set_xlim(xmin, xmax)
 
 ax_all.text(0.03, 0.98, f"(a) All sites (n={n_sites_used}, min. {n_sites_all_min})",
             transform=ax_all.transAxes, color='black', size=theme.AX_LABELS_FONTSIZE,

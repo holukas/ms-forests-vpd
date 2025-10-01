@@ -40,7 +40,7 @@ CONDITIONAL = True  # SHAP
 n_sites_min = 30
 cmap = 'RdYlBu'
 # cmap = 'RdYlBu_r'
-cbar_zlabel = "median flux (z-score)"
+# cbar_zlabel = "median flux (z-score)"
 xlabels = [f'{xvar} (z-score)' for xvar in xvars]
 ylabels = [f'{yvar} (z-score)' for yvar in yvars]
 # zlabels = [f'{aggfunc} SHAP value of {zvar} (z-score)' for zvar in zvars]
@@ -53,7 +53,7 @@ settings = files.read_settings_file("../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 
 # Start figure
-fig = plt.figure(figsize=(26, 16.8), dpi=150, facecolor="white")
+fig = plt.figure(figsize=(26 * 0.9, 16.8 * 0.9), dpi=150, facecolor="white")
 gs = gridspec.GridSpec(3, 21)  # rows, cols
 # gs.update(wspace=.3, hspace=.2, left=0.03, right=0.94, top=0.97, bottom=0.04)
 
@@ -64,10 +64,10 @@ ax3 = fig.add_subplot(gs[0, 10:15], sharex=ax1, sharey=ax1)
 ax4 = fig.add_subplot(gs[0, 15:20], sharex=ax1, sharey=ax1)
 
 # Row 2
-ax5 = fig.add_subplot(gs[1, 0:5], sharey=ax1)
-ax6 = fig.add_subplot(gs[1, 5:10], sharex=ax5, sharey=ax1)
-ax7 = fig.add_subplot(gs[1, 10:15], sharex=ax5, sharey=ax1)
-ax8 = fig.add_subplot(gs[1, 15:20], sharex=ax5, sharey=ax1)
+ax5 = fig.add_subplot(gs[1, 0:5], sharex=ax1, sharey=ax1)
+ax6 = fig.add_subplot(gs[1, 5:10], sharex=ax1, sharey=ax1)
+ax7 = fig.add_subplot(gs[1, 10:15], sharex=ax1, sharey=ax1)
+ax8 = fig.add_subplot(gs[1, 15:20], sharex=ax1, sharey=ax1)
 
 # Row 3
 ax9 = fig.add_subplot(gs[2, 0:5], sharey=ax1)
@@ -120,6 +120,14 @@ for ix, flux in enumerate(FLUXES):
         ymin = subset_all.iloc[:, 1].min() * 1.05
         ymax = subset_all.iloc[:, 1].max() * 1.05
         axes[ix].set_ylim(ymin, ymax)
+        xmin = subset_all.iloc[:, 0].min() * 1.2
+        xmax = subset_all.iloc[:, 0].max() * 1.2
+        axes[ix].set_xlim(xmin, xmax)
+
+    if ix == 8:
+        xmin = subset_all.iloc[:, 0].min() * 1.1
+        xmax = subset_all.iloc[:, 0].max() * 1.1
+        axes[ix].set_xlim(xmin, xmax)
 
     # Collect min and max values for scaling later
     vmins.append(subset_all[zs[ix]].min())
@@ -158,27 +166,33 @@ for ix, flux in enumerate(FLUXES):
     maxx = max_location[0] + 0.05
     maxy = max_location[1] + 0.05
     color = "#607D8B"  # blue grey 500
-    axes[ix].scatter(maxx, maxy, color='black', marker='+', edgecolors='none', linewidth=2, s=350, zorder=100,
-                     alpha=0.5)
+    axes[ix].scatter(maxx, maxy, color='black', marker='+', edgecolors='none',
+                     linewidth=2, s=650, zorder=100, alpha=0.5)
     axes[ix].scatter(maxx, maxy, color='none', marker='o', edgecolor='black',
-                     linewidth=2, s=350, zorder=100, alpha=0.5)
+                     linewidth=2, s=650, zorder=100, alpha=0.5)
 
     # Minimum flux
     minx = min_location[0] - 0.05
     miny = min_location[1] + 0.05
-    axes[ix].scatter(minx, miny, color='black', marker='_', edgecolors='none', linewidth=2, s=350, zorder=100,
-                     alpha=0.5)
+    axes[ix].scatter(minx, miny, color='black', marker='_', edgecolors='none',
+                     linewidth=2, s=650, zorder=100, alpha=0.5)
     axes[ix].scatter(minx, miny, color='none', marker='o', edgecolor='black',
-                     linewidth=2, s=350, zorder=100, alpha=0.5)
+                     linewidth=2, s=650, zorder=100, alpha=0.5)
 
     if ix == 0:
         params = dict(color='black', size=FONTSIZE, zorder=99)
-        axes[ix].text(-2.8, 3, 'maximum flux', ha='left', va='center', **params)
-        axes[ix].plot([maxx, maxx], [maxy + 0.2, 3], color=color, linestyle='--', linewidth=1, zorder=100)
-        axes[ix].plot([maxx, -0.6], [3, 3], color=color, linestyle='--', linewidth=1, zorder=100)
-        axes[ix].text(-2.5, 2.1, 'minimum flux', ha='left', va='center', **params)
-        axes[ix].plot([minx, minx], [miny + 0.2, 2.1], color=color, linestyle='--', linewidth=1, zorder=100)
-        axes[ix].plot([minx, -2.5], [2.1, 2.1], color=color, linestyle='--', linewidth=1, zorder=100)
+        # axes[ix].text(-3.4, 1, 'highest\nflux increase', ha='left', va='center', **params)
+        axes[ix].annotate(f'highest\nflux increase',
+                          xy=(maxx, maxy),
+                          xytext=(maxx - 2.5, maxy + 2),  # Adjust text position as needed
+                          arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
+                          fontsize=16, color='black', ha='left', va='center', zorder=100, )
+        # axes[ix].text(minx - 0.3, miny, 'highest flux decrease', ha='right', va='center', **params)
+        axes[ix].annotate(f'highest flux decrease',
+                          xy=(minx, miny),
+                          xytext=(minx - 5, miny - 0.5),
+                          arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
+                          fontsize=16, color='black', ha='left', va='center', zorder=100)
 
 vmin_firstrow = -0.9069341723818797  # Use same scaling as in #41
 vmax_firstrow = 0.3076493751085945  # Use same scaling as in #41
@@ -198,19 +212,22 @@ for ix, m in mesh_obj.items():
 # Colorbars
 cbar = fig.colorbar(mesh_obj[0], cax=ax_cbar_shap_vpd, label='XXX', extend='both')
 cbar.ax.tick_params(labelsize=FONTSIZE)
-cbar.set_label(cbar_zlabel, fontsize=FONTSIZE, labelpad=20)
+label = "Impact of VPD on flux (SHAP median z-score)"
+cbar.set_label(label, fontsize=FONTSIZE, labelpad=20)
 # tick_locations = np.linspace(-0.9, 0.3, 13)
 # cbar.set_ticks(tick_locations)
 
 cbar = fig.colorbar(mesh_obj[4], cax=ax_cbar_shap_ta, label='XXX', extend='both')
 cbar.ax.tick_params(labelsize=FONTSIZE)
-cbar.set_label("zlabel", fontsize=FONTSIZE, labelpad=20)
+label = "Impact of TA on flux (SHAP median z-score)"
+cbar.set_label(label, fontsize=FONTSIZE, labelpad=20)
 # tick_locations = np.linspace(-0.9, 0.3, 13)
 # cbar.set_ticks(tick_locations)
 
 cbar = fig.colorbar(mesh_obj[8], cax=ax_cbar_shap_swc, label='XXX', extend='both')
 cbar.ax.tick_params(labelsize=FONTSIZE)
-cbar.set_label("zlabel", fontsize=FONTSIZE, labelpad=20)
+label = "Impact of SWC on flux (SHAP median z-score)"
+cbar.set_label(label, fontsize=FONTSIZE, labelpad=20)
 # tick_locations = np.linspace(-0.9, 0.3, 13)
 # cbar.set_ticks(tick_locations)
 

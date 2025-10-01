@@ -133,35 +133,44 @@ for ix, flux in enumerate(FLUXES):
     max_location, max_value = findpoi(df=pivot_df, k=25, agg='mean', what='max')
     min_location, min_value = findpoi(df=pivot_df, k=25, agg='mean', what='min')
 
-    # Show symbols for min and max flux locations
-    params = dict(horizontalalignment='center', verticalalignment='center', color="black",
-                  size=35, zorder=100, alpha=.6)
+    # # Show symbols for min and max flux locations
+    # params = dict(horizontalalignment='center', verticalalignment='center', color="black",
+    #               size=35, zorder=100, alpha=.6)
 
     # Maximum flux
+    params = dict(linewidth=3, s=650, zorder=100, alpha=0.5)
     maxx = max_location[0] + 0.05
     maxy = max_location[1] + 0.05
     color = "#607D8B"  # blue grey 500
-    axes[ix].scatter(maxx, maxy, color='black', marker='+', edgecolors='none', linewidth=2, s=350, zorder=100,
-                     alpha=0.5)
-    axes[ix].scatter(maxx, maxy, color='none', marker='o', edgecolor='black',
-                     linewidth=2, s=350, zorder=100, alpha=0.5)
+    axes[ix].scatter(maxx, maxy, color='black', marker='+', edgecolors='none', **params)
+    axes[ix].scatter(maxx, maxy, color='none', marker='o', edgecolor='black', **params)
 
     # Minimum flux
     minx = min_location[0] - 0.05
     miny = min_location[1] + 0.05
-    axes[ix].scatter(minx, miny, color='black', marker='_', edgecolors='none', linewidth=2, s=350, zorder=100,
-                     alpha=0.5)
-    axes[ix].scatter(minx, miny, color='none', marker='o', edgecolor='black',
-                     linewidth=2, s=350, zorder=100, alpha=0.5)
+    axes[ix].scatter(minx, miny, color='black', marker='_', edgecolors='none', **params)
+    axes[ix].scatter(minx, miny, color='none', marker='o', edgecolor='black', **params)
 
     if ix == 0:
-        params = dict(color='black', size=FONTSIZE, zorder=99)
-        axes[ix].text(-2.8, 3, 'maximum flux', ha='left', va='center', **params)
-        axes[ix].plot([maxx, maxx], [maxy + 0.2, 3], color=color, linestyle='--', linewidth=1, zorder=100)
-        axes[ix].plot([maxx, -0.6], [3, 3], color=color, linestyle='--', linewidth=1, zorder=100)
-        axes[ix].text(-2.5, 2.1, 'minimum flux', ha='left', va='center', **params)
-        axes[ix].plot([minx, minx], [miny + 0.2, 2.1], color=color, linestyle='--', linewidth=1, zorder=100)
-        axes[ix].plot([minx, -2.5], [2.1, 2.1], color=color, linestyle='--', linewidth=1, zorder=100)
+        # params = dict(color='black', size=FONTSIZE, zorder=99)
+        # axes[ix].text(-2.8, 3, 'maximum flux', ha='left', va='center', **params)
+        axes[ix].annotate(
+            f'maximum flux',
+            xy=(maxx, maxy),
+            xytext=(maxx - 3.5, maxy + 2),  # Adjust text position as needed
+            arrowprops=dict(arrowstyle="->", color='black', lw=1.5, shrinkB=15),
+            fontsize=16, color='black', ha='left', va='center', zorder=100, )
+        # axes[ix].plot([maxx, maxx], [maxy + 0.2, 3], color=color, linestyle='--', linewidth=1, zorder=100)
+        # axes[ix].plot([maxx, -0.6], [3, 3], color=color, linestyle='--', linewidth=1, zorder=100)
+        # axes[ix].text(-2.5, 2.1, 'minimum flux', ha='left', va='center', **params)
+        axes[ix].annotate(
+            f'minimum flux',
+            xy=(minx, miny),
+            xytext=(minx + 0, miny + 2.6),  # Adjust text position as needed
+            arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
+            fontsize=16, color='black', ha='left', va='center', zorder=100, )
+        # axes[ix].plot([minx, minx], [miny + 0.2, 2.1], color=color, linestyle='--', linewidth=1, zorder=100)
+        # axes[ix].plot([minx, -2.5], [2.1, 2.1], color=color, linestyle='--', linewidth=1, zorder=100)
 
 # Colorbar for all subplots
 cbar = fig.colorbar(p, cax=ax_cbar, label='XXX', extend='both')
