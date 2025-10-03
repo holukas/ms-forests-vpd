@@ -2,7 +2,7 @@
 Flame plot.
 """
 from pathlib import Path
-
+import numpy as np
 import diive as dv
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
@@ -116,18 +116,21 @@ for ix, flux in enumerate(FLUXES):
     n_sites_all_max = shapvals_df[zs_counts[ix]].max()
     subset_all = shapvals_df[[binsx[ix], binsy[ix], zs[ix]]].copy()
 
+    # Panels 0-7 need same scaling as in #41
     if ix == 0:
         ymin = subset_all.iloc[:, 1].min() * 1.05
         ymax = subset_all.iloc[:, 1].max() * 1.05
         axes[ix].set_ylim(ymin, ymax)
-        xmin = subset_all.iloc[:, 0].min() * 1.2
-        xmax = subset_all.iloc[:, 0].max() * 1.2
+        xmin = subset_all.iloc[:, 0].min() * 1.15
+        xmax = subset_all.iloc[:, 0].max() * 1.15
         axes[ix].set_xlim(xmin, xmax)
+        axes[ix].set_xticks(np.arange(-3, 3, 1))
 
     if ix == 8:
         xmin = subset_all.iloc[:, 0].min() * 1.1
         xmax = subset_all.iloc[:, 0].max() * 1.1
         axes[ix].set_xlim(xmin, xmax)
+        axes[ix].set_xticks(np.arange(-2, 4, 1))
 
     # Collect min and max values for scaling later
     vmins.append(subset_all[zs[ix]].min())
@@ -167,17 +170,17 @@ for ix, flux in enumerate(FLUXES):
     maxy = max_location[1] + 0.05
     color = "#607D8B"  # blue grey 500
     axes[ix].scatter(maxx, maxy, color='black', marker='+', edgecolors='none',
-                     linewidth=2, s=650, zorder=100, alpha=0.5)
+                     linewidth=3, s=650, zorder=100, alpha=0.5)
     axes[ix].scatter(maxx, maxy, color='none', marker='o', edgecolor='black',
-                     linewidth=2, s=650, zorder=100, alpha=0.5)
+                     linewidth=3, s=650, zorder=100, alpha=0.5)
 
     # Minimum flux
     minx = min_location[0] - 0.05
     miny = min_location[1] + 0.05
     axes[ix].scatter(minx, miny, color='black', marker='_', edgecolors='none',
-                     linewidth=2, s=650, zorder=100, alpha=0.5)
+                     linewidth=3, s=650, zorder=100, alpha=0.5)
     axes[ix].scatter(minx, miny, color='none', marker='o', edgecolor='black',
-                     linewidth=2, s=650, zorder=100, alpha=0.5)
+                     linewidth=3, s=650, zorder=100, alpha=0.5)
 
     if ix == 0:
         params = dict(color='black', size=FONTSIZE, zorder=99)

@@ -101,10 +101,19 @@ for ix, flux in enumerate(FLUXES):
     n_sites_all_min = shapvals_df[zs_counts[ix]].min()
     n_sites_all_max = shapvals_df[zs_counts[ix]].max()
     subset_all = shapvals_df[[binsx[ix], binsy[ix], zs[ix]]].copy()
-    if ix == 0:  # NEP used to get the scaling numbers
+
+    if ix == 0:
         ymin = subset_all.iloc[:, 1].min() * 1.05
         ymax = subset_all.iloc[:, 1].max() * 1.05
         axes[ix].set_ylim(ymin, ymax)
+        axes[ix].set_xticks(np.arange(-3, 3, 1))
+
+    if ix == 8:
+        xmin = subset_all.iloc[:, 0].min() * 1.15
+        xmax = subset_all.iloc[:, 0].max() * 1.15
+        axes[ix].set_xlim(xmin, xmax)
+        axes[ix].set_xticks(np.arange(-2, 3, 1))
+
     # vmin = subset_all[zs[ix]].min()
     # vmax = subset_all[zs[ix]].max()
     vmin = -1.2
@@ -158,19 +167,14 @@ for ix, flux in enumerate(FLUXES):
             f'maximum flux',
             xy=(maxx, maxy),
             xytext=(maxx - 3.5, maxy + 2),  # Adjust text position as needed
-            arrowprops=dict(arrowstyle="->", color='black', lw=1.5, shrinkB=15),
+            arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
             fontsize=16, color='black', ha='left', va='center', zorder=100, )
-        # axes[ix].plot([maxx, maxx], [maxy + 0.2, 3], color=color, linestyle='--', linewidth=1, zorder=100)
-        # axes[ix].plot([maxx, -0.6], [3, 3], color=color, linestyle='--', linewidth=1, zorder=100)
-        # axes[ix].text(-2.5, 2.1, 'minimum flux', ha='left', va='center', **params)
         axes[ix].annotate(
             f'minimum flux',
             xy=(minx, miny),
             xytext=(minx + 0, miny + 2.6),  # Adjust text position as needed
             arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
             fontsize=16, color='black', ha='left', va='center', zorder=100, )
-        # axes[ix].plot([minx, minx], [miny + 0.2, 2.1], color=color, linestyle='--', linewidth=1, zorder=100)
-        # axes[ix].plot([minx, -2.5], [2.1, 2.1], color=color, linestyle='--', linewidth=1, zorder=100)
 
 # Colorbar for all subplots
 cbar = fig.colorbar(p, cax=ax_cbar, label='XXX', extend='both')

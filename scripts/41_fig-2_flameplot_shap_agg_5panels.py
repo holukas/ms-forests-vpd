@@ -39,9 +39,10 @@ zlabel = f'Impact of {zvar} on {FLUX} (SHAP {aggfunc} z-score)'
 # zlabel = f'{aggfunc} SHAP value of {zvar} (z-score)'
 n_sites_min = 30
 n_sites_used = 171
-cmap = 'RdYlBu'
 cb_digits_after_comma = 1
+cmap = 'RdYlBu'
 # cmap = 'RdYlBu_r'
+area_size_minmax = 25  # Number of bins used to calculate min/max areas
 # ------------------------------
 
 binx = (f"BIN_{xvar}", aggfunc)
@@ -55,7 +56,7 @@ shap_type = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 
 # Start figure
-fig = plt.figure(figsize=(21, 9.5), dpi=150, facecolor="white")
+fig = plt.figure(figsize=(23, 9.5), dpi=150, facecolor="white")
 gs = gridspec.GridSpec(2, 4)  # rows, cols
 # gs.update(wspace=.2, hspace=.3, left=0.1, right=0.9, top=0.9, bottom=0.1)
 ax_all = fig.add_subplot(gs[0:2, 0:2])
@@ -83,8 +84,8 @@ ax_all.set_aspect('equal')
 ymin = subset_all.iloc[:, 1].min() * 1.05
 ymax = subset_all.iloc[:, 1].max() * 1.05
 ax_all.set_ylim(ymin, ymax)
-xmin = subset_all.iloc[:, 0].min() * 1.1
-xmax = subset_all.iloc[:, 0].max() * 1.1
+xmin = subset_all.iloc[:, 0].min() * 1.15
+xmax = subset_all.iloc[:, 0].max() * 1.15
 ax_all.set_xlim(xmin, xmax)
 
 ax_all.text(0.03, 0.98, f"(a) All sites (n={n_sites_used}, min. {n_sites_all_min})",
@@ -102,34 +103,33 @@ ax_all.text(0.1, 3.5, r"warm $\rightarrow$", horizontalalignment='left', vertica
 
 # Find optimum and pessimum
 pivot_df = subset_all.pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
-max_location, max_value = findpoi(df=pivot_df, k=25, agg='mean', what='max')
-min_location, min_value = findpoi(df=pivot_df, k=25, agg='mean', what='min')
+max_location, max_value = findpoi(df=pivot_df, k=area_size_minmax, agg='mean', what='max')
+min_location, min_value = findpoi(df=pivot_df, k=area_size_minmax, agg='mean', what='min')
 
 # Optimum (smallest SHAP)
-x = max_location[0] + 0.05
-y = max_location[1] + 0.05
+maxx = max_location[0] + 0.05
+maxy = max_location[1] + 0.05
 params_max = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
 color = "#90A4AE"
-ax_all.scatter(x, y, color='white', marker='+', edgecolors='none', linewidth=3, s=450, zorder=100, alpha=0.5)
-ax_all.scatter(x, y, color='none', marker='o', edgecolor='white', linewidth=3, s=450, zorder=100, alpha=0.5)
-ax_all.plot([x - 0.15, -2.5], [y, y], color=color, linestyle='--', linewidth=1, zorder=100)
-ax_all.plot([-2.5, -2.5], [y, 1], color=color, linestyle='--', linewidth=1, zorder=100)
-params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
-ax_all.text(-3, 1.1, f"highest {FLUX} increase", horizontalalignment='left', verticalalignment='bottom', **params)
+ax_all.scatter(maxx, maxy, color='black', marker='+', edgecolors='none', linewidth=3, s=650, zorder=100, alpha=0.5)
+ax_all.scatter(maxx, maxy, color='none', marker='o', edgecolor='black', linewidth=3, s=650, zorder=100, alpha=0.5)
+ax_all.annotate(f'highest {FLUX} increase',
+                xy=(maxx, maxy),
+                xytext=(maxx - 3, maxy + 1.5),  # Adjust text position as needed
+                arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
+                fontsize=16, color='black', ha='left', va='center', zorder=100, )
 print(f"Minimum found at {min_location[0], min_location[1]}")
 
 # Pessimum (largest SHAP)
-x = min_location[0] + 0.05
-y = min_location[1] + 0.05
-color = "#90A4AE"
-ax_all.scatter(x, y, color='black', marker='_', edgecolors='none', linewidth=3, s=450, zorder=100, alpha=0.5)
-ax_all.scatter(x, y, color='none', marker='o', edgecolor='black', linewidth=3, s=450, zorder=100, alpha=0.5)
-# ax_all.plot([x - 0.15, -2.5], [y, y], color=color, linestyle='--', linewidth=1, zorder=100)
-# ax_all.plot([-2.5, -2.5], [y, 2], color=color, linestyle='--', linewidth=1, zorder=100)
-# params = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
-# ax_all.text(-3, 1.9, "highest NEP decrease", horizontalalignment='left', verticalalignment='top', **params)
-ax_all.text(x + 0.1, y + 0.25, f"highest {FLUX} decrease", horizontalalignment='right', verticalalignment='center',
-            **params)
+minx = min_location[0] + 0.05
+miny = min_location[1] + 0.05
+ax_all.scatter(minx, miny, color='black', marker='_', edgecolors='none', linewidth=3, s=450, zorder=100, alpha=0.5)
+ax_all.scatter(minx, miny, color='none', marker='o', edgecolor='black', linewidth=3, s=450, zorder=100, alpha=0.5)
+ax_all.annotate(f'highest {FLUX} decrease',
+                xy=(minx, miny),
+                xytext=(minx - 0.8, miny + 0.5),  # Adjust text position as needed
+                arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
+                fontsize=16, color='black', ha='center', va='center', zorder=100, )
 print(f"Maximum found at {max_location[0], max_location[1]}")
 
 # Load SHAP values aggregated per IGBP
@@ -175,25 +175,20 @@ for ix, i in enumerate(igbps):
     axes[ix].set_aspect('equal')
 
     pivot_df = data_per_igbp[i].pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
-    max_location, max_value = findpoi(df=pivot_df, k=25, agg='mean', what='max')
-    min_location, min_value = findpoi(df=pivot_df, k=25, agg='mean', what='min')
+    max_location, max_value = findpoi(df=pivot_df, k=area_size_minmax, agg='mean', what='max')
+    min_location, min_value = findpoi(df=pivot_df, k=area_size_minmax, agg='mean', what='min')
 
     # Optimum (smallest SHAP)
     x = max_location[0] + 0.05
     y = max_location[1] + 0.05
-    # axes[ix].text(x, y, r'$\oplus$', horizontalalignment='center',
-    #               verticalalignment='center', color="white", size=30, zorder=100, alpha=.7)
-    axes[ix].scatter(x, y, color='white', marker='+', edgecolors='none', linewidth=3, s=450, zorder=100, alpha=0.5)
-    axes[ix].scatter(x, y, color='none', marker='o', edgecolor='white', linewidth=3, s=450, zorder=100, alpha=0.5)
+    axes[ix].scatter(x, y, color='black', marker='+', edgecolors='none', linewidth=3, s=650, zorder=100, alpha=0.5)
+    axes[ix].scatter(x, y, color='none', marker='o', edgecolor='black', linewidth=3, s=650, zorder=100, alpha=0.5)
 
     # Pessimum (largest SHAP)
     x = min_location[0] + 0.05
     y = min_location[1] + 0.05
-    # axes[ix].text(x, y, r'$\ominus$', horizontalalignment='center',
-    #               verticalalignment='center', color="black", size=30, zorder=100, alpha=.7)
-    # axes[ix].scatter(x, y, color='none', edgecolors=color, linewidth=2, s=500, zorder=100)
-    axes[ix].scatter(x, y, color='black', marker='_', edgecolors='none', linewidth=3, s=450, zorder=100, alpha=0.5)
-    axes[ix].scatter(x, y, color='none', marker='o', edgecolor='black', linewidth=3, s=450, zorder=100, alpha=0.5)
+    axes[ix].scatter(x, y, color='black', marker='_', edgecolors='none', linewidth=3, s=650, zorder=100, alpha=0.5)
+    axes[ix].scatter(x, y, color='none', marker='o', edgecolor='black', linewidth=3, s=650, zorder=100, alpha=0.5)
 
 fig.tight_layout()
 gs.update(wspace=.2)
