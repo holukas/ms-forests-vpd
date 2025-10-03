@@ -1,8 +1,6 @@
 from pathlib import Path
-from numpy import arange
+
 import diive as dv
-import matplotlib.gridspec as gridspec
-import matplotlib.pyplot as plt
 import pandas as pd
 
 import src.files as files
@@ -43,36 +41,102 @@ for ix, siteconfig in datasets_df.iterrows():
     if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
         # Skip files that do not have a parquet subset, b/c of missing SWC
         continue
+
     igbp = siteconfig['IGBP']
     if igbp == 'DNF':  # Not used, only 2 sites
         continue
     site = siteconfig['SITE']
+
+    # # TODO testing ----
+    if site != "BE-Bra":
+        continue
+    # # TODO testing ----
+
     filename = f"{site}_shap-{shap_type}_{FLUX}.parquet"
     filepath = folder / filename
     print(f"\nLoading data for site #{ix + 1} {site} ...")
     shapvals_df = dv.load_parquet(filepath)
     keepcols = [c for c in shapvals_df.columns if "_SHAPVALS" in c]
 
-    # TODO hier weiter
 
-    for r in arange(1, 3, 1):
-        conditions = (shapvals_df['TA'] > r) & (shapvals_df['VPD'] > r) & (shapvals_df['SWC'] < -r)
-        subset = shapvals_df.loc[conditions].copy()
+    def scenario_0(df):
+        # Complete dataset
+        return df, -1, -1, -1
+
+
+    def scenario_1(df, a: float = 0.6745):
+        # 50% of data (z-score = +/- 0.6745)
+        mask_ta = (df['TA'] >= -a) & (df['TA'] <= a)
+        mask_vpd = (df['VPD'] >= -a) & (df['VPD'] <= a)
+        mask_swc = (df['SWC'] >= -a) & (df['SWC'] <= a)
+        combined_mask = mask_ta & mask_vpd & mask_swc
+        df = df.loc[combined_mask].copy()
+        return df, 0, 0, 0
+
+
+    def scenario_2(df, a: float = 0.6745, c: float = 1.25):
+        """Hot conditions"""
+        mask_ta = (df['TA'] > a) & (df['TA'] <= c)
+        df = df.loc[mask_ta].copy()
+        return df, 1, 0, 0
+
+
+    def scenario_3(df, a: float = 0.6745, c: float = 1.25):
+        """Dry soil conditions"""
+        mask_swc = (df['SWC'] >= -c) & (df['SWC'] < -a)
+        df = df.loc[mask_swc].copy()
+        return df, 0, 0, 1
+
+
+    def scenario_4(df, a: float = 0.6745, c: float = 1.25):
+        """Dry atmosphere conditions"""
+        mask_vpd = (df['VPD'] > a) & (df['VPD'] <= c)
+        df = df.loc[mask_vpd].copy()
+        return df, 0, 1, 0
+
+
+    def scenario_5(df, a: float = 0.6745, c: float = 1.25):
+        """Compound conditions with hot air, dry soil and dry atmosphere conditions"""
+        mask_ta = (df['TA'] > a) & (df['TA'] <= c)
+        mask_vpd = (df['VPD'] > a) & (df['VPD'] <= c)
+        mask_swc = (df['SWC'] >= -c) & (df['SWC'] < -a)
+        combined_mask = mask_ta & mask_vpd & mask_swc
+        df = df.loc[combined_mask].copy()
+        return df, 1, 1, 1
+
+
+    def scenario_6(df, c: float = 1.25):
+        """Compound extreme: extremely hot, extremely dry conditions"""
+        mask_ta = df['TA'] > c
+        mask_vpd = df['VPD'] > c
+        mask_swc = df['SWC'] <= -c
+        combined_mask = mask_ta & mask_vpd & mask_swc
+        df = df.loc[combined_mask].copy()
+        return df, 2, 2, 2
+
+
+    scenarios = [scenario_0, scenario_1, scenario_2, scenario_3, scenario_4, scenario_5, scenario_6]
+
+    for ix, scen in enumerate(scenarios):
+        subset, ta, vpd, swc = scen(shapvals_df)
         n_records = len(subset.index)
-
         cur_scenario_dict = dict()
         cur_scenario_dict['SITE'] = site
         cur_scenario_dict['IGBP'] = igbp
-        cur_scenario_dict['TA>'] = r
-        cur_scenario_dict['VPD>'] = r
-        cur_scenario_dict['SWC<'] = -r
+        cur_scenario_dict['SCENARIO'] = ix
+        cur_scenario_dict['N_VALUES'] = n_records
+        cur_scenario_dict['TA'] = ta
+        cur_scenario_dict['VPD'] = vpd
+        cur_scenario_dict['SWC'] = swc
 
         for k in keepcols:
             series = subset[k].copy()
             cur_scenario_dict[f'{k}_POS_AVG'] = series[series > 0].mean()
             cur_scenario_dict[f'{k}_NEG_AVG'] = series[series < 0].mean()
             cur_scenario_dict[f'{k}_OVR_AVG'] = series.mean()
+            cur_scenario_dict[f'{k}_OVR_SD'] = series.std()
             cur_scenario_dict[f'{k}_OVR_ABS_AVG'] = series.abs().mean()
+            cur_scenario_dict[f'{k}_OVR_ABS_SD'] = series.abs().std()
 
         new_row_df = pd.DataFrame([cur_scenario_dict], index=[site])
 
@@ -81,13 +145,13 @@ for ix, siteconfig in datasets_df.iterrows():
         else:
             sites_df = pd.concat([sites_df, new_row_df], axis=0)
 
-        print(n_records)
-
-    print(sites_df)
-    sites_df['VPD_SHAPVALS_OVR_AVG'].plot()
-    plt.show()
+    print(sites_df[['SCENARIO', 'N_VALUES', 'VPD_SHAPVALS_OVR_AVG', 'TA_SHAPVALS_OVR_AVG', 'SWIN_SHAPVALS_OVR_AVG',
+                    'SWC_SHAPVALS_OVR_AVG']])
     print(sites_df)
 
+    # sites_df['VPD_SHAPVALS_OVR_AVG'].plot()
+    # plt.show()
+    # print(sites_df)
 
     # shapvals_df[['SWIN_SHAPVALS', 'VPD_SHAPVALS']].cumsum().plot()
     # plt.show()
