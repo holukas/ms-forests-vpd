@@ -80,8 +80,10 @@ for ix, siteconfig in datasets_df.iterrows():
             cur_scenario_dict[f'{k}_POS_AVG'] = series[series > 0].mean()
             cur_scenario_dict[f'{k}_NEG_AVG'] = series[series < 0].mean()
             cur_scenario_dict[f'{k}_OVR_AVG'] = series.mean()
+            cur_scenario_dict[f'{k}_OVR_MEDIAN'] = series.median()
             cur_scenario_dict[f'{k}_OVR_SD'] = series.std()
             cur_scenario_dict[f'{k}_OVR_ABS_AVG'] = series.abs().mean()
+            cur_scenario_dict[f'{k}_OVR_ABS_MEDIAN'] = series.abs().median()
             cur_scenario_dict[f'{k}_OVR_ABS_SD'] = series.abs().std()
 
         new_row_df = pd.DataFrame([cur_scenario_dict], index=[site])
