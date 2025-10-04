@@ -1,11 +1,12 @@
 from pathlib import Path
 
 import diive as dv
+import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import gaussian_kde  # <-- Import for the "cloud"
 
 import src.files as files
-import numpy as np
-import matplotlib.gridspec as gridspec
 
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
@@ -26,52 +27,72 @@ results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 filepath = Path(results_outdir) / f"3_AllSites_SHAP-ScenarioSums-{shap_type}_{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 
+# Your data processing logic (same as before)
 df = shapvals_df.copy()
-# df = df.loc[df['IGBP'] == 'ENF'].copy()
 df = df.drop('SITE', axis=1, inplace=False)
 df = df.drop('CONDITION', axis=1, inplace=False)
-# df = df.drop('IGBP', axis=1, inplace=False)
-# shap_value_columns = ['VPD_SHAPVALS_NEG_AVG', 'TA_SHAPVALS_NEG_AVG', 'SWC_SHAPVALS_NEG_AVG', 'SWIN_SHAPVALS_NEG_AVG']
-# shap_value_columns = ['VPD_SHAPVALS_POS_AVG', 'TA_SHAPVALS_POS_AVG', 'SWC_SHAPVALS_POS_AVG', 'SWIN_SHAPVALS_POS_AVG']
-# shap_value_columns = ['VPD_SHAPVALS_OVR_ABS_AVG', 'TA_SHAPVALS_OVR_ABS_AVG', 'SWC_SHAPVALS_OVR_ABS_AVG', 'SWIN_SHAPVALS_OVR_ABS_AVG']
-# shap_value_columns = ['VPD_SHAPVALS_OVR_ABS_MEDIAN', 'TA_SHAPVALS_OVR_ABS_MEDIAN', 'SWC_SHAPVALS_OVR_ABS_MEDIAN', 'SWIN_SHAPVALS_OVR_ABS_MEDIAN']
-shap_value_columns = ['VPD_SHAPVALS_OVR_MEDIAN', 'TA_SHAPVALS_OVR_MEDIAN', 'SWC_SHAPVALS_OVR_MEDIAN', 'SWIN_SHAPVALS_OVR_MEDIAN']
-# shap_value_columns = ['VPD_SHAPVALS_OVR_AVG', 'TA_SHAPVALS_OVR_AVG', 'SWC_SHAPVALS_OVR_AVG', 'SWIN_SHAPVALS_OVR_AVG']
+
+subset = df[['SCENARIO', 'N_VALUES']].copy()
+subset_stats = subset.groupby('SCENARIO').mean()
+print(f"Used scenarios:\n"
+      f"#1: {subset_stats.loc[1].values[0]} values on average per site\n"
+      f"#4: {subset_stats.loc[4].values[0]} values\n"
+      f"#5: {subset_stats.loc[5].values[0]} values")
+
+shaps = '_SHAPVALS_OVR_MEDIAN'
+# shaps = '_SHAPVALS_OVR_ABS_MEDIAN'
+# shaps = '_SHAPVALS_POS_AVG'
+# shaps = '_SHAPVALS_NEG_AVG'
+variables = ['SWIN', 'TA', 'VPD', 'SWC']
+shap_value_columns = [variables[0] + shaps, variables[1] + shaps, variables[2] + shaps, variables[3] + shaps]
+
 dfcols = ['IGBP', 'SCENARIO'] + shap_value_columns
 df = df[dfcols].copy()
-
-# Melt the DataFrame to a long format for plotting
-
 df_melted = df.melt(
     id_vars=['IGBP', 'SCENARIO'],
     value_vars=shap_value_columns,
     var_name='SHAP_FEATURE',
     value_name='SHAP_VALUE'
 )
-
-# Drop rows with NaN values
 df_melted.dropna(subset=['SHAP_VALUE'], inplace=True)
 
 # Define colors for each feature
-feature_colors = ['#EF9A9A', '#FFE082', '#90CAF9', '#C5E1A5']
-line_colors = ['#880E4F', '#E65100', '#01579B', '#33691E']
-feature_labels = ['VPD', 'TA', 'SWC', 'SWIN']
+feature_colors = ['#b2df8a', '#fdbf6f', '#fb9a99', '#a6cee3']
+line_colors = ['#33a02c', '#ff7f00', '#e31a1c', '#1f77b4']
+# feature_colors = ['#88c0d0', '#bf616a', '#a3be8c', '#ebcb8b']
+# line_colors = ['#5e81ac', '#a4424e', '#7a996b', '#d0af6f']
+# feature_colors = ['#48d0b7', '#f8719e', '#a286fc', '#f7a85c']
+# line_colors = ['#009688', '#d94575', '#7c59eb', '#f58728']
+# feature_colors = ['#9fa6ff', '#ff8673', '#69f2c2', '#d09fff']
+# line_colors = ['#636efa', '#ef553b', '#00cc96', '#ab63fa']
+# feature_colors = ['#F0E442', '#E69F00', '#56B4E9', '#CC79A7']
+# line_colors = ['#cba90d', '#b87f00', '#0072B2', '#a35f85']
+# feature_colors = ['#66c2a5', '#fdb462', '#8da0cb', '#e78ac3']
+# line_colors = ['#1b7837', '#b15928', '#386cb0', '#c51b7d']
+# feature_colors = ['#FFEB3B', '#FF9800', '#EF5350', '#64B5F6', ]
+# line_colors = ['#F9A825', '#BF360C', '#B71C1C', '#0D47A1', ]
+# feature_colors = ['#EF9A9A', '#FFE082', '#90CAF9', '#C5E1A5']
+# line_colors = ['#880E4F', '#E65100', '#01579B', '#33691E']
+
 
 # Get unique scenarios
-scenarios = sorted(df_melted['SCENARIO'].unique())
+# scenarios = sorted(df_melted['SCENARIO'].unique())
+scenarios = [1, 4, 5]
 n_scenarios = len(scenarios)
 scenario_description = {
     0: "(a) All data",
-    1: "(b) Normal conditions",
+    1: "(a) Normal conditions",
     2: "(c) Dry soil",
     3: "(d) Hot temperatures",
-    4: "(e) Dry soil and hot temperatures",
-    5: "(f) Compound extremes"
+    4: "(b) Dry soil and hot temperatures",
+    5: "(c) Compound extremes"
 }
 
 # Determine subplot grid layout
 ncols = 3
 nrows = int(np.ceil(n_scenarios / ncols))
+
+n_vals = -9999
 
 # Create the figure and GridSpec
 fig = plt.figure(figsize=(5 * ncols, 5 * nrows))
@@ -83,75 +104,137 @@ for i, scenario in enumerate(scenarios):
     ax = fig.add_subplot(gs[i // ncols, i % ncols])
     ax_objects.append(ax)
 
-    # Filter data for the current scenario
     scenario_data = df_melted[df_melted['SCENARIO'] == scenario]
 
+    # Iterate through each feature to plot it
+    for pos, feature_name in enumerate(shap_value_columns):
+        # Filter data for the specific feature
+        feature_data = scenario_data[scenario_data['SHAP_FEATURE'] == feature_name]['SHAP_VALUE']
+        color = feature_colors[pos]
 
-    # Prepare data for boxplot
-    data_to_plot = [scenario_data[scenario_data['SHAP_FEATURE'] == f]['SHAP_VALUE'] for f in shap_value_columns]
-    n_vals = len(data_to_plot[0])
+        if pos == 0:
+            n_vals = len(feature_data)
 
-    # Create the boxplot
-    bp = ax.boxplot(data_to_plot, patch_artist=True, showfliers=True)
+        # # The "Rain" (Strip Plot), with random jitter to the x-axis
+        # jitter = np.random.normal(loc=pos - 0.25, scale=0.04, size=len(feature_data))
+        # ax.scatter(jitter, feature_data, color=line_colors[pos], alpha=0.2, s=5, zorder=2)
 
-    # Apply colors
-    for j in range(len(bp['boxes'])):
-        # Box face and edge color
-        bp['boxes'][j].set_facecolor(feature_colors[j])
-        bp['boxes'][j].set_edgecolor(line_colors[j])
+        # 1. Calculate KDE first
+        kde = gaussian_kde(feature_data)
 
-        # Median color
-        bp['medians'][j].set_color('black')
+        # 2. Evaluate density at each data point's y-value
+        density_at_points = kde(feature_data)
 
-        # Whiskers color
-        bp['whiskers'][2 * j].set_color(line_colors[j])
-        bp['whiskers'][2 * j + 1].set_color(line_colors[j])
+        # 3. Scale the density to determine the max spread (width) at each point
+        # The '0.2' controls the maximum width of the sina plot. Adjust as needed.
+        sina_width = (density_at_points / density_at_points.max()) * 0.2
 
-        # Caps color
-        bp['caps'][2 * j].set_color(line_colors[j])
-        bp['caps'][2 * j + 1].set_color(line_colors[j])
+        # 4. Generate random offsets scaled by the calculated width
+        random_offsets = np.random.uniform(-1, 1, size=len(feature_data)) * sina_width
 
-    # The fliers are not ordered by box, so a single loop is needed
-    for fix, flier in enumerate(bp['fliers']):
-        flier.set(marker='o', markerfacecolor=line_colors[fix], markeredgecolor='none', alpha=0.5)
+        # 5. Define the final x-positions for the scatter plot
+        # The 'pos - 0.25' centers the sina plot to the left, matching your old jitter.
+        sina_x = pos - 0.15 + random_offsets
 
+        # The "Rain" (Sina Plot)
+        ax.scatter(sina_x, feature_data, color=line_colors[pos],
+                   edgecolor='none',
+                   alpha=0.3, s=16, zorder=2)
 
-    # Set subplot labels and title
+        # Boxplot (Summary Plot)
+        box = ax.boxplot(
+            feature_data,
+            positions=[pos + 0.15],
+            showfliers=False,
+            widths=0.15,
+            patch_artist=True,
+            boxprops=dict(facecolor=feature_colors[pos], edgecolor=line_colors[pos], alpha=0.8),
+            medianprops=dict(color='black', linewidth=2),
+            whiskerprops=dict(color=line_colors[pos]),
+            capprops=dict(color=line_colors[pos]),
+            zorder=3
+        )
+
+        # # Half-violin plot, calculate kernel density estimate
+        # if not feature_data.empty:
+        #     kde = gaussian_kde(feature_data)
+        #     # Create a range of y-values to evaluate the KDE
+        #     y_range = np.linspace(feature_data.min(), feature_data.max(), 100)
+        #     # Evaluate, scale and shift the KDE
+        #     density = kde(y_range)
+        #     scaled_density = density / density.max() * 0.4  # Scale width of the violin
+        #     # Plot filled density curve
+        #     ax.fill_betweenx(
+        #         y_range,
+        #         pos + 0.05,  # Shift to the right of center
+        #         pos + 0.05 + scaled_density,  # Create violin shape
+        #         color=color,
+        #         alpha=0.5,
+        #         zorder=1,
+        #         edgecolor=line_colors[pos]
+        #     )
+
+    # Add title
+    ax.set_title(f'{scenario_description[scenario]}', fontsize=14, x=0.05, y=.95, horizontalalignment='left')
+
+    # Add number of values
+    infotxt = f"n = {n_vals}"
     if i == 0:
-        ax.set_title(f'{scenario_description[scenario]}\nn={n_vals} sites', fontsize=14, x=0.05, y=1, horizontalalignment='left')
-    else:
-        ax.set_title(f'{scenario_description[scenario]}\nn={n_vals}', fontsize=14, x=0.05, y=1, horizontalalignment='left')
-    # ax.set_title(f'SCENARIO {scenario}', fontsize=14)
-    ax.set_xticks(range(1, len(shap_value_columns) + 1))
-    ax.set_xticklabels(feature_labels, rotation=0, ha='center', fontsize=14)
-    ax.tick_params(axis='y', labelsize=14)
+        infotxt += f" sites"
+    ax.text(0.7, 0.85, infotxt, transform=ax.transAxes, color='black', size=10,
+            ha='left', va='center', zorder=99, backgroundcolor='white')
 
-    # Add a horizontal line at y=0 for reference
-    ax.axhline(0, color='black', linestyle='--', linewidth=1)
+    ax.tick_params(axis='y', labelsize=14)
+    ax.set_ylabel('')
+    ax.set_xlabel('')
+
+    # Manually set x-ticks and labels since we control the positions
+    ax.set_xticks(range(len(shap_value_columns)))
+    if i >= n_scenarios - ncols:  # Check if bottom-row plot
+        ax.set_xticklabels(variables, rotation=0, ha='center', fontsize=14)
+    else:
+        ax.set_xticklabels([])
+        ax.set_xticks([])
+
+    if i % ncols != 0:  # Check if it's not a first-column plot
+        ax.set_yticks([])
+
+    # Zero line
+    ax.axhline(0, color='#B0BEC5', linestyle='-', linewidth=1, zorder=0)
 
     # Hide spines and grid
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+    if i % ncols != 0:
+        ax.spines['left'].set_visible(False)
+    if i < n_scenarios - ncols:
+        ax.spines['bottom'].set_visible(False)
     ax.grid(False)
 
     # Legend
-    if i == 0:
-        ax.legend(bp['boxes'], feature_labels, loc='center', bbox_to_anchor=(0.5, 0.8),
-                  fontsize=12, frameon=False, ncol=2)
+    # if i == 0:
+    #     legend_elements = [Patch(facecolor=color, label=label, edgecolor='gray')
+    #                        for color, label in zip(feature_colors, feature_labels)]
+    #     ax.legend(handles=legend_elements, loc='lower left', bbox_to_anchor=(0.05, 0.05),
+    #               fontsize=12, frameon=False, ncol=2)
 
-# Share the y-axis across all subplots
-y_min = min(ax.get_ylim()[0] for ax in ax_objects)
-y_max = max(ax.get_ylim()[1] for ax in ax_objects)
+# Share y-axis across all subplots
+y_min_list = [ax.get_ylim()[0] for ax in ax_objects]
+y_max_list = [ax.get_ylim()[1] for ax in ax_objects]
+y_min = min(y_min_list)
+y_max = max(y_max_list)
+
 for ax in ax_objects:
     ax.set_ylim(y_min, y_max)
+    ax.set_xlim(-0.5, len(shap_value_columns) - 0.5)  # Adjust x-limits
 
-# Add a single ylabel for the entire figure
-fig.text(0.04, 0.5, 'SHAP Value', va='center', rotation='vertical', fontsize=14)
+# Add single ylabel for the entire figure
+fig.text(0.04, 0.5, 'Median impact on NEP (z-scores)', va='center', rotation='vertical', fontsize=16)
 
 # Hide any unused subplots
-for i in range(len(scenarios), len(ax_objects)):
+for i in range(n_scenarios, len(ax_objects)):
     ax_objects[i].axis('off')
 
 fig.tight_layout(rect=[0.05, 0, 1, 1])
-gs.update(hspace=.3)
-fig.show()
+gs.update(hspace=.1, wspace=.2)
+plt.show()
