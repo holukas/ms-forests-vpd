@@ -83,7 +83,8 @@ poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polyno
 
 # Custom colormap for z-values
 
-colors_list = ['#2b83ba', '#26C6DA', '#546E7A', '#FF9800', '#C62828']
+colors_list = ['#9C27B0', '#26C6DA', '#546E7A', '#FB8C00', '#C62828']
+# colors_list = ['#2b83ba', '#26C6DA', '#546E7A', '#FF9800', '#C62828']
 # colors_list = ['#1565C0', '#26C6DA', '#546E7A', '#FF9800', '#C62828']
 # colors_list = ['#2b83ba', '#abdda4', '#ffffbf', '#fdae61', '#d7191c']
 
