@@ -32,12 +32,18 @@ df = shapvals_df.copy()
 df = df.drop('SITE', axis=1, inplace=False)
 df = df.drop('CONDITION', axis=1, inplace=False)
 
+# df = df.loc[df['N_VALUES'] > 6].copy()
+
+# Stats
 subset = df[['SCENARIO', 'N_VALUES']].copy()
-subset_stats = subset.groupby('SCENARIO').mean()
-print(f"Used scenarios:\n"
-      f"#1: {subset_stats.loc[1].values[0]} values on average per site\n"
-      f"#4: {subset_stats.loc[4].values[0]} values\n"
-      f"#5: {subset_stats.loc[5].values[0]} values")
+subset_stats = subset.groupby('SCENARIO').describe()
+print(subset_stats.loc[1])
+print(subset_stats.loc[4])
+print(subset_stats.loc[5])
+# print(f"Used scenarios:\n"
+#       f"#1: {subset_stats.loc[1].values[0]} values on average per site\n"
+#       f"#4: {subset_stats.loc[4].values[0]} values\n"
+#       f"#5: {subset_stats.loc[5].values[0]} values")
 
 shaps = '_SHAPVALS_OVR_MEDIAN'
 # shaps = '_SHAPVALS_OVR_ABS_MEDIAN'
