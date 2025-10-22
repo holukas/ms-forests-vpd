@@ -52,7 +52,7 @@ def scenario_5(df, c: float = 1.25):
     """Compound extreme: extremely hot, extremely dry conditions"""
     mask_ta = df['TA'] > c
     mask_vpd = df['VPD'] > c
-    mask_swc = df['SWC'] <= -c
+    mask_swc = df['SWC'] < -c
     combined_mask = mask_ta & mask_vpd & mask_swc
     df = df.loc[combined_mask].copy()
     condition = "extremely hot and dry"
