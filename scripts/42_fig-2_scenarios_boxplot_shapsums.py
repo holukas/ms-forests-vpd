@@ -27,7 +27,6 @@ results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 filepath = Path(results_outdir) / f"3_AllSites_SHAP-ScenarioSums-{shap_type}_{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 
-# Your data processing logic (same as before)
 df = shapvals_df.copy()
 df = df.drop('SITE', axis=1, inplace=False)
 df = df.drop('CONDITION', axis=1, inplace=False)
@@ -117,6 +116,22 @@ for i, scenario in enumerate(scenarios):
         # Filter data for the specific feature
         feature_data = scenario_data[scenario_data['SHAP_FEATURE'] == feature_name]['SHAP_VALUE']
         color = feature_colors[pos]
+
+        _n_sites = feature_data.count()
+        _median = feature_data.median()
+        _min = feature_data.min()
+        _max = feature_data.max()
+        _n_sites_larger_zero = (feature_data > 0).sum()
+        _n_sites_smaller_zero = (feature_data < 0).sum()
+        _perc_larger_zero = _n_sites_larger_zero / _n_sites * 100
+        _perc_smaller_zero = _n_sites_smaller_zero / _n_sites * 100
+
+        print(f"\nscenario: {scenario}")
+        print(f"feature name: {feature_name}")
+        print(f"sites: {_n_sites}")
+        print(f"median: {_median:.3f} ({_min:.3f}, {_max:.3f})")
+        print(f"sites with positive, negative impact: {_n_sites_larger_zero} ({_perc_larger_zero:.0f}%), "
+              f"{(_n_sites_smaller_zero)} ({_perc_smaller_zero:.0f}%)")
 
         if pos == 0:
             n_vals = len(feature_data)
