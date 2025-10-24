@@ -135,6 +135,7 @@ for ix, flux in enumerate(FLUXES):
     # axes[ix]
 
     # Find optimum and pessimum
+    # if any([ix == 0, ix == 4, ix == 8]):
     _index = f"{binsx[ix][0]}_{binsx[ix][1]}"
     _cols = f"{binsy[ix][0]}_{binsy[ix][1]}"
     _vals = f"{zs[ix][0]}_{zs[ix][1]}"
@@ -142,9 +143,9 @@ for ix, flux in enumerate(FLUXES):
     max_location, max_value = findpoi(df=pivot_df, k=25, agg='mean', what='max')
     min_location, min_value = findpoi(df=pivot_df, k=25, agg='mean', what='min')
 
-    # # Show symbols for min and max flux locations
-    # params = dict(horizontalalignment='center', verticalalignment='center', color="black",
-    #               size=35, zorder=100, alpha=.6)
+        # # Show symbols for min and max flux locations
+        # params = dict(horizontalalignment='center', verticalalignment='center', color="black",
+        #               size=35, zorder=100, alpha=.6)
 
     # Maximum flux
     params = dict(linewidth=3, s=650, zorder=100, alpha=0.5)

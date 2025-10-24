@@ -45,6 +45,7 @@ cmap = 'RdYlBu'
 area_size_minmax = 25  # Number of bins used to calculate min/max areas
 # ------------------------------
 
+
 binx = (f"BIN_{xvar}", aggfunc)
 biny = (f"BIN_{yvar}", aggfunc)
 z = (f"{zvar}_SHAPVALS", aggfunc)
@@ -106,7 +107,7 @@ pivot_df = subset_all.pivot(index='BIN_TA_median', columns='BIN_VPD_median', val
 max_location, max_value = findpoi(df=pivot_df, k=area_size_minmax, agg='mean', what='max')
 min_location, min_value = findpoi(df=pivot_df, k=area_size_minmax, agg='mean', what='min')
 
-# Optimum (smallest SHAP)
+# Optimum (largest SHAP)
 maxx = max_location[0] + 0.05
 maxy = max_location[1] + 0.05
 params_max = dict(size=theme.AX_LABELS_FONTSIZE, color='k', zorder=100)
@@ -118,9 +119,9 @@ ax_all.annotate(f'highest {FLUX} increase',
                 xytext=(maxx - 3, maxy + 1.5),  # Adjust text position as needed
                 arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
                 fontsize=16, color='black', ha='left', va='center', zorder=100, )
-print(f"Minimum found at {min_location[0], min_location[1]}")
+print(f"Maximum found at x={max_location[0]}, y={max_location[1]}")
 
-# Pessimum (largest SHAP)
+# Pessimum (smallest SHAP)
 minx = min_location[0] + 0.05
 miny = min_location[1] + 0.05
 ax_all.scatter(minx, miny, color='black', marker='_', edgecolors='none', linewidth=3, s=450, zorder=100, alpha=0.5)
@@ -130,7 +131,7 @@ ax_all.annotate(f'highest {FLUX} decrease',
                 xytext=(minx - 0.8, miny + 0.5),  # Adjust text position as needed
                 arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
                 fontsize=16, color='black', ha='center', va='center', zorder=100, )
-print(f"Maximum found at {max_location[0], max_location[1]}")
+print(f"Minimum found at x={min_location[0]}, y={min_location[1]}")
 
 # Load SHAP values aggregated per IGBP
 igbps = ['ENF', 'DBF', 'MF', 'EBF']

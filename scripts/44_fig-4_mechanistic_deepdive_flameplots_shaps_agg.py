@@ -2,10 +2,11 @@
 Flame plot.
 """
 from pathlib import Path
-import numpy as np
+
 import diive as dv
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
+import numpy as np
 from diive.core.plotting.styles import LightTheme as theme
 
 import src.files as files
@@ -20,17 +21,22 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
 FLUXES = ['NEP', 'GPP', 'RECO', 'ET',
           'NEP', 'GPP', 'RECO', 'ET',
+          'NEP', 'GPP', 'RECO', 'ET',
           'NEP', 'GPP', 'RECO', 'ET']
 xvars = ['TA', 'TA', 'TA', 'TA',
          'TA', 'TA', 'TA', 'TA',
-         'SWC', 'SWC', 'SWC', 'SWC']
+         'SWC', 'SWC', 'SWC', 'SWC',
+         'SWIN', 'SWIN', 'SWIN', 'SWIN']
 yvars = ['VPD', 'VPD', 'VPD', 'VPD',
+         'VPD', 'VPD', 'VPD', 'VPD',
          'VPD', 'VPD', 'VPD', 'VPD',
          'VPD', 'VPD', 'VPD', 'VPD', ]
 zvars = ['VPD', 'VPD', 'VPD', 'VPD',
          'TA', 'TA', 'TA', 'TA',
-         'SWC', 'SWC', 'SWC', 'SWC']
+         'SWC', 'SWC', 'SWC', 'SWC',
+         'SWIN', 'SWIN', 'SWIN', 'SWIN']
 zvar_is_shap = [True, True, True, True,
+                True, True, True, True,
                 True, True, True, True,
                 True, True, True, True]
 aggfunc = 'median'
@@ -53,8 +59,8 @@ settings = files.read_settings_file("../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 
 # Start figure
-fig = plt.figure(figsize=(26 * 0.9, 16.8 * 0.9), dpi=150, facecolor="white")
-gs = gridspec.GridSpec(3, 21)  # rows, cols
+fig = plt.figure(figsize=(26 * 0.9, 22.4 * 0.9), dpi=150, facecolor="white")
+gs = gridspec.GridSpec(4, 21)  # rows, cols
 # gs.update(wspace=.3, hspace=.2, left=0.03, right=0.94, top=0.97, bottom=0.04)
 
 # Row 1
@@ -75,13 +81,20 @@ ax10 = fig.add_subplot(gs[2, 5:10], sharex=ax9, sharey=ax1)
 ax11 = fig.add_subplot(gs[2, 10:15], sharex=ax9, sharey=ax1)
 ax12 = fig.add_subplot(gs[2, 15:20], sharex=ax9, sharey=ax1)
 
+# Row 4
+ax13 = fig.add_subplot(gs[3, 0:5], sharey=ax1)
+ax14 = fig.add_subplot(gs[3, 5:10], sharex=ax13, sharey=ax1)
+ax15 = fig.add_subplot(gs[3, 10:15], sharex=ax13, sharey=ax1)
+ax16 = fig.add_subplot(gs[3, 15:20], sharex=ax13, sharey=ax1)
+
 # Colorbars
 ax_cbar_shap_vpd = fig.add_subplot(gs[0, 20])
 ax_cbar_shap_ta = fig.add_subplot(gs[1, 20])
 ax_cbar_shap_swc = fig.add_subplot(gs[2, 20])
+ax_cbar_shap_swin = fig.add_subplot(gs[3, 20])
 
-axes = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9, ax10, ax11, ax12]
-letter = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']
+axes = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9, ax10, ax11, ax12, ax13, ax14, ax15, ax16]
+letter = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p']
 
 vmin = 9999  # Will be detected from NEP below
 vmax = -9999
@@ -132,12 +145,18 @@ for ix, flux in enumerate(FLUXES):
         axes[ix].set_xlim(xmin, xmax)
         axes[ix].set_xticks(np.arange(-2, 4, 1))
 
+    if ix == 12:
+        xmin = subset_all.iloc[:, 0].min() * 1.1
+        xmax = subset_all.iloc[:, 0].max() * 1.2
+        axes[ix].set_xlim(xmin, xmax)
+        axes[ix].set_xticks(np.arange(-1, 3, 1))
+
     # Collect min and max values for scaling later
     vmins.append(subset_all[zs[ix]].min())
     vmaxs.append(subset_all[zs[ix]].max())
 
     subset_all.columns = ['_'.join(col).strip() for col in subset_all.columns.values]  # Heatmap needs flat column index
-    ylabel = ylabels[ix] if any([ix == 0, ix == 4, ix == 8]) else " "
+    ylabel = ylabels[ix] if any([ix == 0, ix == 4, ix == 8, ix == 12]) else " "
 
     # Store pcolormesh objects in dict, used later for scaling and colorbars
     mesh_obj[ix] = plot.flameplot(df=subset_all, fig=fig, ax=axes[ix], cmap=cmap,
@@ -197,39 +216,80 @@ for ix, flux in enumerate(FLUXES):
                           arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
                           fontsize=16, color='black', ha='left', va='center', zorder=100)
 
-vmin_firstrow = -0.9069341723818797  # Use same scaling as in #41
-vmax_firstrow = 0.3076493751085945  # Use same scaling as in #41
-vmin_secondrow = min(vmins[4:8])
-vmax_secondrow = max(vmaxs[4:8])
-vmin_thirdrow = min(vmins[8:12])
-vmax_thirdrow = max(vmaxs[8:12])
+# # Trying same scaling
+# vmin_firstrow = -0.9069341723818797  # Use same scaling as in #41
+# vmax_firstrow = 0.3076493751085945  # Use same scaling as in #41
+# vmin_secondrow = -0.9069341723818797  # Trying same scaling for all
+# vmax_secondrow = 0.3076493751085945  # Trying same scaling for all
+# vmin_thirdrow = -0.9069341723818797  # Trying same scaling for all
+# vmax_thirdrow = 0.3076493751085945  # Trying same scaling for all
+# vmin_fourthrow = -0.9069341723818797  # Trying same scaling for all
+# vmax_fourthrow = 0.3076493751085945  # Trying same scaling for all
+
+# Trying same scaling
+_min = -0.2
+_max = 0.2
+vmin_firstrow = _min
+vmax_firstrow = _max
+vmin_secondrow = _min
+vmax_secondrow = _max
+vmin_thirdrow = _min
+vmax_thirdrow = _max
+vmin_fourthrow = _min
+vmax_fourthrow = _max
+
+# vmin_firstrow = min(vmins[0:4])
+# vmax_firstrow = max(vmaxs[0:4])
+# vmin_secondrow = min(vmins[4:8])
+# vmax_secondrow = max(vmaxs[4:8])
+# vmin_thirdrow = min(vmins[8:12])
+# vmax_thirdrow = max(vmaxs[8:12])
+# vmin_fourthrow = min(vmins[12:16])
+# vmax_fourthrow = max(vmaxs[12:16])
+
+# vmin_firstrow = vmin_secondrow = vmin_thirdrow = vmin_fourthrow = min(vmins[4:8])
+# vmax_firstrow = vmax_secondrow = vmax_thirdrow = vmax_fourthrow = max(vmaxs[4:8])
+
 for ix, m in mesh_obj.items():
     if ix < 4:
         m.set_clim(vmin=vmin_firstrow, vmax=vmax_firstrow)
     elif 4 <= ix < 8:
         m.set_clim(vmin=vmin_secondrow, vmax=vmax_secondrow)
-    else:
+    elif 8 <= ix < 12:
         m.set_clim(vmin=vmin_thirdrow, vmax=vmax_thirdrow)
+    else:
+        m.set_clim(vmin=vmin_fourthrow, vmax=vmax_fourthrow)
     print(f"ax{ix}: {m.get_clim()=}")
 
 # Colorbars
+# First row
 cbar = fig.colorbar(mesh_obj[0], cax=ax_cbar_shap_vpd, label='XXX', extend='both')
 cbar.ax.tick_params(labelsize=FONTSIZE)
-label = "Impact of VPD on flux (SHAP median z-score)"
+label = "Impact of VPD flux (SHAP median z-score)"
 cbar.set_label(label, fontsize=FONTSIZE, labelpad=20)
 # tick_locations = np.linspace(-0.9, 0.3, 13)
 # cbar.set_ticks(tick_locations)
 
+# Second row
 cbar = fig.colorbar(mesh_obj[4], cax=ax_cbar_shap_ta, label='XXX', extend='both')
 cbar.ax.tick_params(labelsize=FONTSIZE)
-label = "Impact of TA on flux (SHAP median z-score)"
+label = "Impact of TA (SHAP median z-score)"
 cbar.set_label(label, fontsize=FONTSIZE, labelpad=20)
 # tick_locations = np.linspace(-0.9, 0.3, 13)
 # cbar.set_ticks(tick_locations)
 
+# Third row
 cbar = fig.colorbar(mesh_obj[8], cax=ax_cbar_shap_swc, label='XXX', extend='both')
 cbar.ax.tick_params(labelsize=FONTSIZE)
-label = "Impact of SWC on flux (SHAP median z-score)"
+label = "Impact of SWC (SHAP median z-score)"
+cbar.set_label(label, fontsize=FONTSIZE, labelpad=20)
+# tick_locations = np.linspace(-0.9, 0.3, 13)
+# cbar.set_ticks(tick_locations)
+
+# Fourth row
+cbar = fig.colorbar(mesh_obj[12], cax=ax_cbar_shap_swin, label='XXX', extend='both')
+cbar.ax.tick_params(labelsize=FONTSIZE)
+label = "Impact of SWIN (SHAP median z-score)"
 cbar.set_label(label, fontsize=FONTSIZE, labelpad=20)
 # tick_locations = np.linspace(-0.9, 0.3, 13)
 # cbar.set_ticks(tick_locations)
