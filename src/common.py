@@ -36,10 +36,16 @@ def findpoi(df, k: int = 9, agg: str = 'mean', what: str = 'max'):
     # This uses advanced NumPy indexing to fetch all neighbor values at once.
     neighbor_values = data_array[neighbor_coords[:, :, 0], neighbor_coords[:, :, 1]]
 
-    # Calculate the aggregation for each set of 9 neighbors, ignoring NaNs
+    # Calculate the aggregation for each set of k neighbors, ignoring NaNs
     # The result is a 1D array of aggregations.
     if agg == 'mean':
+        # 1. Count the number of non-NaN values for each point's neighborhood
+        non_nan_counts = np.sum(~np.isnan(neighbor_values), axis=1)
+        # 2. Calculate the mean, ignoring NaNs (as before)
         aggs = np.nanmean(neighbor_values, axis=1)
+        # 3. Set the aggregation to NaN if the count of valid neighbors is less than k
+        aggs[non_nan_counts < k] = np.nan
+
     else:
         raise NotImplementedError(f"{agg} not supported.")
 
