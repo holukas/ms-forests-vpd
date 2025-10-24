@@ -82,7 +82,7 @@ p = plot.flameplot(df=subset_all, fig=fig, ax=ax_all, cmap=cmap,
                    xlabel=xlabel, ylabel=ylabel, zlabel=zlabel, cb_extend='both')
 ax_all.set_aspect('equal')
 
-ymin = subset_all.iloc[:, 1].min() * 1.05
+ymin = subset_all.iloc[:, 1].min() * 1.15
 ymax = subset_all.iloc[:, 1].max() * 1.05
 ax_all.set_ylim(ymin, ymax)
 xmin = subset_all.iloc[:, 0].min() * 1.15
@@ -117,19 +117,19 @@ ax_all.scatter(maxx, maxy, color='none', marker='o', edgecolor='black', linewidt
 ax_all.annotate(f'highest {FLUX} increase',
                 xy=(maxx, maxy),
                 xytext=(maxx - 3, maxy + 1.5),  # Adjust text position as needed
-                arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
+                arrowprops=dict(arrowstyle="->", color='black', lw=3, shrinkB=15),
                 fontsize=16, color='black', ha='left', va='center', zorder=100, )
 print(f"Maximum found at x={max_location[0]}, y={max_location[1]}")
 
 # Pessimum (smallest SHAP)
 minx = min_location[0] + 0.05
 miny = min_location[1] + 0.05
-ax_all.scatter(minx, miny, color='black', marker='_', edgecolors='none', linewidth=3, s=450, zorder=100, alpha=0.5)
-ax_all.scatter(minx, miny, color='none', marker='o', edgecolor='black', linewidth=3, s=450, zorder=100, alpha=0.5)
+ax_all.scatter(minx, miny, color='black', marker='_', edgecolors='none', linewidth=3, s=650, zorder=100, alpha=0.5)
+ax_all.scatter(minx, miny, color='none', marker='o', edgecolor='black', linewidth=3, s=650, zorder=100, alpha=0.5)
 ax_all.annotate(f'highest {FLUX} decrease',
                 xy=(minx, miny),
-                xytext=(minx - 0.8, miny + 0.5),  # Adjust text position as needed
-                arrowprops=dict(arrowstyle="->", color='black', lw=2, shrinkB=15),
+                xytext=(minx - 1.2, miny + 0.5),  # Adjust text position as needed
+                arrowprops=dict(arrowstyle="->", color='black', lw=3, shrinkB=15),
                 fontsize=16, color='black', ha='center', va='center', zorder=100, )
 print(f"Minimum found at x={min_location[0]}, y={min_location[1]}")
 
