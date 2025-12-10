@@ -57,7 +57,7 @@ shap_type = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 
 # Start figure
-fig = plt.figure(figsize=(23, 9.5), dpi=150, facecolor="white")
+fig = plt.figure(figsize=(20.7, 9), dpi=150, facecolor="white")
 gs = gridspec.GridSpec(2, 4)  # rows, cols
 # gs.update(wspace=.2, hspace=.3, left=0.1, right=0.9, top=0.9, bottom=0.1)
 ax_all = fig.add_subplot(gs[0:2, 0:2])
@@ -128,10 +128,13 @@ ax_all.scatter(minx, miny, color='black', marker='_', edgecolors='none', linewid
 ax_all.scatter(minx, miny, color='none', marker='o', edgecolor='black', linewidth=3, s=650, zorder=100, alpha=0.5)
 ax_all.annotate(f'highest {FLUX} decrease',
                 xy=(minx, miny),
-                xytext=(minx - 1.2, miny + 0.5),  # Adjust text position as needed
+                xytext=(minx - 1.1, miny + 0.6),  # Adjust text position as needed
                 arrowprops=dict(arrowstyle="->", color='black', lw=3, shrinkB=15),
                 fontsize=16, color='black', ha='center', va='center', zorder=100, )
 print(f"Minimum found at x={min_location[0]}, y={min_location[1]}")
+# ax_all.text(0.03, 0.9, f"Min(x={min_location[0]}, y={min_location[1]})",
+#             transform=ax_all.transAxes, color='black', size=theme.AX_LABELS_FONTSIZE,
+#             ha='left', va='bottom', zorder=99, backgroundcolor='white')
 
 # Load SHAP values aggregated per IGBP
 igbps = ['ENF', 'DBF', 'MF', 'EBF']

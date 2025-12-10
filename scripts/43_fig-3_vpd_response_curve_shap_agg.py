@@ -100,8 +100,14 @@ scatterhandles = []
 for i, label in reversed(list(enumerate(bin_labels))):
     indices = np.where(binned_z.codes == i)[0]
     # Use color and edgecolors with the same color, but adjust alpha
-    fill_color = colors_list[i]
-    edge_color = fill_color
+
+    if show_z_colors:
+        fill_color = colors_list[i]
+        edge_color = fill_color
+    else:
+        fill_color = '#546E7A'
+        edge_color = '#546E7A'
+
     scatterplot = ax.scatter(X_data[indices], Y_data[indices],
                              label=f'{label} {zvar}',
                              alpha=0.4,
@@ -113,8 +119,8 @@ for i, label in reversed(list(enumerate(bin_labels))):
 
 # Legend for scatter points
 legend1 = ax.legend(handles=scatterhandles, loc='upper left', bbox_to_anchor=(0.38, 1.02),
-                    frameon=False, ncol=1, fontsize=9, labelspacing=.3, title="Aggregated site data",
-                    title_fontsize=9)
+                        frameon=False, ncol=1, fontsize=9, labelspacing=.3, title="Aggregated site data",
+                        title_fontsize=9)
 
 if show_fit:
     # Plot fitted polynomial curve
@@ -156,7 +162,7 @@ if show_fit:
 else:
     handles = [iqrplot]
 
-legend2 = ax.legend(handles=[fillbetweenplot, iqrplot], loc='upper left', bbox_to_anchor=(0.65, 1.02),
+legend2 = ax.legend(handles=handles, loc='upper left', bbox_to_anchor=(0.65, 1.02),
                     frameon=False, ncol=1, labelspacing=.3, fontsize=9)
 
 # Add Legend 1 back to the figure.
