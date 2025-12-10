@@ -30,6 +30,7 @@ shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_
 df = shapvals_df.copy()
 df = df.drop('SITE', axis=1, inplace=False)
 df = df.drop('CONDITION', axis=1, inplace=False)
+df = df.loc[df['IGBP'] == 'EBF'].copy()
 
 # df = df.loc[df['N_VALUES'] > 6].copy()
 
