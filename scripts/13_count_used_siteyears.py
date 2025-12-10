@@ -28,7 +28,8 @@ datasets_df = pd.read_csv(infile)
 subset = datasets_df.loc[datasets_df['SWC_AVG'] != '-MISSING-'].copy()
 subset = subset.loc[subset['IGBP'] != 'DNF'].copy()
 subset = subset.reset_index(drop=True)
-keepcols = ['SITE', 'IGBP', 'LAT', 'LON', 'ELEVATION', 'N_YEARS', 'DATE_FIRST', 'DATE_LAST', 'ORIGIN']
+keepcols = ['SITE', 'ORIGIN', 'N_YEARS', 'DATE_FIRST', 'DATE_LAST', 'LAT', 'LON', 'IGBP']
+# keepcols = ['SITE', 'IGBP', 'LAT', 'LON', 'ELEVATION', 'N_YEARS', 'DATE_FIRST', 'DATE_LAST', 'ORIGIN']
 subset = subset[keepcols].copy()
 print(f"{subset}")
 
@@ -38,15 +39,15 @@ print(f"\nSite years:\n  "
       f"Max: {int(subset['N_YEARS'].max())}\n  "
       f"Top 10 most years: {subset.sort_values(by='N_YEARS', ascending=False).head(10)['SITE'].values}\n  "
       f"Top 10 least years: XXX")
-print(f"\nElevation:\n  "
-      f"Max: {int(subset['ELEVATION'].max())}\n  "
-      f"Min: {int(subset['ELEVATION'].min())}")
+# print(f"\nElevation:\n  "
+#       f"Max: {int(subset['ELEVATION'].max())}\n  "
+#       f"Min: {int(subset['ELEVATION'].min())}")
 
 # Rename cols
 rename_dict = {
     'SITE': 'Site',
     'ORIGIN': 'Origin',
-    'ELEVATION': 'Elevation',
+    # 'ELEVATION': 'Elevation',
     'LAT': 'Latitude',
     'LON': 'Longitude',
     'DATE_FIRST': 'From',
@@ -55,9 +56,29 @@ rename_dict = {
 }
 subset = subset.rename(columns=rename_dict, inplace=False)
 
+subset['From'] = pd.to_datetime(subset['From']).dt.year
+subset['To'] = pd.to_datetime(subset['To']).dt.year
+
+# # subset['Reference'] = "XXX"
+# subset.loc[subset['Origin'] == "FLUXNET_ORG", 'Origin'] = "FLUXNET"
+# subset.loc[subset['Origin'] == "ICOS+FLUXNET_CP+FLUXNET_ORG", 'Origin'] = "ICOS, FLUXNET"
+# subset.loc[subset['Origin'] == "ICOS+FLUXNET_CP", 'Origin'] = "ICOS, FLUXNET"
+# subset.loc[subset['Origin'] == "AMERIFLUX+FLUXNET_ORG", 'Origin'] = "AMERIFLUX, FLUXNET"
+# subset.loc[subset['Origin'] == "FLUXNET_CP+FLUXNET_ORG", 'Origin'] = "FLUXNET"
+# subset.loc[subset['Origin'] == "FLUXNET_CP", 'Origin'] = "FLUXNET"
+# subset.loc[subset['Origin'] == "ICOS+FLUXNET_ORG", 'Origin'] = "ICOS, FLUXNET"
+
+# locs = subset['Site'].str.startswith('US-x', na=False)
+# subset.loc[locs, 'Origin'] = "NEON, " + subset.loc[locs, 'Origin'].astype(str)
+
+# pd.read_csv('../data/raw/ameriflux/0-info/citations_for_site_data_FLUXNET_20250820.csv', sep=',', header=4)
+
+
 # Save to file
 subset = subset.reset_index(drop=True)
 subset = subset.sort_values(by=['Site'], inplace=False)
+print(subset)
 outfile = Path('../data/outputs/13_OVERVIEW_USED-SITES.csv')
 print(f"\n{'-' * 80}\nSaving info about {len(subset)} datasets to file {outfile}.\n{'-' * 80}")
 subset.to_csv(outfile, index=False)
+
