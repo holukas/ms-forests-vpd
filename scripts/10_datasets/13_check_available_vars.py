@@ -4,7 +4,7 @@ import pandas as pd
 from diive.core.io.files import load_parquet
 
 # Load datasets info
-infile = Path('../data/outputs/02_datasets_parquet.csv')
+infile = Path('../../data/outputs/10_datasets/12_datasets_info_parquet.csv')
 datasets_df = pd.read_csv(infile)
 
 required_vars = dict(
@@ -26,7 +26,9 @@ _datasets_df = datasets_df.copy()
 for ix, site in _datasets_df.iterrows():
 
     # # --- TODO testing
-    # if site['SITE'] != 'AU-Cum':
+    # # if site['SITE'] != 'AU-Cum':
+    # #     continue
+    # if ix != 1:
     #     continue
     # # --- TODO testing
 
@@ -59,6 +61,6 @@ for ix, site in _datasets_df.iterrows():
 # Save to file
 datasets_df = datasets_df.reset_index(drop=True)
 datasets_df = datasets_df.sort_values(by=['SITE'], inplace=False)
-outfile = Path('../data/outputs/10_datasets_parquet_vars.csv')
+outfile = Path('../../data/outputs/10_datasets/13_datasets_info_parquet_vars.csv')
 print(f"\n{'-' * 80}\nSaving info about {len(datasets_df)} datasets to file {outfile}.\n{'-' * 80}")
 datasets_df.to_csv(outfile, index=False)

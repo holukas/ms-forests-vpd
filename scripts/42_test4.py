@@ -187,8 +187,8 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
 
         # Add column headers on the top row
         if row == 0:
-            # Use variable color for IGBP titles, black for All Sites
-            header_color = '#222222' if is_main else COLORS[0]
+            header_color = '#222222'
+            # header_color = '#222222' if is_main else COLORS[0]
             ax.set_title(group_name, fontsize=11, fontweight='bold', pad=10, color=header_color)
 
         # Combined letter and title label inside panel
@@ -196,7 +196,7 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
         # Use black for 'All Sites' label, variable color for IGBPs for visual grouping
         label_color = '#222222' if is_main else color
 
-        ax.text(0.04, 0.94, f"({letter}) {group_name}", transform=ax.transAxes,
+        ax.text(0.04, 0.94, f"({letter})", transform=ax.transAxes,
                 fontsize=9, fontweight='bold', va='top', ha='left', color=label_color)
 
         if is_left_col:

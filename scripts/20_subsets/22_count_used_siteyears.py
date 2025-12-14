@@ -1,5 +1,5 @@
 """
-Train XGBoost model for each site and save SHAP values to file.
+
 """
 
 from pathlib import Path
@@ -16,12 +16,12 @@ CONDITIONAL = True  # Use conditional SHAP instead of standard SHAP
 # ------------------------------
 
 # Load settings
-settings = files.read_settings_file("../config/settings.yaml")
+settings = files.read_settings_file("../../config/settings.yaml")
 subfolder = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / subfolder
 
 # Load datasets info
-infile = Path('../data/outputs/12_datasets_parquet_vars_stats_subsets.csv')
+infile = Path('../../data/outputs/20_subsets/21_datasets_parquet_vars_stats_subsets.csv')
 datasets_df = pd.read_csv(infile)
 
 # Sites where SWC is available and that are not DNF (only 2 sites)
@@ -78,7 +78,8 @@ subset['To'] = pd.to_datetime(subset['To']).dt.year
 subset = subset.reset_index(drop=True)
 subset = subset.sort_values(by=['Site'], inplace=False)
 print(subset)
-outfile = Path('../data/outputs/13_OVERVIEW_USED-SITES.csv')
+outfile = Path('../../data/outputs/20_subsets/21_datasets_parquet_vars_stats_subsets')
+'../../data/outputs/20_subsets/21_datasets_parquet_vars_stats_subsets.csv'
 print(f"\n{'-' * 80}\nSaving info about {len(subset)} datasets to file {outfile}.\n{'-' * 80}")
 subset.to_csv(outfile, index=False)
 

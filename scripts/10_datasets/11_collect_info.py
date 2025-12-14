@@ -6,7 +6,7 @@ import src.files as files
 import src.sites as sites
 
 # Settings
-settings = files.read_settings_file("../config/settings.yaml")
+settings = files.read_settings_file("../../config/settings.yaml")
 ecosystems = settings['ECOSYSTEMS']
 
 # JapanFlux2024
@@ -70,6 +70,6 @@ priority = dict(ICOS=1, AMERIFLUX=1, JAPANFLUX=1, FLUXNET_CP=2, FLUXNET_ORG=3)
 datasets_df['PRIORITY'] = datasets_df['ORIGIN'].map(priority)
 
 # Save to file
-outfile = Path('../data/outputs/01_datasets.csv')
+outfile = Path('../../data/outputs/10_datasets/11_datasets_info.csv')
 print(f"\n{'-' * 80}\nSaving info about {len(datasets_df)} datasets to file {outfile}.\n{'-' * 80}")
 datasets_df.to_csv(outfile, index=False)
