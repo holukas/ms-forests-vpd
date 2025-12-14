@@ -77,7 +77,7 @@ def findpoi(df, k: int = 9, agg: str = 'mean', what: str = 'max'):
     return location, value
 
 
-def get_variable_names(siteconfig):
+def get_variable_names(siteconfig: pd.Series):
     """
     Get variable names for this site.
 

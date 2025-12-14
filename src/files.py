@@ -10,29 +10,18 @@ import yaml
 from diive.core.times.times import insert_timestamp
 from scipy.stats import zscore
 
-from src.common import get_variable_names
 
-
-def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
-    print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
-
-    # # --- TODO testing
-    # if siteconfig['SITE'] != 'CH-Dav':
-    #     return siteinfo_df
-    # # --- TODO testing
+def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varnames, site) -> dict:
+    print(f"\nLoading data for site #{ix + 1} {site} ...")
 
     # Load site data
-    filepath = siteconfig['_FILEPATH_PARQUET']
-    sitedata = dv.load_parquet(filepath)
-    # [print(c) for c in sitedata.columns if "LE" in c];
+    # filepath = siteconfig['_FILEPATH_PARQUET']
+    sitedata = dv.load_parquet(filepath_parquet_fullset)
 
     # Get variable names for this site
-    varnames = get_variable_names(siteconfig)
+    # varnames = get_variable_names(siteconfig)
 
-    if varnames['swc_var'] == '-MISSING-':
-        siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = '-MISSING-'
-        return siteinfo_df
-    # if varnames['rh_var'] == '-MISSING-':
+    # if varnames['swc_var'] == '-MISSING-':
     #     siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = '-MISSING-'
     #     return siteinfo_df
 
@@ -50,13 +39,33 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
         ]
     ].copy()
 
+    # todo fix if 6 months are not in the same year, spanning 2 years
     # Keep 6 warmest months
+    # Keep only data from years where data for all 6 months is available, to avoid bias
     ta = sitedata[[varnames['ta_var']]].copy()
     ta['MONTH'] = ta.index.month
     monthly_avg = ta.groupby('MONTH').mean()
     monthly_avg = monthly_avg.sort_values(by=varnames['ta_var'], ascending=False, inplace=False)
     warmest6 = monthly_avg.head(6).index.to_list()
-    subset = subset.loc[sitedata.index.month.isin(warmest6)].copy()
+
+    # Group data by both year and month, and count the number of records
+    year_month_counts = sitedata.groupby(
+        [sitedata.index.year.rename('YEAR'), sitedata.index.month.rename('MONTH')]).size()
+
+    # Filter for only the counts within the 6 warmest months
+    warmest_month_counts = year_month_counts.loc[pd.IndexSlice[:, warmest6]]
+
+    # Count how many of the 6 warmest months are available in each year
+    months_per_year = warmest_month_counts.groupby('YEAR').size()
+
+    # Identify years that have all 6 months available
+    valid_years = months_per_year[months_per_year == 6].index.to_list()
+
+    # Filter the original data to keep only the valid years AND the warmest 6 months
+    # Use boolean masks for year and month filtering
+    year_mask = sitedata.index.year.isin(valid_years)
+    month_mask = sitedata.index.month.isin(warmest6)
+    subset = sitedata.loc[year_mask & month_mask].copy()
 
     # Keep directly measured NEE fluxes, no gap-filled flux data
     if varnames['nee_qc_var'] is not None:
@@ -102,31 +111,62 @@ def prepare_input_data(settings, siteinfo_df, siteconfig, ix):
 
     # Store originally measured values before z-score conversion
     subset_meas = subset.copy()
-    # plt.plot(subset_meas['VPD_F'], subset['VPD_F'])
-    # plt.show()
 
     # Convert z-scores, ignoring NaNs
     # z-scores are calculated from subset records
     subset = subset.apply(lambda x: zscore(x, nan_policy='omit'))
+    subset = subset.add_suffix("_ZSCORE")
+
+    # Merge measured and z-score data to one single dataframe
+    subset = pd.concat([subset, subset_meas], axis=1)
 
     print(f"Records: {len(subset)}")
 
     # Save subset data with z-scores to parquet file
     outfilepath = dv.save_parquet(
-        filename=f"{siteconfig['SITE']}_subset_warmest6_qc0_daytime_zscores",
+        filename=f"{site}_subset_warmest6_qc0_daytime",
         data=subset,
         outpath=Path(settings['DIR_DATA_PROC_SUBSETS']))
-    print(f"Saved subset data (z-scores) for {siteconfig['SITE']} to file {outfilepath}.")
-    siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = outfilepath
+    print(f"Saved subset data (measured and z-scores) for {site} to file {outfilepath}.")
 
-    # Save subset data with measures values to parquet file
-    _outfilepath = dv.save_parquet(
-        filename=f"{siteconfig['SITE']}_subset_warmest6_qc0_daytime_measured",
-        data=subset_meas,
-        outpath=Path(settings['DIR_DATA_PROC_SUBSETS']))
-    print(f"Saved subset data (measured values) for {siteconfig['SITE']} to file {_outfilepath}.")
+    # Calculate stats for subset
+    date_first = subset.index[0]
+    date_last = subset.index[-1]
+    date_first_str = str(date_first.strftime('%d %b %Y'))
+    date_last_str = str(date_last.strftime('%d %b %Y'))
+    n_records = len(subset.index)
+    n_years = (date_last.year - date_first.year) + 1
 
-    return siteinfo_df
+    # Collect info about subset
+    subsetinfo = dict()
+    subsetinfo['SITE'] = site
+    subsetinfo['DATE_FIRST'] = date_first_str
+    subsetinfo['DATE_LAST'] = date_last_str
+    subsetinfo['N_YEARS'] = n_years
+    subsetinfo['N_RECORDS'] = n_records
+
+    # Calculate z-statistics for overview
+    for var in subset.columns:
+
+        subsetinfo[f'{var}_MIN'] = subset[var].min()
+        subsetinfo[f'{var}_MAX'] = subset[var].max()
+
+        if str(var).endswith("_ZSCORE"):
+            measuredname = str(var).replace("_ZSCORE", "")
+            mean = subset[measuredname].mean()
+            sd = subset[measuredname].std()
+            subsetinfo[f'{measuredname}_Z0'] = mean
+            subsetinfo[f'{measuredname}_SD'] = sd
+            subsetinfo[f'{measuredname}_Z+2'] = mean + (2 * sd)
+            subsetinfo[f'{measuredname}_Z-2'] = mean - (2 * sd)
+
+        else:
+            continue
+
+    # Store filepath to subset parquet file
+    subsetinfo['_FILEPATH_PARQUET_SUBSET'] = outfilepath
+
+    return subsetinfo
 
 
 def save_siteinfo(siteinfo_df: pd.DataFrame, settings: dict) -> None:
@@ -645,19 +685,3 @@ def read_settings_file(filepath_settings) -> dict:
     with open(filepath_settings, 'r', encoding='utf-8') as f:
         settings_dict = yaml.safe_load(f)
     return settings_dict
-
-# def search_files(searchdirs: str or list, pattern: str) -> list:
-#     """ Search files and store their filename and the path to the file in dictionary. """
-#     # found_files_dict = {}
-#     foundfiles = []
-#     if isinstance(searchdirs, str):
-#         searchdirs = [searchdirs]  # Use str as list
-#     for searchdir in searchdirs:
-#         for root, dirs, files in os.walk(searchdir):
-#             for idx, settings_file_name in enumerate(files):
-#                 if fnmatch.fnmatch(settings_file_name, pattern):
-#                     filepath = Path(root) / settings_file_name
-#                     # found_files_dict[settings_file_name] = filepath
-#                     foundfiles.append(filepath)
-#     foundfiles.sort()
-#     return foundfiles
