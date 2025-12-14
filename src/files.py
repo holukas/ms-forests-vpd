@@ -42,30 +42,43 @@ def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varname
     # todo fix if 6 months are not in the same year, spanning 2 years
     # Keep 6 warmest months
     # Keep only data from years where data for all 6 months is available, to avoid bias
-    ta = sitedata[[varnames['ta_var']]].copy()
-    ta['MONTH'] = ta.index.month
-    monthly_avg = ta.groupby('MONTH').mean()
-    monthly_avg = monthly_avg.sort_values(by=varnames['ta_var'], ascending=False, inplace=False)
-    warmest6 = monthly_avg.head(6).index.to_list()
 
-    # Group data by both year and month, and count the number of records
-    year_month_counts = sitedata.groupby(
-        [sitedata.index.year.rename('YEAR'), sitedata.index.month.rename('MONTH')]).size()
+    # Preparation
+    sitedata['M'] = sitedata.index.month
+    sitedata['Y'] = sitedata.index.year
 
-    # Filter for only the counts within the 6 warmest months
-    warmest_month_counts = year_month_counts.loc[pd.IndexSlice[:, warmest6]]
+    # 1. Identify 6 Warmest Months
+    ta_avg = sitedata.groupby('M')[varnames['ta_var']].mean()
+    warmest6 = ta_avg.nlargest(6).index.to_list()
 
-    # Count how many of the 6 warmest months are available in each year
-    months_per_year = warmest_month_counts.groupby('YEAR').size()
+    # 2. Define SEASONAL_YEAR (SY)
+    is_crossover = 12 in warmest6 and 1 in warmest6
 
-    # Identify years that have all 6 months available
-    valid_years = months_per_year[months_per_year == 6].index.to_list()
+    if is_crossover:
+        start_m = max(warmest6)
+        sitedata['SY'] = sitedata['Y'].where(
+            sitedata['M'] >= start_m,
+            sitedata['Y'] - 1
+        )
+    else:
+        sitedata['SY'] = sitedata['Y']
 
-    # Filter the original data to keep only the valid years AND the warmest 6 months
-    # Use boolean masks for year and month filtering
-    year_mask = sitedata.index.year.isin(valid_years)
-    month_mask = sitedata.index.month.isin(warmest6)
-    subset = sitedata.loc[year_mask & month_mask].copy()
+    # 3. Identify Valid Seasonal Years (where all 6 months are present)
+    df_w6 = sitedata.loc[sitedata['M'].isin(warmest6)].copy()
+    m_counts = df_w6.groupby('SY')['M'].nunique()
+    valid_sy = m_counts[m_counts == 6].index.to_list()
+
+    # 4. Final Subset
+    is_w6_m = sitedata['M'].isin(warmest6)
+    is_valid_sy = sitedata['SY'].isin(valid_sy)
+    subset = sitedata.loc[is_w6_m & is_valid_sy].copy()
+
+    # Cleanup
+    subset = subset.drop(columns=['M', 'Y', 'SY'])
+    sitedata = sitedata.drop(columns=['M', 'Y', 'SY'], errors='ignore')  # Ignore error if sitedata was a view
+
+    # todo
+    # todo
 
     # Keep directly measured NEE fluxes, no gap-filled flux data
     if varnames['nee_qc_var'] is not None:
