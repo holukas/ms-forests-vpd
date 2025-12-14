@@ -12,18 +12,35 @@ from scipy.stats import zscore
 
 
 def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varnames, site) -> dict:
+    """
+    Loads full flux data for a specific site, performs quality control (QC) and filtering
+    (daytime, warmest months), balances data across years for the warmest months,
+    calculates derived variables (ET, NEP), converts all measured variables to Z-scores,
+    saves the final balanced subset to a Parquet file, and returns summary statistics.
+
+    The key filtering step ensures that all 6 warmest months have the exact same
+    number of available years of data, preventing monthly bias in long-term statistics.
+
+    Args:
+        settings (dict): A dictionary containing global settings, including output directory paths.
+        filepath_parquet_fullset (str): The file path to the complete, raw site dataset (Parquet format).
+        ix (int): The index of the current site being processed (for print statements).
+        varnames (dict): A mapping dictionary where keys are generic variable types (e.g., 'nee_var', 'ta_var')
+                         and values are the specific column names in the input dataset.
+        site (str): The unique identifier for the flux tower site (e.g., 'AU-Cum').
+
+    Returns:
+        dict: A dictionary containing comprehensive metadata and summary statistics for the
+              generated subset, including date ranges, record counts, and min/max/mean/SD
+              for both measured and Z-score variables.
+
+    Raises:
+        KeyError: If a required variable name from `varnames` is not found in the dataset.
+    """
     print(f"\nLoading data for site #{ix + 1} {site} ...")
 
-    # Load site data
-    # filepath = siteconfig['_FILEPATH_PARQUET']
+    # Load full dataset for this site
     sitedata = dv.load_parquet(filepath_parquet_fullset)
-
-    # Get variable names for this site
-    # varnames = get_variable_names(siteconfig)
-
-    # if varnames['swc_var'] == '-MISSING-':
-    #     siteinfo_df.loc[ix, '_FILEPATH_PARQUET_SUBSET'] = '-MISSING-'
-    #     return siteinfo_df
 
     # Make subset
     subset = sitedata[
@@ -39,46 +56,13 @@ def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varname
         ]
     ].copy()
 
-    # todo fix if 6 months are not in the same year, spanning 2 years
-    # Keep 6 warmest months
-    # Keep only data from years where data for all 6 months is available, to avoid bias
-
     # Preparation
-    sitedata['M'] = sitedata.index.month
-    sitedata['Y'] = sitedata.index.year
+    subset['MONTH'] = subset.index.month
+    subset['YEAR'] = subset.index.year
 
-    # 1. Identify 6 Warmest Months
-    ta_avg = sitedata.groupby('M')[varnames['ta_var']].mean()
+    # First, identify 6 warmest months from full dataset
+    ta_avg = subset.groupby('MONTH')[varnames['ta_var']].mean()
     warmest6 = ta_avg.nlargest(6).index.to_list()
-
-    # 2. Define SEASONAL_YEAR (SY)
-    is_crossover = 12 in warmest6 and 1 in warmest6
-
-    if is_crossover:
-        start_m = max(warmest6)
-        sitedata['SY'] = sitedata['Y'].where(
-            sitedata['M'] >= start_m,
-            sitedata['Y'] - 1
-        )
-    else:
-        sitedata['SY'] = sitedata['Y']
-
-    # 3. Identify Valid Seasonal Years (where all 6 months are present)
-    df_w6 = sitedata.loc[sitedata['M'].isin(warmest6)].copy()
-    m_counts = df_w6.groupby('SY')['M'].nunique()
-    valid_sy = m_counts[m_counts == 6].index.to_list()
-
-    # 4. Final Subset
-    is_w6_m = sitedata['M'].isin(warmest6)
-    is_valid_sy = sitedata['SY'].isin(valid_sy)
-    subset = sitedata.loc[is_w6_m & is_valid_sy].copy()
-
-    # Cleanup
-    subset = subset.drop(columns=['M', 'Y', 'SY'])
-    sitedata = sitedata.drop(columns=['M', 'Y', 'SY'], errors='ignore')  # Ignore error if sitedata was a view
-
-    # todo
-    # todo
 
     # Keep directly measured NEE fluxes, no gap-filled flux data
     if varnames['nee_qc_var'] is not None:
@@ -86,6 +70,63 @@ def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varname
 
     # Keep daytime records
     subset = subset.loc[subset[varnames['swinpot_var']] > 20].copy()
+
+    # Keep 6 warmest months
+    # The new approach: Keep as much data as is needed to have the same number of available years
+    # for each of the 6 warmest months, to avoid monthly bias.
+
+    # 1. Filter to only the 6 warmest months (after QC/daytime filters)
+    df_w6 = subset.loc[subset['MONTH'].isin(warmest6)].copy()
+
+    # 2. Count the number of unique years available for each of the 6 months
+    # Group by month and count the number of unique years in each group
+    month_year_counts = df_w6.groupby('MONTH')['YEAR'].nunique()
+
+    # 3. Find the minimum number of available years across all 6 months
+    min_years = month_year_counts.min()
+
+    # Check if a month has more years than the minimum (it shouldn't, as we've only filtered to warmest6)
+    # The actual trimming needs to happen at the year level.
+
+    # Identify the set of years we need to keep for each month to achieve the balance.
+    # This requires an iteration over the months.
+
+    balanced_indices = []
+
+    for month in warmest6:
+        # Get all records for this specific month
+        month_data = df_w6.loc[df_w6['MONTH'] == month].copy()
+
+        # Find the years available for this month
+        available_years = month_data['YEAR'].unique()
+
+        # If a month has too many years, trim the oldest ones (or latest, consistency is key)
+        if len(available_years) > min_years:
+            # Sort years and keep only the latest min_years, for example
+            years_to_keep = sorted(available_years, reverse=True)[:min_years]
+        else:
+            years_to_keep = available_years
+
+        # Filter the data for this month to keep only the selected years
+        balanced_month_data = month_data.loc[month_data['YEAR'].isin(years_to_keep)]
+
+        # Collect the indices of the balanced data
+        balanced_indices.append(balanced_month_data.index)
+
+    # 4. Final Subset: Use the collected balanced indices
+    all_balanced_indices = pd.DatetimeIndex([], name=subset.index.name)
+    for index_list in balanced_indices:
+        all_balanced_indices = all_balanced_indices.union(index_list)
+
+    # Apply the final index filter
+    subset = subset.loc[all_balanced_indices].copy()
+
+    # Cleanup temporary columns
+    subset = subset.drop(columns=['MONTH', 'YEAR'], errors='ignore')
+    # The SEASONAL_YEAR block is entirely removed.
+
+
+
 
     # Keep required cols
     subset = subset[
