@@ -1,12 +1,12 @@
 """
 Prepare input data for XGBoost models.
 """
-import time
 from pathlib import Path
-from src.common import get_variable_names
+
 import pandas as pd
 
 import src.files as files
+from src.common import get_variable_names
 
 # Load datasets info
 infile = Path('../../data/outputs/10_datasets/14_datasets_info_parquet_vars_stats.csv')
@@ -25,15 +25,17 @@ _datasets_df = datasets_df.copy()
 subsetinfo_df = pd.DataFrame()
 counter = 0
 for ix, siteconfig in _datasets_df.iterrows():
-    # if ix > 10:
+    # if ix > 0:
     #     continue
     counter += 1
     varnames = get_variable_names(siteconfig)  # Variable names for this site
     subsetinfo = files.create_subsets_parquet_files(
-        site=siteconfig['SITE'],
-        ix=ix,
+        site=str(siteconfig['SITE']),
+        igbp=siteconfig['IGBP'],
+        origin=siteconfig['ORIGIN'],
+        ix=int(ix),
         settings=settings,
-        filepath_parquet_fullset=siteconfig['_FILEPATH_PARQUET'],
+        filepath_parquet_fullset=str(siteconfig['_FILEPATH_PARQUET']),
         varnames=varnames
     )
     subsetinfo['LAT'] = siteconfig['LAT']
@@ -46,11 +48,6 @@ for ix, siteconfig in _datasets_df.iterrows():
         subsetinfo_df = newrow
     else:
         subsetinfo_df = pd.concat([subsetinfo_df, newrow], ignore_index=True)
-
-# # Keep required columns
-# keepcols = ['SITE', 'ORIGIN', 'N_YEARS', 'DATE_FIRST', 'DATE_LAST', 'LAT', 'LON', 'ELEVATION', 'IGBP']
-# subsets_df = datasets_df[keepcols].copy()
-# subsets_df = subsets_df.sort_values(by=['SITE'], inplace=False).reset_index(drop=True)
 
 # Save to file
 OUTDIR = Path('../../data/outputs/20_subsets/')

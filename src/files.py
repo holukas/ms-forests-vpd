@@ -11,31 +11,45 @@ from diive.core.times.times import insert_timestamp
 from scipy.stats import zscore
 
 
-def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varnames, site) -> dict:
+def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, ix: int, varnames, site: str,
+                                 igbp: str, origin: str) -> dict:
     """
-    Loads full flux data for a specific site, performs quality control (QC) and filtering
-    (daytime, warmest months), balances data across years for the warmest months,
-    calculates derived variables (ET, NEP), converts all measured variables to Z-scores,
-    saves the final balanced subset to a Parquet file, and returns summary statistics.
+    Processes the full flux data for a specific site to create a quality-controlled,
+    seasonally-filtered, and year-balanced subset for subsequent analysis.
 
-    The key filtering step ensures that all 6 warmest months have the exact same
-    number of available years of data, preventing monthly bias in long-term statistics.
+    The function performs a sequence of steps: loads data, selects required variables,
+    filters for QC-flag 0 (measured data) and daytime records, identifies the 6 warmest months,
+    balances the data across available years for these months, calculates derived
+    variables (ET, NEP), converts all measured variables to Z-scores, saves the
+    final subset to a Parquet file, generates a heatmap visualization, and returns
+    comprehensive summary statistics.
+
+    The core filtering step ensures that all 6 warmest months included in the subset
+    have the *exact same number of available years* of data, using the latest years
+    available to achieve this balance, which prevents monthly bias in long-term statistics.
 
     Args:
-        settings (dict): A dictionary containing global settings, including output directory paths.
+        settings (dict): A dictionary containing global settings, including output directory paths
+                         (e.g., 'DIR_DATA_PROC_SUBSETS', 'DIR_DATA_PROC_SUBSETS_PLOTS').
         filepath_parquet_fullset (str): The file path to the complete, raw site dataset (Parquet format).
-        ix (int): The index of the current site being processed (for print statements).
-        varnames (dict): A mapping dictionary where keys are generic variable types (e.g., 'nee_var', 'ta_var')
-                         and values are the specific column names in the input dataset.
-        site (str): The unique identifier for the flux tower site (e.g., 'AU-Cum').
+        ix (int): The index of the current site being processed (used for console logging).
+        varnames (dict): A mapping dictionary where keys are generic variable types (e.g., 'nee_var',
+                         'ta_var') and values are the specific column names in the input dataset.
+                         (Variables must be present: NEE, LE, SWIN_POT, TA, VPD, SWC, and corresponding QC flags).
+        site (str): The unique identifier for the flux tower site (e.g., 'AU-Cum'). This is used
+                    in naming the output file.
+        igbp (str): The IGBP classification code for the site (e.g., 'ENF'). Used for plot title/metadata.
+        origin (str): The source of the data (e.g., 'FLUXNET', 'OZFLUX'). Used for plot title/metadata.
 
     Returns:
         dict: A dictionary containing comprehensive metadata and summary statistics for the
               generated subset, including date ranges, record counts, and min/max/mean/SD
-              for both measured and Z-score variables.
+              for both measured and Z-score variables. The dictionary also includes the
+              file path to the generated Parquet subset.
 
     Raises:
-        KeyError: If a required variable name from `varnames` is not found in the dataset.
+        KeyError: If a required variable name from `varnames` is not found in the dataset
+                  when loading or selecting columns.
     """
     print(f"\nLoading data for site #{ix + 1} {site} ...")
 
@@ -72,27 +86,22 @@ def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varname
     subset = subset.loc[subset[varnames['swinpot_var']] > 20].copy()
 
     # Keep 6 warmest months
-    # The new approach: Keep as much data as is needed to have the same number of available years
+    # Keep as much data as is needed to have the same number of available years
     # for each of the 6 warmest months, to avoid monthly bias.
 
-    # 1. Filter to only the 6 warmest months (after QC/daytime filters)
+    # Filter to only the 6 warmest months (after QC/daytime filters)
     df_w6 = subset.loc[subset['MONTH'].isin(warmest6)].copy()
 
-    # 2. Count the number of unique years available for each of the 6 months
+    # Count the number of unique years available for each of the 6 months
     # Group by month and count the number of unique years in each group
     month_year_counts = df_w6.groupby('MONTH')['YEAR'].nunique()
 
-    # 3. Find the minimum number of available years across all 6 months
+    # Find the minimum number of available years across all 6 months
     min_years = month_year_counts.min()
 
-    # Check if a month has more years than the minimum (it shouldn't, as we've only filtered to warmest6)
-    # The actual trimming needs to happen at the year level.
-
-    # Identify the set of years we need to keep for each month to achieve the balance.
-    # This requires an iteration over the months.
-
+    # Identify the set of years needed to be kept for each month to achieve the balance.
+    # Requires iteration over the months
     balanced_indices = []
-
     for month in warmest6:
         # Get all records for this specific month
         month_data = df_w6.loc[df_w6['MONTH'] == month].copy()
@@ -100,7 +109,7 @@ def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varname
         # Find the years available for this month
         available_years = month_data['YEAR'].unique()
 
-        # If a month has too many years, trim the oldest ones (or latest, consistency is key)
+        # If a month has too many years, trim the oldest ones
         if len(available_years) > min_years:
             # Sort years and keep only the latest min_years, for example
             years_to_keep = sorted(available_years, reverse=True)[:min_years]
@@ -113,7 +122,7 @@ def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varname
         # Collect the indices of the balanced data
         balanced_indices.append(balanced_month_data.index)
 
-    # 4. Final Subset: Use the collected balanced indices
+    # Final subset: use the collected balanced indices
     all_balanced_indices = pd.DatetimeIndex([], name=subset.index.name)
     for index_list in balanced_indices:
         all_balanced_indices = all_balanced_indices.union(index_list)
@@ -123,10 +132,6 @@ def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varname
 
     # Cleanup temporary columns
     subset = subset.drop(columns=['MONTH', 'YEAR'], errors='ignore')
-    # The SEASONAL_YEAR block is entirely removed.
-
-
-
 
     # Keep required cols
     subset = subset[
@@ -183,6 +188,14 @@ def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varname
         outpath=Path(settings['DIR_DATA_PROC_SUBSETS']))
     print(f"Saved subset data (measured and z-scores) for {site} to file {outfilepath}.")
 
+    # Save heatmap plot
+    start = subset.index[0].year
+    end = subset.index[-1].year
+    outname = f"{site}_{igbp}_{origin}_SUBSET_{start}-{end}"
+    save_subset_heatmap_plot(df=subset, outname=outname, site=site, igbp=igbp, sourcetxt=origin,
+                             showplot=True, fluxvars=['SWIN', 'TA', 'VPD', 'SWC', 'NEP'],
+                             outpath=settings['DIR_DATA_PROC_SUBSETS_PLOTS'])
+
     # Calculate stats for subset
     date_first = subset.index[0]
     date_last = subset.index[-1]
@@ -213,7 +226,6 @@ def create_subsets_parquet_files(settings, filepath_parquet_fullset, ix, varname
             subsetinfo[f'{measuredname}_SD'] = sd
             subsetinfo[f'{measuredname}_Z+2'] = mean + (2 * sd)
             subsetinfo[f'{measuredname}_Z-2'] = mean - (2 * sd)
-
         else:
             continue
 
@@ -397,7 +409,10 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
                                   data=merged_df,
                                   outpath=Path(settings['DIR_DATA_PROC_PARQUET']))
 
-    save_heatmap_plot(merged_df, outname, site, igbp, sourcetxt, settings, showplot, fluxvar)
+    # Save heatmap plot
+    save_heatmap_plot(df=merged_df, outname=outname, site=site, igbp=igbp, sourcetxt=sourcetxt,
+                      showplot=showplot, fluxvar=fluxvar,
+                      outpath=settings['DIR_DATA_PROC_PARQUET_PLOTS'])
 
     # Add updated dataset info
     datasetinfo_updated['_FILEPATH_PARQUET'] = Path(outfilepath)  # Add filepath to parquet file
@@ -647,9 +662,47 @@ def old_create_parquet_files(siteinfo_df, data_nrows, settings, siteconfig, ix, 
     return siteinfo_df
 
 
-def save_heatmap_plot(df, outname, site, igbp, sourcetxt, settings, showplot, fluxvar):
+def save_subset_heatmap_plot(df: pd.DataFrame, outpath: str, outname: str, site: str,
+                             igbp: str, sourcetxt: str, showplot: bool, fluxvars: list):
     # Heatmap plots
-    outfile = Path(settings['DIR_DATA_PROC_PARQUET_PLOTS']) / outname
+    outfile = Path(outpath) / outname
+    print(f"Saving heatmap plot to {outfile} ...")
+
+    fig = plt.figure(facecolor='white', figsize=(25, 10), dpi=72)
+    gs = gridspec.GridSpec(1, 5)  # rows, cols
+    # gs.update(wspace=0.7, hspace=0.3, left=0.1, right=0.9, top=0.9, bottom=0.07)
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
+    ax3 = fig.add_subplot(gs[0, 2], sharey=ax1)
+    ax4 = fig.add_subplot(gs[0, 3], sharey=ax1)
+    ax5 = fig.add_subplot(gs[0, 4], sharey=ax1)
+    axes = [ax1, ax2, ax3, ax4, ax5]
+
+    tickkwargs = dict(labeltop=False, labelbottom=True, labelright=False,
+                      top=False, bottom=True, left=True, right=False)
+
+    for ix, v in enumerate(fluxvars):
+        ax = axes[ix]
+        vmin = df[v].quantile(0.02)
+        vmax = df[v].quantile(0.98)
+        dv.heatmapdatetime(ax=ax, series=df[v], cb_digits_after_comma=0,
+                           vmin=vmin, vmax=vmax, cb_extend='both').plot()
+        ax.set_title(f"{v}", fontsize=20)
+
+        if ix > 0:
+            ax.set_ylabel("")
+
+    fig.suptitle(f"{site} ({igbp}), {sourcetxt}", fontsize=24)
+    fig.tight_layout()
+    fig.savefig(outfile, dpi=72)
+    if showplot:
+        fig.show()
+
+
+def save_heatmap_plot(df: pd.DataFrame, outpath: str, outname: str, site: str,
+                      igbp: str, sourcetxt: str, showplot: bool, fluxvar: str):
+    # Heatmap plots
+    outfile = Path(outpath) / outname
     print(f"Saving heatmap plot to {outfile} ...")
 
     flux = df[fluxvar].copy()  # Gap-filled fluxes
