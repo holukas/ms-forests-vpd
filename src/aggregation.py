@@ -9,8 +9,9 @@ def aggregate_shap_values_across_sites(df, binx, biny) -> pd.DataFrame:
     df['BIN_COMBINED_STR'] = df[binx].astype(str) + "+" + df[biny].astype(str)
 
     # Aggregations for all columns, excluding binx and biny
-    other_aggregations = ['mean', 'median', 'max', 'min', 'count', 'std',
-                          lambda x: x.quantile(0.25), lambda x: x.quantile(0.75)]
+    other_aggregations = ['mean', 'median', 'max', 'min', 'count', 'std']
+    # other_aggregations = ['mean', 'median', 'max', 'min', 'count', 'std',
+    #                       lambda x: x.quantile(0.25), lambda x: x.quantile(0.75)]
 
     # Aggregation for binx and biny (only median)
     bin_aggregations = ['median']
@@ -71,17 +72,17 @@ def aggregate_shap_values_for_site(site, igbp, filepath, xvar, yvar, aggfunc, ix
     shapvals_agg_df['SITE'] = site
     shapvals_agg_df['IGBP'] = igbp
 
-    # binx = f"BIN_VPD_F"
-    # biny = f"BIN_TA_F"
-    # z = f"VPD_F_SHAPVALS"
+    # binx = f"BIN_{xvar}"
+    # biny = f"BIN_{yvar}"
+    # z = f"TA_ZSCORE_SHAPVALS"
     # hm = dv.heatmapxyz(
-    #     x=q.df_agg_long[binx],
-    #     y=q.df_agg_long[biny],
-    #     z=q.df_agg_long[z],
+    #     x=shapvals_agg_df[binx],
+    #     y=shapvals_agg_df[biny],
+    #     z=shapvals_agg_df[z],
     #     title=site,
     #     cb_digits_after_comma=1,
-    #     xlabel=f'{binx} (z-score)',
-    #     ylabel=f'{biny} (z-score)',
+    #     xlabel=f'{xvar} (z-score)',
+    #     ylabel=f'{yvar} (z-score)',
     #     zlabel=f'{aggfunc} {z} (z-score)',
     #     # vmin=-3,
     #     # vmax=3

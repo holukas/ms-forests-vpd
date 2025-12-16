@@ -9,45 +9,65 @@ from src.aggregation import aggregate_shap_values_for_site
 # ------------------------------
 # Variables
 # NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
-# FLUX = 'NEP'
-# FLUX = 'ET'
-# FLUX = 'GPP'
-FLUX = 'RECO'
-xvar = 'TA'
-yvar = 'SWC'
-aggfunc = 'median'
+
+# Settings for searching in the correct (sub)folder
+FLUX = 'NEP_ZSCORE'
+# FLUX = 'ET_ZSCORE'
+# FLUX = 'GPP_ZSCORE'
+# FLUX = 'RECO_ZSCORE'
 CONDITIONAL = True  # SHAP
-# Agg groups: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+
+# Aggregation combos: xvar / yvar
+VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['SWIN_ZSCORE', 'TA_ZSCORE']
+# VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['SWIN_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
+aggfunc = 'median'
+
 # ------------------------------
+# Agg groups, use z-scores:
+# NEP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# ET:   [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# ------------------------------
+
+xvar = VARS[0]
+yvar = VARS[1]
 
 # Load settings
 settings = files.read_settings_file("../../config/settings.yaml")
-subfolder = 'conditional' if CONDITIONAL else 'standard'
-results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / subfolder
 shap_type = 'conditional' if CONDITIONAL else 'standard'
-folder = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
+dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 
-# Load datasets info
-infile = Path('../../data/outputs/12_datasets_parquet_vars_stats_subsets.csv')
-datasets_df = pd.read_csv(infile)
+# Load subsets info
+infile = Path('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv')
+subsets_df = pd.read_csv(infile)
+
+# Create output directory
+dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / "41_per_site" / FLUX / shap_type
+# parents=True: Creates any necessary parent directories that don't exist.
+# exist_ok=True: Prevents an error if the directory already exists.
+dir_out.mkdir(parents=True, exist_ok=True)
 
 # Aggregate SHAP values for each site and collect in dataframe
 shapvals_sites_agg_long_df = None
-for ix, siteconfig in datasets_df.iterrows():
+for ix, siteconfig in subsets_df.iterrows():
 
-    # # TODO testing ----
-    # if ix > 1:
-    #     break
-    # # TODO testing ----
+    # TODO testing ----
+    if ix > 5:
+        break
+    # TODO testing ----
 
-    if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
-        # Skip files that do not have a parquet subset, b/c of missing SWC
-        continue
+    # if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
+    #     # Skip files that do not have a parquet subset, b/c of missing SWC
+    #     continue
 
     site = siteconfig['SITE']
     igbp = siteconfig['IGBP']
     filename = f"{site}_shap-{shap_type}_{FLUX}.parquet"
-    filepath = folder / filename
+    filepath = dir_prev_results / filename
 
     site_results = aggregate_shap_values_for_site(
         site=site, igbp=igbp, filepath=filepath, ix=ix,
@@ -82,8 +102,9 @@ for ix, siteconfig in datasets_df.iterrows():
     # hm.show()
     # # ---todo testing
 
+
 outfilepath = dv.save_parquet(
-    filename=f"2_PerSite_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}",
+    filename=f"41_SHAPVALUES-{shap_type}_AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}",
     data=shapvals_sites_agg_long_df,
-    outpath=folder)
+    outpath=dir_out)
 # shapvals_sites_agg_long_df.to_csv(outfilepath.replace('.parquet', '.csv'))
