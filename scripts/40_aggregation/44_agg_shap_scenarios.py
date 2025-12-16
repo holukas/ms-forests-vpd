@@ -9,34 +9,52 @@ import src.scenarios as s
 # ------------------------------
 # Variables
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'
-# FLUX = 'LE'
-# FLUX = 'GPP'
-# FLUX = 'RECO'
-xvar = 'TA'
-yvar = 'VPD'
-# aggfunc = 'median'
+
+# Settings for searching in the correct (sub)folder
+FLUX = 'NEP_ZSCORE'
+# FLUX = 'ET_ZSCORE'
+# FLUX = 'GPP_ZSCORE'
+# FLUX = 'RECO_ZSCORE'
 CONDITIONAL = True  # SHAP
+
+# Aggregation combos: xvar / yvar
+VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['SWIN_ZSCORE', 'TA_ZSCORE']
+# VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['SWIN_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
+# aggfunc = 'median'
+
+# ------------------------------
+# Agg groups, use z-scores:
+# NEP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# ET:   [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # ------------------------------
 
 # Load settings
 settings = files.read_settings_file("../../config/settings.yaml")
-subfolder = 'conditional' if CONDITIONAL else 'standard'
-results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / subfolder
 shap_type = 'conditional' if CONDITIONAL else 'standard'
-folder = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
+dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 
-# Load datasets info
-infile = Path('../../data/outputs/12_datasets_parquet_vars_stats_subsets.csv')
-datasets_df = pd.read_csv(infile)
+# Create output directory
+dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+# parents=True: Creates any necessary parent directories that don't exist.
+# exist_ok=True: Prevents an error if the directory already exists.
+dir_out.mkdir(parents=True, exist_ok=True)
+
+# Load subsets info
+infile = Path('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv')
+subsets_df = pd.read_csv(infile)
 
 shapvals_sites_agg_long_df = None
 sites_df = None
-for ix, siteconfig in datasets_df.iterrows():
+for ix, siteconfig in subsets_df.iterrows():
 
     # # TODO testing ----
-    # if (ix < 65) | (ix > 75):
-    #     continue
+    if ix > 10:
+        break
     # # TODO testing ----
 
     if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
@@ -54,8 +72,8 @@ for ix, siteconfig in datasets_df.iterrows():
     # # TODO testing ----
 
     filename = f"{site}_shap-{shap_type}_{FLUX}.parquet"
-    filepath = folder / filename
-    print(f"\nLoading data for site #{ix + 1} {site} ...")
+    filepath = dir_prev_results / filename
+    print(f"\nLoading data for site #{ix + 1} {site} ({filepath})")
     shapvals_df = dv.load_parquet(filepath)
     keepcols = [c for c in shapvals_df.columns if "_SHAPVALS" in c]
 
@@ -119,10 +137,11 @@ _sites_df = _sites_df.groupby('SCENARIO').mean()
 # fig.tight_layout()
 # fig.show()
 
+# 43_SHAPVALUES-conditional_AggregatedAcrossIGBP-MF_BIN+TA_ZSCORE+BIN+VPD_ZSCORE_NEP_ZSCORE.parquet
 outfilepath = dv.save_parquet(
-    filename=f"3_AllSites_SHAP-ScenarioSums-{shap_type}_{FLUX}",
+    filename=f"44_SHAPVALUES-{shap_type}_AggregatedPerSiteAcrossScenarios_{FLUX}",
     data=sites_df,
-    outpath=folder)
+    outpath=dir_out)
 sites_df.to_csv(outfilepath.replace('.parquet', '.csv'))
 
 print(sites_df)

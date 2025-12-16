@@ -40,10 +40,10 @@ biny = f"BIN_{yvar}"
 # Load settings
 settings = files.read_settings_file("../../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
-dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / "41_per_site" / FLUX / shap_type
+dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 
 # Create output directory
-dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / "43_across_igbp" / FLUX / shap_type
+dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 # parents=True: Creates any necessary parent directories that don't exist.
 # exist_ok=True: Prevents an error if the directory already exists.
 dir_out.mkdir(parents=True, exist_ok=True)

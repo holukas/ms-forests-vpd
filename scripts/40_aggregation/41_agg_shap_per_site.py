@@ -46,7 +46,7 @@ infile = Path('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subse
 subsets_df = pd.read_csv(infile)
 
 # Create output directory
-dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / "41_per_site" / FLUX / shap_type
+dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 # parents=True: Creates any necessary parent directories that don't exist.
 # exist_ok=True: Prevents an error if the directory already exists.
 dir_out.mkdir(parents=True, exist_ok=True)

@@ -19,13 +19,13 @@ plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 # ------------------------------
 # Variables
 # NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'
-# FLUX = 'ET'
-# FLUX = 'GPP'
-# FLUX = 'RECO'
-xvar = 'TA'
-yvar = 'VPD'
-zvar = 'VPD'
+FLUX = 'NEP_ZSCORE'
+# FLUX = 'ET_ZSCORE'
+# FLUX = 'GPP'_ZSCORE
+# FLUX = 'RECO_ZSCORE'
+xvar = 'TA_ZSCORE'
+yvar = 'VPD_ZSCORE'
+zvar = 'VPD_ZSCORE'
 aggfunc = 'median'
 CONDITIONAL = True  # SHAP
 
@@ -37,7 +37,7 @@ ylabel = f'{yvar} (z-score)'
 # ylabel = f'{label_longforms[yvar]} (z-score)'
 zlabel = f'Impact of {zvar} on {FLUX} (SHAP {aggfunc} z-score)'
 # zlabel = f'{aggfunc} SHAP value of {zvar} (z-score)'
-n_sites_min = 30
+n_sites_min = 1  # 30
 n_sites_used = 171
 cb_digits_after_comma = 1
 cmap = 'RdYlBu'
@@ -54,7 +54,8 @@ z_counts = (f"{zvar}_SHAPVALS", "count")
 # Load settings
 settings = files.read_settings_file("../../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
-results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
+dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+dir_out = Path(settings['DIR_PLOTS_OUT'])
 
 # Start figure
 fig = plt.figure(figsize=(20.7, 9), dpi=150, facecolor="white")
@@ -67,7 +68,8 @@ ax4 = fig.add_subplot(gs[1, 2], sharex=ax_all, sharey=ax_all)
 ax5 = fig.add_subplot(gs[1, 3], sharex=ax_all, sharey=ax_all)
 
 # Load SHAP values aggregated across all sites
-filepath = Path(results_outdir) / f"3_AllSites_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}.parquet"
+# 42_SHAPVALUES-conditional_AggregatedAcrossSites_BIN-TA_ZSCORE+BIN-VPD_ZSCORE+NEP_ZSCORE.parquet
+filepath = Path(dir_prev_results) / f"42_SHAPVALUES-{shap_type}_AggregatedAcrossSites_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 keeplocs = shapvals_df[z_counts] >= n_sites_min
 shapvals_df = shapvals_df[keeplocs].copy()
@@ -146,7 +148,7 @@ letter = ['b', 'c', 'd', 'e']
 data_per_igbp = {}
 for ix, i in enumerate(igbps):
     filepath = Path(
-        results_outdir) / f"4_All-{i}_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}.parquet"
+        dir_out) / f"4_All-{i}_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}.parquet"
     igbp_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 
     # Next line uses the same keeplocs like defined above, i.e. for each site we
