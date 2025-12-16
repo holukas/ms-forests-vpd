@@ -50,7 +50,7 @@ binsy = [(f"BIN_{yvar}", aggfunc) for yvar in yvars]
 FONTSIZE = theme.AX_LABELS_FONTSIZE
 
 # Load settings
-settings = files.read_settings_file("../config/settings.yaml")
+settings = files.read_settings_file("../../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 
 # Start figure

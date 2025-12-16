@@ -21,7 +21,7 @@ n_sites_total = len(datasets_df)
 
 # Define the path to your locally saved world map shapefile
 shapefile_path = str(
-    Path(r"F:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\data\worldmap\ne_10m_admin_0_countries.shp"))
+    Path(r"/data/worldmap/ne_10m_admin_0_countries.shp"))
 world = gpd.read_file(shapefile_path)
 
 # Create a GeoDataFrame from your site data

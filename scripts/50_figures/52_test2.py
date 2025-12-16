@@ -40,7 +40,7 @@ LINE_COLORS = ['#33a02c', '#ff7f00', '#e31a1c', '#1f77b4']
 # ------------------------------
 # Data Loading & Preprocessing
 # ------------------------------
-settings = files.read_settings_file("../config/settings.yaml")
+settings = files.read_settings_file("../../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 

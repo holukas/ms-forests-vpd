@@ -53,7 +53,7 @@ plt.rcParams.update({
 })
 
 # Load data
-settings = files.read_settings_file("../config/settings.yaml")
+settings = files.read_settings_file("../../config/settings.yaml")
 shap_type = 'conditional'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 filepath = Path(results_outdir) / f"3_AllSites_SHAP-ScenarioSums-{shap_type}_{FLUX}.parquet"

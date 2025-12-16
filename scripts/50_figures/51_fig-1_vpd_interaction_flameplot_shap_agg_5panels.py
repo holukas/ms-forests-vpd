@@ -52,7 +52,7 @@ z = (f"{zvar}_SHAPVALS", aggfunc)
 z_counts = (f"{zvar}_SHAPVALS", "count")
 
 # Load settings
-settings = files.read_settings_file("../config/settings.yaml")
+settings = files.read_settings_file("../../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 
