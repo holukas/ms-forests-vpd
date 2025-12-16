@@ -20,14 +20,14 @@ CONDITIONAL = True  # SHAP
 # ------------------------------
 
 # Load settings
-settings = files.read_settings_file("../config/settings.yaml")
+settings = files.read_settings_file("../../config/settings.yaml")
 subfolder = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / subfolder
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 folder = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 
 # Load datasets info
-infile = Path('../data/outputs/12_datasets_parquet_vars_stats_subsets.csv')
+infile = Path('../../data/outputs/12_datasets_parquet_vars_stats_subsets.csv')
 datasets_df = pd.read_csv(infile)
 
 shapvals_sites_agg_long_df = None

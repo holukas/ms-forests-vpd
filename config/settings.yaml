@@ -6,7 +6,7 @@ DIR_DATA_PROC_PARQUET_PLOTS: ../../data/outputs/10_datasets/12_parquet_merged_pl
 DIR_DATA_PROC_SUBSETS: ../../data/outputs/20_subsets/21_subsets_parquet
 DIR_DATA_PROC_SUBSETS_PLOTS: ../../data/outputs/20_subsets/21_subsets_parquet_plots
 #DIR_DATA_OUT: ../data/outputs
-DIR_DATA_OUT_SHAP_ANALYSIS: ../data/outputs/shap_analysis
+DIR_DATA_OUT_SHAP_ANALYSIS: ../../data/outputs/30_shap
 
 # Files
 ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
