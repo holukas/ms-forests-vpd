@@ -82,7 +82,7 @@ for i in igbps:
     # Save to Parquet
     # f"41_SHAPVALUES-{shap_type}_AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"
     outfilepath = dv.save_parquet(
-        filename=f"43_SHAPVALUES-{shap_type}_AggregatedAcrossIGBP-{i}_BIN+{xvar}+BIN+{yvar}_{FLUX}",
+        filename=f"43_SHAPVALUES-{shap_type}_AggregatedAcrossIGBP-{i}_BIN-{xvar}+BIN-{yvar}+{FLUX}",
         data=subset_agg_df,
         outpath=dir_out)
     # print(f"Saved SHAP values across all files as mean to file {outfilepath}.")

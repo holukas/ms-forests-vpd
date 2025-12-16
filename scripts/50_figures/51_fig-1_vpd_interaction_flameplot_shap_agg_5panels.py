@@ -13,8 +13,8 @@ import src.plot as plot
 # from scipy import ndimage
 from src.common import findpoi
 
-plt.rcParams['font.family'] = 'serif'
-plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
+# plt.rcParams['font.family'] = 'serif'
+# plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 
 # ------------------------------
 # Variables
@@ -68,7 +68,6 @@ ax4 = fig.add_subplot(gs[1, 2], sharex=ax_all, sharey=ax_all)
 ax5 = fig.add_subplot(gs[1, 3], sharex=ax_all, sharey=ax_all)
 
 # Load SHAP values aggregated across all sites
-# 42_SHAPVALUES-conditional_AggregatedAcrossSites_BIN-TA_ZSCORE+BIN-VPD_ZSCORE+NEP_ZSCORE.parquet
 filepath = Path(dir_prev_results) / f"42_SHAPVALUES-{shap_type}_AggregatedAcrossSites_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 keeplocs = shapvals_df[z_counts] >= n_sites_min
@@ -105,7 +104,7 @@ ax_all.text(-0.1, 3.5, r"$\leftarrow$ cool", horizontalalignment='right', vertic
 ax_all.text(0.1, 3.5, r"warm $\rightarrow$", horizontalalignment='left', verticalalignment='center', **params)
 
 # Find optimum and pessimum
-pivot_df = subset_all.pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
+pivot_df = subset_all.pivot(index=f'BIN_{xvar}_median', columns=f'BIN_{yvar}_median', values=f'{zvar}_SHAPVALS_median')
 max_location, max_value = findpoi(df=pivot_df, k=area_size_minmax, agg='mean', what='max')
 min_location, min_value = findpoi(df=pivot_df, k=area_size_minmax, agg='mean', what='min')
 
@@ -139,7 +138,8 @@ print(f"Minimum found at x={min_location[0]}, y={min_location[1]}")
 #             ha='left', va='bottom', zorder=99, backgroundcolor='white')
 
 # Load SHAP values aggregated per IGBP
-igbps = ['ENF', 'DBF', 'MF', 'EBF']
+igbps = ['DBF', 'MF', 'EBF']
+# igbps = ['ENF', 'DBF', 'MF', 'EBF'] TODO ACT
 igbps_n_sites = [87, 56, 14, 14]  # Counted in #33
 axes = [ax2, ax3, ax4, ax5]
 xlabels = [" ", " ", xlabel, xlabel]
@@ -147,13 +147,13 @@ ylabels = [ylabel, " ", ylabel, " "]
 letter = ['b', 'c', 'd', 'e']
 data_per_igbp = {}
 for ix, i in enumerate(igbps):
-    filepath = Path(
-        dir_out) / f"4_All-{i}_Aggregated_SHAPValues-{shap_type}_BIN-{xvar}_BIN-{yvar}_{FLUX}.parquet"
+    filepath = Path(dir_prev_results) / f"43_SHAPVALUES-{shap_type}_AggregatedAcrossIGBP-{i}_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"
     igbp_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 
     # Next line uses the same keeplocs like defined above, i.e. for each site we
     # get the same locations as for the overall (all sites) plot.
-    igbp_df = igbp_df[keeplocs].copy()
+    # Filter igbp_df to keep only rows whose index exists in keeplocs index
+    igbp_df = igbp_df[igbp_df.index.isin(keeplocs.index)].copy()
 
     # Now we only want to keep those locations where at least 1 value
     # is available. This way the correct min. value is shown in the plot.
@@ -180,7 +180,7 @@ for ix, i in enumerate(igbps):
     axes[ix].axvline(0, color='black', linestyle='--', linewidth=1, zorder=99)
     axes[ix].set_aspect('equal')
 
-    pivot_df = data_per_igbp[i].pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
+    pivot_df = data_per_igbp[i].pivot(index=f'BIN_{xvar}_median', columns=f'BIN_{yvar}_median', values=f'{zvar}_SHAPVALS_median')
     max_location, max_value = findpoi(df=pivot_df, k=area_size_minmax, agg='mean', what='max')
     min_location, min_value = findpoi(df=pivot_df, k=area_size_minmax, agg='mean', what='min')
 
@@ -199,78 +199,3 @@ for ix, i in enumerate(igbps):
 fig.tight_layout()
 gs.update(wspace=.2)
 fig.show()
-
-# # Find local minimum/maximum
-# heatmap_df = subset_all.pivot(index='BIN_TA_median', columns='BIN_VPD_median', values='VPD_SHAPVALS_median')
-#
-# min_required_values = 9
-#
-#
-# # 2. CREATE A MORE ADVANCED FILTER FUNCTION
-# def create_mean_calculator(min_vals):
-#     """This function returns another function that will be used by the filter."""
-#     def calculate_mean_if_valid(arr):
-#         """
-#         Calculates the mean only if the number of valid points
-#         in the window meets the threshold.
-#         """
-#         # Count the number of non-NaN values in the current window (arr)
-#         valid_count = np.count_nonzero(~np.isnan(arr))
-#
-#         # If the count is sufficient, return the mean. Otherwise, return NaN.
-#         if valid_count >= min_vals:
-#             return np.nanmean(arr)
-#         else:
-#             return np.nan
-#     return calculate_mean_if_valid
-#
-# # 3. APPLY THE FILTER WITH THE NEW FUNCTION
-# # Create the specific calculator function with our threshold
-# mean_calculator_func = create_mean_calculator(min_required_values)
-#
-# # Apply the filter to the DataFrame's values
-# # The result is a NumPy array
-# neighbor_means_array = ndimage.generic_filter(
-#     heatmap_df.values,
-#     function=mean_calculator_func,
-#     size=(3,3),  # 36 values in total
-#     mode='constant',  # How to handle edges
-#     cval=np.nan  # Fill value for edges
-# )
-#
-# # Convert the result back to a DataFrame for clarity
-# neighbor_means_df = pd.DataFrame(
-#     neighbor_means_array,
-#     index=heatmap_df.index,
-#     columns=heatmap_df.columns
-# )
-#
-# print("\n--- DataFrame of Neighbor Means ---")
-# print(neighbor_means_df)
-#
-# # Find the flattened index of the maximum value in the NumPy array
-# max_idx_flat = np.nanargmax(neighbor_means_array)
-# min_idx_flat = np.nanargmin(neighbor_means_array)
-#
-# # Convert the flattened index to (row, column) coordinates
-# max_coords = np.unravel_index(max_idx_flat, neighbor_means_array.shape)
-# min_coords = np.unravel_index(min_idx_flat, neighbor_means_array.shape)
-# max_row_idx, max_col_idx = max_coords
-# min_row_idx, min_col_idx = min_coords
-#
-# # Get the labels (index and column name) from the original DataFrame
-# max_mean_loc_index = heatmap_df.index[max_row_idx]
-# max_mean_loc_column = heatmap_df.columns[max_col_idx]
-# min_mean_loc_index = heatmap_df.index[min_row_idx]
-# min_mean_loc_column = heatmap_df.columns[min_col_idx]
-#
-# # Get the original value and the calculated mean
-# original_value_max = heatmap_df.iloc[max_row_idx, max_col_idx]
-# original_value_min = heatmap_df.iloc[min_row_idx, min_col_idx]
-# max_neighbor_mean = neighbor_means_array[max_row_idx, max_col_idx]
-# min_neighbor_mean = neighbor_means_array[min_row_idx, min_col_idx]
-#
-# ax_all.scatter(max_mean_loc_index, max_mean_loc_column, color='none', edgecolors='#18FFFF', s=300, zorder=100)
-# ax_all.scatter(min_mean_loc_index, min_mean_loc_column, color='none', edgecolors='#18FFFF', s=300, zorder=100)
-# print(f"Maximum found at {max_mean_loc_index, max_mean_loc_column}")
-# print(f"Minimum found at {min_mean_loc_index, min_mean_loc_column}")
