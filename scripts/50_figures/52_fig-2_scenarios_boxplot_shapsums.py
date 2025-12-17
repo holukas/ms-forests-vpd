@@ -1,262 +1,208 @@
+"""
+Transition Plot
+- Layout: 5 Columns (All Sites | ENF | DBF | MF | EBF) x 4 Rows (Variables).
+- "All Sites" column is slightly wider and highlighted.
+- Style: Publication-ready (Arial font, Okabe-Ito palette, minimal chart junk).
+- Labeling: Combined Letter and Title inside each panel.
+"""
 from pathlib import Path
 
 import diive as dv
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import gaussian_kde  # <-- Import for the "cloud"
+from scipy.stats import gaussian_kde
 
 import src.files as files
 
-plt.rcParams['font.family'] = 'serif'
-plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
+# plt.rcParams['font.family'] = 'serif'
+# plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 
-# ------------------------------
-# Variables
-# NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'
-# aggfunc = 'median'
-CONDITIONAL = True  # SHAP
+# Configuration
+FLUX = 'NEP_ZSCORE'
+IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
+# Define the ordered columns for the plot
+COLUMN_ORDER = ['All Sites'] + IGBP_CLASSES
+SCENARIO_ORDER = [1, 4, 5]
+SCENARIO_LABELS = ['Normal', 'Dry+Hot', 'Compound']
+N_SCENARIOS = len(SCENARIO_ORDER)
+VARIABLES_BASE = ['SWIN_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE']
+VAR_TITLES = ['Solar Radiation', 'Air Temperature', 'Vapor Pressure Deficit', 'Soil Water Content']
+SHAP_SUFFIX = '_SHAPVALS_OVR_MEDIAN'
+SHAP_COLS = [v + SHAP_SUFFIX for v in VARIABLES_BASE]
+COLORS = ['#E69F00', '#D55E00', '#CC79A7', '#009E73']
 
-# Load settings
+# Style
+plt.rcParams.update({
+    'font.family': 'sans-serif',
+    'font.sans-serif': ['Helvetica', 'Arial', 'DejaVu Sans'],
+    'font.size': 8,
+    'axes.labelsize': 8,
+    'axes.titlesize': 9,
+    'axes.titleweight': 'bold',
+    'xtick.labelsize': 8,
+    'ytick.labelsize': 8,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'axes.spines.left': True,
+    'axes.spines.bottom': True,
+    'axes.grid': False,
+    'lines.linewidth': 1.0,
+    'figure.titlesize': 12,
+    'figure.titleweight': 'bold',
+})
+
+# Load data
 settings = files.read_settings_file("../../config/settings.yaml")
-shap_type = 'conditional' if CONDITIONAL else 'standard'
-results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
-
-# Load SHAP values aggregated across all sites
-filepath = Path(results_outdir) / f"3_AllSites_SHAP-ScenarioSums-{shap_type}_{FLUX}.parquet"
+shap_type = 'conditional'
+results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+filepath = Path(results_outdir) / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
+df_main = shapvals_df[['SITE', 'IGBP', 'SCENARIO'] + SHAP_COLS].copy()
+df_main = df_main.loc[df_main['SCENARIO'].isin(SCENARIO_ORDER)].copy()
+df_main = df_main.loc[df_main['IGBP'].isin(IGBP_CLASSES)].copy()
 
-df = shapvals_df.copy()
-df = df.drop('SITE', axis=1, inplace=False)
-df = df.drop('CONDITION', axis=1, inplace=False)
-df = df.loc[df['IGBP'] == 'EBF'].copy()
-
-# df = df.loc[df['N_VALUES'] > 6].copy()
-
-# Stats
-subset = df[['SCENARIO', 'N_VALUES']].copy()
-subset_stats = subset.groupby('SCENARIO').describe()
-print(subset_stats.loc[1])
-print(subset_stats.loc[4])
-print(subset_stats.loc[5])
-# print(f"Used scenarios:\n"
-#       f"#1: {subset_stats.loc[1].values[0]} values on average per site\n"
-#       f"#4: {subset_stats.loc[4].values[0]} values\n"
-#       f"#5: {subset_stats.loc[5].values[0]} values")
-
-shaps = '_SHAPVALS_OVR_MEDIAN'
-# shaps = '_SHAPVALS_OVR_ABS_MEDIAN'
-# shaps = '_SHAPVALS_POS_AVG'
-# shaps = '_SHAPVALS_NEG_AVG'
-variables = ['SWIN', 'TA', 'VPD', 'SWC']
-shap_value_columns = [variables[0] + shaps, variables[1] + shaps, variables[2] + shaps, variables[3] + shaps]
-
-dfcols = ['IGBP', 'SCENARIO'] + shap_value_columns
-df = df[dfcols].copy()
-df_melted = df.melt(
-    id_vars=['IGBP', 'SCENARIO'],
-    value_vars=shap_value_columns,
-    var_name='SHAP_FEATURE',
-    value_name='SHAP_VALUE'
-)
-df_melted.dropna(subset=['SHAP_VALUE'], inplace=True)
-
-# Define colors for each feature
-feature_colors = ['#b2df8a', '#fdbf6f', '#fb9a99', '#a6cee3']
-line_colors = ['#33a02c', '#ff7f00', '#e31a1c', '#1f77b4']
-# feature_colors = ['#88c0d0', '#bf616a', '#a3be8c', '#ebcb8b']
-# line_colors = ['#5e81ac', '#a4424e', '#7a996b', '#d0af6f']
-# feature_colors = ['#48d0b7', '#f8719e', '#a286fc', '#f7a85c']
-# line_colors = ['#009688', '#d94575', '#7c59eb', '#f58728']
-# feature_colors = ['#9fa6ff', '#ff8673', '#69f2c2', '#d09fff']
-# line_colors = ['#636efa', '#ef553b', '#00cc96', '#ab63fa']
-# feature_colors = ['#F0E442', '#E69F00', '#56B4E9', '#CC79A7']
-# line_colors = ['#cba90d', '#b87f00', '#0072B2', '#a35f85']
-# feature_colors = ['#66c2a5', '#fdb462', '#8da0cb', '#e78ac3']
-# line_colors = ['#1b7837', '#b15928', '#386cb0', '#c51b7d']
-# feature_colors = ['#FFEB3B', '#FF9800', '#EF5350', '#64B5F6', ]
-# line_colors = ['#F9A825', '#BF360C', '#B71C1C', '#0D47A1', ]
-# feature_colors = ['#EF9A9A', '#FFE082', '#90CAF9', '#C5E1A5']
-# line_colors = ['#880E4F', '#E65100', '#01579B', '#33691E']
+# Global scaling
+all_values_flat = df_main[SHAP_COLS].values.flatten()
+Y_MIN_GLOBAL = np.nanmin(all_values_flat)
+Y_MAX_GLOBAL = np.nanmax(all_values_flat)
+pad = (Y_MAX_GLOBAL - Y_MIN_GLOBAL) * 0.1
+Y_LIMITS = (Y_MIN_GLOBAL - pad, Y_MAX_GLOBAL + pad)
 
 
-# Get unique scenarios
-# scenarios = sorted(df_melted['SCENARIO'].unique())
-scenarios = [1, 4, 5]
-n_scenarios = len(scenarios)
-scenario_description = {
-    0: "(a) All data",
-    1: "(a) Normal conditions",
-    2: "(c) Dry soil",
-    3: "(d) Hot temperatures",
-    4: "(b) Dry soil and hot temperatures",
-    5: "(c) Compound extremes"
-}
+# Plotting engine
+def plot_panel(ax, df, feature_col, color, show_x=False, show_y=False, is_main=False):
+    pivot = df.pivot(index='SITE', columns='SCENARIO', values=feature_col).reindex(columns=SCENARIO_ORDER)
 
-# Determine subplot grid layout
-ncols = 3
-nrows = int(np.ceil(n_scenarios / ncols))
+    if pivot.dropna(how='all').empty:
+        ax.set_ylim(Y_LIMITS)
+        ax.axis('off')
+        return
 
-n_vals = -9999
+    medians = pivot.median(axis=0)
+    q1 = pivot.quantile(0.25, axis=0)
+    q3 = pivot.quantile(0.75, axis=0)
+    x_coords = np.arange(N_SCENARIOS)
 
-# Create the figure and GridSpec
-fig = plt.figure(figsize=(5 * ncols, 5 * nrows))
-gs = gridspec.GridSpec(nrows, ncols, figure=fig)
-ax_objects = []
+    # Style
+    lw_trend = 2 if is_main else 2
+    s_node = 20 if is_main else 20
+    alpha_ghost = 0.05 if is_main else 0.08
+    linewidth = 1 if is_main else 1
 
-# Loop through scenarios to create subplots and plot
-for i, scenario in enumerate(scenarios):
-    ax = fig.add_subplot(gs[i // ncols, i % ncols])
-    ax_objects.append(ax)
+    # Ghost lines
+    ax.plot(x_coords, pivot.T.values, color="gray", alpha=alpha_ghost, linewidth=linewidth, zorder=1)
+    if not is_main:
+        # IQR ribbon
+        ax.fill_between(x_coords, q1, q3, color=color, alpha=0.25, linewidth=0, zorder=2)
+        # ax.plot(x_coords, q1, color=color, alpha=0.3, linewidth=0.5, linestyle=':', zorder=2)
+        # ax.plot(x_coords, q3, color=color, alpha=0.3, linewidth=0.5, linestyle=':', zorder=2)
+    # Median trend
+    ax.plot(x_coords, medians, color=color, linewidth=lw_trend, alpha=0.9, zorder=4)
+    ax.scatter(x_coords, medians, facecolor=color, edgecolor='white', linewidth=1.2, s=s_node, zorder=5)
 
-    scenario_data = df_melted[df_melted['SCENARIO'] == scenario]
+    # Sina Points
+    for x_i, scen in enumerate(SCENARIO_ORDER):
+        if scen not in pivot:
+            continue
+        data = pivot[scen].dropna()
+        if len(data) < 2:
+            ax.scatter([x_i] * len(data), data, color=color, s=5, alpha=0.5, zorder=3)
+            continue
 
-    # Iterate through each feature to plot it
-    for pos, feature_name in enumerate(shap_value_columns):
-        # Filter data for the specific feature
-        feature_data = scenario_data[scenario_data['SHAP_FEATURE'] == feature_name]['SHAP_VALUE']
-        color = feature_colors[pos]
+        kde = gaussian_kde(data)
+        density = kde(data)
+        width = (density / density.max()) * 0.22
+        rng = np.random.RandomState(42 + x_i)
+        jitter = rng.uniform(-1, 1, size=len(data)) * width
+        s_sina = 6 if is_main else 5
+        ax.scatter(x_i + jitter, data, color=color, s=s_sina, alpha=0.6, linewidth=0, zorder=3)
 
-        _n_sites = feature_data.count()
-        _median = feature_data.median()
-        _min = feature_data.min()
-        _max = feature_data.max()
-        _n_sites_larger_zero = (feature_data > 0).sum()
-        _n_sites_smaller_zero = (feature_data < 0).sum()
-        _perc_larger_zero = _n_sites_larger_zero / _n_sites * 100
-        _perc_smaller_zero = _n_sites_smaller_zero / _n_sites * 100
+    # Formatting
+    ax.set_ylim(Y_LIMITS)
+    ax.axhline(0, color='black', linestyle='--', linewidth=0.6, alpha=0.5, zorder=0)
+    ax.set_xlim(-0.5, 2.5)
+    ax.set_xticks(x_coords)
 
-        print(f"\nscenario: {scenario}")
-        print(f"feature name: {feature_name}")
-        print(f"sites: {_n_sites}")
-        print(f"median: {_median:.3f} ({_min:.3f}, {_max:.3f})")
-        print(f"sites with positive, negative impact: {_n_sites_larger_zero} ({_perc_larger_zero:.0f}%), "
-              f"{(_n_sites_smaller_zero)} ({_perc_smaller_zero:.0f}%)")
-
-        if pos == 0:
-            n_vals = len(feature_data)
-
-        # # The "Rain" (Strip Plot), with random jitter to the x-axis
-        # jitter = np.random.normal(loc=pos - 0.25, scale=0.04, size=len(feature_data))
-        # ax.scatter(jitter, feature_data, color=line_colors[pos], alpha=0.2, s=5, zorder=2)
-
-        # 1. Calculate KDE first
-        kde = gaussian_kde(feature_data)
-
-        # 2. Evaluate density at each data point's y-value
-        density_at_points = kde(feature_data)
-
-        # 3. Scale the density to determine the max spread (width) at each point
-        # The '0.2' controls the maximum width of the sina plot. Adjust as needed.
-        sina_width = (density_at_points / density_at_points.max()) * 0.2
-
-        # 4. Generate random offsets scaled by the calculated width
-        random_offsets = np.random.uniform(-1, 1, size=len(feature_data)) * sina_width
-
-        # 5. Define the final x-positions for the scatter plot
-        # The 'pos - 0.25' centers the sina plot to the left, matching your old jitter.
-        sina_x = pos - 0.15 + random_offsets
-
-        # The "Rain" (Sina Plot)
-        ax.scatter(sina_x, feature_data, color=line_colors[pos],
-                   edgecolor='none',
-                   alpha=0.3, s=16, zorder=2)
-
-        # Boxplot (Summary Plot)
-        box = ax.boxplot(
-            feature_data,
-            positions=[pos + 0.15],
-            showfliers=False,
-            widths=0.15,
-            patch_artist=True,
-            boxprops=dict(facecolor=feature_colors[pos], edgecolor=line_colors[pos], alpha=0.8),
-            medianprops=dict(color='black', linewidth=2),
-            whiskerprops=dict(color=line_colors[pos]),
-            capprops=dict(color=line_colors[pos]),
-            zorder=3
-        )
-
-        # # Half-violin plot, calculate kernel density estimate
-        # if not feature_data.empty:
-        #     kde = gaussian_kde(feature_data)
-        #     # Create a range of y-values to evaluate the KDE
-        #     y_range = np.linspace(feature_data.min(), feature_data.max(), 100)
-        #     # Evaluate, scale and shift the KDE
-        #     density = kde(y_range)
-        #     scaled_density = density / density.max() * 0.4  # Scale width of the violin
-        #     # Plot filled density curve
-        #     ax.fill_betweenx(
-        #         y_range,
-        #         pos + 0.05,  # Shift to the right of center
-        #         pos + 0.05 + scaled_density,  # Create violin shape
-        #         color=color,
-        #         alpha=0.5,
-        #         zorder=1,
-        #         edgecolor=line_colors[pos]
-        #     )
-
-    # Add title
-    ax.set_title(f'{scenario_description[scenario]}', fontsize=14, x=0.05, y=.95, horizontalalignment='left')
-
-    # Add number of values
-    infotxt = f"n = {n_vals}"
-    if i == 0:
-        infotxt += f" sites"
-    ax.text(0.7, 0.85, infotxt, transform=ax.transAxes, color='black', size=10,
-            ha='left', va='center', zorder=99, backgroundcolor='white')
-
-    ax.tick_params(axis='y', labelsize=14)
-    ax.set_ylabel('')
-    ax.set_xlabel('')
-
-    # Manually set x-ticks and labels since we control the positions
-    ax.set_xticks(range(len(shap_value_columns)))
-    if i >= n_scenarios - ncols:  # Check if bottom-row plot
-        ax.set_xticklabels(variables, rotation=0, ha='center', fontsize=14)
+    # X-Labels
+    if show_x:
+        ax.set_xticklabels(SCENARIO_LABELS, color='#333333')
     else:
         ax.set_xticklabels([])
-        ax.set_xticks([])
+        ax.tick_params(axis='x', length=0)
 
-    if i % ncols != 0:  # Check if it's not a first-column plot
-        ax.set_yticks([])
+    # Y-Labels
+    if show_y:
+        ax.tick_params(axis='y', colors='#333333', length=3)
+    else:
+        ax.set_yticklabels([])
+        ax.set_ylabel("")
+        ax.tick_params(axis='y', length=0)
 
-    # Zero line
-    ax.axhline(0, color='#B0BEC5', linestyle='-', linewidth=1, zorder=0)
+    ax.spines['left'].set_color('#888888')
+    ax.spines['bottom'].set_color('#888888')
 
-    # Hide spines and grid
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    if i % ncols != 0:
-        ax.spines['left'].set_visible(False)
-    if i < n_scenarios - ncols:
-        ax.spines['bottom'].set_visible(False)
-    ax.grid(False)
+    if is_main:
+        ax.set_facecolor('#F9F9F9')
 
-    # Legend
-    # if i == 0:
-    #     legend_elements = [Patch(facecolor=color, label=label, edgecolor='gray')
-    #                        for color, label in zip(feature_colors, feature_labels)]
-    #     ax.legend(handles=legend_elements, loc='lower left', bbox_to_anchor=(0.05, 0.05),
-    #               fontsize=12, frameon=False, ncol=2)
 
-# Share y-axis across all subplots
-y_min_list = [ax.get_ylim()[0] for ax in ax_objects]
-y_max_list = [ax.get_ylim()[1] for ax in ax_objects]
-y_min = min(y_min_list)
-y_max = max(y_max_list)
+# Construct layout
+fig = plt.figure(figsize=(7.68, 9.12), dpi=200)
 
-for ax in ax_objects:
-    ax.set_ylim(y_min, y_max)
-    ax.set_xlim(-0.5, len(shap_value_columns) - 0.5)  # Adjust x-limits
+# 4 rows (variables) x 5 columns (groups)
+# First column ('All Sites') larger width ratio for emphasis
+gs = gridspec.GridSpec(4, 5, figure=fig, wspace=0.1, hspace=0.15,
+                       width_ratios=[2, 1, 1, 1, 1])
 
-# Add single ylabel for the entire figure
-fig.text(0.04, 0.5, 'Median impact on NEP (z-scores)', va='center', rotation='vertical', fontsize=16)
+panel_counter = 0
 
-# Hide any unused subplots
-for i in range(n_scenarios, len(ax_objects)):
-    ax_objects[i].axis('off')
+# Iterate rows (variables)
+for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
+    color = COLORS[row]
+    
+    # Add row label (variable name) on the far left
+    # Position calculated roughly based on row index
+    y_pos = 0.82 - (row * 0.215)
+    fig.text(0.02, y_pos, var_title, rotation=90,
+             va='center', ha='center', fontsize=10, fontweight='bold', color=color)
 
-fig.tight_layout(rect=[0.05, 0, 1, 1])
-gs.update(hspace=.1, wspace=.2)
+    # Iterate columns (groups)
+    for c, group_name in enumerate(COLUMN_ORDER):
+        ax = fig.add_subplot(gs[row, c])
+
+        # Filter data based on column
+        if group_name == 'All Sites':
+            df_sub = df_main
+            is_main = True
+        else:
+            df_sub = df_main[df_main['IGBP'] == group_name]
+            is_main = False
+
+        # Determine axis visibility
+        is_left_col = (c == 0)
+        is_bottom_row = (row == 3)
+
+        plot_panel(ax, df_sub, feature_col, color,
+                   show_x=is_bottom_row, show_y=is_left_col, is_main=is_main)
+
+        # Add column headers on the top row
+        if row == 0:
+            header_color = '#222222'
+            # header_color = '#222222' if is_main else COLORS[0]
+            ax.set_title(group_name, fontsize=11, fontweight='bold', pad=10, color=header_color)
+
+        # Combined letter and title label inside panel
+        letter = chr(97 + panel_counter)
+        # Use black for 'All Sites' label, variable color for IGBPs for visual grouping
+        label_color = '#222222' if is_main else color
+
+        ax.text(0.04, 0.94, f"({letter})", transform=ax.transAxes,
+                fontsize=9, fontweight='bold', va='top', ha='left', color=label_color)
+
+        if is_left_col:
+            ax.set_ylabel("SHAP value (z-score)", labelpad=5, fontsize=9, color='#555555')
+
+        panel_counter += 1
+
+plt.subplots_adjust(left=0.08, right=0.98, top=0.92, bottom=0.08)
 plt.show()

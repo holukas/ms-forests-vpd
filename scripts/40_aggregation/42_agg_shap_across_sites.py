@@ -41,7 +41,7 @@ aggfunc = 'median'
 
 # ------------------------------
 # Agg groups, use z-scores:
-# NEP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# NEP:  [x]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # ET:   [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
@@ -71,7 +71,8 @@ print(f"Number of sites: {len(shapvals_sites_agg_long_df['SITE'].unique())}")
 
 # Keep required columns only
 targets = ('_SHAPVALS', 'BIN_')
-keepcols = [c for c in shapvals_sites_agg_long_df.columns if any(str(c).startswith(t) or str(c).endswith(t) for t in targets)]
+keepcols = [c for c in shapvals_sites_agg_long_df.columns if
+            any(str(c).startswith(t) or str(c).endswith(t) for t in targets)]
 shapvals_sites_agg_long_df = shapvals_sites_agg_long_df[keepcols].copy()
 
 # Remove all rows where all records are NaN,

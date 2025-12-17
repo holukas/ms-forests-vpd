@@ -27,7 +27,7 @@ aggfunc = 'median'
 
 # ------------------------------
 # Agg groups, use z-scores:
-# NEP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# NEP:  [x]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # ET:   [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
@@ -55,10 +55,10 @@ dir_out.mkdir(parents=True, exist_ok=True)
 shapvals_sites_agg_long_df = None
 for ix, siteconfig in subsets_df.iterrows():
 
-    # TODO testing ----
-    if ix > 5:
-        break
-    # TODO testing ----
+    # # TODO testing ----
+    # if ix > 5:
+    #     break
+    # # TODO testing ----
 
     # if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
     #     # Skip files that do not have a parquet subset, b/c of missing SWC

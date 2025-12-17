@@ -1,182 +1,240 @@
-"""
-Transition Plot: Tracks changes in SHAP impact per site across scenarios.
-Refactored for side-by-side boxplots/points, colored lines, and shared y-scaling.
-"""
 from pathlib import Path
-
+from matplotlib import ticker
 import diive as dv
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from scipy.stats import gaussian_kde
 
 import src.files as files
 
-plt.rcParams['font.family'] = 'serif'
-plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
-
-# ------------------------------
-# Configuration
-# ------------------------------
-FLUX = 'NEP'
-CONDITIONAL = True  # SHAP
-
-# Scenarios to track (in order of the transition)
+# --- CONFIGURATION ---
+FLUX = 'NEP_ZSCORE'
+IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
+COLUMN_ORDER = ['All Sites'] + IGBP_CLASSES
 SCENARIO_ORDER = [1, 4, 5]
-SCENARIO_LABELS = ['Normal\nConditions', 'Dry & Hot', 'Compound\nExtremes']
+SCENARIO_LABELS = ['Normal', 'Dry+Hot', 'Compound']
 N_SCENARIOS = len(SCENARIO_ORDER)
 
-# Variables to plot
-VARIABLES_BASE = ['SWIN', 'TA', 'VPD', 'SWC']
+# Variables
+VARIABLES_BASE = ['SWIN_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE']
+VAR_TITLES = ['Solar Rad.', 'Air Temp.', 'VPD', 'Soil Water']  # Shortened for cleaner look
 SHAP_SUFFIX = '_SHAPVALS_OVR_MEDIAN'
 SHAP_COLS = [v + SHAP_SUFFIX for v in VARIABLES_BASE]
 
-# Colors for the 4 variables (used for boxplots/points/lines)
-# SWIN (Greenish), TA (Orange), VPD (Red), SWC (Blue)
-FEATURE_COLORS = ['#b2df8a', '#fdbf6f', '#fb9a99', '#a6cee3']
-LINE_COLORS = ['#33a02c', '#ff7f00', '#e31a1c', '#1f77b4']
+# Okabe-Ito Palette (Colorblind Friendly - Nature Standard)
+COLORS = ['#E69F00', '#D55E00', '#CC79A7', '#009E73']
 
-# ------------------------------
-# Data Loading & Preprocessing
-# ------------------------------
+# Nature Style Dimensions (Double Column ~183mm width)
+FIG_WIDTH_INCHES = 7.2
+FIG_HEIGHT_INCHES = 8.5
+
+# Style Settings
+plt.rcParams.update({
+    'font.family': 'sans-serif',
+    'font.sans-serif': ['Arial', 'Helvetica', 'DejaVu Sans'],
+    'font.size': 7,  # Base font size
+    'axes.labelsize': 8,  # Axis labels
+    'axes.titlesize': 8,  # Panel titles
+    'axes.titleweight': 'bold',
+    'xtick.labelsize': 7,
+    'ytick.labelsize': 7,
+    'axes.linewidth': 0.4,  # Spine thickness
+    'xtick.major.width': 0.8,
+    'ytick.major.width': 0.8,
+    'lines.linewidth': 1.0,
+    'figure.dpi': 300,  # High res for export
+    'savefig.dpi': 300,
+})
+
+# --- DATA LOADING ---
+
+
 settings = files.read_settings_file("../../config/settings.yaml")
-shap_type = 'conditional' if CONDITIONAL else 'standard'
-results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
-
-filepath = Path(results_outdir) / f"3_AllSites_SHAP-ScenarioSums-{shap_type}_{FLUX}.parquet"
+shap_type = 'conditional'
+results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+filepath = Path(results_outdir) / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
+df_main = shapvals_df[['SITE', 'IGBP', 'SCENARIO'] + SHAP_COLS].copy()
+df_main = df_main.loc[df_main['SCENARIO'].isin(SCENARIO_ORDER)].copy()
+df_main = df_main.loc[df_main['IGBP'].isin(IGBP_CLASSES)].copy()
 
-df = shapvals_df.copy()
-# Keep 'SITE' for connecting lines
-df = df[['SITE', 'IGBP', 'SCENARIO'] + SHAP_COLS].copy()
-# Filter for specific IGBP and Scenarios
-df = df.loc[df['IGBP'] == 'ENF'].copy()
-df = df.loc[df['SCENARIO'].isin(SCENARIO_ORDER)].copy()
+# Calculate Global Limits per Variable (Row) to ensure comparison
+Y_LIMITS_PER_ROW = {}
+for col in SHAP_COLS:
+    vals = df_main[col].dropna()
+    vmin, vmax = vals.min(), vals.max()
+    pad = (vmax - vmin) * 0.1
+    Y_LIMITS_PER_ROW[col] = (vmin - pad, vmax + pad)
 
-# --- Calculate Global Y-Limits for Shared Scaling ---
-# Get all SHAP values across the 4 variables to determine common min/max
-all_shap_values = df[SHAP_COLS].values.flatten()
-global_ymin = np.nanmin(all_shap_values)
-global_ymax = np.nanmax(all_shap_values)
 
-# Add a small buffer (e.g., 5% of range) for visual comfort
-y_range_buffer = (global_ymax - global_ymin) * 0.05
-global_ymin -= y_range_buffer
-global_ymax += y_range_buffer
+# --- PLOTTING ENGINE ---
+def plot_panel(ax, df, feature_col, color, show_x=False, show_y=False, is_main=False):
+    pivot = df.pivot(index='SITE', columns='SCENARIO', values=feature_col).reindex(columns=SCENARIO_ORDER)
 
-# ------------------------------
-# Plotting
-# ------------------------------
-# 4 Rows (Variables), 1 Column
-fig = plt.figure(figsize=(7, 14))
-gs = gridspec.GridSpec(4, 1, figure=fig)
+    if pivot.dropna(how='all').empty:
+        ax.set_visible(False)
+        return
 
-axes = []
+    # Stats
+    medians = pivot.median(axis=0)
+    q1 = pivot.quantile(0.25, axis=0)
+    q3 = pivot.quantile(0.75, axis=0)
+    x_coords = np.arange(N_SCENARIOS)
+    n_sites = len(pivot)
 
-for i, (feature_col, var_name) in enumerate(zip(SHAP_COLS, VARIABLES_BASE)):
-    ax = fig.add_subplot(gs[i, 0])
-    axes.append(ax)
+    # 1. Ghost lines (The "Hairball" - keep very faint)
+    # Thinner and more transparent for the background noise
+    alpha_ghost = 0.07 if is_main else 0.08
+    lw_ghost = 0.5
+    ax.plot(x_coords, pivot.T.values, color='gray', alpha=alpha_ghost, linewidth=lw_ghost, zorder=1)
 
-    # Get colors for this variable layer
-    color_fill = FEATURE_COLORS[i]
-    color_line = LINE_COLORS[i]
+    # 2. IQR Ribbon (Crucial for scientific spread)
+    ax.fill_between(x_coords, q1, q3, color=color, alpha=0.15, linewidth=0, zorder=2)
 
-    # Pivot data: Index=SITE, Columns=SCENARIO, Values=Feature
-    # This aligns rows by site for drawing connecting lines
-    pivot_df = df.pivot(index='SITE', columns='SCENARIO', values=feature_col)
-    # Ensure correct column order based on transition path
-    pivot_df = pivot_df[SCENARIO_ORDER]
-
-    # Data list for distribution plots (sina/box)
-    data_per_scenario = [pivot_df[scen].dropna() for scen in SCENARIO_ORDER]
-
-    # --- A. Draw Connecting Lines (The Transition) ---
-    # Base X-coordinates for the scenarios (0, 1, 2)
-    x_coords_base = np.arange(N_SCENARIOS)
-    # Shift lines slightly left to align better with the point clouds
-    x_coords_lines = x_coords_base - 0.15
-
-    # Plot lines representing sites.
-    # Use corresponding variable color, low alpha for "spaghetti" effect.
-    ax.plot(x_coords_lines, pivot_df.T.values,
-            color=color_line, alpha=0.15, linewidth=1, zorder=1)
-
-    # --- B. Draw Distributions (Side-by-Side Sina & Boxplot) ---
-    for x_idx, scenario_data in enumerate(data_per_scenario):
-        if len(scenario_data) < 2: # Need at least 2 points for KDE
+    # 3. Sina / Jitter Points
+    # Controlled jitter that respects density but stays tight
+    for x_i, scen in enumerate(SCENARIO_ORDER):
+        if scen not in pivot:
+            continue
+        data = pivot[scen].dropna()
+        if len(data) < 2:
+            ax.scatter([x_i] * len(data), data, color=color, s=2, alpha=0.5, zorder=3)
             continue
 
-        # Offsets to separate points and boxes
-        pos_points_center = x_idx - 0.15
-        pos_box_center = x_idx + 0.15
+        kde = gaussian_kde(data)
+        density = kde(data)
+        # Normalize width for jitter
+        width_factor = 0.15
+        width = (density / density.max()) * width_factor
+        rng = np.random.RandomState(42 + x_i)
+        jitter = rng.uniform(-1, 1, size=len(data)) * width
 
-        # 1. Sina Plot (Cloud of points)
-        kde = gaussian_kde(scenario_data)
-        density = kde(scenario_data)
-        # Define width of the cloud based on density
-        sina_width = (density / density.max()) * 0.12
-        # Add random jitter within that width
-        jitter = np.random.uniform(-1, 1, size=len(scenario_data)) * sina_width
+        # Plot points
+        s_sina = 4 if is_main else 4
+        alpha_sina = 0.4 if is_main else 0.5
+        ax.scatter(x_i + jitter, data, color=color, s=s_sina, alpha=alpha_sina, linewidth=0, zorder=3)
 
-        ax.scatter(pos_points_center + jitter, scenario_data,
-                   color=color_line, s=15, alpha=0.5, linewidth=0, zorder=2)
+    # 4. Median Trend Line & Nodes
+    lw_trend = 2.0
+    s_node = 25
+    ax.plot(x_coords, medians, color=color, linewidth=lw_trend, alpha=1.0, zorder=5)
+    ax.scatter(x_coords, medians, facecolor=color, edgecolor='white', linewidth=1.0, s=s_node, zorder=6)
 
-        # 2. Boxplot (Summary)
-        ax.boxplot(
-            scenario_data,
-            positions=[pos_box_center],
-            showfliers=False,
-            widths=0.15,
-            patch_artist=True,
-            boxprops=dict(facecolor=color_fill, edgecolor=color_line, alpha=0.9),
-            medianprops=dict(color='black', linewidth=1.5),
-            whiskerprops=dict(color=color_line, linewidth=1),
-            capprops=dict(color=color_line, linewidth=1),
-            zorder=3
-        )
+    # Formatting
+    ax.set_ylim(Y_LIMITS_PER_ROW[feature_col])
 
-    # --- Formatting ---
-    # Apply shared y-scaling
-    ax.set_ylim(global_ymin, global_ymax)
+    # Zero line (subtle)
+    ax.axhline(0, color='black', linestyle='--', linewidth=0.6, alpha=0.5, zorder=0)
 
-    # Y-Label (Variable Name)
-    ax.set_ylabel(f"{var_name}\nImpact (z-score)", fontsize=12, weight='bold', rotation=90, labelpad=15)
+    ax.set_xlim(-0.5, 2.5)
+    ax.set_xticks(x_coords)
 
-    # Zero line indicating neutral impact
-    ax.axhline(0, color='black', linestyle='--', linewidth=1, alpha=0.6, zorder=0)
-
-    # Spines
+    # Clean spines
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    # Keep bottom spine only for the last plot
-    if i < len(SHAP_COLS) - 1:
-         ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_color('black')
 
-    # X-Ticks and Labels
-    ax.set_xlim(-0.6, N_SCENARIOS - 1 + 0.6)
-    # Set ticks at the center of the scenario groups
-    ax.set_xticks(np.arange(N_SCENARIOS))
-
-    # Only show x-labels on the bottom-most plot
-    if i == len(SHAP_COLS) - 1:
-        ax.set_xticklabels(SCENARIO_LABELS, fontsize=11)
-        ax.tick_params(axis='x', length=5)
+    # Tick Styling
+    if show_x:
+        ax.set_xticklabels(SCENARIO_LABELS, rotation=0, color='black')
+        ax.tick_params(axis='x', length=4, width=0.8)
     else:
         ax.set_xticklabels([])
         ax.tick_params(axis='x', length=0)
 
-    # Add subplot label letters (a, b, c, d)
-    letter = chr(97 + i)
-    ax.text(-0.1, 1.02, f"({letter})", transform=ax.transAxes,
-            fontsize=14, fontweight='bold', va='bottom', ha='right')
+    if show_y:
+        ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
+        ax.tick_params(axis='y', colors='black', length=3, direction='out')
+    else:
+        ax.set_yticklabels([])
+        ax.tick_params(axis='y', length=0)
 
-    ax.tick_params(axis='y', labelsize=10)
+    # Sample size annotation (n=...)
+    # Essential for Nature figures
+    ax.text(0.08, 0.08, f'n={n_sites}', transform=ax.transAxes,
+            fontsize=6, color='#555555', ha='left', va='bottom')
 
-# --- Global Cleanup ---
-fig.suptitle(f"Transition of {FLUX} Impact per Site (IGBP: EBF)", fontsize=14, y=0.96, weight='bold')
-plt.tight_layout()
-# Adjust spacing to prevent label overlap and accommodate suptitle
-plt.subplots_adjust(top=0.93, hspace=0.1, left=0.15, right=0.95, bottom=0.08)
+    # Highlight "All Sites" background slightly
+    if is_main:
+        ax.patch.set_facecolor('#f7f7f7')
+        ax.patch.set_alpha(0.5)
+    else:
+        ax.patch.set_alpha(0.0)
+
+
+# --- LAYOUT CONSTRUCTION ---
+fig = plt.figure(figsize=(FIG_WIDTH_INCHES, FIG_HEIGHT_INCHES))
+
+# GridSpec: 4 Rows x 6 Cols (5 Data + 1 Spacer)
+# We insert a narrow spacer column (index 1) between "All Sites" and "IGBP"
+gs = gridspec.GridSpec(4, 6, figure=fig,
+                       width_ratios=[2.2, 0.05, 1, 1, 1, 1],  # Spacer is 0.15 relative width
+                       height_ratios=[1, 1, 1, 1],
+                       wspace=0.1, hspace=0.15)
+
+panel_counter = 0
+
+for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
+    color = COLORS[row]
+
+    # Row Label (Variable) - Rotated on left
+    # Using figure text allows exact placement independent of axis coordinates
+    y_pos = 0.82 - (row * 0.22)  # Approximate calculation based on height
+
+    # Add Variable Title on the far left (Y-Axis Label equivalent)
+    # Create a dummy axis for the label if needed, or use fig.text
+    # Here we put it on the first axes ylabel for alignment
+
+    # Iterate Columns
+    # Map visual columns (0, 2, 3, 4, 5) to data groups. Skip col 1 (Spacer)
+    current_col_idx = 0
+
+    for grid_col in range(6):
+        if grid_col == 1: continue  # Spacer
+
+        group_name = COLUMN_ORDER[current_col_idx]
+        current_col_idx += 1
+
+        ax = fig.add_subplot(gs[row, grid_col])
+
+        # Filter Data
+        if group_name == 'All Sites':
+            df_sub = df_main
+            is_main = True
+        else:
+            df_sub = df_main[df_main['IGBP'] == group_name]
+            is_main = False
+
+        is_left_col = (grid_col == 0)
+        is_bottom_row = (row == 3)
+
+        plot_panel(ax, df_sub, feature_col, color,
+                   show_x=is_bottom_row, show_y=is_left_col, is_main=is_main)
+
+        # Column Headers
+        if row == 0:
+            ax.set_title(group_name, fontsize=8, fontweight='bold', pad=8, color='black')
+
+        # Y-Axis Label (only for first column)
+        if is_left_col:
+            ax.set_ylabel(var_title + "\n(z-score)", fontsize=8, fontweight='bold', color=color, labelpad=4)
+
+        # Panel Lettering: (a), (b), ...
+        # Nature style: Bold lowercase letter, top left
+        letter = chr(97 + panel_counter)
+        ax.text(0.05, 0.92, f"({letter})", transform=ax.transAxes,
+                fontsize=8, fontweight='bold', va='top', ha='left',
+                color='black', zorder=10)  # Always black for readability
+
+        panel_counter += 1
+
+# Final Layout Adjustment
+# We rely on GridSpec, but a final tight_layout with padding helps
+plt.subplots_adjust(left=0.1, right=0.98, top=0.95, bottom=0.06)
+
+# Save function helper
+# plt.savefig('nature_transition_plot.pdf', dpi=300, bbox_inches='tight')
 
 plt.show()
