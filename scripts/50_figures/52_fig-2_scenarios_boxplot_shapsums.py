@@ -4,12 +4,12 @@ import diive as dv
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import ticker
-from scipy.stats import gaussian_kde
+import pandas as pd
 
 import src.files as files
+from src.plot import plot_scenario_panel
 
-# --- CONFIGURATION ---
+# Settings
 FLUX = 'NEP_ZSCORE'
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 COLUMN_ORDER = ['All Sites'] + IGBP_CLASSES
@@ -24,14 +24,14 @@ VAR_TITLES = ['Incoming shortwave radiation', 'Air Temperature', 'Vapor pressure
 SHAP_SUFFIX = '_SHAPVALS_OVR_MEDIAN'
 SHAP_COLS = [v + SHAP_SUFFIX for v in VARIABLES_BASE]
 
-# Okabe-Ito Palette (Colorblind Friendly - Nature Standard)
+# Okabe-Ito palette (colorblind friendly)
 COLORS = ['#E69F00', '#D55E00', '#CC79A7', '#009E73']
 
-# Nature Style Dimensions (Double Column ~183mm width)
+# Figure dimensions (double column ~183mm width)
 FIG_WIDTH_INCHES = 7.2
 FIG_HEIGHT_INCHES = 8.5
 
-# Style Settings
+# Style settings
 plt.rcParams.update({
     'font.family': 'sans-serif',
     'font.sans-serif': ['Arial', 'Helvetica', 'DejaVu Sans'],
@@ -49,9 +49,7 @@ plt.rcParams.update({
     'savefig.dpi': 300,
 })
 
-# --- DATA LOADING ---
-
-
+# Load data
 settings = files.read_settings_file("../../config/settings.yaml")
 shap_type = 'conditional'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
@@ -61,14 +59,6 @@ df_main = shapvals_df[['SITE', 'IGBP', 'SCENARIO'] + SHAP_COLS].copy()
 df_main = df_main.loc[df_main['SCENARIO'].isin(SCENARIO_ORDER)].copy()
 df_main = df_main.loc[df_main['IGBP'].isin(IGBP_CLASSES)].copy()
 
-# # Calculate Global Limits per Variable (Row) to ensure comparison
-# Y_LIMITS_PER_ROW = {}
-# for col in SHAP_COLS:
-#     vals = df_main[col].dropna()
-#     vmin, vmax = vals.min(), vals.max()
-#     pad = (vmax - vmin) * 0.1
-#     Y_LIMITS_PER_ROW[col] = (vmin - pad, vmax + pad)
-
 # Global scaling
 all_values_flat = df_main[SHAP_COLS].values.flatten()
 Y_MIN_GLOBAL = np.nanmin(all_values_flat)
@@ -76,113 +66,19 @@ Y_MAX_GLOBAL = np.nanmax(all_values_flat)
 pad = (Y_MAX_GLOBAL - Y_MIN_GLOBAL) * 0.1
 Y_LIMITS = (Y_MIN_GLOBAL - pad, Y_MAX_GLOBAL + pad)
 
-# --- PLOTTING ENGINE ---
-def plot_panel(ax, df, feature_col, color, show_x=False, show_y=False, is_main=False):
-    pivot = df.pivot(index='SITE', columns='SCENARIO', values=feature_col).reindex(columns=SCENARIO_ORDER)
+# Plotting engine
 
-    if pivot.dropna(how='all').empty:
-        ax.set_visible(False)
-        return
-
-    # Stats
-    medians = pivot.median(axis=0)
-    q1 = pivot.quantile(0.25, axis=0)
-    q3 = pivot.quantile(0.75, axis=0)
-    x_coords = np.arange(N_SCENARIOS)
-    n_sites = len(pivot)
-
-    # 1. Ghost lines (The "Hairball" - keep very faint)
-    # Thinner and more transparent for the background noise
-    alpha_ghost = 0.07 if is_main else 0.08
-    lw_ghost = 0.5
-    ax.plot(x_coords, pivot.T.values, color='gray', alpha=alpha_ghost, linewidth=lw_ghost, zorder=1)
-
-    # 2. IQR Ribbon (Crucial for scientific spread)
-    ax.fill_between(x_coords, q1, q3, color=color, alpha=0.15, linewidth=0, zorder=2)
-
-    # 3. Sina / Jitter Points
-    # Controlled jitter that respects density but stays tight
-    for x_i, scen in enumerate(SCENARIO_ORDER):
-        if scen not in pivot:
-            continue
-        data = pivot[scen].dropna()
-        if len(data) < 2:
-            ax.scatter([x_i] * len(data), data, color=color, s=2, alpha=0.5, zorder=3)
-            continue
-
-        kde = gaussian_kde(data)
-        density = kde(data)
-        # Normalize width for jitter
-        width_factor = 0.15
-        width = (density / density.max()) * width_factor
-        rng = np.random.RandomState(42 + x_i)
-        jitter = rng.uniform(-1, 1, size=len(data)) * width
-
-        # Plot points
-        s_sina = 4 if is_main else 4
-        alpha_sina = 0.4 if is_main else 0.5
-        ax.scatter(x_i + jitter, data, color=color, s=s_sina, alpha=alpha_sina, linewidth=0, zorder=3)
-
-    # 4. Median Trend Line & Nodes
-    lw_trend = 2.0
-    s_node = 25
-    ax.plot(x_coords, medians, color=color, linewidth=lw_trend, alpha=1.0, zorder=5)
-    ax.scatter(x_coords, medians, facecolor=color, edgecolor='white', linewidth=1.0, s=s_node, zorder=6)
-
-    # Formatting
-    ax.set_ylim(Y_LIMITS)
-
-    # Zero line (subtle)
-    ax.axhline(0, color='black', linestyle='--', linewidth=0.6, alpha=0.5, zorder=0)
-
-    ax.set_xlim(-0.5, 2.5)
-    ax.set_xticks(x_coords)
-
-    # Clean spines
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_color('black')
-    ax.spines['bottom'].set_color('black')
-
-    # Tick Styling
-    if show_x:
-        ax.set_xticklabels(SCENARIO_LABELS, rotation=45, ha='right', color='black')
-        ax.tick_params(axis='x', length=4, width=0.8)
-    else:
-        ax.set_xticklabels([])
-        ax.tick_params(axis='x', length=0)
-
-    if show_y:
-        ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.1f'))  # Only 1 digit after comma
-        ax.tick_params(axis='y', colors='black', length=3, direction='out')
-    else:
-        ax.set_yticklabels([])
-        ax.tick_params(axis='y', length=0)
-
-    # Sample size annotation (n=...)
-    # Essential for Nature figures
-    ax.text(0.08, 0.08, f'n={n_sites}', transform=ax.transAxes,
-            fontsize=6, color='#555555', ha='left', va='bottom')
-
-    # Highlight "All Sites" background slightly
-    if is_main:
-        ax.patch.set_facecolor('#f7f7f7')
-        ax.patch.set_alpha(0.5)
-    else:
-        ax.patch.set_alpha(0.0)
-
-
-# --- LAYOUT CONSTRUCTION ---
+# Figure
 fig = plt.figure(figsize=(FIG_WIDTH_INCHES, FIG_HEIGHT_INCHES))
 
-# GridSpec: 4 Rows x 6 Cols (5 Data + 1 Spacer)
-# We insert a narrow spacer column (index 1) between "All Sites" and "IGBP"
+# GridSpec: 4 rows x 6 cols (5 data + 1 spacer)
 gs = gridspec.GridSpec(4, 6, figure=fig,
-                       width_ratios=[2.2, 0.05, 1, 1, 1, 1],  # Spacer is 0.15 relative width
+                       width_ratios=[2.2, 0.025, 1, 1, 1, 1],  # Spacer is 0.15 relative width
                        height_ratios=[1, 1, 1, 1],
                        wspace=0.1, hspace=0.15)
 
 panel_counter = 0
+featurestats_df = None  # Collects stats for each feature, scenario and IGBP
 
 for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
     color = COLORS[row]
@@ -217,21 +113,30 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
             is_main = False
 
         is_left_col = (grid_col == 0)
+        is_top_row = (row == 0)
         is_bottom_row = (row == 3)
 
-        plot_panel(ax, df_sub, feature_col, color,
-                   show_x=is_bottom_row, show_y=is_left_col, is_main=is_main)
+        # Plot feature effects and collect stats
+        cur_featurestats_df = plot_scenario_panel(
+            ax, df_sub, feature_col, color, group_name=group_name, columns=SCENARIO_ORDER, n_scenarios=N_SCENARIOS,
+            scenario_labels=SCENARIO_LABELS, y_limits=Y_LIMITS, show_x=is_bottom_row, show_y=is_left_col,
+            is_main=is_main, show_n_vals=is_top_row)
 
-        # Column Headers
+        # Collect feature stats in table
+        if panel_counter == 0:
+            featurestats_df = cur_featurestats_df.copy()
+        else:
+            featurestats_df = pd.concat([featurestats_df, cur_featurestats_df], axis=0)
+
+        # Column headers
         if row == 0:
             ax.set_title(group_name, fontsize=8, fontweight='bold', pad=8, color='black')
 
-        # Y-Axis Label (only for first column)
+        # y-axis label (only for first column)
         if is_left_col:
             ax.set_ylabel(var_title + "\n(z-score)", fontsize=8, fontweight='bold', color="black", labelpad=4)
 
-        # Panel Lettering: (a), (b), ...
-        # Nature style: Bold lowercase letter, top left
+        # Panel letters: (a), (b), ...
         letter = chr(97 + panel_counter)
         ax.text(0.05, 0.92, f"({letter})", transform=ax.transAxes,
                 fontsize=8, fontweight='bold', va='top', ha='left',
@@ -239,11 +144,64 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
 
         panel_counter += 1
 
-# Final Layout Adjustment
-# We rely on GridSpec, but a final tight_layout with padding helps
+# Final layout adjustment
 plt.subplots_adjust(left=0.1, right=0.98, top=0.95, bottom=0.07)
 
 # Save function helper
-# plt.savefig('nature_transition_plot.pdf', dpi=300, bbox_inches='tight')
+# plt.savefig('transition_plot.pdf', dpi=300, bbox_inches='tight')
+
+# Format table
+# Clean up variable and scenario names
+var_map = {
+    'VPD_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Vapor Pressure Deficit (VPD)',
+    'TA_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Air Temperature (TA)',
+    'SWC_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Soil Water Content (SWC)',
+    'SWIN_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Incoming Shortwave Radiation (SWIN)'
+}
+df = featurestats_df.copy()
+df['Feature'] = df['Feature'].map(var_map)
+
+scen_map = {1: 'Normal', 4: 'Dry and hot', 5: 'Compound extremes'}
+df['Scenario'] = df['Scenario'].map(scen_map)
+
+# Construct formatted strings for table cells
+df['Stats'] = df.apply(lambda r: f"{r['Median']:.2f} ({r['Min']:.2f}, {r['Max']:.2f})", axis=1)
+df['NegImpact'] = df.apply(lambda r: f"{r['Sites < 0']} ({r['% < 0']:.0f})", axis=1)
+
+# Pivot to wide format for Word comparison
+stats_p = df.pivot(index=['Feature', 'IGBP'], columns='Scenario', values='Stats')
+neg_p = df.pivot(index=['Feature', 'IGBP'], columns='Scenario', values='NegImpact')
+
+# Interleave rows
+scen_order = ['Normal', 'Dry and hot', 'Compound extremes']
+final_rows = []
+
+for idx in stats_p.index:
+    # Row 1: The quantitative statistics
+    s_row = stats_p.loc[idx][scen_order].to_dict()
+    s_row['Variable - Group'] = f"{idx[0]} - {idx[1]}"
+    s_row['Variable'] = f"{idx[0]}"
+    s_row['IGBP'] = f"{idx[1]}"
+    s_row['Data Type'] = 'Median (Min, Max)'
+
+    final_rows.append(s_row)
+
+    # Row 2: The count of sites with negative impact
+    n_row = neg_p.loc[idx][scen_order].to_dict()
+    n_row['Variable - Group'] = f"{idx[0]} - {idx[1]}"
+    s_row['Variable'] = f"{idx[0]}"
+    s_row['IGBP'] = f"{idx[1]}"
+    n_row['Data Type'] = 'Sites < 0 (%)'
+    final_rows.append(n_row)
+
+
+final_table = pd.DataFrame(final_rows)
+print(final_table[['Variable', 'IGBP', 'Data Type'] + scen_order].to_string(index=False))
+# print(final_table[['Variable - Group', 'Data Type'] + scen_order].to_string(index=False))
+
+
+
+pd.set_option('display.max_rows', 3000)
+print(final_table)
 
 plt.show()
