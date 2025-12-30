@@ -18,14 +18,14 @@ SCENARIO_LABELS = ['Normal', 'Dry and hot', 'Extremes']
 N_SCENARIOS = len(SCENARIO_ORDER)
 
 # Variables
-VARIABLES_BASE = ['SWIN_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE']
-VAR_TITLES = ['Incoming shortwave radiation', 'Air Temperature', 'Vapor pressure deficit',
-              'Soil water content']  # Shortened for cleaner look
+VARIABLES_BASE = ['VPD_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'SWIN_ZSCORE']
+VAR_TITLES = ['Vapor pressure deficit', 'Air Temperature',
+              'Soil water content', 'Incoming shortwave radiation']
 SHAP_SUFFIX = '_SHAPVALS_OVR_MEDIAN'
 SHAP_COLS = [v + SHAP_SUFFIX for v in VARIABLES_BASE]
 
 # Okabe-Ito palette (colorblind friendly)
-COLORS = ['#E69F00', '#D55E00', '#CC79A7', '#009E73']
+COLORS = ['#D55E00', '#CC79A7', '#009E73', '#E69F00']
 
 # Figure dimensions (double column ~183mm width)
 FIG_WIDTH_INCHES = 7.2
@@ -63,8 +63,8 @@ df_main = df_main.loc[df_main['IGBP'].isin(IGBP_CLASSES)].copy()
 all_values_flat = df_main[SHAP_COLS].values.flatten()
 Y_MIN_GLOBAL = np.nanmin(all_values_flat)
 Y_MAX_GLOBAL = np.nanmax(all_values_flat)
-pad = (Y_MAX_GLOBAL - Y_MIN_GLOBAL) * 0.1
-Y_LIMITS = (Y_MIN_GLOBAL - pad, Y_MAX_GLOBAL + pad)
+pad = (Y_MAX_GLOBAL - Y_MIN_GLOBAL) * 0.15
+Y_LIMITS = (Y_MIN_GLOBAL - pad, Y_MAX_GLOBAL)
 
 # Plotting engine
 
@@ -115,12 +115,13 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
         is_left_col = (grid_col == 0)
         is_top_row = (row == 0)
         is_bottom_row = (row == 3)
+        is_first = (grid_col == 0) and (row == 0)
 
         # Plot feature effects and collect stats
         cur_featurestats_df = plot_scenario_panel(
             ax, df_sub, feature_col, color, group_name=group_name, columns=SCENARIO_ORDER, n_scenarios=N_SCENARIOS,
             scenario_labels=SCENARIO_LABELS, y_limits=Y_LIMITS, show_x=is_bottom_row, show_y=is_left_col,
-            is_main=is_main, show_n_vals=is_top_row)
+            is_main=is_main, is_top_row=is_top_row, is_first=is_first)
 
         # Collect feature stats in table
         if panel_counter == 0:
@@ -153,10 +154,10 @@ plt.subplots_adjust(left=0.1, right=0.98, top=0.95, bottom=0.07)
 # Format table
 # Clean up variable and scenario names
 var_map = {
-    'VPD_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Vapor Pressure Deficit (VPD)',
-    'TA_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Air Temperature (TA)',
-    'SWC_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Soil Water Content (SWC)',
-    'SWIN_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Incoming Shortwave Radiation (SWIN)'
+    'VPD_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Vapor Pressure Deficit',
+    'TA_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Air Temperature',
+    'SWC_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Soil Water Content',
+    'SWIN_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Incoming Shortwave Radiation'
 }
 df = featurestats_df.copy()
 df['Feature'] = df['Feature'].map(var_map)
@@ -170,7 +171,7 @@ df['NegImpact'] = df.apply(lambda r: f"{r['Sites < 0']} ({r['% < 0']:.0f})", axi
 
 # Pivot to wide format for Word comparison
 stats_p = df.pivot(index=['Feature', 'IGBP'], columns='Scenario', values='Stats')
-neg_p = df.pivot(index=['Feature', 'IGBP'], columns='Scenario', values='NegImpact')
+# neg_p = df.pivot(index=['Feature', 'IGBP'], columns='Scenario', values='NegImpact')
 
 # Interleave rows
 scen_order = ['Normal', 'Dry and hot', 'Compound extremes']
@@ -186,22 +187,30 @@ for idx in stats_p.index:
 
     final_rows.append(s_row)
 
-    # Row 2: The count of sites with negative impact
-    n_row = neg_p.loc[idx][scen_order].to_dict()
-    n_row['Variable - Group'] = f"{idx[0]} - {idx[1]}"
-    s_row['Variable'] = f"{idx[0]}"
-    s_row['IGBP'] = f"{idx[1]}"
-    n_row['Data Type'] = 'Sites < 0 (%)'
-    final_rows.append(n_row)
+    # # Row 2: The count of sites with negative impact
+    # n_row = neg_p.loc[idx][scen_order].to_dict()
+    # n_row['Variable - Group'] = f"{idx[0]} - {idx[1]}"
+    # n_row['Variable'] = f"{idx[0]}"
+    # n_row['IGBP'] = f"{idx[1]}"
+    # n_row['Data Type'] = 'Sites < 0 (%)'
+    # final_rows.append(n_row)
 
-
-final_table = pd.DataFrame(final_rows)
-print(final_table[['Variable', 'IGBP', 'Data Type'] + scen_order].to_string(index=False))
+table = pd.DataFrame(final_rows)
+table = table[['Variable', 'IGBP'] + scen_order]
+pd.set_option('display.max_rows', 3000)
+print(table.to_string(index=False))
 # print(final_table[['Variable - Group', 'Data Type'] + scen_order].to_string(index=False))
 
-
-
-pd.set_option('display.max_rows', 3000)
-print(final_table)
-
 plt.show()
+
+# # Save table to file
+# dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+# outfilepath = dir_out / '52_TABLE-1_scenarios_boxplot_shapsums.csv'
+# table.to_csv(outfilepath, index=False)
+
+
+
+# # Save fig to file
+# dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+# outfilepath = dir_out / '52_fig-2_scenarios_boxplot_shapsums.png'
+# fig.savefig(outfilepath, dpi=300, bbox_inches='tight')

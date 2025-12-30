@@ -6,8 +6,8 @@ from matplotlib import ticker
 from scipy.stats import gaussian_kde
 
 
-def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limits, show_n_vals, group_name,
-                        scenario_labels, show_x=False, show_y=False, is_main=False):
+def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limits, is_top_row, group_name,
+                        scenario_labels, show_x=False, show_y=False, is_main=False, is_first=False):
     pivot = df.pivot(index='SITE', columns='SCENARIO', values=feature_col).reindex(columns=columns)
 
     if pivot.dropna(how='all').empty:
@@ -41,7 +41,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     x_coords = np.arange(n_scenarios)
 
     # Ghost lines (faint)
-    alpha_ghost = 0.07 if is_main else 0.08
+    alpha_ghost = 0.1 if is_main else 0.15
     lw_ghost = 0.5
     ax.plot(x_coords, pivot.T.values, color='gray', alpha=alpha_ghost, linewidth=lw_ghost, zorder=1)
 
@@ -74,15 +74,42 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
         n_sites = len(data)
 
         # Sample size annotation, show in first row only
-        if show_n_vals:
-            ax.text(x_coords[x_i], -1, f'n={n_sites}',
-                    fontsize=6, color='#555555', ha='center', va='center')
+        if is_top_row:
+            ax.text(x_coords[x_i], 0.9, f'n={n_sites}',
+                    fontsize=7, color='#555555', ha='center', va='center')
 
-        # # Percentage of sites below zero (i.e., negatively affected)
+        # Percentage of sites below zero (i.e., negatively affected)
+        n_sites_below_zero = data[data < 0].count()
+        perc_n_sites_below_zero = n_sites_below_zero / n_sites * 100
+
+        # Decide text label
+        text = f'{perc_n_sites_below_zero:.0f}%'
+        # text = f'{perc_n_sites_below_zero:.0f}% negative' if is_first else f'{perc_n_sites_below_zero:.0f}%'
+
+        # Implement percentage pill background
+        # We use white text for high-impact visibility if the background is dark,
+        # or keep the line color for the text and use a faint version for the pill.
+        alpha = 0.8 if perc_n_sites_below_zero > 70 else 0.5
+        ax.text(x_coords[x_i], -1.38, text,
+                fontsize=7,
+                color='white',  # White text for high contrast inside the pill
+                fontweight='bold',  # Bold to make it pop
+                ha='center', va='center',
+                zorder=10,  # Ensure it stays on top of all lines
+                bbox=dict(
+                    boxstyle='round,pad=0.3',
+                    facecolor=color,  # Match the variable's color (VPD gold, etc.)
+                    edgecolor='none',  # No border for a cleaner look
+                    alpha=alpha  # Slight transparency to stay approachable
+                ))
+        # Percentage of sites below zero (i.e., negatively affected)
         # n_sites_below_zero = data[data < 0].count()
         # perc_n_sites_below_zero = n_sites_below_zero / n_sites * 100
-        # ax.text(x_coords[x_i], -1.2, f'{n_sites_below_zero} ({perc_n_sites_below_zero:.0f}%)',
-        #         fontsize=6, color='#555555', ha='center', va='center')
+        # text = f'{perc_n_sites_below_zero:.0f}% negative' if is_first else f'{perc_n_sites_below_zero:.0f}%'
+        # ax.text(x_coords[x_i], -1.3, text,
+        #         fontsize=7, color=color, ha='center', va='center')
+        # # ax.text(x_coords[x_i], -1.2, f'{n_sites_below_zero} ({perc_n_sites_below_zero:.0f}%)',
+        # #         fontsize=6, color='#555555', ha='center', va='center')
 
     # Median trend line and nodes
     lw_trend = 2.0
@@ -92,9 +119,15 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
 
     # Formatting
     ax.set_ylim(y_limits)
-
-    # Zero line
-    ax.axhline(0, color='black', linestyle='--', linewidth=0.6, alpha=0.5, zorder=0)
+    # 1. Shade the Negative Region (add this before the zero line)
+    # Use a very light gray to indicate the "constraint zone"
+    ax.axhspan(y_limits[0], 0, facecolor='#f0f0f0', alpha=0.6, zorder=0)
+    # 2. Zero line
+    ax.axhline(0, color='black', linestyle='--', linewidth=0.6, alpha=0.6, zorder=0)
+    # # Formatting
+    # ax.set_ylim(y_limits)
+    # # Zero line
+    # ax.axhline(0, color='black', linestyle='--', linewidth=0.6, alpha=0.5, zorder=0)
 
     # Format x-axis
     ax.set_xlim(-0.5, 2.5)
@@ -121,12 +154,12 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
         ax.set_yticklabels([])
         ax.tick_params(axis='y', length=0)
 
-    # Highlight "All Sites" background
-    if is_main:
-        ax.patch.set_facecolor('#f7f7f7')
-        ax.patch.set_alpha(0.5)
-    else:
-        ax.patch.set_alpha(0.0)
+    # # Highlight "All Sites" background
+    # if is_main:
+    #     ax.patch.set_facecolor('#f7f7f7')
+    #     ax.patch.set_alpha(0.5)
+    # else:
+    #     ax.patch.set_alpha(0.0)
 
     return featurestats_df
 
