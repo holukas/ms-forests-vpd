@@ -11,24 +11,24 @@ import src.scenarios as s
 # NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
 
 # Settings for searching in the correct (sub)folder
-FLUX = 'NEP_ZSCORE'
-# FLUX = 'ET_ZSCORE'
+# FLUX = 'NEP_ZSCORE'
+FLUX = 'ET_ZSCORE'
 # FLUX = 'GPP_ZSCORE'
 # FLUX = 'RECO_ZSCORE'
 CONDITIONAL = True  # SHAP
 
 # Aggregation combos: xvar / yvar
-VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWIN_ZSCORE', 'TA_ZSCORE']
 # VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWIN_ZSCORE', 'VPD_ZSCORE']
-# VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
+VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
 # aggfunc = 'median'
 
 # ------------------------------
 # Agg groups, use z-scores:
-# NEP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
-# ET:   [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# NEP:  [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
+# ET:   [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
 # GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # ------------------------------

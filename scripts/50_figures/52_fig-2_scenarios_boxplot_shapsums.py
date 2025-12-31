@@ -151,8 +151,9 @@ plt.subplots_adjust(left=0.1, right=0.98, top=0.95, bottom=0.07)
 # Save function helper
 # plt.savefig('transition_plot.pdf', dpi=300, bbox_inches='tight')
 
-# Format table
-# Clean up variable and scenario names
+# --------------
+# CREATE TABLE 1
+# --------------
 var_map = {
     'VPD_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Vapor Pressure Deficit',
     'TA_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Air Temperature',
@@ -161,56 +162,40 @@ var_map = {
 }
 df = featurestats_df.copy()
 df['Feature'] = df['Feature'].map(var_map)
-
 scen_map = {1: 'Normal', 4: 'Dry and hot', 5: 'Compound extremes'}
 df['Scenario'] = df['Scenario'].map(scen_map)
-
 # Construct formatted strings for table cells
 df['Stats'] = df.apply(lambda r: f"{r['Median']:.2f} ({r['Min']:.2f}, {r['Max']:.2f})", axis=1)
 df['NegImpact'] = df.apply(lambda r: f"{r['Sites < 0']} ({r['% < 0']:.0f})", axis=1)
 
-# Pivot to wide format for Word comparison
-stats_p = df.pivot(index=['Feature', 'IGBP'], columns='Scenario', values='Stats')
-# neg_p = df.pivot(index=['Feature', 'IGBP'], columns='Scenario', values='NegImpact')
+# Pivot to wide format for table in MS Word
+SCENARIO_ORDER = ['Normal', 'Dry and hot', 'Compound extremes']
+IGBP_ORDER = ['All Sites', 'ENF', 'DBF', 'MF', 'EBF']
+VAR_ORDER = ['Vapor Pressure Deficit', 'Air Temperature',
+             'Soil Water Content', 'Incoming Shortwave Radiation']
+table_1 = df.pivot_table(index=['Feature', 'IGBP'],
+                         columns='Scenario',
+                         values='Stats',
+                         aggfunc='first')
 
-# Interleave rows
-scen_order = ['Normal', 'Dry and hot', 'Compound extremes']
-final_rows = []
+# Reorder columns (Scenarios) and the second level of the index (IGBP)
+table_1 = table_1.reindex(columns=SCENARIO_ORDER)
+table_1 = table_1.reindex(level='IGBP', index=IGBP_ORDER)
+table_1 = table_1.reindex(level='Feature', index=VAR_ORDER)
 
-for idx in stats_p.index:
-    # Row 1: The quantitative statistics
-    s_row = stats_p.loc[idx][scen_order].to_dict()
-    s_row['Variable - Group'] = f"{idx[0]} - {idx[1]}"
-    s_row['Variable'] = f"{idx[0]}"
-    s_row['IGBP'] = f"{idx[1]}"
-    s_row['Data Type'] = 'Median (Min, Max)'
+# Save table to file
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+outfilepath = dir_out / f'52_TABLE-1_Scenarios_ShapMedians_{FLUX}.csv'
+table_1.to_csv(outfilepath, index=True)
 
-    final_rows.append(s_row)
-
-    # # Row 2: The count of sites with negative impact
-    # n_row = neg_p.loc[idx][scen_order].to_dict()
-    # n_row['Variable - Group'] = f"{idx[0]} - {idx[1]}"
-    # n_row['Variable'] = f"{idx[0]}"
-    # n_row['IGBP'] = f"{idx[1]}"
-    # n_row['Data Type'] = 'Sites < 0 (%)'
-    # final_rows.append(n_row)
-
-table = pd.DataFrame(final_rows)
-table = table[['Variable', 'IGBP'] + scen_order]
+# Show table
 pd.set_option('display.max_rows', 3000)
-print(table.to_string(index=False))
-# print(final_table[['Variable - Group', 'Data Type'] + scen_order].to_string(index=False))
+print(table_1.to_string(index=True))
 
+# Save fig to file
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+outfilepath = dir_out / f'52_FIG-2_Scenarios_SinaPlots_ShapMedians_{FLUX}.png'
+fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
+
+# Show figure
 plt.show()
-
-# # Save table to file
-# dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-# outfilepath = dir_out / '52_TABLE-1_scenarios_boxplot_shapsums.csv'
-# table.to_csv(outfilepath, index=False)
-
-
-
-# # Save fig to file
-# dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-# outfilepath = dir_out / '52_fig-2_scenarios_boxplot_shapsums.png'
-# fig.savefig(outfilepath, dpi=300, bbox_inches='tight')

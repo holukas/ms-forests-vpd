@@ -155,4 +155,7 @@ fig.tight_layout()
 gs.update(wspace=.2)
 fig.show()
 
-# Print increase/decrease locations
+# Save fig to file
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+outfilepath = dir_out / f'51_FIG-1_Flameplots_ShapMedians_{FLUX}.png'
+fig.savefig(outfilepath, dpi=300, bbox_inches='tight')

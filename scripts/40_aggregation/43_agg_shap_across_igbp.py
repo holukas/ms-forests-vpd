@@ -10,8 +10,8 @@ from src.aggregation import aggregate_shap_values_across_sites
 # NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
 
 # Settings for searching in the correct (sub)folder
-FLUX = 'NEP_ZSCORE'
-# FLUX = 'ET_ZSCORE'
+# FLUX = 'NEP_ZSCORE'
+FLUX = 'ET_ZSCORE'
 # FLUX = 'GPP_ZSCORE'
 # FLUX = 'RECO_ZSCORE'
 CONDITIONAL = True  # SHAP
@@ -26,8 +26,8 @@ aggfunc = 'median'
 
 # ------------------------------
 # Agg groups, use z-scores:
-# NEP:  [x]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
-# ET:   [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# NEP:  [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
+# ET:   [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
 # GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # ------------------------------
