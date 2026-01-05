@@ -13,16 +13,20 @@ import src.plot as plot
 from src.common import findpoi
 
 # Settings & variables
-FLUX, xvar, yvar, zvar = 'NEP_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
+FLUX, xvar, yvar, zvar = 'NEP_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
+# FLUX, xvar, yvar, zvar = 'NEP_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
+# FLUX, xvar, yvar, zvar = 'NEP_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
 aggfunc, CONDITIONAL = 'median', True
-n_sites_min, n_sites_used, cb_digits, area_size = 30, 171, 1, 50
+n_sites_min, cb_digits, area_size = 30, 1, 50
 cmap, igbps = 'RdYlBu', ['ENF', 'DBF', 'MF', 'EBF']
 # plt.rcParams['font.family'] = 'serif'
 # plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 beautify = {
     "NEP_ZSCORE": "NEP",
+    "ET_ZSCORE": "ET",
     "TA_ZSCORE": "Air temperature",
-    "VPD_ZSCORE": "VPD"
+    "VPD_ZSCORE": "VPD",
+    "SWC_ZSCORE": "SWC"
 }
 AX_LABELS_FONTSIZE = 16
 

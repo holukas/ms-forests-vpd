@@ -10,7 +10,7 @@ import src.files as files
 from src.plot import plot_scenario_panel
 
 # Settings
-FLUX = 'NEP_ZSCORE'
+FLUX = 'ET_ZSCORE'
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 COLUMN_ORDER = ['All Sites'] + IGBP_CLASSES
 SCENARIO_ORDER = [1, 4, 5]
