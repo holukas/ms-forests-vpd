@@ -29,8 +29,8 @@ aggfunc = 'median'
 # Agg groups, use z-scores:
 # NEP:  [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
 # ET:   [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
-# GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
-# RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# GPP:  [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
+# RECO: [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
 # ------------------------------
 
 xvar = VARS[0]

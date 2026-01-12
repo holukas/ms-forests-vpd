@@ -13,9 +13,19 @@ import src.plot as plot
 from src.common import findpoi
 
 # Settings & variables
-FLUX, xvar, yvar, zvar = 'NEP_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
-# FLUX, xvar, yvar, zvar = 'NEP_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
-# FLUX, xvar, yvar, zvar = 'NEP_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
+FLUX = 'NEP_ZSCORE'
+# FLUX = 'ET_ZSCORE'
+# FLUX = 'GPP_ZSCORE'
+# FLUX = 'RECO_ZSCORE'
+
+# Agg groups, use z-scores:
+xvar, yvar, zvar = 'TA_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
+# xvar, yvar, zvar = 'SWIN_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE'
+# xvar, yvar, zvar = 'SWC_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
+# xvar, yvar, zvar = 'SWIN_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
+# xvar, yvar, zvar = 'TA_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE'
+# ------------------------------
+
 aggfunc, CONDITIONAL = 'median', True
 n_sites_min, cb_digits, area_size = 30, 1, 50
 cmap, igbps = 'RdYlBu', ['ENF', 'DBF', 'MF', 'EBF']
@@ -26,13 +36,14 @@ beautify = {
     "ET_ZSCORE": "ET",
     "TA_ZSCORE": "Air temperature",
     "VPD_ZSCORE": "VPD",
-    "SWC_ZSCORE": "SWC"
+    "SWC_ZSCORE": "SWC",
+    "SWIN_ZSCORE": "SWIN",
 }
 AX_LABELS_FONTSIZE = 16
 
 # Labels & Columns
 xlabel, ylabel = f'{beautify[xvar]} (z-score)', f'{beautify[yvar]} (z-score)'
-zlabel = f'SHAP value of {beautify[zvar]} (z-score)'
+zlabel = f'{beautify[zvar]} effect on {beautify[FLUX]} (SHAP value median z-score)'
 cols = {k: (f"BIN_{k}", aggfunc) for k in [xvar, yvar]}
 z_col, z_cnt = (f"{zvar}_SHAPVALS", aggfunc), (f"{zvar}_SHAPVALS", "count")
 
@@ -160,6 +171,8 @@ gs.update(wspace=.2)
 fig.show()
 
 # Save fig to file
+usedx = df_all.columns[0]
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'51_FIG-1_Flameplots_ShapMedians_{FLUX}.png'
+outfilepath = dir_out / (f'51_FIG-1_Flameplots_ShapMedians_{FLUX}_'
+                         f'{df_all.columns[0]}+{df_all.columns[1]}+{df_all.columns[2]}.png')
 fig.savefig(outfilepath, dpi=300, bbox_inches='tight')

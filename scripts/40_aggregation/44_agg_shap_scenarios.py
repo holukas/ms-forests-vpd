@@ -12,9 +12,9 @@ import src.scenarios as s
 
 # Settings for searching in the correct (sub)folder
 # FLUX = 'NEP_ZSCORE'
-FLUX = 'ET_ZSCORE'
+# FLUX = 'ET_ZSCORE'
 # FLUX = 'GPP_ZSCORE'
-# FLUX = 'RECO_ZSCORE'
+FLUX = 'RECO_ZSCORE'
 CONDITIONAL = True  # SHAP
 
 # Aggregation combos: xvar / yvar
@@ -29,8 +29,8 @@ VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
 # Agg groups, use z-scores:
 # NEP:  [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
 # ET:   [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
-# GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
-# RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# GPP:  [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
+# RECO: [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
 # ------------------------------
 
 # Load settings

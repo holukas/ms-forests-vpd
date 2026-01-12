@@ -22,8 +22,8 @@ CONDITIONAL = True  # Use conditional SHAP instead of standard SHAP
 # Calculate SHAP values for:
 # [x] NEP_ZSCORE
 # [x] ET_ZSCORE
-# [ ] GPP_ZSCORE
-# [ ] RECO_ZSCORE
+# [x] GPP_ZSCORE
+# [x] RECO_ZSCORE
 # ------------------------------
 
 

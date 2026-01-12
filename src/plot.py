@@ -46,7 +46,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     ax.plot(x_coords, pivot.T.values, color='gray', alpha=alpha_ghost, linewidth=lw_ghost, zorder=1)
 
     # IQR ribbon
-    ax.fill_between(x_coords, q1, q3, color=color, alpha=0.15, linewidth=0, zorder=2)
+    ax.fill_between(x_coords, q1, q3, color=color, alpha=0.25, linewidth=0, zorder=2)
 
     # Sina / jitter points
     # Controlled jitter that respects density but stays tight

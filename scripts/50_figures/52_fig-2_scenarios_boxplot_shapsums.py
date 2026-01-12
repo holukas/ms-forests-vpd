@@ -10,17 +10,20 @@ import src.files as files
 from src.plot import plot_scenario_panel
 
 # Settings
-FLUX = 'ET_ZSCORE'
+# FLUX = 'NEP_ZSCORE'
+# FLUX = 'GPP_ZSCORE'
+FLUX = 'RECO_ZSCORE'
+# FLUX = 'ET_ZSCORE'
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
-COLUMN_ORDER = ['All Sites'] + IGBP_CLASSES
+COLUMN_ORDER = ['All sites'] + IGBP_CLASSES
 SCENARIO_ORDER = [1, 4, 5]
-SCENARIO_LABELS = ['Normal', 'Dry and hot', 'Extremes']
+SCENARIO_LABELS = ['Normal', 'Dry/hot', 'Extremes']
 N_SCENARIOS = len(SCENARIO_ORDER)
 
 # Variables
 VARIABLES_BASE = ['VPD_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'SWIN_ZSCORE']
-VAR_TITLES = ['Vapor pressure deficit', 'Air Temperature',
-              'Soil water content', 'Incoming shortwave radiation']
+VAR_TITLES = ['Vapor pressure deficit effect', 'Air temperature effect',
+              'Soil water content effect', 'Incoming shortwave radiation effect']
 SHAP_SUFFIX = '_SHAPVALS_OVR_MEDIAN'
 SHAP_COLS = [v + SHAP_SUFFIX for v in VARIABLES_BASE]
 
@@ -60,11 +63,16 @@ df_main = df_main.loc[df_main['SCENARIO'].isin(SCENARIO_ORDER)].copy()
 df_main = df_main.loc[df_main['IGBP'].isin(IGBP_CLASSES)].copy()
 
 # Global scaling
-all_values_flat = df_main[SHAP_COLS].values.flatten()
-Y_MIN_GLOBAL = np.nanmin(all_values_flat)
-Y_MAX_GLOBAL = np.nanmax(all_values_flat)
-pad = (Y_MAX_GLOBAL - Y_MIN_GLOBAL) * 0.15
-Y_LIMITS = (Y_MIN_GLOBAL - pad, Y_MAX_GLOBAL)
+# Global limits for NEP are: (np.float64(), np.float64(1.536760039509245))
+# In case a different flux than NEP is plotted, the global limits for NEP are used
+if FLUX == 'NEP_ZSCORE':
+    all_values_flat = df_main[SHAP_COLS].values.flatten()
+    Y_MIN_GLOBAL = np.nanmin(all_values_flat)
+    Y_MAX_GLOBAL = np.nanmax(all_values_flat)
+    pad = (Y_MAX_GLOBAL - Y_MIN_GLOBAL) * 0.15
+    Y_LIMITS = (Y_MIN_GLOBAL - pad, Y_MAX_GLOBAL)
+else:
+    Y_LIMITS = (-1.5785025622990305, 1.536760039509245)
 
 # Plotting engine
 
@@ -105,7 +113,7 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
         ax = fig.add_subplot(gs[row, grid_col])
 
         # Filter Data
-        if group_name == 'All Sites':
+        if group_name == 'All sites':
             df_sub = df_main
             is_main = True
         else:
@@ -131,16 +139,19 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
 
         # Column headers
         if row == 0:
-            ax.set_title(group_name, fontsize=8, fontweight='bold', pad=8, color='black')
+            # fig.suptitle("XXX")
+            ax.set_title(group_name, fontsize=7, fontweight='bold', pad=8, color='black')
 
         # y-axis label (only for first column)
         if is_left_col:
-            ax.set_ylabel(var_title + "\n(z-score)", fontsize=8, fontweight='bold', color="black", labelpad=4)
+            var_title = var_title.replace(" ", r"\ ")
+            label_text = r"$\mathbf{" + var_title + "}$" + "\n(z-score)"
+            ax.set_ylabel(label_text, fontsize=7, color="black", labelpad=4)
 
         # Panel letters: (a), (b), ...
         letter = chr(97 + panel_counter)
         ax.text(0.05, 0.92, f"({letter})", transform=ax.transAxes,
-                fontsize=8, fontweight='bold', va='top', ha='left',
+                fontsize=7, fontweight='bold', va='top', ha='left',
                 color='black', zorder=10)  # Always black for readability
 
         panel_counter += 1
@@ -155,13 +166,13 @@ plt.subplots_adjust(left=0.1, right=0.98, top=0.95, bottom=0.07)
 # CREATE TABLE 1
 # --------------
 var_map = {
-    'VPD_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Vapor Pressure Deficit',
-    'TA_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Air Temperature',
-    'SWC_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Soil Water Content',
-    'SWIN_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Incoming Shortwave Radiation'
+    'VPD_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Vapor pressure deficit',
+    'TA_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Air temperature',
+    'SWC_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Soil water content',
+    'SWIN_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Incoming shortwave radiation'
 }
 df = featurestats_df.copy()
-df['Feature'] = df['Feature'].map(var_map)
+df['Driver'] = df['Feature'].map(var_map)
 scen_map = {1: 'Normal', 4: 'Dry and hot', 5: 'Compound extremes'}
 df['Scenario'] = df['Scenario'].map(scen_map)
 # Construct formatted strings for table cells
@@ -170,10 +181,10 @@ df['NegImpact'] = df.apply(lambda r: f"{r['Sites < 0']} ({r['% < 0']:.0f})", axi
 
 # Pivot to wide format for table in MS Word
 SCENARIO_ORDER = ['Normal', 'Dry and hot', 'Compound extremes']
-IGBP_ORDER = ['All Sites', 'ENF', 'DBF', 'MF', 'EBF']
-VAR_ORDER = ['Vapor Pressure Deficit', 'Air Temperature',
-             'Soil Water Content', 'Incoming Shortwave Radiation']
-table_1 = df.pivot_table(index=['Feature', 'IGBP'],
+IGBP_ORDER = ['All sites', 'ENF', 'DBF', 'MF', 'EBF']
+VAR_ORDER = ['Vapor pressure deficit', 'Air temperature',
+             'Soil water content', 'Incoming shortwave radiation']
+table_1 = df.pivot_table(index=['Driver', 'IGBP'],
                          columns='Scenario',
                          values='Stats',
                          aggfunc='first')
@@ -181,7 +192,35 @@ table_1 = df.pivot_table(index=['Feature', 'IGBP'],
 # Reorder columns (Scenarios) and the second level of the index (IGBP)
 table_1 = table_1.reindex(columns=SCENARIO_ORDER)
 table_1 = table_1.reindex(level='IGBP', index=IGBP_ORDER)
-table_1 = table_1.reindex(level='Feature', index=VAR_ORDER)
+table_1 = table_1.reindex(level='Driver', index=VAR_ORDER)
+
+# Format table for output
+# Driver names are on separate rows
+# Create a list to store the rows for the "grouped" version
+grouped_rows = []
+
+# 3. Iterate through each unique driver to insert the header row
+for driver in table_1.index.levels[0]:
+    # Add the "Header" row for the Driver
+    # We use None or empty strings for the scenario columns in this header row
+    grouped_rows.append(
+        {'Environmental driver / IGBP': f"{driver}", 'Normal': '', 'Dry and hot': '', 'Compound extremes': ''})
+
+    # Get the data for just this driver
+    driver_data = table_1.loc[driver]
+
+    # Add each IGBP row under this driver
+    for igbp, row in driver_data.iterrows():
+        grouped_rows.append({
+            'Environmental driver / IGBP': f"  {igbp}",  # Indent for better visual hierarchy
+            'Normal': row['Normal'],
+            'Dry and hot': row['Dry and hot'],
+            'Compound extremes': row['Compound extremes']
+        })
+
+# 4. Create the final "Presentation" DataFrame
+table_1 = pd.DataFrame(grouped_rows)
+table_1.set_index('Environmental driver / IGBP', inplace=True)
 
 # Save table to file
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
