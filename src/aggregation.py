@@ -9,9 +9,9 @@ def aggregate_shap_values_across_sites(df, binx, biny) -> pd.DataFrame:
     df['BIN_COMBINED_STR'] = df[binx].astype(str) + "+" + df[biny].astype(str)
 
     # Aggregations for all columns, excluding binx and biny
-    other_aggregations = ['mean', 'median', 'max', 'min', 'count', 'std']
-    # other_aggregations = ['mean', 'median', 'max', 'min', 'count', 'std',
-    #                       lambda x: x.quantile(0.25), lambda x: x.quantile(0.75)]
+    # other_aggregations = ['mean', 'median', 'max', 'min', 'count', 'std']
+    other_aggregations = ['mean', 'median', 'max', 'min', 'count', 'std',
+                          lambda x: x.quantile(0.25), lambda x: x.quantile(0.75)]
 
     # Aggregation for binx and biny (only median)
     bin_aggregations = ['median']

@@ -1,9 +1,51 @@
+import matplotlib.gridspec as gridspec
 import diive as dv
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib import ticker
 from scipy.stats import gaussian_kde
+from src.common import findpoi
+
+
+def layout_5panels():
+    fig = plt.figure(figsize=(19.8, 8.1), dpi=150, facecolor="white")
+    gs = gridspec.GridSpec(2, 5, width_ratios=[1, 1, 1, 1, 0.1])
+    ax_all = fig.add_subplot(gs[0:2, 0:2])
+    axes_sub = [fig.add_subplot(gs[r, c], sharex=ax_all, sharey=ax_all) for r, c in [(0, 2), (0, 3), (1, 2), (1, 3)]]
+    cax = fig.add_subplot(gs[:, 4])
+    return fig, gs, ax_all, axes_sub, cax
+
+
+def plot_markers(ax, df, xvals, yvals, zvals, flux_txt, ax_labels_fontsize, area_size, annotate=False):
+    """Finds min/max regions, plots markers, and optionally adds arrows."""
+    piv = df.pivot(index=xvals, columns=yvals, values=zvals)
+    locs = {m: findpoi(df=piv, k=area_size, agg='mean', what=m)[0] for m in ['max', 'min']}
+
+    for m_type, (lx, ly) in locs.items():
+        x, y = lx + 0.05, ly + 0.05
+        marker = '+' if m_type == 'max' else '_'
+        ax.scatter(x, y, c='k', marker=marker, lw=3, s=650, zorder=100, alpha=0.5)
+        ax.scatter(x, y, facecolors='none', edgecolors='k', marker='o', lw=3, s=650, zorder=100, alpha=0.5)
+
+        if annotate:
+            txt, y_off = (f'highest {flux_txt} increase', 2) if m_type == 'max' else (
+                f'highest {flux_txt} decrease', 0.9)
+            tx_pos = (x - 3, y + y_off) if m_type == 'max' else (x - 1, y + y_off)
+            ha = 'left' if m_type == 'max' else 'center'
+            ax.annotate(txt, xy=(x, y), xytext=tx_pos, arrowprops=dict(arrowstyle="->", color='k', lw=3, shrinkB=15),
+                        fontsize=ax_labels_fontsize, color='black', ha=ha, va='center', zorder=100)
+    # print(f"Max: {locs['max']}, Min: {locs['min']}")
+    return locs
+
+
+def style_ax(ax, title, ax_labels_fontsize):
+    ax.text(0.03 if 'All' in title else 0.06, 0.98 if 'All' in title else 1, title, transform=ax.transAxes,
+            size=ax_labels_fontsize, ha='left', va='bottom' if 'All' in title else 'top',
+            zorder=100, backgroundcolor='white')
+    ax.axhline(0, c='k', ls='--', lw=1, zorder=99)
+    ax.axvline(0, c='k', ls='--', lw=1, zorder=99)
+    ax.set_aspect('equal')
 
 
 def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limits, is_top_row, group_name,

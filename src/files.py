@@ -9,6 +9,37 @@ import yaml
 from diive.core.times.times import insert_timestamp
 from scipy.stats import zscore
 
+def load_data(suffix, shap_type, dir_res, xvar, yvar, zvar, flux, z_cnt, n_sites_min, cols, z_col, site_filter=None):
+    """
+    Loads parquet, flattens cols, optionally filters by index.
+    suffix: 'Sites' (for main plot, prefix 42) or 'IGBP-X' (for subplots, prefix 43)
+    """
+    # Select 42 for 'Sites' (AggregatedAcrossSites) and 43 for IGBP (AggregatedAcrossIGBP)
+    prefix = "42" if suffix == 'Sites' else "43"
+    filename = f"{prefix}_SHAPVALUES-{shap_type}_AggregatedAcross{suffix}_BIN-{xvar}+BIN-{yvar}+{flux}.parquet"
+    fp = dir_res / filename
+    df = dv.load_parquet(fp, sanitize_timestamp=False, output_middle_timestamp=False)
+
+    # Filter to match the index of the main plot (for IGBP subplots)
+    if site_filter is not None:
+        df = df[df.index.isin(site_filter)].copy()
+
+    # Apply count threshold (n_sites_min for main plot, 0 for IGBP b/c we simply count the
+    # number of available sites in the previous line)
+    threshold = n_sites_min if suffix == 'Sites' else 1
+    mask = df[z_cnt] >= threshold
+    df = df[mask].copy()
+
+    # Count number of sites (min, max)
+    _counts = df[f"{zvar}_SHAPVALS"]['count']
+    n_sites = [_counts.min(), _counts.max()]
+
+    # Prepare subset for plotting
+    sub = df[[cols[xvar], cols[yvar], z_col]].copy()
+    sub.columns = ['_'.join(c).strip() for c in sub.columns]
+
+    return df, sub, n_sites
+
 
 def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, ix: int, varnames, site: str,
                                  igbp: str, origin: str) -> dict:

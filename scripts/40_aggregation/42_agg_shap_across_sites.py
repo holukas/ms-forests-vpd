@@ -32,11 +32,11 @@ FLUX = 'RECO_ZSCORE'
 CONDITIONAL = True  # SHAP
 
 # Aggregation combos: xvar / yvar
-# VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
+VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWIN_ZSCORE', 'TA_ZSCORE']
 # VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWIN_ZSCORE', 'VPD_ZSCORE']
-VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
+# VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
 aggfunc = 'median'
 
 # ------------------------------
