@@ -22,20 +22,26 @@ from src.fit import fit_polynomial
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 
-# ------------------------------
-# Variables
-# NEP, NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC
-FLUX = 'NEP'
-xvar = 'VPD'
-yvar = 'VPD'  # SHAP values
-aggfunc = 'median'
-CONDITIONAL = True  # SHAP
+# Settings & variables
+FLUX = 'NEP_ZSCORE'
+# FLUX = 'ET_ZSCORE'
+# FLUX = 'GPP_ZSCORE'
+# FLUX = 'RECO_ZSCORE'
 
-filename_x = 'TA'
-zvar = 'TA'  # Colors
+# Agg groups, use z-scores:
+filenamex = 'BIN-TA_ZSCORE'
+filenamey = 'BIN-VPD_ZSCORE'
+xvar, yvar, zvar = 'VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE'
+# xvar, yvar, zvar = 'SWIN_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE'
+# xvar, yvar, zvar = 'SWC_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
+# xvar, yvar, zvar = 'SWIN_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
+# xvar, yvar, zvar = 'TA_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE'
+# ------------------------------
+
+aggfunc, CONDITIONAL = 'median', True
 
 descriptive_flux = {
-    'NEP': 'net CO$_{2}$ exchange',
+    'NEP_ZSCORE': 'net CO$_{2}$ exchange',
 }
 
 # Plot settings
@@ -51,18 +57,18 @@ show_fit = True
 # ------------------------------
 
 x = (f"BIN_{xvar}", aggfunc)
-y = (f"{yvar}_SHAPVALS", aggfunc)
-y_counts = (f"{yvar}_SHAPVALS", "count")
+y = (f"{yvar}", aggfunc)
+y_counts = (f"{yvar}", "count")
 z = (f"BIN_{zvar}", aggfunc)
 
 # Load settings
 settings = files.read_settings_file("../../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
-results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
+results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+# 42_SHAPVALUES-conditional_AggregatedAcrossSites_BIN-TA_ZSCORE+BIN-VPD_ZSCORE+NEP_ZSCORE
 
 # Load SHAP values aggregated across all sites
-filepath = Path(
-    results_outdir) / f"3_AllSites_Aggregated_SHAPValues-{shap_type}_BIN-{filename_x}_BIN-{yvar}_{FLUX}.parquet"
+filepath = Path(results_outdir) / f"42_SHAPVALUES-{shap_type}_AggregatedAcrossSites_{filenamex}+{filenamey}+{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 keeplocs = shapvals_df[y_counts] >= n_sites_min
 shapvals_df = shapvals_df[keeplocs].copy()
@@ -149,18 +155,32 @@ if show_fit:
 else:
     fillbetweenplot = None
 
-# IQR
-iqr_low25 = shapvals_df[(f"{yvar}_SHAPVALS", "<lambda_0>")]
-iqr_high75 = shapvals_df[(f"{yvar}_SHAPVALS", "<lambda_1>")]
+# Standard deviation
+sd = shapvals_df[(f"{yvar}", "std")]
+median_plus_sd = shapvals_df[(f"{yvar}", aggfunc)] + sd
+median_minus_sd = shapvals_df[(f"{yvar}", aggfunc)] - sd
 plotparams = dict(marker='o', s=5, zorder=1, alpha=.2, edgecolors='none', color='#6c757d')
-iqrplot = ax.scatter(X_data, iqr_low25, label="IQR", **plotparams)
-ax.scatter(X_data, iqr_high75, **plotparams)
+sdplot = ax.scatter(X_data, median_plus_sd, label="IQR", **plotparams)
+ax.scatter(X_data, median_minus_sd, **plotparams)
 
 # Legend 2 for IQR and fill_between plot
 if show_fit:
-    handles = [fillbetweenplot, iqrplot]
+    handles = [fillbetweenplot, sdplot]
 else:
-    handles = [iqrplot]
+    handles = [sdplot]
+
+# # IQR
+# iqr_low25 = shapvals_df[(f"{yvar}", "<lambda_0>")]
+# iqr_high75 = shapvals_df[(f"{yvar}", "<lambda_1>")]
+# plotparams = dict(marker='o', s=5, zorder=1, alpha=.2, edgecolors='none', color='#6c757d')
+# iqrplot = ax.scatter(X_data, iqr_low25, label="IQR", **plotparams)
+# ax.scatter(X_data, iqr_high75, **plotparams)
+
+# # Legend 2 for IQR and fill_between plot
+# if show_fit:
+#     handles = [fillbetweenplot, iqrplot]
+# else:
+#     handles = [iqrplot]
 
 legend2 = ax.legend(handles=handles, loc='upper left', bbox_to_anchor=(0.65, 1.02),
                     frameon=False, ncol=1, labelspacing=.3, fontsize=9)
@@ -176,8 +196,10 @@ max_ix = np.argmax(y_fit)
 idx = (np.abs(y_fit - 0)).argmin()
 
 # Detect min/max value shown in plot
-_temp = iqr_high75.max() * 1.2
-_temp2 = iqr_low25.min()
+_temp = median_plus_sd.max() * 1.2
+_temp2 = median_minus_sd.min()
+# _temp = iqr_high75.max() * 1.2
+# _temp2 = iqr_low25.min()
 ax.set_ylim(_temp2, _temp)
 
 # Add text and connecting dashed lines for SHAP max, zero, and min
@@ -218,20 +240,27 @@ if show_shap_thresholds:
 # Add arrow to highlight one of the IQR data points
 select_x = 1.8
 locations1 = (X_data == select_x)  # Create a boolean mask for locations where X_data is 1.7
-filtered_iqr = iqr_low25[locations1]  # Filter iqr_low25 using the boolean mask
+filtered_iqr = median_minus_sd[locations1]  # Filter median_minus_sd using the boolean mask
+# filtered_iqr = iqr_low25[locations1]  # Filter iqr_low25 using the boolean mask
 min_iqr_value = np.min(filtered_iqr)  # Find the minimum value in the filtered array
 
-# Combine both conditions: X_data is *select_x* AND iqr_low25 is the minimum value
-final_location_mask = (X_data == select_x) & (iqr_low25 == min_iqr_value)
-iqr_point_index = np.where(final_location_mask)[0][0]  # Get the index of the element that meets both criteria
+# Combine both conditions: X_data is *select_x* AND median_minus_sd is the minimum value
+final_location_mask = (X_data == select_x) & (median_minus_sd == min_iqr_value)
+sd_point_index = np.where(final_location_mask)[0][0]  # Get the index of the element that meets both criteria
+iqr_x = float(X_data[sd_point_index])
+iqr_y = float(median_minus_sd[sd_point_index])
+
+# # Combine both conditions: X_data is *select_x* AND iqr_low25 is the minimum value
+# final_location_mask = (X_data == select_x) & (iqr_low25 == min_iqr_value)
+# iqr_point_index = np.where(final_location_mask)[0][0]  # Get the index of the element that meets both criteria
 # iqr_point_index = 1  # Choose a representative index
 # iqr_point_index = iqr_point_index if iqr_point_index < len(X_data) else 0
-iqr_x = float(X_data[iqr_point_index])
-iqr_y = float(iqr_low25[iqr_point_index])
+# iqr_x = float(X_data[iqr_point_index])
 # iqr_y = float(iqr_low25[iqr_point_index])
+# # iqr_y = float(iqr_low25[iqr_point_index])
 
 ax.annotate(
-    f'IQR for site data',
+    f'SD for site data',
     xy=(iqr_x, iqr_y),
     xytext=(iqr_x + 0, iqr_y - 0.2),  # Adjust text position as needed
     arrowprops=dict(arrowstyle="->", color='#6c757d', lw=1.5),
