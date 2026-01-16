@@ -289,6 +289,25 @@ ax_all.tick_params(axis='both', which='major', width=1, length=5)
 ax_all.tick_params(axis='both', which='minor', width=1, length=2)
 ax_all.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.1f'))
 
+configs = zip(axes_sub, igbps, [" ", " ", xlabel, xlabel], [ylabel, " ", ylabel, " "],
+              ['b', 'c', 'd', 'e'])
+for ax, igbp, xl, yl, letter in configs:
+    for i, label in reversed(list(enumerate(bin_labels))):
+        indices = np.where(binned_z.codes == i)[0]
+        if show_z_colors:
+            fill_color = colors_list[i]
+            edge_color = fill_color
+        else:
+            fill_color = '#546E7A'
+            edge_color = '#546E7A'
+        scatterplot = ax.scatter(X_data[indices], Y_data[indices],
+                                     label=f'{label} {beautify[zvar]}',
+                                     alpha=0.4,
+                                     s=30,
+                                     color=fill_color,
+                                     edgecolors=edge_color,
+                                     zorder=98)
+
 fig.tight_layout()
 gs.update(wspace=.2)
 fig.show()
