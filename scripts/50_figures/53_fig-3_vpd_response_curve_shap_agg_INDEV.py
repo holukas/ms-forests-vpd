@@ -6,7 +6,6 @@ Colors: https://www.pinterest.com/pin/11118330331981167/
 """
 from pathlib import Path
 
-import diive as dv
 import matplotlib.colors
 import matplotlib.ticker as ticker
 import numpy as np
@@ -23,17 +22,12 @@ FLUX = 'NEP_ZSCORE'
 # FLUX = 'RECO_ZSCORE'
 
 # Agg groups, use z-scores:
-
-filenamex = 'BIN-TA_ZSCORE'
-filenamey = 'BIN-VPD_ZSCORE'
+x_in_filename = 'TA_ZSCORE'
+y_in_filename = 'VPD_ZSCORE'
 xvar, yvar, zvar = 'VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE'
 # xvar, yvar, zvar = 'TA_ZSCORE', 'TA_ZSCORE_SHAPVALS', 'TA_ZSCORE'
 # xvar, yvar, zvar = 'TA_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE'
-
-# filenamex = 'BIN-SWC_ZSCORE'
-# filenamey = 'BIN-VPD_ZSCORE'
 # xvar, yvar, zvar = 'SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'SWC_ZSCORE'
-
 # xvar, yvar, zvar = 'SWIN_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE'
 # xvar, yvar, zvar = 'SWC_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
 # xvar, yvar, zvar = 'SWIN_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
@@ -41,6 +35,10 @@ xvar, yvar, zvar = 'VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE'
 # ------------------------------
 
 aggfunc, CONDITIONAL = 'median', True
+n_sites_min = 30
+colors_list = ['#9C27B0', '#26C6DA', '#546E7A', '#FB8C00', '#C62828']
+custom_cmap = matplotlib.colors.ListedColormap(colors_list)
+igbps = ['ENF', 'DBF', 'MF', 'EBF']
 
 beautify = {
     "NEP_ZSCORE": "NEP",
@@ -54,16 +52,19 @@ beautify = {
     "SWC_ZSCORE": "SWC",
     "SWIN_ZSCORE": "SWIN",
 }
+AX_LABELS_FONTSIZE = 16
 
-# Plot settings
-title = False
-# title = f"The impact of {yvar} on forest {beautify[FLUX]}"
-xlabel = f"{beautify[xvar]} (z-score)"
-ylabel = f"{beautify[yvar]} effect (z-score)"
-n_sites_min = 30
-# Custom colormap for z-values
-colors_list = ['#9C27B0', '#26C6DA', '#546E7A', '#FB8C00', '#C62828']
-custom_cmap = matplotlib.colors.ListedColormap(colors_list)
+# Labels & Columns
+xlabel = f'{beautify[xvar]} (z-score)'
+ylabel = f'{beautify[yvar]} effect (z-score)'
+
+# Column names in dataframe
+xcol = (f"BIN_{xvar}", aggfunc)
+ycol = (f"{yvar}", aggfunc)
+ycol_iqr25 = (f"{yvar}", "<lambda_0>")
+ycol_iqr75 = (f"{yvar}", "<lambda_1>")
+zcol = (f"BIN_{zvar}", aggfunc)
+count_vals_col = (f"{yvar}", "count")
 
 # Options
 show_txt_effect = True
@@ -72,39 +73,47 @@ show_z_colors = True
 show_fit = True
 # ------------------------------
 
-x = (f"BIN_{xvar}", aggfunc)
-y = (f"{yvar}", aggfunc)
-y_counts = (f"{yvar}", "count")
-z = (f"BIN_{zvar}", aggfunc)
-
 # Load settings
 settings = files.read_settings_file("../../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 
-# Load SHAP values aggregated across all sites
-filepath = Path(
-    results_outdir) / f"42_SHAPVALUES-{shap_type}_AggregatedAcrossSites_{filenamex}+{filenamey}+{FLUX}.parquet"
-shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
-keeplocs = shapvals_df[y_counts] >= n_sites_min
-shapvals_df = shapvals_df[keeplocs].copy()
+# # Load SHAP values aggregated across all sites
+# filepath = Path(
+#     results_outdir) / f"42_SHAPVALUES-{shap_type}_AggregatedAcrossSites_{filenamex}+{filenamey}+{FLUX}.parquet"
+# shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
+# keeplocs = shapvals_df[y_counts] >= n_sites_min
+# shapvals_df = shapvals_df[keeplocs].copy()
+
+
+# Paths & Settings
+shap_type = 'conditional' if CONDITIONAL else 'standard'
+settings = files.read_settings_file("../../config/settings.yaml")
+dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+
+# FIGURE LAYOUT (5 panels)
+fig, gs, ax_all, axes_sub = plot.layout_5panels((13.86, 5.67), add_colorbar_ax=False)
+
+# ---------------------
+# MAIN PLOT (all sites)
+
+# Load data
+filedf, subsetdf, n_sites = files.load_data(
+    suffix='Sites', shap_type=shap_type, dir_res=dir_res, xvar=xvar, yvar=yvar, zvar=zvar, flux=FLUX,
+    count_vals_col=count_vals_col, n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75],
+    site_filter=None, x_in_filename=x_in_filename, y_in_filename=y_in_filename)
 
 # Extract the data from the DataFrame
-X_data = shapvals_df[x].values
-Y_data = shapvals_df[y].values
-Z_data = shapvals_df[z].values
+X_data = subsetdf.iloc[:, 0].values
+Y_data = subsetdf.iloc[:, 1].values
+Z_data = subsetdf.iloc[:, 2].values
 
 # Bin z data into 5 categories
 bin_labels = ['Lowest', 'Low', 'Medium', 'High', 'Highest']
 binned_z = pd.cut(Z_data, bins=5, labels=bin_labels)
-# z_series = shapvals_df[z].copy()
-# z_binned = pd.cut(z_series, bins=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
 
 # Fit polynomial
 poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data, Y_data=Y_data)
-
-# FIGURE LAYOUT (5 panels)
-fig, gs, ax_all, axes_sub, cax = plot.layout_5panels()
 
 # Iterate through each temperature bin and plot the corresponding data points
 scatterhandles = []
@@ -161,8 +170,8 @@ else:
     fillbetweenplot = None
 
 # IQR
-iqr_low25 = shapvals_df[(f"{yvar}", "<lambda_0>")]
-iqr_high75 = shapvals_df[(f"{yvar}", "<lambda_1>")]
+iqr_low25 = subsetdf.iloc[:, 3].values
+iqr_high75 = subsetdf.iloc[:, 4].values
 plotparams = dict(marker='o', s=5, zorder=1, alpha=.2, edgecolors='none', color='#6c757d')
 iqrplot = ax_all.scatter(X_data, iqr_low25, label="IQR", **plotparams)
 ax_all.scatter(X_data, iqr_high75, **plotparams)
@@ -266,8 +275,6 @@ if show_txt_effect:
 
 ax_all.set_xlabel(xlabel)
 ax_all.set_ylabel(ylabel)
-if title:
-    ax_all.set_title(title, fontsize=14, pad=10, y=1.02)
 ax_all.axhline(y=0, color='black', linestyle='-', lw=1, zorder=98)
 ax_all.grid(False)
 

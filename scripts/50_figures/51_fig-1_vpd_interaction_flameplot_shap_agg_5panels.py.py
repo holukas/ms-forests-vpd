@@ -26,8 +26,7 @@ xvar, yvar, zvar = 'TA_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
 aggfunc, CONDITIONAL = 'median', True
 n_sites_min, cb_digits, area_size = 30, 1, 50
 cmap, igbps = 'RdYlBu', ['ENF', 'DBF', 'MF', 'EBF']
-# plt.rcParams['font.family'] = 'serif'
-# plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
+
 beautify = {
     "NEP_ZSCORE": "NEP",
     "ET_ZSCORE": "ET",
@@ -39,10 +38,15 @@ beautify = {
 AX_LABELS_FONTSIZE = 16
 
 # Labels & Columns
-xlabel, ylabel = f'{beautify[xvar]} (z-score)', f'{beautify[yvar]} (z-score)'
+xlabel = f'{beautify[xvar]} (z-score)'
+ylabel = f'{beautify[yvar]} (z-score)'
 zlabel = f'{beautify[zvar]} effect on {beautify[FLUX]} (SHAP value median z-score)'
-cols = {k: (f"BIN_{k}", aggfunc) for k in [xvar, yvar]}
-z_col, z_cnt = (f"{zvar}_SHAPVALS", aggfunc), (f"{zvar}_SHAPVALS", "count")
+
+# Column names in dataframe
+xcol = (f"BIN_{xvar}", aggfunc)
+ycol = (f"BIN_{yvar}", aggfunc)
+zcol = (f"{zvar}_SHAPVALS", aggfunc)
+count_vals_col = (f"{zvar}_SHAPVALS", "count")
 
 # Paths & Settings
 shap_type = 'conditional' if CONDITIONAL else 'standard'
@@ -50,29 +54,30 @@ settings = files.read_settings_file("../../config/settings.yaml")
 dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 
 # FIGURE LAYOUT (5 panels)
-fig, gs, ax_all, axes_sub, cax = plot.layout_5panels()
+fig, gs, ax_all, axes_sub, cax = plot.layout_5panels(figsize=(19.8, 8.1), add_colorbar_ax=True)
 
 # ---------------------
 # MAIN PLOT (all sites)
 
 # Load data
-raw_all, df_all, n_sites = files.load_data(
-    suffix='Sites', shap_type=shap_type, dir_res=dir_res, xvar=xvar, yvar=yvar, zvar=zvar, flux=FLUX, z_cnt=z_cnt,
-    n_sites_min=n_sites_min, cols=cols, z_col=z_col, site_filter=None)
+filedf, subsetdf, n_sites = files.load_data(
+    suffix='Sites', shap_type=shap_type, dir_res=dir_res, xvar=xvar, yvar=yvar, zvar=zvar, flux=FLUX,
+    count_vals_col=count_vals_col,
+    n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol], site_filter=None)
 
 # Plot
-plot.flameplot(df=df_all, fig=fig, ax=ax_all, cmap=cmap, title=None, cb_digits_after_comma=cb_digits,
+plot.flameplot(df=subsetdf, fig=fig, ax=ax_all, cmap=cmap, title=None, cb_digits_after_comma=cb_digits,
                xlabel=xlabel, ylabel=ylabel, zlabel=None, cb_extend='both', show_colormap=False)
-vmin, vmax = df_all.iloc[:, 2].min(), df_all.iloc[:, 2].max()
-ax_all.set_ylim(df_all.iloc[:, 1].min() * 1.15, df_all.iloc[:, 1].max() * 1.05)
-ax_all.set_xlim(df_all.iloc[:, 0].min() * 1.15, df_all.iloc[:, 0].max() * 1.15)
+vmin, vmax = subsetdf.iloc[:, 2].min(), subsetdf.iloc[:, 2].max()
+ax_all.set_ylim(subsetdf.iloc[:, 1].min() * 1.15, subsetdf.iloc[:, 1].max() * 1.05)
+ax_all.set_xlim(subsetdf.iloc[:, 0].min() * 1.15, subsetdf.iloc[:, 0].max() * 1.15)
 style_ax(ax=ax_all, title=f"(a) All sites (n={n_sites[1]}, min. {n_sites[0]})", ax_labels_fontsize=AX_LABELS_FONTSIZE)
 t_params = dict(size=AX_LABELS_FONTSIZE, color='0.3', fontstyle='italic', zorder=100)
 texts = [(2, 0.1, r"$\uparrow$ dry", 'left', 'bottom'), (2, -0.1, r"$\downarrow$ humid", 'left', 'top'),
          (-0.1, 3.5, r"$\leftarrow$ cool", 'right', 'center'), (0.1, 3.5, r"warm $\rightarrow$", 'left', 'center')]
 for x, y, s, h, v in texts:
     ax_all.text(x, y, s, ha=h, va=v, **t_params)
-minmaxlocs = plot_markers(ax_all, df_all,
+minmaxlocs = plot_markers(ax_all, subsetdf,
                           xvals=f'BIN_{xvar}_median', yvals=f'BIN_{yvar}_median', zvals=f'{zvar}_SHAPVALS_median',
                           flux_txt=beautify[FLUX], annotate=True, ax_labels_fontsize=AX_LABELS_FONTSIZE,
                           area_size=area_size)
@@ -87,8 +92,7 @@ for ax, igbp, xl, yl, letter in configs:
     # Filter using index from main dataset (keeplocs logic)
     df_igbp, df_subset, n_sites_sub = files.load_data(
         suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, xvar=xvar, yvar=yvar, zvar=zvar, flux=FLUX,
-        z_cnt=z_cnt,
-        n_sites_min=n_sites_min, cols=cols, z_col=z_col, site_filter=raw_all.index)
+        count_vals_col=count_vals_col, n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol], site_filter=filedf.index)
     plot.flameplot(df=df_subset, fig=fig, ax=ax, cmap=cmap, title=None, show_colormap=False,
                    vmin=vmin, vmax=vmax, xlabel=xl, ylabel=yl)
     style_ax(ax, f"({letter}) {igbp} (n={n_sites_sub[1]}, min. {n_sites_sub[0]})",
@@ -114,8 +118,8 @@ gs.update(wspace=.2)
 fig.show()
 
 # Save fig to file
-usedx = df_all.columns[0]
+usedx = subsetdf.columns[0]
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
 outfilepath = dir_out / (f'51_FIG-1_Flameplots_ShapMedians_{FLUX}_'
-                         f'{df_all.columns[0]}+{df_all.columns[1]}+{df_all.columns[2]}.png')
+                         f'{subsetdf.columns[0]}+{subsetdf.columns[1]}+{subsetdf.columns[2]}.png')
 fig.savefig(outfilepath, dpi=300, bbox_inches='tight')

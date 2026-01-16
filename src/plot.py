@@ -8,13 +8,16 @@ from scipy.stats import gaussian_kde
 from src.common import findpoi
 
 
-def layout_5panels():
-    fig = plt.figure(figsize=(19.8, 8.1), dpi=150, facecolor="white")
+def layout_5panels(figsize, add_colorbar_ax: bool = False):
+    fig = plt.figure(figsize=figsize, dpi=150, facecolor="white")
     gs = gridspec.GridSpec(2, 5, width_ratios=[1, 1, 1, 1, 0.1])
     ax_all = fig.add_subplot(gs[0:2, 0:2])
     axes_sub = [fig.add_subplot(gs[r, c], sharex=ax_all, sharey=ax_all) for r, c in [(0, 2), (0, 3), (1, 2), (1, 3)]]
-    cax = fig.add_subplot(gs[:, 4])
-    return fig, gs, ax_all, axes_sub, cax
+    if add_colorbar_ax:
+        cax = fig.add_subplot(gs[:, 4])
+        return fig, gs, ax_all, axes_sub, cax
+    else:
+        return fig, gs, ax_all, axes_sub
 
 
 def plot_markers(ax, df, xvals, yvals, zvals, flux_txt, ax_labels_fontsize, area_size, annotate=False):
