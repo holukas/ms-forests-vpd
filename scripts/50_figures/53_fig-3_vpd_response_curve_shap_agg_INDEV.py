@@ -143,29 +143,8 @@ legend1 = ax_all.legend(handles=scatterhandles, loc='upper left', bbox_to_anchor
                         title_fontsize=9)
 
 if show_fit:
-    # Plot fitted polynomial curve
-    ax_all.plot(x_fit, y_fit, color='#004e98', linewidth=3, zorder=99)
-    # label=rf'$y = {poly_coeffs[0]:.4f}x^4 - {poly_coeffs[1]:.4f}x^3 + {poly_coeffs[2]:.4f}x^2 + {poly_coeffs[3]:.4f}x - {poly_coeffs[4]:.4f}$'
-
-    # Plot prediction interval
-    fillbetweenplot = ax_all.fill_between(x_fit, pi_lower, pi_upper, color='#004e98', alpha=0.2,
-                                          label='95% prediction interval', zorder=1)
-
-    # Add an arrow to the fitted line
-    # Find a point on the line to place the arrow.
-    # Let's place it a little past the middle of the x-range.
-    arrow_x = 3
-    arrow_y = poly_func(arrow_x)
-    # Find a point slightly to the left to define the arrow direction
-    tail_x = arrow_x - 0.1
-    tail_y = poly_func(tail_x)
-    # Calculate the angle of the line at this point to get the correct arrow orientation
-    angle = np.arctan2(arrow_y - tail_y, arrow_x - tail_x) * 180 / np.pi
-    ax_all.annotate(f'Fitted 4th degree\npolynomial (r$^2$={r_squared:.2f})',
-                    xy=(arrow_x, arrow_y),
-                    xytext=(arrow_x - 0.2, arrow_y + 0.4),  # Adjust text position as needed
-                    arrowprops=dict(arrowstyle="->", color='#004e98', lw=1.5),
-                    fontsize=9, color='#004e98', ha='left', va='center', zorder=100)
+    fillbetweenplot = plot.add_fit(ax=ax_all, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
+                                   poly_func=poly_func, r_squared=r_squared, show_annotate=True)
 else:
     fillbetweenplot = None
 
@@ -202,38 +181,8 @@ ax_all.set_ylim(_temp2, _temp)
 
 # Add text and connecting dashed lines for SHAP max, zero, and min
 if show_shap_thresholds:
-    y_top = ax_all.get_ylim()[-1]
-    y_bottom = ax_all.get_ylim()[0]
-
-    _params = dict(color='black', linestyle='--', linewidth=1, zorder=100)
-    _params2 = dict(linewidth=2, zorder=100, s=100, alpha=1)
-    _params3 = dict(color='black', fontsize=9, linespacing=1.2)
-
-    # Maximum positive impact
-    # ax_all.scatter(x_fit[max_ix], y_fit[max_ix], color='black', marker='^', edgecolors='none', **_params2)
-    ax_all.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor='black', **_params2)
-    text_y_pos_max = y_fit[max_ix] - 0.45 * (_temp - _temp2)  # Get the y-position for the text below the plotted points
-    ax_all.text(x_fit[max_ix], text_y_pos_max, f'Maximum positive effect\n(x={x_fit[max_ix]:.2f})',
-                va='bottom', ha='center', **_params3)
-    ax_all.plot([x_fit[max_ix], x_fit[max_ix]], [text_y_pos_max + 0.1, y_fit[max_ix]], **_params)
-    ax_all.plot([x_fit[max_ix], x_fit[max_ix]], [y_bottom, text_y_pos_max], **_params)
-
-    # Impact tipping point
-    ax_all.scatter(x_fit[idx], y_fit[idx], c="none", edgecolors='black', **_params2)
-    text_y_pos_zero = y_fit[idx] - 0.45 * (_temp - _temp2)
-    ax_all.text(x_fit[idx], text_y_pos_zero, f'Threshold\n(x={x_fit[idx]:.2f})',
-                va='bottom', ha='center', **_params3)
-    ax_all.plot([x_fit[idx], x_fit[idx]], [text_y_pos_zero + 0.1, y_fit[idx] - 0.03], **_params)
-    ax_all.plot([x_fit[idx], x_fit[idx]], [y_bottom, text_y_pos_zero], **_params)
-
-    # Maximum negative impact
-    # ax_all.scatter(x_fit[min_ix], y_fit[min_ix], color='black', marker='_', edgecolors='none', **_params2)
-    ax_all.scatter(x_fit[min_ix], y_fit[min_ix], color='none', marker='v', edgecolor='black', **_params2)
-    text_y_pos_min = y_fit[min_ix] - 0.15 * (_temp - _temp2)
-    ax_all.text(x_fit[min_ix] + 0.2, text_y_pos_min, f'Maximum negative effect\n(x={x_fit[min_ix]:.2f})',
-                va='bottom', ha='right', **_params3)
-    ax_all.plot([x_fit[min_ix], x_fit[min_ix]], [text_y_pos_min + 0.1, y_fit[min_ix] - 0.03], **_params)
-    ax_all.plot([x_fit[min_ix], x_fit[min_ix]], [y_bottom, text_y_pos_min], **_params)
+    plot.show_shap_thresholds(ax=ax_all, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix,
+                              idx=idx, _temp=_temp, _temp2=_temp2, show_annotate=True)
 
 # Add arrow to highlight one of the IQR data points
 select_x = 1.7
@@ -247,14 +196,6 @@ iqr_point_index = np.where(final_location_mask)[0][0]  # Get the index of the el
 iqr_x = float(X_data[iqr_point_index])
 iqr_y = float(iqr_low25[iqr_point_index])
 
-# # Combine both conditions: X_data is *select_x* AND iqr_low25 is the minimum value
-# final_location_mask = (X_data == select_x) & (iqr_low25 == min_iqr_value)
-# iqr_point_index = np.where(final_location_mask)[0][0]  # Get the index of the element that meets both criteria
-# iqr_point_index = 1  # Choose a representative index
-# iqr_point_index = iqr_point_index if iqr_point_index < len(X_data) else 0
-# iqr_x = float(X_data[iqr_point_index])
-# iqr_y = float(iqr_low25[iqr_point_index])
-# # iqr_y = float(iqr_low25[iqr_point_index])
 
 ax_all.annotate(
     f'IQR for site data',
@@ -275,23 +216,43 @@ if show_txt_effect:
 
 ax_all.set_xlabel(xlabel)
 ax_all.set_ylabel(ylabel)
-ax_all.axhline(y=0, color='black', linestyle='-', lw=1, zorder=98)
-ax_all.grid(False)
+
 
 # ax_all.legend(bbox_to_anchor=(0.05, 0.95), loc='upper right', frameon=False)
-# Hide the top and right spines
-ax_all.spines['top'].set_visible(False)
-ax_all.spines['right'].set_visible(False)
-ax_all.spines['bottom'].set_linewidth(1)
-ax_all.spines['left'].set_linewidth(1)
-# Set the tick width for both x and y axes
-ax_all.tick_params(axis='both', which='major', width=1, length=5)
-ax_all.tick_params(axis='both', which='minor', width=1, length=2)
-ax_all.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.1f'))
+plot.format(ax=ax_all)
 
+# ---------------
+# SUBPLOTS (IGBP)
 configs = zip(axes_sub, igbps, [" ", " ", xlabel, xlabel], [ylabel, " ", ylabel, " "],
               ['b', 'c', 'd', 'e'])
 for ax, igbp, xl, yl, letter in configs:
+    # Filter using index from main dataset (keeplocs logic)
+    df_igbp, df_subset, n_sites_sub = files.load_data(
+        suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, xvar=xvar, yvar=yvar, zvar=zvar, flux=FLUX,
+        count_vals_col=count_vals_col, n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75],
+        site_filter=filedf.index, x_in_filename=x_in_filename, y_in_filename=y_in_filename)
+    # Extract the data from the DataFrame
+    X_data = df_subset.iloc[:, 0].values
+    Y_data = df_subset.iloc[:, 1].values
+    Z_data = df_subset.iloc[:, 2].values
+
+    ax.set_xlabel(xl)
+    ax.set_ylabel(yl)
+
+    # Fit polynomial (only works on non-NaN data)
+    df_subset_nonan = df_subset.copy()
+    df_subset_nonan = df_subset_nonan.dropna()
+    X_data_nonan = df_subset_nonan.iloc[:, 0].values
+    Y_data_nonan = df_subset_nonan.iloc[:, 1].values
+    Z_data_nonan = df_subset_nonan.iloc[:, 2].values
+    poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data_nonan, Y_data=Y_data_nonan)
+
+    if show_fit:
+        fillbetweenplot = plot.add_fit(ax=ax, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
+                                       poly_func=poly_func, r_squared=r_squared, show_annotate=False)
+    else:
+        fillbetweenplot = None
+
     for i, label in reversed(list(enumerate(bin_labels))):
         indices = np.where(binned_z.codes == i)[0]
         if show_z_colors:
@@ -300,16 +261,21 @@ for ax, igbp, xl, yl, letter in configs:
         else:
             fill_color = '#546E7A'
             edge_color = '#546E7A'
-        scatterplot = ax.scatter(X_data[indices], Y_data[indices],
-                                     label=f'{label} {beautify[zvar]}',
-                                     alpha=0.4,
-                                     s=30,
-                                     color=fill_color,
-                                     edgecolors=edge_color,
-                                     zorder=98)
+        scatterplot = ax.scatter(
+            X_data[indices], Y_data[indices], label=f'{label} {beautify[zvar]}', alpha=0.2,
+            s=30, color=fill_color, edgecolors=edge_color, zorder=98)
+    plot.style_ax(ax, f"({letter}) {igbp} (n={n_sites_sub[1]}, min. {n_sites_sub[0]})",
+             ax_labels_fontsize=8)
+    # Add text and connecting dashed lines for SHAP max, zero, and min
+    if show_shap_thresholds:
+        min_ix = np.argmin(y_fit)
+        max_ix = np.argmax(y_fit)
+        plot.show_shap_thresholds(ax=ax, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix,
+                                  idx=idx, _temp=_temp, _temp2=_temp2, show_annotate=False)
+    plot.format(ax=ax)
 
 fig.tight_layout()
-gs.update(wspace=.2)
+gs.update(wspace=.3)
 fig.show()
 
 print(f"Polynomial coefficients: {poly_coeffs}")

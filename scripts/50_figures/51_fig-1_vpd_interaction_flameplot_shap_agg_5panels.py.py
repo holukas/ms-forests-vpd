@@ -72,6 +72,9 @@ vmin, vmax = subsetdf.iloc[:, 2].min(), subsetdf.iloc[:, 2].max()
 ax_all.set_ylim(subsetdf.iloc[:, 1].min() * 1.15, subsetdf.iloc[:, 1].max() * 1.05)
 ax_all.set_xlim(subsetdf.iloc[:, 0].min() * 1.15, subsetdf.iloc[:, 0].max() * 1.15)
 style_ax(ax=ax_all, title=f"(a) All sites (n={n_sites[1]}, min. {n_sites[0]})", ax_labels_fontsize=AX_LABELS_FONTSIZE)
+ax_all.axhline(0, c='k', ls='--', lw=1, zorder=99)
+ax_all.axvline(0, c='k', ls='--', lw=1, zorder=99)
+ax_all.set_aspect('equal')
 t_params = dict(size=AX_LABELS_FONTSIZE, color='0.3', fontstyle='italic', zorder=100)
 texts = [(2, 0.1, r"$\uparrow$ dry", 'left', 'bottom'), (2, -0.1, r"$\downarrow$ humid", 'left', 'top'),
          (-0.1, 3.5, r"$\leftarrow$ cool", 'right', 'center'), (0.1, 3.5, r"warm $\rightarrow$", 'left', 'center')]
@@ -95,8 +98,11 @@ for ax, igbp, xl, yl, letter in configs:
         count_vals_col=count_vals_col, n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol], site_filter=filedf.index)
     plot.flameplot(df=df_subset, fig=fig, ax=ax, cmap=cmap, title=None, show_colormap=False,
                    vmin=vmin, vmax=vmax, xlabel=xl, ylabel=yl)
-    style_ax(ax, f"({letter}) {igbp} (n={n_sites_sub[1]}, min. {n_sites_sub[0]})",
-             ax_labels_fontsize=AX_LABELS_FONTSIZE)
+    plot.style_ax(ax, f"({letter}) {igbp} (n={n_sites_sub[1]}, min. {n_sites_sub[0]})",
+                  ax_labels_fontsize=AX_LABELS_FONTSIZE)
+    ax.axhline(0, c='k', ls='--', lw=1, zorder=99)
+    ax.axvline(0, c='k', ls='--', lw=1, zorder=99)
+    ax.set_aspect('equal')
     minmaxlocs = plot_markers(ax, df_subset,
                               xvals=f'BIN_{xvar}_median', yvals=f'BIN_{yvar}_median', zvals=f'{zvar}_SHAPVALS_median',
                               flux_txt=beautify[FLUX], annotate=False, ax_labels_fontsize=AX_LABELS_FONTSIZE,

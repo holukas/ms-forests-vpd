@@ -33,13 +33,18 @@ def load_data(suffix, shap_type, dir_res, xvar, yvar, zvar, flux, n_sites_min, s
 
     # Apply count threshold (n_sites_min for main plot, 0 for IGBP b/c we simply count the
     # number of available sites in the previous line)
-    threshold = n_sites_min if suffix == 'Sites' else 1
+    threshold = n_sites_min if suffix == 'Sites' else 0
     mask = filedf[count_vals_col] >= threshold
     filedf = filedf[mask].copy()
 
     # Count number of sites (min, max)
+    # Note that zero counts are not relevant for the plots b/c
+    # they are not shown in the plots, i.e., for the minimum
+    # we need to get the next lowest number.
     _counts = filedf[count_vals_col]
-    n_sites = [_counts.min(), _counts.max()]
+    min_count = _counts[_counts > 0].min()
+    max_count = _counts[_counts > 0].max()
+    n_sites = [min_count, max_count]
 
     # Prepare subset for plotting
     subsetdf = filedf[subsetcols].copy()
