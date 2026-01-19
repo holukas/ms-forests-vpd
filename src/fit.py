@@ -13,10 +13,9 @@ def fit_polynomial(X_data, Y_data):
     y_mean = np.mean(Y_data)
     ss_tot = np.sum((Y_data - y_mean) ** 2)  # Calculate the total sum of squares (SS_tot)
     r_squared = 1 - (ss_res / ss_tot)
-    # print(f"The R-squared value is: {r_squared:.4f}")
 
     # Create x-range for plotting fitted curve and create fit values
-    x_fit = np.linspace(X_data.min(), X_data.max(), 500)
+    x_fit = np.linspace(X_data.min(), X_data.max(), 1000)
     y_fit = poly_func(x_fit)
 
     # Calculate the prediction interval

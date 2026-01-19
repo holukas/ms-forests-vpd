@@ -9,21 +9,26 @@ from scipy.stats import gaussian_kde
 from src.common import findpoi
 
 
-def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, _temp, _temp2, show_annotate):
+def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_min, show_annotate, show_annotate_short,
+                         fontsize):
     y_top = ax.get_ylim()[-1]
     y_bottom = ax.get_ylim()[0]
 
     _params = dict(color='black', linestyle='--', linewidth=1, zorder=100)
-    _params2 = dict(linewidth=2, zorder=100, s=100, alpha=1)
-    _params3 = dict(color='black', fontsize=9, linespacing=1.2)
+    _params2 = dict(linewidth=2, zorder=100, s=200, alpha=1)
+    _params3 = dict(color='black', fontsize=fontsize, linespacing=1.2)
 
-    # Maximum positive impact
+    # Maximum positive effect
     # ax_all.scatter(x_fit[max_ix], y_fit[max_ix], color='black', marker='^', edgecolors='none', **_params2)
     ax.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor='black', **_params2)
     if show_annotate:
-        text_y_pos_max = y_fit[max_ix] - 0.45 * (
-                    _temp - _temp2)  # Get the y-position for the text below the plotted points
-        ax.text(x_fit[max_ix], text_y_pos_max, f'Maximum positive effect\n(x={x_fit[max_ix]:.2f})',
+        # Get the y-position for the text below the plotted points
+        text_y_pos_max = y_fit[max_ix] - 0.45 * (ydim_max - ydim_min)
+        if show_annotate_short:
+            showntext = f'(x={x_fit[max_ix]:.2f})'
+        else:
+            showntext = f'Maximum positive effect\n(x={x_fit[max_ix]:.2f})'
+        ax.text(x_fit[max_ix], text_y_pos_max, showntext,
                 va='bottom', ha='center', **_params3)
         ax.plot([x_fit[max_ix], x_fit[max_ix]], [text_y_pos_max + 0.1, y_fit[max_ix]], **_params)
         ax.plot([x_fit[max_ix], x_fit[max_ix]], [y_bottom, text_y_pos_max], **_params)
@@ -31,8 +36,12 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, _temp, _temp2, s
     # Threshold
     ax.scatter(x_fit[idx], y_fit[idx], c="none", edgecolors='black', **_params2)
     if show_annotate:
-        text_y_pos_zero = y_fit[idx] - 0.45 * (_temp - _temp2)
-        ax.text(x_fit[idx], text_y_pos_zero, f'Threshold\n(x={x_fit[idx]:.2f})',
+        text_y_pos_zero = y_fit[idx] - 0.45 * (ydim_max - ydim_min)
+        if show_annotate_short:
+            showntext = f'(x={x_fit[idx]:.2f})'
+        else:
+            showntext = f'Threshold\n(x={x_fit[idx]:.2f})'
+        ax.text(x_fit[idx], text_y_pos_zero, showntext,
                 va='bottom', ha='center', **_params3)
         ax.plot([x_fit[idx], x_fit[idx]], [text_y_pos_zero + 0.1, y_fit[idx] - 0.03], **_params)
         ax.plot([x_fit[idx], x_fit[idx]], [y_bottom, text_y_pos_zero], **_params)
@@ -41,28 +50,33 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, _temp, _temp2, s
     # ax_all.scatter(x_fit[min_ix], y_fit[min_ix], color='black', marker='_', edgecolors='none', **_params2)
     ax.scatter(x_fit[min_ix], y_fit[min_ix], color='none', marker='v', edgecolor='black', **_params2)
     if show_annotate:
-        text_y_pos_min = y_fit[min_ix] - 0.15 * (_temp - _temp2)
-        ax.text(x_fit[min_ix] + 0.2, text_y_pos_min, f'Maximum negative effect\n(x={x_fit[min_ix]:.2f})',
+        text_y_pos_min = ydim_min * 0.99
+        # text_y_pos_min = y_fit[min_ix] - 0.15 * (ydim_max - ydim_min) + show_annotate_short_yoffset[2]
+        if show_annotate_short:
+            showntext = f'(x={x_fit[min_ix]:.2f})'
+        else:
+            showntext = f'Maximum negative effect\n(x={x_fit[min_ix]:.2f})'
+        ax.text(x_fit[min_ix] + 0.2, text_y_pos_min, showntext,
                 va='bottom', ha='right', **_params3)
         ax.plot([x_fit[min_ix], x_fit[min_ix]], [text_y_pos_min + 0.1, y_fit[min_ix] - 0.03], **_params)
         ax.plot([x_fit[min_ix], x_fit[min_ix]], [y_bottom, text_y_pos_min], **_params)
 
 
-def format(ax):
+def format(ax, fontsize):
     # Hide the top and right spines
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_linewidth(1)
     ax.spines['left'].set_linewidth(1)
     # Set the tick width for both x and y axes
-    ax.tick_params(axis='both', which='major', width=1, length=5)
-    ax.tick_params(axis='both', which='minor', width=1, length=2)
+    ax.tick_params(axis='both', which='major', width=1, length=5, labelsize=fontsize)
+    ax.tick_params(axis='both', which='minor', width=1, length=2, labelsize=fontsize)
     ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.1f'))
     ax.axhline(y=0, color='black', linestyle='-', lw=1, zorder=98)
     ax.grid(False)
 
 
-def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared, show_annotate):
+def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared, show_annotate, fontsize):
     # Plot fitted polynomial curve
     ax.plot(x_fit, y_fit, color='#004e98', linewidth=3, zorder=99)
     # label=rf'$y = {poly_coeffs[0]:.4f}x^4 - {poly_coeffs[1]:.4f}x^3 + {poly_coeffs[2]:.4f}x^2 + {poly_coeffs[3]:.4f}x - {poly_coeffs[4]:.4f}$'
@@ -86,7 +100,7 @@ def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared, show_ann
                     xy=(arrow_x, arrow_y),
                     xytext=(arrow_x - 0.2, arrow_y + 0.4),  # Adjust text position as needed
                     arrowprops=dict(arrowstyle="->", color='#004e98', lw=1.5),
-                    fontsize=9, color='#004e98', ha='left', va='center', zorder=100)
+                    fontsize=fontsize, color='#004e98', ha='left', va='center', zorder=100)
     return fillbetweenplot
 
 
@@ -129,8 +143,7 @@ def plot_markers(ax, df, xvals, yvals, zvals, flux_txt, ax_labels_fontsize, area
 def style_ax(ax, title, ax_labels_fontsize):
     ax.text(0.03 if 'All' in title else 0.06, 0.98 if 'All' in title else 1, title, transform=ax.transAxes,
             size=ax_labels_fontsize, ha='left', va='bottom' if 'All' in title else 'top',
-            zorder=100, backgroundcolor='white')
-
+            zorder=100, backgroundcolor='none')
 
 
 def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limits, is_top_row, group_name,

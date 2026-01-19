@@ -7,7 +7,6 @@ Colors: https://www.pinterest.com/pin/11118330331981167/
 from pathlib import Path
 
 import matplotlib.colors
-import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 
@@ -52,7 +51,7 @@ beautify = {
     "SWC_ZSCORE": "SWC",
     "SWIN_ZSCORE": "SWIN",
 }
-AX_LABELS_FONTSIZE = 16
+AX_LABELS_FONTSIZE = 10
 
 # Labels & Columns
 xlabel = f'{beautify[xvar]} (z-score)'
@@ -137,14 +136,10 @@ for i, label in reversed(list(enumerate(bin_labels))):
                                  zorder=98)
     scatterhandles.append(scatterplot)
 
-# Legend for scatter points
-legend1 = ax_all.legend(handles=scatterhandles, loc='upper left', bbox_to_anchor=(0.35, 1.02),
-                        frameon=False, ncol=1, fontsize=9, labelspacing=.3, title="Aggregated site data",
-                        title_fontsize=9)
-
 if show_fit:
     fillbetweenplot = plot.add_fit(ax=ax_all, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
-                                   poly_func=poly_func, r_squared=r_squared, show_annotate=True)
+                                   poly_func=poly_func, r_squared=r_squared, show_annotate=True,
+                                   fontsize=AX_LABELS_FONTSIZE)
 else:
     fillbetweenplot = None
 
@@ -161,28 +156,36 @@ if show_fit:
 else:
     handles = [iqrplot]
 
-legend2 = ax_all.legend(handles=handles, loc='upper left', bbox_to_anchor=(0.65, 1.02),
-                        frameon=False, ncol=1, labelspacing=.3, fontsize=9)
-
-# Add Legend 1 back to the figure.
-# This is the crucial step to prevent the first legend from being removed.
+# Legends for main figure
+legend1 = ax_all.legend(handles=scatterhandles, loc='upper left', bbox_to_anchor=(0.37, 1),
+                        frameon=False, ncol=1, fontsize=AX_LABELS_FONTSIZE, labelspacing=.3,
+                        title="Aggregated site data",
+                        title_fontsize=AX_LABELS_FONTSIZE)
+legend2 = ax_all.legend(handles=handles, loc='upper left', bbox_to_anchor=(0.67, 1),
+                        frameon=False, ncol=1, labelspacing=.3, fontsize=AX_LABELS_FONTSIZE)
+# Add Legend 1 back to the figure
+# This is the crucial step to prevent the first legend from being removed
 ax_all.add_artist(legend1)
 
 min_ix = np.argmin(y_fit)
 max_ix = np.argmax(y_fit)
 
+plot.style_ax(ax=ax_all, title=f"(a) All sites (n={n_sites[1]}, min. {n_sites[0]})",
+              ax_labels_fontsize=AX_LABELS_FONTSIZE)
+
 # Find value closest to "SHAP zero"
 idx = (np.abs(y_fit - 0)).argmin()
 
-# Detect min/max value shown in plot
-_temp = iqr_high75.max() * 1.2
-_temp2 = iqr_low25.min()
-ax_all.set_ylim(_temp2, _temp)
+# Detect min/max value shown in plot, is also used for subplots
+ydim_max = iqr_high75.max() * 1.2
+ydim_min = iqr_low25.min()
+ax_all.set_ylim(ydim_min, ydim_max)
 
 # Add text and connecting dashed lines for SHAP max, zero, and min
 if show_shap_thresholds:
     plot.show_shap_thresholds(ax=ax_all, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix,
-                              idx=idx, _temp=_temp, _temp2=_temp2, show_annotate=True)
+                              idx=idx, ydim_max=ydim_max, ydim_min=ydim_min, show_annotate=True,
+                              fontsize=AX_LABELS_FONTSIZE, show_annotate_short=False)
 
 # Add arrow to highlight one of the IQR data points
 select_x = 1.7
@@ -196,30 +199,28 @@ iqr_point_index = np.where(final_location_mask)[0][0]  # Get the index of the el
 iqr_x = float(X_data[iqr_point_index])
 iqr_y = float(iqr_low25[iqr_point_index])
 
-
 ax_all.annotate(
     f'IQR for site data',
     xy=(iqr_x, iqr_y),
     xytext=(iqr_x + 0, iqr_y - 0.2),  # Adjust text position as needed
     arrowprops=dict(arrowstyle="->", color='#6c757d', lw=1.5),
-    fontsize=9, color='#6c757d', ha='right', va='center'
+    fontsize=AX_LABELS_FONTSIZE, color='#6c757d', ha='right', va='center'
 )
 
 if show_txt_effect:
     # Add text for negative effect
     ax_all.text(x=2.1, y=-0.03, s='reduced uptake/increased release\n' + r'$\downarrow$Negative effect',
-                fontsize=9, color='black', ha='left', va='top')
+                fontsize=AX_LABELS_FONTSIZE, color='black', ha='left', va='top')
 
     # Add text for positive effect
     ax_all.text(x=2.1, y=0.03, s=r'$\uparrow$' + 'Positive effect\nincreased uptake/reduced release',
-                fontsize=9, color='black', ha='left', va='bottom')
+                fontsize=AX_LABELS_FONTSIZE, color='black', ha='left', va='bottom')
 
-ax_all.set_xlabel(xlabel)
-ax_all.set_ylabel(ylabel)
-
+ax_all.set_xlabel(xlabel, fontsize=AX_LABELS_FONTSIZE)
+ax_all.set_ylabel(ylabel, fontsize=AX_LABELS_FONTSIZE)
 
 # ax_all.legend(bbox_to_anchor=(0.05, 0.95), loc='upper right', frameon=False)
-plot.format(ax=ax_all)
+plot.format(ax=ax_all, fontsize=AX_LABELS_FONTSIZE)
 
 # ---------------
 # SUBPLOTS (IGBP)
@@ -236,8 +237,8 @@ for ax, igbp, xl, yl, letter in configs:
     Y_data = df_subset.iloc[:, 1].values
     Z_data = df_subset.iloc[:, 2].values
 
-    ax.set_xlabel(xl)
-    ax.set_ylabel(yl)
+    ax.set_xlabel(xl, fontsize=AX_LABELS_FONTSIZE)
+    ax.set_ylabel(yl, fontsize=AX_LABELS_FONTSIZE)
 
     # Fit polynomial (only works on non-NaN data)
     df_subset_nonan = df_subset.copy()
@@ -245,11 +246,12 @@ for ax, igbp, xl, yl, letter in configs:
     X_data_nonan = df_subset_nonan.iloc[:, 0].values
     Y_data_nonan = df_subset_nonan.iloc[:, 1].values
     Z_data_nonan = df_subset_nonan.iloc[:, 2].values
-    poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data_nonan, Y_data=Y_data_nonan)
-
+    poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data_nonan,
+                                                                                         Y_data=Y_data_nonan)
     if show_fit:
         fillbetweenplot = plot.add_fit(ax=ax, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
-                                       poly_func=poly_func, r_squared=r_squared, show_annotate=False)
+                                       poly_func=poly_func, r_squared=r_squared, show_annotate=False,
+                                       fontsize=AX_LABELS_FONTSIZE)
     else:
         fillbetweenplot = None
 
@@ -265,17 +267,18 @@ for ax, igbp, xl, yl, letter in configs:
             X_data[indices], Y_data[indices], label=f'{label} {beautify[zvar]}', alpha=0.2,
             s=30, color=fill_color, edgecolors=edge_color, zorder=98)
     plot.style_ax(ax, f"({letter}) {igbp} (n={n_sites_sub[1]}, min. {n_sites_sub[0]})",
-             ax_labels_fontsize=8)
+                  ax_labels_fontsize=AX_LABELS_FONTSIZE)
     # Add text and connecting dashed lines for SHAP max, zero, and min
     if show_shap_thresholds:
         min_ix = np.argmin(y_fit)
         max_ix = np.argmax(y_fit)
-        plot.show_shap_thresholds(ax=ax, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix,
-                                  idx=idx, _temp=_temp, _temp2=_temp2, show_annotate=False)
-    plot.format(ax=ax)
+        plot.show_shap_thresholds(
+            ax=ax, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix, idx=idx, ydim_max=ydim_max,
+            ydim_min=ydim_min, show_annotate=True, fontsize=AX_LABELS_FONTSIZE, show_annotate_short=True)
+    plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE)
 
 fig.tight_layout()
-gs.update(wspace=.3)
+gs.update(wspace=.4)
 fig.show()
 
 print(f"Polynomial coefficients: {poly_coeffs}")
