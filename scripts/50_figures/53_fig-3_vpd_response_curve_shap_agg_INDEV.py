@@ -91,7 +91,7 @@ settings = files.read_settings_file("../../config/settings.yaml")
 dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 
 # FIGURE LAYOUT (5 panels)
-fig, gs, ax_all, axes_sub = plot.layout_5panels((13.86, 5.67), add_colorbar_ax=False)
+fig, gs, ax_all, axes_sub = plot.layout_5panels((13.86, 6.67), add_colorbar_ax=False)
 
 # ---------------------
 # MAIN PLOT (all sites)
@@ -113,6 +113,9 @@ binned_z = pd.cut(Z_data, bins=5, labels=bin_labels)
 
 # Fit polynomial
 poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data, Y_data=Y_data)
+print(f"Polynomial fit ALL SITES: "
+      f"y={poly_coeffs[0]:.3f}x4+{poly_coeffs[1]:.3f}x3+{poly_coeffs[2]:.3f}x2"
+      f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[4]:.3f}; r2={r_squared:.3f}\n")
 
 # Iterate through each temperature bin and plot the corresponding data points
 scatterhandles = []
@@ -157,11 +160,11 @@ else:
     handles = [iqrplot]
 
 # Legends for main figure
-legend1 = ax_all.legend(handles=scatterhandles, loc='upper left', bbox_to_anchor=(0.37, 1),
+legend1 = ax_all.legend(handles=scatterhandles, loc='upper left', bbox_to_anchor=(0.38, 0.98),
                         frameon=False, ncol=1, fontsize=AX_LABELS_FONTSIZE, labelspacing=.3,
                         title="Aggregated site data",
                         title_fontsize=AX_LABELS_FONTSIZE)
-legend2 = ax_all.legend(handles=handles, loc='upper left', bbox_to_anchor=(0.67, 1),
+legend2 = ax_all.legend(handles=handles, loc='upper left', bbox_to_anchor=(0.68, 0.98),
                         frameon=False, ncol=1, labelspacing=.3, fontsize=AX_LABELS_FONTSIZE)
 # Add Legend 1 back to the figure
 # This is the crucial step to prevent the first legend from being removed
@@ -220,13 +223,19 @@ ax_all.set_xlabel(xlabel, fontsize=AX_LABELS_FONTSIZE)
 ax_all.set_ylabel(ylabel, fontsize=AX_LABELS_FONTSIZE)
 
 # ax_all.legend(bbox_to_anchor=(0.05, 0.95), loc='upper right', frameon=False)
-plot.format(ax=ax_all, fontsize=AX_LABELS_FONTSIZE)
+plot.format(ax=ax_all, fontsize=AX_LABELS_FONTSIZE, showyticklabels=True, showxticklabels=True)
 
 # ---------------
 # SUBPLOTS (IGBP)
-configs = zip(axes_sub, igbps, [" ", " ", xlabel, xlabel], [ylabel, " ", ylabel, " "],
-              ['b', 'c', 'd', 'e'])
-for ax, igbp, xl, yl, letter in configs:
+configs = zip(
+    axes_sub, igbps,
+    [" ", " ", xlabel, xlabel],
+    [ylabel, " ", ylabel, " "],
+    ['b', 'c', 'd', 'e'],
+    [True, False, True, False],  # For showing yticklabels
+    [False, False, True, True]  # For showing xticklabels
+)
+for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Filter using index from main dataset (keeplocs logic)
     df_igbp, df_subset, n_sites_sub = files.load_data(
         suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, xvar=xvar, yvar=yvar, zvar=zvar, flux=FLUX,
@@ -248,6 +257,10 @@ for ax, igbp, xl, yl, letter in configs:
     Z_data_nonan = df_subset_nonan.iloc[:, 2].values
     poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data_nonan,
                                                                                          Y_data=Y_data_nonan)
+    print(f"Polynomial coefficients {igbp}: "
+          f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
+          f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[4]:.3f}; r2={r_squared:.3f}\n")
+
     if show_fit:
         fillbetweenplot = plot.add_fit(ax=ax, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
                                        poly_func=poly_func, r_squared=r_squared, show_annotate=False,
@@ -268,6 +281,7 @@ for ax, igbp, xl, yl, letter in configs:
             s=30, color=fill_color, edgecolors=edge_color, zorder=98)
     plot.style_ax(ax, f"({letter}) {igbp} (n={n_sites_sub[1]}, min. {n_sites_sub[0]})",
                   ax_labels_fontsize=AX_LABELS_FONTSIZE)
+
     # Add text and connecting dashed lines for SHAP max, zero, and min
     if show_shap_thresholds:
         min_ix = np.argmin(y_fit)
@@ -275,13 +289,13 @@ for ax, igbp, xl, yl, letter in configs:
         plot.show_shap_thresholds(
             ax=ax, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix, idx=idx, ydim_max=ydim_max,
             ydim_min=ydim_min, show_annotate=True, fontsize=AX_LABELS_FONTSIZE, show_annotate_short=True)
-    plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE)
+
+    # Format subplot
+    plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels, showxticklabels=showxticklabels)
 
 fig.tight_layout()
-gs.update(wspace=.4)
+gs.update(wspace=.2)
 fig.show()
-
-print(f"Polynomial coefficients: {poly_coeffs}")
 
 # # Save fig to file
 # usedx = df_all.columns[0]

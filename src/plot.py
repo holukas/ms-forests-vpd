@@ -18,6 +18,17 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
     _params2 = dict(linewidth=2, zorder=100, s=200, alpha=1)
     _params3 = dict(color='black', fontsize=fontsize, linespacing=1.2)
 
+    # Calculate y-offset for lines leading to annotations
+    # Needs to be a bit larger for the smaller subplots
+    # As relative_height goes down (0.2), the factor goes UP
+    # As relative_height goes up (1.0), the factor goes DOWN
+    bbox = ax.get_position()
+    relative_height = bbox.height  # Height of ax as a fraction of figure (0.0 to 1.0)
+    y_range = y_top - y_bottom
+    scaling_factor = 0.02 + (0.04 / relative_height)
+    scaling_factor = min(0.08, scaling_factor)  # Clamp so it does not get huge on small plots
+    y_offset_topline = y_range * scaling_factor
+
     # Maximum positive effect
     # ax_all.scatter(x_fit[max_ix], y_fit[max_ix], color='black', marker='^', edgecolors='none', **_params2)
     ax.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor='black', **_params2)
@@ -30,7 +41,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
             showntext = f'Maximum positive effect\n(x={x_fit[max_ix]:.2f})'
         ax.text(x_fit[max_ix], text_y_pos_max, showntext,
                 va='bottom', ha='center', **_params3)
-        ax.plot([x_fit[max_ix], x_fit[max_ix]], [text_y_pos_max + 0.1, y_fit[max_ix]], **_params)
+        ax.plot([x_fit[max_ix], x_fit[max_ix]], [text_y_pos_max + y_offset_topline, y_fit[max_ix] - 0], **_params)
         ax.plot([x_fit[max_ix], x_fit[max_ix]], [y_bottom, text_y_pos_max], **_params)
 
     # Threshold
@@ -43,7 +54,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
             showntext = f'Threshold\n(x={x_fit[idx]:.2f})'
         ax.text(x_fit[idx], text_y_pos_zero, showntext,
                 va='bottom', ha='center', **_params3)
-        ax.plot([x_fit[idx], x_fit[idx]], [text_y_pos_zero + 0.1, y_fit[idx] - 0.03], **_params)
+        ax.plot([x_fit[idx], x_fit[idx]], [text_y_pos_zero + y_offset_topline, y_fit[idx] - 0], **_params)
         ax.plot([x_fit[idx], x_fit[idx]], [y_bottom, text_y_pos_zero], **_params)
 
     # Maximum negative impact
@@ -58,20 +69,33 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
             showntext = f'Maximum negative effect\n(x={x_fit[min_ix]:.2f})'
         ax.text(x_fit[min_ix] + 0.2, text_y_pos_min, showntext,
                 va='bottom', ha='right', **_params3)
-        ax.plot([x_fit[min_ix], x_fit[min_ix]], [text_y_pos_min + 0.1, y_fit[min_ix] - 0.03], **_params)
+        ax.plot([x_fit[min_ix], x_fit[min_ix]], [text_y_pos_min + y_offset_topline, y_fit[min_ix] - 0], **_params)
         ax.plot([x_fit[min_ix], x_fit[min_ix]], [y_bottom, text_y_pos_min], **_params)
 
 
-def format(ax, fontsize):
+def format(ax, fontsize, showxticklabels, showyticklabels):
     # Hide the top and right spines
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_linewidth(1)
     ax.spines['left'].set_linewidth(1)
+
     # Set the tick width for both x and y axes
     ax.tick_params(axis='both', which='major', width=1, length=5, labelsize=fontsize)
     ax.tick_params(axis='both', which='minor', width=1, length=2, labelsize=fontsize)
-    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.1f'))
+
+    # Visibility for ticklabels
+    if showxticklabels:
+        ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%.0f'))
+        ax.tick_params(axis='x', labelbottom=True)
+    else:
+        ax.tick_params(axis='x', labelbottom=False)  # Hide labels
+
+    if showyticklabels:
+        ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.1f'))
+        ax.tick_params(axis='y', labelleft=True)
+    else:
+        ax.tick_params(axis='y', labelleft=False)  # Hide labels
     ax.axhline(y=0, color='black', linestyle='-', lw=1, zorder=98)
     ax.grid(False)
 
@@ -106,15 +130,19 @@ def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared, show_ann
 
 def layout_5panels(figsize, add_colorbar_ax: bool = False):
     fig = plt.figure(figsize=figsize, dpi=150, facecolor="white")
-    ncols = 5 if add_colorbar_ax else 4
-    width_ratios = [1, 1, 1, 1, 0.1] if add_colorbar_ax else [1, 1, 1, 1]
+    ncols = 5 if add_colorbar_ax else 5
+    width_ratios = [1, 1, 1, 1, 0.1] if add_colorbar_ax else [1, 1, 0.1, 1, 1]
     gs = gridspec.GridSpec(2, ncols, width_ratios=width_ratios)
     ax_all = fig.add_subplot(gs[0:2, 0:2])
-    axes_sub = [fig.add_subplot(gs[r, c], sharex=ax_all, sharey=ax_all) for r, c in [(0, 2), (0, 3), (1, 2), (1, 3)]]
+
     if add_colorbar_ax:
+        axes_sub = [fig.add_subplot(gs[r, c], sharex=ax_all, sharey=ax_all) for r, c in
+                    [(0, 2), (0, 3), (1, 2), (1, 3)]]
         cax = fig.add_subplot(gs[:, 4])
         return fig, gs, ax_all, axes_sub, cax
     else:
+        axes_sub = [fig.add_subplot(gs[r, c], sharex=ax_all, sharey=ax_all) for r, c in
+                    [(0, 3), (0, 4), (1, 3), (1, 4)]]
         return fig, gs, ax_all, axes_sub
 
 
