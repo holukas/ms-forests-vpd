@@ -40,7 +40,7 @@ AX_LABELS_FONTSIZE = 16
 # Labels & Columns
 xlabel = f'{beautify[xvar]} (z-score)'
 ylabel = f'{beautify[yvar]} (z-score)'
-zlabel = f'{beautify[zvar]} effect on {beautify[FLUX]} (SHAP value median z-score)'
+zlabel = f'{beautify[zvar]} effect (z-score)'
 
 # Column names in dataframe
 xcol = (f"BIN_{xvar}", aggfunc)
@@ -89,9 +89,16 @@ print(f"[ALL SITES] Highest decrease found at x={minmaxlocs['min'][0]}, y={minma
 
 # ---------------
 # SUBPLOTS (IGBP)
-configs = zip(axes_sub, igbps, [" ", " ", xlabel, xlabel], [ylabel, " ", ylabel, " "],
-              ['b', 'c', 'd', 'e'])
-for ax, igbp, xl, yl, letter in configs:
+configs = zip(
+    axes_sub,
+    igbps,
+    [" ", " ", xlabel, xlabel],
+    [ylabel, " ", ylabel, " "],
+    ['b', 'c', 'd', 'e'],
+    [True, False, True, False],  # For showing yticklabels
+    [False, False, True, True]  # For showing xticklabels
+)
+for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Filter using index from main dataset (keeplocs logic)
     df_igbp, df_subset, n_sites_sub = files.load_data(
         suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, xvar=xvar, yvar=yvar, zvar=zvar, flux=FLUX,
@@ -107,6 +114,9 @@ for ax, igbp, xl, yl, letter in configs:
                               xvals=f'BIN_{xvar}_median', yvals=f'BIN_{yvar}_median', zvals=f'{zvar}_SHAPVALS_median',
                               flux_txt=beautify[FLUX], annotate=False, ax_labels_fontsize=AX_LABELS_FONTSIZE,
                               area_size=area_size)
+    # Format subplot
+    plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels, showxticklabels=showxticklabels,
+                xtickdigits=0, ytickdigits=0)
     print(f"[{igbp}] Highest increase found at x={minmaxlocs['max'][0]}, y={minmaxlocs['max'][1]}")
     print(f"[{igbp}] Highest decrease found at x={minmaxlocs['min'][0]}, y={minmaxlocs['min'][1]}")
 

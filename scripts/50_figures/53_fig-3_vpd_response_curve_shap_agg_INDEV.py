@@ -223,7 +223,9 @@ ax_all.set_xlabel(xlabel, fontsize=AX_LABELS_FONTSIZE)
 ax_all.set_ylabel(ylabel, fontsize=AX_LABELS_FONTSIZE)
 
 # ax_all.legend(bbox_to_anchor=(0.05, 0.95), loc='upper right', frameon=False)
-plot.format(ax=ax_all, fontsize=AX_LABELS_FONTSIZE, showyticklabels=True, showxticklabels=True)
+plot.format(ax=ax_all, fontsize=AX_LABELS_FONTSIZE, showyticklabels=True, showxticklabels=True,
+            xtickdigits=0, ytickdigits=1)
+ax_all.axhline(0, color='k', linestyle='--', linewidth=1)
 
 # ---------------
 # SUBPLOTS (IGBP)
@@ -291,7 +293,9 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
             ydim_min=ydim_min, show_annotate=True, fontsize=AX_LABELS_FONTSIZE, show_annotate_short=True)
 
     # Format subplot
-    plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels, showxticklabels=showxticklabels)
+    plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels, showxticklabels=showxticklabels,
+                xtickdigits=0, ytickdigits=1)
+    ax.axhline(0, color='k', linestyle='--', linewidth=1)
 
 fig.tight_layout()
 gs.update(wspace=.2)

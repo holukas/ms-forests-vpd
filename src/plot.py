@@ -73,7 +73,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
         ax.plot([x_fit[min_ix], x_fit[min_ix]], [y_bottom, text_y_pos_min], **_params)
 
 
-def format(ax, fontsize, showxticklabels, showyticklabels):
+def format(ax, fontsize, showxticklabels, showyticklabels, xtickdigits, ytickdigits):
     # Hide the top and right spines
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
@@ -86,17 +86,17 @@ def format(ax, fontsize, showxticklabels, showyticklabels):
 
     # Visibility for ticklabels
     if showxticklabels:
-        ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%.0f'))
+        ax.xaxis.set_major_formatter(ticker.FormatStrFormatter(f"{f'%.{xtickdigits}f'}"))
         ax.tick_params(axis='x', labelbottom=True)
     else:
         ax.tick_params(axis='x', labelbottom=False)  # Hide labels
 
     if showyticklabels:
-        ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.1f'))
+        ax.yaxis.set_major_formatter(ticker.FormatStrFormatter(f"{f'%.{ytickdigits}f'}"))
         ax.tick_params(axis='y', labelleft=True)
     else:
         ax.tick_params(axis='y', labelleft=False)  # Hide labels
-    ax.axhline(y=0, color='black', linestyle='-', lw=1, zorder=98)
+
     ax.grid(False)
 
 
