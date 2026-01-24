@@ -10,20 +10,16 @@ from diive.core.times.times import insert_timestamp
 from scipy.stats import zscore
 
 
-def load_data(suffix, shap_type, dir_res, xvar, yvar, zvar, flux, n_sites_min, subsetcols: list,
-              count_vals_col: tuple[str, str] = False,
-              x_in_filename: str = False, y_in_filename: str = False, site_filter=None):
+def load_data(suffix, shap_type, dir_res, flux, n_sites_min, subsetcols: list,
+              x_in_filename: str, y_in_filename: str, count_vals_col: tuple[str, str] = False, site_filter=None):
     """
     Loads parquet, flattens cols, optionally filters by index.
     suffix: 'Sites' (for main plot, prefix 42) or 'IGBP-X' (for subplots, prefix 43)
     """
-    x_in_filename = xvar if not x_in_filename else x_in_filename
-    y_in_filename = yvar if not y_in_filename else y_in_filename
-
     # Select 42 for 'Sites' (AggregatedAcrossSites) and 43 for IGBP (AggregatedAcrossIGBP)
     prefix = "42" if suffix == 'Sites' else "43"
     filename = (f"{prefix}_SHAPVALUES-{shap_type}_AggregatedAcross{suffix}"
-                f"_BIN-{x_in_filename}+BIN-{y_in_filename}+{flux}.parquet")
+                f"_{x_in_filename}+{y_in_filename}+{flux}.parquet")
     fp = dir_res / filename
     filedf = dv.load_parquet(fp, sanitize_timestamp=False, output_middle_timestamp=False)
 

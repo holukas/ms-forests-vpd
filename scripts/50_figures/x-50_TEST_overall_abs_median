@@ -1,0 +1,104 @@
+from pathlib import Path
+
+import diive as dv
+import pandas as pd
+
+import src.files as files
+from src.aggregation import aggregate_shap_values_for_site
+
+# ------------------------------
+# Variables
+# NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
+
+# Settings for searching in the correct (sub)folder
+FLUX = 'NEP_ZSCORE'
+CONDITIONAL = True  # SHAP
+
+# Aggregation combos: xvar / yvar
+# VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['SWIN_ZSCORE', 'TA_ZSCORE']
+# VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['SWIN_ZSCORE', 'VPD_ZSCORE']
+VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
+aggfunc = 'median'
+
+xvar = VARS[0]
+yvar = VARS[1]
+
+# Load settings
+settings = files.read_settings_file("../../config/settings.yaml")
+shap_type = 'conditional' if CONDITIONAL else 'standard'
+dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
+
+# Load subsets info
+infile = Path('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv')
+subsets_df = pd.read_csv(infile)
+
+# Create output directory
+dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+# parents=True: Creates any necessary parent directories that don't exist.
+# exist_ok=True: Prevents an error if the directory already exists.
+dir_out.mkdir(parents=True, exist_ok=True)
+
+# Aggregate SHAP values for each site and collect in dataframe
+collectdf = None
+for ix, siteconfig in subsets_df.iterrows():
+
+    # # TODO testing ----
+    # if ix > 5:
+    #     break
+    # # TODO testing ----
+
+    # if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
+    #     # Skip files that do not have a parquet subset, b/c of missing SWC
+    #     continue
+
+    site = siteconfig['SITE']
+    igbp = siteconfig['IGBP']
+    filename = f"{site}_shap-{shap_type}_{FLUX}.parquet"
+    filepath = dir_prev_results / filename
+
+    shapvals_agg_df = pd.DataFrame()
+    print(f"\nLoading data for site #{ix + 1} {site} ...")
+    shapvals_df = dv.load_parquet(filepath)
+
+    keepcols = [c for c in shapvals_df.columns if "_SHAPVALS" in c]
+    shapvals_df = shapvals_df[keepcols].copy()
+    shapvals_df = shapvals_df.dropna()
+
+
+    pos_sums = shapvals_df[shapvals_df > 0].sum()
+    pos_counts = shapvals_df[shapvals_df > 0].count()
+    neg_sums = shapvals_df[shapvals_df < 0].sum()
+    neg_counts = shapvals_df[shapvals_df < 0].count()
+    ovr_sums = shapvals_df.sum()
+    ovr_abs_median = shapvals_df.abs().median()
+    ovr_counts = shapvals_df.count()
+    ovr_median = shapvals_df.median()
+
+    cur_site = pd.concat(
+        [pos_sums, pos_counts, neg_sums, neg_counts, ovr_sums, ovr_counts, ovr_median, ovr_abs_median], axis=1,
+        keys=['pos_sums', 'pos_counts', 'neg_sums', 'neg_counts', 'ovr_sums', 'ovr_counts', 'ovr_median',
+              'ovr_abs_median'])
+    cur_site['SITE'] = site
+
+    # print(f"{site} Positive/Negative means:{pos_sums} {neg_sums}")
+
+    if ix == 0:
+        collectdf = cur_site.copy()
+    else:
+        collectdf = pd.concat([collectdf, cur_site], axis=0)
+
+
+collectdf.loc[collectdf.index == 'TA_ZSCORE_SHAPVALS', 'ovr_abs_median'].median()
+collectdf.loc[collectdf.index == 'SWIN_ZSCORE_SHAPVALS', 'ovr_abs_median'].median()
+collectdf.loc[collectdf.index == 'VPD_ZSCORE_SHAPVALS', 'ovr_abs_median'].median()
+collectdf.loc[collectdf.index == 'SWC_ZSCORE_SHAPVALS', 'ovr_abs_median'].median()
+
+#
+#
+# outfilepath = dv.save_parquet(
+#     filename=f"41_SHAPVALUES-{shap_type}_AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}",
+#     data=shapvals_sites_agg_long_df,
+#     outpath=dir_out)
+# # shapvals_sites_agg_long_df.to_csv(outfilepath.replace('.parquet', '.csv'))

@@ -10,13 +10,26 @@ import src.plot as plot
 from src.plot import plot_markers, style_ax
 
 # Settings & variables
-FLUX = 'NEP_ZSCORE'
+
+# # Main Fig. 1
+# # plotvars = [FLUX, xvar, yvar, zvar, x_in_filename, y_in_filename]
+# plotvars = ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
+
+# Extended Figures
+plotvars = ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
+
+FLUX = plotvars[0]
+xvar, yvar, zvar = plotvars[1], plotvars[2], plotvars[3]
+x_in_filename, y_in_filename = plotvars[4], plotvars[5]
+
 # FLUX = 'ET_ZSCORE'
 # FLUX = 'GPP_ZSCORE'
 # FLUX = 'RECO_ZSCORE'
 
 # Agg groups, use z-scores:
-xvar, yvar, zvar = 'TA_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
+# xvar, yvar, zvar = 'TA_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
+# xvar, yvar, zvar = 'TA_ZSCORE', 'VPD_ZSCORE', 'TA_ZSCORE'
+# xvar, yvar, zvar = 'SWC_ZSCORE', 'SWC_ZSCORE_SHAPVALS', 'VPD_ZSCORE'
 # xvar, yvar, zvar = 'SWIN_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE'
 # xvar, yvar, zvar = 'SWC_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
 # xvar, yvar, zvar = 'SWIN_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE'
@@ -30,8 +43,10 @@ cmap, igbps = 'RdYlBu', ['ENF', 'DBF', 'MF', 'EBF']
 beautify = {
     "NEP_ZSCORE": "NEP",
     "ET_ZSCORE": "ET",
-    "TA_ZSCORE": "Air temperature",
-    "VPD_ZSCORE": "VPD",
+    "BIN_TA_ZSCORE": "Air temperature",
+    "BIN_VPD_ZSCORE": "VPD",
+    "BIN_SWC_ZSCORE": "SWC",
+    "VPD_ZSCORE_SHAPVALS": "VPD",
     "SWC_ZSCORE": "SWC",
     "SWIN_ZSCORE": "SWIN",
 }
@@ -43,10 +58,10 @@ ylabel = f'{beautify[yvar]} (z-score)'
 zlabel = f'{beautify[zvar]} effect (z-score)'
 
 # Column names in dataframe
-xcol = (f"BIN_{xvar}", aggfunc)
-ycol = (f"BIN_{yvar}", aggfunc)
-zcol = (f"{zvar}_SHAPVALS", aggfunc)
-count_vals_col = (f"{zvar}_SHAPVALS", "count")
+xcol = (f"{xvar}", aggfunc)
+ycol = (f"{yvar}", aggfunc)
+zcol = (f"{zvar}", aggfunc)
+count_vals_col = (f"{zvar}", "count")
 
 # Paths & Settings
 shap_type = 'conditional' if CONDITIONAL else 'standard'
@@ -61,9 +76,9 @@ fig, gs, ax_all, axes_sub, cax = plot.layout_5panels(figsize=(19.8, 8.1), add_co
 
 # Load data
 filedf, subsetdf, n_sites = files.load_data(
-    suffix='Sites', shap_type=shap_type, dir_res=dir_res, xvar=xvar, yvar=yvar, zvar=zvar, flux=FLUX,
-    count_vals_col=count_vals_col,
-    n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol], site_filter=None)
+    suffix='Sites', shap_type=shap_type, dir_res=dir_res, flux=FLUX, count_vals_col=count_vals_col,
+    n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol], site_filter=None, x_in_filename=x_in_filename,
+    y_in_filename=y_in_filename)
 
 # Plot
 plot.flameplot(df=subsetdf, fig=fig, ax=ax_all, cmap=cmap, title=None, cb_digits_after_comma=cb_digits,
@@ -81,7 +96,7 @@ texts = [(2, 0.1, r"$\uparrow$ dry", 'left', 'bottom'), (2, -0.1, r"$\downarrow$
 for x, y, s, h, v in texts:
     ax_all.text(x, y, s, ha=h, va=v, **t_params)
 minmaxlocs = plot_markers(ax_all, subsetdf,
-                          xvals=f'BIN_{xvar}_median', yvals=f'BIN_{yvar}_median', zvals=f'{zvar}_SHAPVALS_median',
+                          xvals=f'{xvar}_median', yvals=f'{yvar}_median', zvals=f'{zvar}_median',
                           flux_txt=beautify[FLUX], annotate=True, ax_labels_fontsize=AX_LABELS_FONTSIZE,
                           area_size=area_size)
 print(f"[ALL SITES] Highest increase found at x={minmaxlocs['max'][0]}, y={minmaxlocs['max'][1]}")
@@ -101,8 +116,9 @@ configs = zip(
 for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Filter using index from main dataset (keeplocs logic)
     df_igbp, df_subset, n_sites_sub = files.load_data(
-        suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, xvar=xvar, yvar=yvar, zvar=zvar, flux=FLUX,
-        count_vals_col=count_vals_col, n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol], site_filter=filedf.index)
+        suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, flux=FLUX, count_vals_col=count_vals_col,
+        n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol], site_filter=filedf.index, x_in_filename=x_in_filename,
+        y_in_filename=y_in_filename)
     plot.flameplot(df=df_subset, fig=fig, ax=ax, cmap=cmap, title=None, show_colormap=False,
                    vmin=vmin, vmax=vmax, xlabel=xl, ylabel=yl)
     plot.style_ax(ax, f"({letter}) {igbp} (n={n_sites_sub[1]}, min. {n_sites_sub[0]})",
@@ -111,7 +127,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     ax.axvline(0, c='k', ls='--', lw=1, zorder=99)
     ax.set_aspect('equal')
     minmaxlocs = plot_markers(ax, df_subset,
-                              xvals=f'BIN_{xvar}_median', yvals=f'BIN_{yvar}_median', zvals=f'{zvar}_SHAPVALS_median',
+                              xvals=f'{xvar}_median', yvals=f'{yvar}_median', zvals=f'{zvar}_median',
                               flux_txt=beautify[FLUX], annotate=False, ax_labels_fontsize=AX_LABELS_FONTSIZE,
                               area_size=area_size)
     # Format subplot
