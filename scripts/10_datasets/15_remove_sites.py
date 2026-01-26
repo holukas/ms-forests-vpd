@@ -1,5 +1,12 @@
 """
-Prepare input data for XGBoost models.
+Processes dataset information and filters it based on specific conditions, then saves the
+filtered data to a CSV file.
+
+This script is intended to load dataset information, filter rows based on specific
+criteria (e.g., availability of soil water content data, sufficient years of data,
+and exclusion of certain categories), and enrich it with additional information
+such as MAT (Mean Annual Temperature) and MAP (Mean Annual Precipitation). The
+filtered and enriched data is then written to an output file.
 """
 from pathlib import Path
 
@@ -17,6 +24,12 @@ datasets_df = datasets_df.loc[
     ].reset_index(drop=True)
 
 print(f"Site years: {datasets_df['N_YEARS'].sum()}")
+
+# Extended info (MAT, MAP)
+extfile = Path('../../data/outputs/10_datasets/11_datasets_info.csv')
+extended_df = pd.read_csv(extfile)
+datasets_df.loc[:, 'MAT'] = extended_df['MAT']
+datasets_df.loc[:, 'MAP'] = extended_df['MAP']
 
 # Save to file
 datasets_df = datasets_df.reset_index(drop=True)
