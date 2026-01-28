@@ -140,11 +140,15 @@ def get_dataset_info_icos(pattern_dir, searchdir, pattern_file):
         lon_icos = float(info_icos[info_icos['VARIABLE'] == 'LOCATION_LONG']['DATAVALUE'].iloc[0])
         lat_icos = float(info_icos[info_icos['VARIABLE'] == 'LOCATION_LAT']['DATAVALUE'].iloc[0])
         igbp_icos = str(info_icos[info_icos['VARIABLE'] == 'IGBP']['DATAVALUE'].iloc[0])
+        mat_icos = str(info_icos[info_icos['VARIABLE'] == 'MAT']['DATAVALUE'].iloc[0])
+        map_icos = str(info_icos[info_icos['VARIABLE'] == 'MAP']['DATAVALUE'].iloc[0])
 
         allsites_icos.loc[allsites_icos['SITE'] == site, 'ELEVATION'] = elev_icos
         allsites_icos.loc[allsites_icos['SITE'] == site, 'LON'] = lon_icos
         allsites_icos.loc[allsites_icos['SITE'] == site, 'LAT'] = lat_icos
         allsites_icos.loc[allsites_icos['SITE'] == site, 'IGBP'] = igbp_icos
+        allsites_icos.loc[allsites_icos['SITE'] == site, 'MAT'] = mat_icos
+        allsites_icos.loc[allsites_icos['SITE'] == site, 'MAP'] = map_icos
     return allsites_icos
 
 
@@ -159,7 +163,8 @@ def get_dataset_info_fxn_cp(searchdir, pattern_dir, infofile, pattern_file) -> p
 
     # Read CSV with additional site info from EFDC / FLUXNET
     siteinfo_fxn = pd.read_csv(infofile)
-    siteinfo_fxn = siteinfo_fxn[['Site Code', 'IGBP Code', 'Site Latitude', 'Site Longitude']].copy()
+    siteinfo_fxn = siteinfo_fxn[['Site Code', 'IGBP Code', 'Site Latitude', 'Site Longitude',
+                                 'Mean Annual Temperature', 'Mean Annual Precpitation']].copy()
 
     # Add info to site df
     allsites_fxn = allsites_fxn.merge(siteinfo_fxn, left_on='SITE', right_on='Site Code')
@@ -170,6 +175,8 @@ def get_dataset_info_fxn_cp(searchdir, pattern_dir, infofile, pattern_file) -> p
         'IGBP Code': 'IGBP',
         'Site Latitude': 'LAT',
         'Site Longitude': 'LON',
+        'Mean Annual Temperature': 'MAT',
+        'Mean Annual Precpitation': 'MAP',
     }
     allsites_fxn = allsites_fxn.rename(columns=rename_dict, inplace=False)
     allsites_fxn = allsites_fxn.sort_values(by=['SITE'], ascending=True, inplace=False)
@@ -256,10 +263,22 @@ def get_dataset_info_fluxnet_ameriflux(searchdir, pattern_dir, infofile, origin,
         except IndexError:
             igbp = np.nan
 
+        try:
+            mat = str(siteinfo[siteinfo['VARIABLE'] == 'MAT']['DATAVALUE'].iloc[0])
+        except IndexError:
+            mat = np.nan
+
+        try:
+            _map = str(siteinfo[siteinfo['VARIABLE'] == 'MAP']['DATAVALUE'].iloc[0])
+        except IndexError:
+            _map = np.nan
+
         allsites.loc[allsites['SITE'] == site, 'ELEVATION'] = elev
         allsites.loc[allsites['SITE'] == site, 'LON'] = lon
         allsites.loc[allsites['SITE'] == site, 'LAT'] = lat
         allsites.loc[allsites['SITE'] == site, 'IGBP'] = igbp
+        allsites.loc[allsites['SITE'] == site, 'MAT'] = mat
+        allsites.loc[allsites['SITE'] == site, 'MAP'] = _map
     return allsites
 
 

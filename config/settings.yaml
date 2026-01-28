@@ -29,6 +29,7 @@ DIR_DATA_RAW_FXN_CP: ../../data/00_raw/fluxnet_from_carbonportal
 PATTERN_DIR_FXN_CP: ['FLX_', 'FLUXNET2015_FULLSET_']
 PATTERN_FILE_HH_FXN_CP: FLX_*_FLUXNET2015_FULLSET_HH_*.csv
 INFOFILE_FXN_CP: ../../data/00_raw/fluxnet_from_carbonportal/0-info/FLUXNET_SitesList_20240404.csv
+#INFOFILE_FXN_CP: ../../data/00_raw/fluxnet_from_carbonportal/0-info/FLUXNET_SitesList_20260126_requiredCols.csv
 
 # FLUXNET (from fluxnet.org)
 DIR_DATA_RAW_FXN_ORG: ../../data/00_raw/fluxnet_from_fluxnetorg

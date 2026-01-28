@@ -1,3 +1,6 @@
+"""
+Aggregate SHAP values in bins of 2 variables, per site.
+"""
 from pathlib import Path
 
 import diive as dv
@@ -12,9 +15,9 @@ from src.aggregation import aggregate_shap_values_for_site
 
 # Settings for searching in the correct (sub)folder
 # FLUX = 'NEP_ZSCORE'
-# FLUX = 'ET_ZSCORE'
+FLUX = 'ET_ZSCORE'
 # FLUX = 'GPP_ZSCORE'
-FLUX = 'RECO_ZSCORE'
+# FLUX = 'RECO_ZSCORE'
 CONDITIONAL = True  # SHAP
 
 # Aggregation combos: xvar / yvar
@@ -29,8 +32,8 @@ aggfunc = 'median'
 # Agg groups, use z-scores:
 # NEP:  [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
 # ET:   [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
-# GPP:  [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
-# RECO: [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
+# GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # ------------------------------
 
 xvar = VARS[0]

@@ -44,7 +44,7 @@ x_in_filename, y_in_filename = plotvars[4], plotvars[5]
 # ------------------------------
 
 aggfunc, CONDITIONAL = 'median', True
-n_sites_min = 30
+n_sites_min = 20
 colors_list = ['#9C27B0', '#26C6DA', '#546E7A', '#FB8C00', '#C62828']
 custom_cmap = matplotlib.colors.ListedColormap(colors_list)
 igbps = ['ENF', 'DBF', 'MF', 'EBF']
@@ -109,7 +109,7 @@ fig, gs, ax_all, axes_sub = plot.layout_5panels((13.86, 6.67), add_colorbar_ax=F
 
 # Load data
 filedf, subsetdf, n_sites = files.load_data(
-    suffix='Sites', shap_type=shap_type, dir_res=dir_res, xvar=xvar, yvar=yvar, zvar=zvar, flux=FLUX,
+    suffix='Sites', shap_type=shap_type, dir_res=dir_res, flux=FLUX,
     count_vals_col=count_vals_col, n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75],
     site_filter=None, x_in_filename=x_in_filename, y_in_filename=y_in_filename)
 
@@ -251,7 +251,7 @@ configs = zip(
 for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Filter using index from main dataset (keeplocs logic)
     df_igbp, df_subset, n_sites_sub = files.load_data(
-        suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, xvar=xvar, yvar=yvar, zvar=zvar, flux=FLUX,
+        suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, flux=FLUX,
         count_vals_col=count_vals_col, n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75],
         site_filter=filedf.index, x_in_filename=x_in_filename, y_in_filename=y_in_filename)
     # Extract the data from the DataFrame

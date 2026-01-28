@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import logging
 import diive as dv
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
@@ -50,19 +50,19 @@ def load_data(suffix, shap_type, dir_res, flux, n_sites_min, subsetcols: list,
 
 
 def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, ix: int, varnames, site: str,
-                                 igbp: str, origin: str) -> dict:
+                                 igbp: str, origin: str, logging=logging) -> dict:
     """
     Processes the full flux data for a specific site to create a quality-controlled,
     seasonally-filtered, and year-balanced subset for subsequent analysis.
 
     The function performs a sequence of steps: loads data, selects required variables,
-    filters for QC-flag 0 (measured data) and daytime records, identifies the 6 warmest months,
+    filters for QC-flag 0 (measured data) and daytime records, identifies the 4 warmest months,
     balances the data across available years for these months, calculates derived
     variables (ET, NEP), converts all measured variables to Z-scores, saves the
     final subset to a Parquet file, generates a heatmap visualization, and returns
     comprehensive summary statistics.
 
-    The core filtering step ensures that all 6 warmest months included in the subset
+    The core filtering step ensures that all 4 warmest months included in the subset
     have the *exact same number of available years* of data, using the latest years
     available to achieve this balance, which prevents monthly bias in long-term statistics.
 
@@ -112,37 +112,50 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     subset['MONTH'] = subset.index.month
     subset['YEAR'] = subset.index.year
 
-    # First, identify 6 warmest months from full dataset
+    # First, identify 4 warmest months from full dataset
     ta_avg = subset.groupby('MONTH')[varnames['ta_var']].mean()
-    warmest6 = ta_avg.nlargest(6).index.to_list()
+    warmest4 = ta_avg.nlargest(4)
+    warmest4 = warmest4.index.to_list()
+
+    # Now start to narrow down data
 
     # Keep directly measured NEE fluxes, no gap-filled flux data
     if varnames['nee_qc_var'] is not None:
         subset = subset.loc[subset[varnames['nee_qc_var']] == 0].copy()
+    else:
+        raise KeyError(f"Required variable '{varnames['nee_qc_var']}' not found in dataset.")
+
+    # # Keep directly measured LE fluxes, no gap-filled flux data
+    # # Does currently not work because of a bug in FLUXNET data where the QC flag
+    # # indicates that ALL LE values are gapfilled.
+    # if varnames['le_qc_var'] is not None:
+    #     subset = subset.loc[subset[varnames['le_qc_var']] == 0].copy()
+    # else:
+    #     raise KeyError(f"Required variable '{varnames['le_qc_var']}' not found in dataset.")
 
     # Keep daytime records
     subset = subset.loc[subset[varnames['swinpot_var']] > 20].copy()
 
-    # Keep 6 warmest months
+    # Keep 4 warmest months
     # Keep as much data as is needed to have the same number of available years
-    # for each of the 6 warmest months, to avoid monthly bias.
+    # for each of the 4 warmest months, to avoid monthly bias.
 
-    # Filter to only the 6 warmest months (after QC/daytime filters)
-    df_w6 = subset.loc[subset['MONTH'].isin(warmest6)].copy()
+    # Filter to only the 4 warmest months (after QC/daytime filters)
+    warmest4_df = subset.loc[subset['MONTH'].isin(warmest4)].copy()
 
-    # Count the number of unique years available for each of the 6 months
+    # Count the number of unique years available for each of the 4 months
     # Group by month and count the number of unique years in each group
-    month_year_counts = df_w6.groupby('MONTH')['YEAR'].nunique()
+    month_year_counts = warmest4_df.groupby('MONTH')['YEAR'].nunique()
 
-    # Find the minimum number of available years across all 6 months
+    # Find the minimum number of available years across all 4 months
     min_years = month_year_counts.min()
 
     # Identify the set of years needed to be kept for each month to achieve the balance.
     # Requires iteration over the months
     balanced_indices = []
-    for month in warmest6:
+    for month in warmest4:
         # Get all records for this specific month
-        month_data = df_w6.loc[df_w6['MONTH'] == month].copy()
+        month_data = warmest4_df.loc[warmest4_df['MONTH'] == month].copy()
 
         # Find the years available for this month
         available_years = month_data['YEAR'].unique()
@@ -168,6 +181,14 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     # Apply the final index filter
     subset = subset.loc[all_balanced_indices].copy()
 
+    # Count if there are data from all 4 months
+    if len(subset['MONTH'].unique()) != 4:
+        logging.warning(f"Not all 4 warmest months are available for site {site}.")
+
+
+
+
+
     # Cleanup temporary columns
     subset = subset.drop(columns=['MONTH', 'YEAR'], errors='ignore')
 
@@ -184,7 +205,11 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     ].copy()
 
     # Keep records where all vars available
+    # It is possible that we lose the complete dataset here,
+    # e.g. when SWC is available for some months but not for the warmest 4.
     subset = subset.dropna()
+    if subset.empty:
+        return dict()
 
     # Rename variables to have the same var names for all sites
     rename_dict = {
@@ -221,7 +246,7 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
 
     # Save subset data with z-scores to parquet file
     outfilepath = dv.save_parquet(
-        filename=f"{site}_subset_warmest6_qc0_daytime",
+        filename=f"{site}_subset_warmest4_qc0_daytime",
         data=subset,
         outpath=Path(settings['DIR_DATA_PROC_SUBSETS']))
     print(f"Saved subset data (measured and z-scores) for {site} to file {outfilepath}.")
@@ -231,7 +256,7 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     end = subset.index[-1].year
     outname = f"{site}_{igbp}_{origin}_SUBSET_{start}-{end}"
     save_subset_heatmap_plot(df=subset, outname=outname, site=site, igbp=igbp, sourcetxt=origin,
-                             showplot=True, fluxvars=['SWIN', 'TA', 'VPD', 'SWC', 'NEP'],
+                             showplot=True, fluxvars=['SWIN', 'TA', 'VPD', 'SWC', 'NEP', 'ET'],
                              outpath=settings['DIR_DATA_PROC_SUBSETS_PLOTS'])
 
     # Calculate stats for subset
@@ -469,15 +494,16 @@ def save_subset_heatmap_plot(df: pd.DataFrame, outpath: str, outname: str, site:
     outfile = Path(outpath) / outname
     print(f"Saving heatmap plot to {outfile} ...")
 
-    fig = plt.figure(facecolor='white', figsize=(25, 10), dpi=72)
-    gs = gridspec.GridSpec(1, 5)  # rows, cols
+    fig = plt.figure(facecolor='white', figsize=(30, 10), dpi=72)
+    gs = gridspec.GridSpec(1, 6)  # rows, cols
     # gs.update(wspace=0.7, hspace=0.3, left=0.1, right=0.9, top=0.9, bottom=0.07)
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
     ax3 = fig.add_subplot(gs[0, 2], sharey=ax1)
     ax4 = fig.add_subplot(gs[0, 3], sharey=ax1)
     ax5 = fig.add_subplot(gs[0, 4], sharey=ax1)
-    axes = [ax1, ax2, ax3, ax4, ax5]
+    ax6 = fig.add_subplot(gs[0, 5], sharey=ax1)
+    axes = [ax1, ax2, ax3, ax4, ax5, ax6]
 
     tickkwargs = dict(labeltop=False, labelbottom=True, labelright=False,
                       top=False, bottom=True, left=True, right=False)
@@ -486,7 +512,7 @@ def save_subset_heatmap_plot(df: pd.DataFrame, outpath: str, outname: str, site:
         ax = axes[ix]
         vmin = df[v].quantile(0.02)
         vmax = df[v].quantile(0.98)
-        dv.heatmapdatetime(ax=ax, series=df[v], cb_digits_after_comma=0,
+        dv.heatmapdatetime(ax=ax, series=df[v], cb_digits_after_comma=1,
                            vmin=vmin, vmax=vmax, cb_extend='both').plot()
         ax.set_title(f"{v}", fontsize=20)
 

@@ -20,10 +20,10 @@ CONDITIONAL = True  # Use conditional SHAP instead of standard SHAP
 
 # ------------------------------
 # Calculate SHAP values for:
-# [x] NEP_ZSCORE
-# [x] ET_ZSCORE
-# [x] GPP_ZSCORE
-# [x] RECO_ZSCORE
+# [r] NEP_ZSCORE
+# [r] ET_ZSCORE
+# [r] GPP_ZSCORE
+# [r] RECO_ZSCORE
 # ------------------------------
 
 
@@ -53,7 +53,6 @@ with open(modelstxt, 'w') as file:
 
 _subsets_df = subsets_df.copy()
 for ix, siteconfig in _subsets_df.iterrows():
-
     # # TODO testing
     # if ix > 10:
     #     break

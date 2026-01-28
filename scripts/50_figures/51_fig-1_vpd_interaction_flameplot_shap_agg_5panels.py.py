@@ -11,12 +11,12 @@ from src.plot import plot_markers, style_ax
 
 # Settings & variables
 
-# # Main Fig. 1
-# # plotvars = [FLUX, xvar, yvar, zvar, x_in_filename, y_in_filename]
-# plotvars = ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
+# Main Fig. 1
+# plotvars = [FLUX, xvar, yvar, zvar, x_in_filename, y_in_filename]
+plotvars = ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
 
-# Extended Figures
-plotvars = ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
+# # Extended Figures
+# plotvars = ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'BIN-TA_ZSCORE', 'BIN-SWC_ZSCORE']
 
 FLUX = plotvars[0]
 xvar, yvar, zvar = plotvars[1], plotvars[2], plotvars[3]
@@ -37,7 +37,7 @@ x_in_filename, y_in_filename = plotvars[4], plotvars[5]
 # ------------------------------
 
 aggfunc, CONDITIONAL = 'median', True
-n_sites_min, cb_digits, area_size = 30, 1, 50
+n_sites_min, cb_digits, area_size = 10, 1, 50
 cmap, igbps = 'RdYlBu', ['ENF', 'DBF', 'MF', 'EBF']
 
 beautify = {
@@ -46,6 +46,7 @@ beautify = {
     "BIN_TA_ZSCORE": "Air temperature",
     "BIN_VPD_ZSCORE": "VPD",
     "BIN_SWC_ZSCORE": "SWC",
+    "SWC_ZSCORE_SHAPVALS": "SWC",
     "VPD_ZSCORE_SHAPVALS": "VPD",
     "SWC_ZSCORE": "SWC",
     "SWIN_ZSCORE": "SWIN",
