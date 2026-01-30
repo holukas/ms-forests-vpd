@@ -37,7 +37,7 @@ IGBP_NAMES = {
 
 # Column Suffixes
 SHAP_SUFFIX_AVG = '_SHAPVALS_OVR_AVG'
-SHAP_SUFFIX_SD = '_SHAPVALS_SD'  # Using SD column for uncertainty
+SHAP_SUFFIX_SD = '_SHAPVALS_OVR_SD'  # Using SD column for uncertainty
 
 PALETTE = {
     'VPD_ZSCORE': '#D55E00',
@@ -87,49 +87,61 @@ def calculate_budget_stats(df_input):
         df_scen = df_input[df_input['SCENARIO'] == scen_id].copy()
 
         if len(df_scen) == 0:
-            scen_dict = {v: {'mean': 0} for v in VARS}
-            scen_data.append(scen_dict)
-            net_vals.append(0)
-            net_errs.append(0)
-            continue
+            # scen_dict = {v: {'mean': 0} for v in VARS}
+            # scen_data.append(scen_dict)
+            # net_vals.append(0)
+            # net_errs.append(0)
+            # continue
+            raise ValueError(f"Scenario {scen_id} has no data.")
 
         scen_dict = {}
 
-        # A. Individual Drivers (Calculate Mean for Bars)
+        # Individual drivers (calculate mean for bars)
         for var in VARS:
             col_avg = var + SHAP_SUFFIX_AVG
             if col_avg not in df_scen.columns:
-                scen_dict[var] = {'mean': 0}
-                continue
+                raise ValueError(f"Column '{col_avg}' not found in dataframe.")
 
-            # Just store the mean for plotting the stack
-            mean_val = df_scen[col_avg].mean()
-            scen_dict[var] = {'mean': mean_val}
+            # Get the data vector for the specific driver
+            data_vec = df_scen[col_avg]
 
-        # B. Net System (Calculate Mean + Pooled SD)
-        # 1. Site-Level Means (Sum of drivers per site)
+            # Calculate the Mean (for the bar height)
+            mean_val = data_vec.mean()
+
+            # Calculate the SEM (Standard Error of the Mean)
+            # Note: sem = std / sqrt(n)
+            sem_val = data_vec.sem()
+            count_val = data_vec.count()
+
+            # Store in dict
+            scen_dict[var] = {'mean': mean_val, 'sem': sem_val}
+
+        # Net effect (calculate mean and pooled SD for error bars)
+        # Site-level means (sum of drivers per site)
         all_avg_cols = [v + SHAP_SUFFIX_AVG for v in VARS if (v + SHAP_SUFFIX_AVG) in df_scen.columns]
         site_net_means = df_scen[all_avg_cols].sum(axis=1)
+        site_net_counts = len(df_scen[all_avg_cols].dropna())
 
-        # 2. Site-Level SDs (Approximate via propagation if direct column missing)
-        all_sd_cols = [v + SHAP_SUFFIX_SD for v in VARS if (v + SHAP_SUFFIX_SD) in df_scen.columns]
-        if len(all_sd_cols) > 0:
-            # Sqrt(Sum of Variances) assuming independence (Lower bound approx)
-            site_net_variances = (df_scen[all_sd_cols] ** 2).sum(axis=1)
-            site_net_sds = np.sqrt(site_net_variances)
-        else:
-            site_net_sds = np.zeros(len(df_scen))
+        # # Site-level SDs (approximate via propagation if direct column missing)
+        # all_sd_cols = [v + SHAP_SUFFIX_SD for v in VARS if (v + SHAP_SUFFIX_SD) in df_scen.columns]
+        # if len(all_sd_cols) > 0:
+        #     # Sqrt(Sum of Variances) assuming independence (Lower bound approx)
+        #     site_net_variances = (df_scen[all_sd_cols] ** 2).sum(axis=1)
+        #     site_net_sds = np.sqrt(site_net_variances)
+        # else:
+        #     site_net_sds = np.zeros(len(df_scen))
 
-        # 3. Calculate Global Pooled SD
+        # # 3. Calculate Global Pooled SD
         global_net_mean = site_net_means.mean()
-        global_net_sd = calculate_global_sd(site_net_means, site_net_sds)
+        global_net_sem = site_net_means.sem()
+        # global_net_sd = calculate_global_sd(site_net_means, site_net_sds)
 
         net_vals.append(global_net_mean)
-        net_errs.append(global_net_sd)
+        net_errs.append(global_net_sem)
 
         scen_data.append(scen_dict)
 
-    return scen_data, net_vals, net_errs
+    return scen_data, net_vals, net_errs, site_net_counts
 
 
 def get_panel_limits(data, net_vals, net_errs):
@@ -262,6 +274,7 @@ print("Loading data...")
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 df_main = shapvals_df.copy()
 
+# Figure setup
 fig = plt.figure(figsize=(18, 9), dpi=300)
 outer_gs = gridspec.GridSpec(1, 2, width_ratios=[0.55, 0.45], wspace=0.1)
 gs_left = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec=outer_gs[0])
@@ -273,62 +286,61 @@ panels_data = []
 
 # Global
 df_global = df_main[df_main['IGBP'].isin(IGBP_CLASSES)]
-g_data, g_net, g_err = calculate_budget_stats(df_global)
+df_global = df_global[df_global['SCENARIO'].isin(SCENARIO_ORDER)]
+g_data, g_net, g_err, g_counts = calculate_budget_stats(df_global)
 panels_data.append({
-    'data': g_data, 'net': g_net, 'err': g_err,
-    'title': "a | Global Forest Response (All Sites)",
+    'data': g_data, 'net': g_net, 'err': g_err, 'counts': g_counts,
+    'title': "a | Global forest response (all sites)",
     'is_small': False, 'gs': gs_left[0], 'show_scenario_lables': True
 })
 
 # Subpanels
 for i, igbp in enumerate(IGBP_CLASSES):
     df_sub = df_main[df_main['IGBP'] == igbp]
-    s_data, s_net, s_err = calculate_budget_stats(df_sub)
+    s_data, s_net, s_err, s_counts = calculate_budget_stats(df_sub)
 
     row, col = i // 2, i % 2
     letter = chr(98 + i)
     show_scenario_lables = True if row == 1 else False
     panels_data.append({
-        'data': s_data, 'net': s_net, 'err': s_err,
+        'data': s_data, 'net': s_net, 'err': s_err, 'counts': s_counts,
         'title': f"{letter} | {IGBP_NAMES[igbp]}",
         'is_small': True, 'gs': gs_right[row, col],
         'show_scenario_lables': show_scenario_lables
     })
 
-# Limits
+# Get limits for y-axis scaling, same for all plots
 all_mins, all_maxs = [], []
 for p in panels_data:
     p_min, p_max = get_panel_limits(p['data'], p['net'], p['err'])
     all_mins.append(p_min)
     all_maxs.append(p_max)
-
 GRAND_Y_MIN = min(all_mins)
 GRAND_Y_MAX = max(all_maxs)
 FIXED_YLIM = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.05)
 
-# --- PASS 2: DRAW ---
+# Draw
 print("Drawing panels...")
 for p in panels_data:
     ax = fig.add_subplot(p['gs'])
     draw_panel(ax, p['data'], p['net'], p['err'], p['title'], FIXED_YLIM, is_small=p['is_small'],
                show_scenario_lables=p['show_scenario_lables'])
-
     if not p['is_small']:
         ax.text(-0.5, 0.05, "Mean Expected Value (0$\sigma$)", ha='left', va='bottom',
                 fontsize=10, style='italic', color='#333333')
 
-# --- LEGEND ---
+# Legend
 legend_elements = [Patch(facecolor=c, label=l) for l, c in zip(VAR_LABELS.values(), PALETTE.values())]
-legend_elements.append(Line2D([0], [0], color='black', lw=1.5, marker='o', label='Net effect'))
-legend_elements.append(
-    Line2D([0], [0], color='black', marker='|', markeredgewidth=1.5, markersize=10, lw=0, label='Standard deviation'))
-
+# noinspection PyTypeChecker
+legend_elements.append(Line2D([0], [0], color='none', marker='D', markerfacecolor='white',
+                              markeredgecolor='black', markeredgewidth=2, markersize=10, label='Net effect'))
+# noinspection PyTypeChecker
+legend_elements.append(Line2D([0], [0], color='black', marker='|', markeredgewidth=2, markersize=10, lw=0,
+                              label='Standard error'))
 fig.legend(handles=legend_elements, loc='lower center', ncol=6,
-           bbox_to_anchor=(0.5, 0.02), frameon=False, fontsize=11)
+           bbox_to_anchor=(0.5, 0.02), frameon=False, fontsize=12)
 
-# plt.suptitle("Biophysical Attribution of Carbon Sink Anomalies",
-#              fontsize=16, fontweight='bold', y=0.97)
-
+# Adjust
 plt.subplots_adjust(left=0.03, right=0.97, top=0.92, bottom=0.1)
 
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
