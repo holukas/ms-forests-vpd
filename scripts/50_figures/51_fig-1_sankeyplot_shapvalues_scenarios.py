@@ -1,12 +1,14 @@
 from pathlib import Path
-import matplotlib.pyplot as plt
-import matplotlib.patheffects as pe
-import numpy as np
-import pandas as pd
+
 import diive as dv
-import src.files as files
+import matplotlib.gridspec as gridspec
+import matplotlib.patheffects as pe
+import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
+
+import src.files as files
 
 # ==========================================
 # 1. SETTINGS
@@ -14,28 +16,36 @@ from matplotlib.patches import Patch
 FLUX = 'NEP_ZSCORE'
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 SCENARIO_ORDER = [1, 4, 5]
-SCENARIO_LABELS = ['Normal\nConditions', 'Hot & Dry\nTransition', 'Compound\nExtremes']
+SCENARIO_LABELS = ['Normal', 'Hot & Dry', 'Extremes']
 
-# Variable Order (Bottom to Top for Positive Stack)
+# Variable Order
 VARS = ['SWIN_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE']
 
 VAR_LABELS = {
-    'VPD_ZSCORE': 'VPD',
-    'SWC_ZSCORE': 'Soil Water',
-    'TA_ZSCORE': 'Temp',
-    'SWIN_ZSCORE': 'Radiation'
+    'VPD_ZSCORE': 'VPD effect',
+    'SWC_ZSCORE': 'Soil moisture effect',
+    'TA_ZSCORE': 'Air temperature effect',
+    'SWIN_ZSCORE': 'Radiation effect'
+}
+
+IGBP_NAMES = {
+    'ENF': 'Evergreen needleleaf forests',
+    'DBF': 'Deciduous broadleaf forests',
+    'MF': 'Mixed forests',
+    'EBF': 'Evergreen broadleaf forests'
 }
 
 # Column Suffixes
-SHAP_SUFFIX_MEDIAN = '_SHAPVALS_OVR_MEDIAN'
+SHAP_SUFFIX_AVG = '_SHAPVALS_OVR_AVG'
+SHAP_SUFFIX_SD = '_SHAPVALS_SD'  # Using SD column for uncertainty
 
-# Palette (High Contrast)
 PALETTE = {
-    'VPD_ZSCORE': '#D55E00',  # Vermillion
-    'SWC_ZSCORE': '#009E73',  # Bluish Green
-    'TA_ZSCORE': '#CC79A7',  # Reddish Purple
-    'SWIN_ZSCORE': '#E69F00'  # Orange/Yellow
+    'VPD_ZSCORE': '#D55E00',
+    'SWC_ZSCORE': '#009E73',
+    'TA_ZSCORE': '#CC79A7',
+    'SWIN_ZSCORE': '#E69F00'
 }
+BLUE = '#0072B2'
 
 # Paths
 settings = files.read_settings_file("../../config/settings.yaml")
@@ -48,194 +58,194 @@ filepath = Path(results_outdir) / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossSc
 # 2. HELPER FUNCTIONS
 # ==========================================
 def sigmoid(x, x_start, x_end, y_start, y_end):
-    """Sigmoid curve for smooth ribbons."""
     x_norm = (x - x_start) / (x_end - x_start)
     s = 0.5 * (1 + np.tanh(6 * (x_norm - 0.5)))
     return y_start + s * (y_end - y_start)
 
 
-# ==========================================
-# 3. DATA LOAD & CALCULATION (MEAN + SEM)
-# ==========================================
-print("Loading data...")
-shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
-df_main = shapvals_df.copy()
-df_main = df_main.loc[df_main['IGBP'].isin(IGBP_CLASSES)].copy()
-
-scenario_data = []
-net_nep_values = []  # Y-position for black dot (Sum of means)
-net_nep_errors = []  # Symmetric error bars (SEM)
-
-print("Calculating Net SHAP Budgets (Mean + SEM)...")
-for scen_id in SCENARIO_ORDER:
-    df_scen = df_main[df_main['SCENARIO'] == scen_id].copy()
-
-    scen_dict = {}
-    total_shap_sum = 0
-
-    # --- A. Calculate Individual Drivers (Bars) ---
-    for var in VARS:
-        col = var + SHAP_SUFFIX_MEDIAN
-        data_vec = df_scen[col]
-
-        # Calculate Statistics: Mean & SEM
-        mean_val = data_vec.mean()
-        sem_val = data_vec.sem()  # Standard Error of Mean = std / sqrt(n)
-
-        # Store
-        scen_dict[var] = {'mean': mean_val, 'sem': sem_val}
-        total_shap_sum += mean_val
-
-    # --- B. Calculate Net System State (Black Line) ---
-    # We want the error bars to represent the SEM of the ACTUAL Net Flux sum
-    all_cols = [v + SHAP_SUFFIX_MEDIAN for v in VARS]
-    net_shap_vec = df_scen[all_cols].sum(axis=1)  # Sum of components row-wise
-
-    # Calculate Mean & SEM of the Net Outcome
-    net_mean_real = net_shap_vec.mean()
-    net_sem_real = net_shap_vec.sem()
-
-    net_nep_values.append(total_shap_sum)
-    net_nep_errors.append(net_sem_real)
-
-    scenario_data.append(scen_dict)
+def calculate_global_sd(means, stds):
+    """
+    Calculates the pooled Global Standard Deviation from site-level statistics.
+    Formula: sqrt(Mean(Within-Site Variance) + Variance(Between-Site Means))
+    """
+    means = np.array(means)
+    stds = np.array(stds)
+    # 1. Average Within-Site Variance
+    mean_variance = np.mean(stds ** 2) if len(stds) > 0 else 0
+    # 2. Variance Between Sites
+    between_site_variance = np.var(means) if len(means) > 0 else 0
+    # 3. Total Global SD
+    return np.sqrt(mean_variance + between_site_variance)
 
 
-# ==========================================
-# 4. PLOTTING ENGINE
-# ==========================================
-def draw_budget_with_sem(ax, data, var_list, palette, x_labels, net_vals, net_errs):
+def calculate_budget_stats(df_input):
+    scen_data = []
+    net_vals = []
+    net_errs = []
+
+    for scen_id in SCENARIO_ORDER:
+        df_scen = df_input[df_input['SCENARIO'] == scen_id].copy()
+
+        if len(df_scen) == 0:
+            scen_dict = {v: {'mean': 0} for v in VARS}
+            scen_data.append(scen_dict)
+            net_vals.append(0)
+            net_errs.append(0)
+            continue
+
+        scen_dict = {}
+
+        # A. Individual Drivers (Calculate Mean for Bars)
+        for var in VARS:
+            col_avg = var + SHAP_SUFFIX_AVG
+            if col_avg not in df_scen.columns:
+                scen_dict[var] = {'mean': 0}
+                continue
+
+            # Just store the mean for plotting the stack
+            mean_val = df_scen[col_avg].mean()
+            scen_dict[var] = {'mean': mean_val}
+
+        # B. Net System (Calculate Mean + Pooled SD)
+        # 1. Site-Level Means (Sum of drivers per site)
+        all_avg_cols = [v + SHAP_SUFFIX_AVG for v in VARS if (v + SHAP_SUFFIX_AVG) in df_scen.columns]
+        site_net_means = df_scen[all_avg_cols].sum(axis=1)
+
+        # 2. Site-Level SDs (Approximate via propagation if direct column missing)
+        all_sd_cols = [v + SHAP_SUFFIX_SD for v in VARS if (v + SHAP_SUFFIX_SD) in df_scen.columns]
+        if len(all_sd_cols) > 0:
+            # Sqrt(Sum of Variances) assuming independence (Lower bound approx)
+            site_net_variances = (df_scen[all_sd_cols] ** 2).sum(axis=1)
+            site_net_sds = np.sqrt(site_net_variances)
+        else:
+            site_net_sds = np.zeros(len(df_scen))
+
+        # 3. Calculate Global Pooled SD
+        global_net_mean = site_net_means.mean()
+        global_net_sd = calculate_global_sd(site_net_means, site_net_sds)
+
+        net_vals.append(global_net_mean)
+        net_errs.append(global_net_sd)
+
+        scen_data.append(scen_dict)
+
+    return scen_data, net_vals, net_errs
+
+
+def get_panel_limits(data, net_vals, net_errs):
+    max_vals = []
+    min_vals = []
+
+    # Check Stack Heights
+    for d in data:
+        pos_sum = sum([d[v]['mean'] for v in VARS if d[v]['mean'] > 0])
+        neg_sum = sum([d[v]['mean'] for v in VARS if d[v]['mean'] < 0])
+        max_vals.append(pos_sum)
+        min_vals.append(neg_sum)
+
+    # Check Net Lines with SD Errors
+    for val, err in zip(net_vals, net_errs):
+        max_vals.append(val + err)
+        min_vals.append(val - err)
+
+    return min(min_vals), max(max_vals)
+
+
+def draw_panel(ax, data, net_vals, net_errs, title, fixed_ylim, show_scenario_lables, is_small=False):
     x_centers = [0, 1, 2]
-    bar_width = 0.22
+    bar_width = 0.28 if not is_small else 0.28
+    x_centers_shifted_left = np.array(x_centers) - bar_width / 3
+    x_centers_shifted_right = np.array(x_centers) + bar_width / 2.5
     alpha_ribbon = 0.35
 
-    # Error Bar Color (Dark Grey)
-    err_color = (0.2, 0.2, 0.2, 0.6)
+    fs_val = 12 if not is_small else 12
+    fs_label = 12 if not is_small else 12
+    fs_tick = 12 if not is_small else 12
 
-    # Track positions for ribbons
     node_pos = [{} for _ in range(len(data))]
 
-    # -----------------------------
-    # A. DRAW BARS, VALUES & SEMs
-    # -----------------------------
+    # --- DRAW BARS (No Error Bars) ---
     for i, d in enumerate(data):
         cx = x_centers[i]
 
-        # --- 1. Positive Stack ---
+        # Positive Stack
         current_y = 0.0
-        for var in var_list:
+        for var in VARS:
             val = d[var]['mean']
-            err = d[var]['sem']
-
-            if val < 0: continue
+            if val < 0:
+                continue
 
             top = current_y + val
             bottom = current_y
+            ax.bar(cx, val, width=bar_width, bottom=bottom, color=PALETTE[var], edgecolor='white', linewidth=0.5,
+                   zorder=10)
 
-            # Draw Bar
-            ax.bar(cx, val, width=bar_width, bottom=bottom,
-                   color=palette[var], edgecolor='white', linewidth=0.5, zorder=10)
-
-            # Draw SEM Bar (Symmetric)
-            if val > 0.01:
-                y_center = bottom + val / 2
-                ax.errorbar(cx, y_center, yerr=err, fmt='none',
-                            ecolor=err_color, elinewidth=0.8, capsize=2, zorder=15)
-
-            # Label Value
-            if val > 0.02:
-                fs = 8 if val > 0.1 else 6
-                ax.text(cx + 0.02, bottom + val / 2, f"{val:.2f}",
-                        ha='left', va='center', fontsize=fs, color='white', fontweight='bold',
-                        path_effects=[pe.withStroke(linewidth=1.2, foreground=palette[var])], zorder=20)
+            if (abs(val) > 0.05) and not is_small:
+                ax.text(x_centers_shifted_right[i], bottom + val / 2, f"+{val:.2f}", ha='right', va='center',
+                        fontsize=fs_val - 1, color='white', fontweight='bold',
+                        path_effects=[pe.withStroke(linewidth=1.2, foreground=PALETTE[var])], zorder=20)
 
             node_pos[i][var] = (bottom, top)
             current_y += val
 
-        # Positive Total
-        if current_y > 0.1:
-            ax.text(cx, current_y + 0.15, f"+{current_y:.2f}", ha='center', va='bottom',
-                    fontsize=8, color='#555555', fontweight='bold')
-
-        # --- 2. Negative Stack ---
+        # Negative Stack
         current_y = 0.0
-        for var in var_list:
+        for var in VARS:
             val = d[var]['mean']
-            err = d[var]['sem']
-
-            if val >= 0: continue
+            if val >= 0:
+                continue
 
             top = current_y
             bottom = current_y + val
+            ax.bar(cx, abs(val), width=bar_width, bottom=bottom, color=PALETTE[var], edgecolor='white', linewidth=0.5,
+                   zorder=10)
 
-            # Draw Bar
-            ax.bar(cx, abs(val), width=bar_width, bottom=bottom,
-                   color=palette[var], edgecolor='white', linewidth=0.5, zorder=10)
-
-            # Draw SEM Bar (Symmetric)
-            if abs(val) > 0.01:
-                y_center = current_y + val / 2
-                ax.errorbar(cx, y_center, yerr=err, fmt='none',
-                            ecolor=err_color, elinewidth=0.8, capsize=2, zorder=15)
-
-            # Label Value
-            if abs(val) > 0.02:
-                fs = 8 if abs(val) > 0.1 else 6
-                ax.text(cx + 0.02, bottom + abs(val) / 2, f"{val:.2f}",
-                        ha='left', va='center', fontsize=fs, color='white', fontweight='bold',
-                        path_effects=[pe.withStroke(linewidth=1.2, foreground=palette[var])], zorder=20)
+            if (abs(val) > 0.05) and not is_small:
+                ax.text(x_centers_shifted_right[i], bottom + abs(val) / 2, f"{val:.2f}", ha='right', va='center',
+                        fontsize=fs_val - 1, color='white', fontweight='bold',
+                        path_effects=[pe.withStroke(linewidth=1.2, foreground=PALETTE[var])], zorder=20)
 
             node_pos[i][var] = (bottom, top)
             current_y += val
 
-        # Negative Total
-        if abs(current_y) > 0.1:
-            ax.text(cx, current_y - 0.15, f"{current_y:.2f}", ha='center', va='top',
-                    fontsize=8, color='#555555', fontweight='bold')
+        # Scenario Labels
+        if show_scenario_lables:
+            ax.text(cx, fixed_ylim[0] + (abs(fixed_ylim[0]) * 0.05), SCENARIO_LABELS[i],
+                    ha='center', va='bottom', fontsize=fs_tick, fontweight='bold')
 
-        # Scenario Label
-        ax.text(cx, -2.1, x_labels[i], ha='center', va='top', fontsize=10, fontweight='bold')
-
-    # -----------------------------
-    # B. DRAW RIBBONS
-    # -----------------------------
+    # --- DRAW RIBBONS ---
     for i in range(len(data) - 1):
-        x_start = x_centers[i] + bar_width / 2
-        x_end = x_centers[i + 1] - bar_width / 2
-        x_curve = np.linspace(x_start, x_end, 300)
-
-        for var in var_list:
+        x_start, x_end = x_centers[i] + bar_width / 2, x_centers[i + 1] - bar_width / 2
+        x_curve = np.linspace(x_start, x_end, 100)
+        for var in VARS:
             if var not in node_pos[i] or var not in node_pos[i + 1]: continue
-            start_bot, start_top = node_pos[i][var]
-            end_bot, end_top = node_pos[i + 1][var]
+            s_bot, s_top = node_pos[i][var]
+            e_bot, e_top = node_pos[i + 1][var]
+            if abs(s_top - s_bot) < 0.005 and abs(e_top - e_bot) < 0.005: continue
 
-            if abs(start_top - start_bot) < 0.005 and abs(end_top - end_bot) < 0.005: continue
+            y_top = sigmoid(x_curve, x_start, x_end, s_top, e_top)
+            y_bot = sigmoid(x_curve, x_start, x_end, s_bot, e_bot)
+            ax.fill_between(x_curve, y_bot, y_top, color=PALETTE[var], alpha=alpha_ribbon, edgecolor='none', zorder=1)
 
-            y_top_curve = sigmoid(x_curve, x_start, x_end, start_top, end_top)
-            y_bot_curve = sigmoid(x_curve, x_start, x_end, start_bot, end_bot)
+    # Net values (marker + pooled sd)
+    ax.errorbar(x_centers_shifted_left, net_vals, yerr=net_errs, fmt='D', color='white',
+                ecolor='black', elinewidth=2, capsize=4, zorder=23, ms=10, mec='black', mew=2)
 
-            ax.fill_between(x_curve, y_bot_curve, y_top_curve,
-                            color=palette[var], alpha=alpha_ribbon, edgecolor='none', zorder=1)
+    # Net Labels
+    for x, y in zip(x_centers_shifted_left, net_vals):
+        offset = 0
+        # offset = 0 if not is_small else 0
+        # offset = offset if y >= 0 else -offset * 1.5
+        bbox = dict(boxstyle="round,pad=0.1", fc="white", ec="none", alpha=0.6)
+        ax.text(x - 0.1, y + offset, f"{y:+.2f}", fontsize=fs_val, fontweight='bold',
+                ha='right', va='center', bbox=bbox, zorder=25)
 
-    # -----------------------------
-    # C. NET LINE WITH SEM
-    # -----------------------------
-    # Error Bars on Net Line
-    ax.errorbar(x_centers, net_vals, yerr=net_errs, fmt='o', color='black',
-                ecolor='black', elinewidth=1.5, capsize=4, zorder=21, label='Net Anomaly (±SEM)')
-
-    # Labels
-    for x, y in zip(x_centers, net_vals):
-        bbox_props = dict(boxstyle="round,pad=0.2", fc="white", ec="black", alpha=0.8, lw=0.5)
-        ax.text(x - 0.05, y, f"{y:+.2f}",
-                fontsize=9, fontweight='bold', ha='right', va='center', bbox=bbox_props, zorder=25)
-
-    # -----------------------------
-    # D. STYLING
-    # -----------------------------
+    # --- STYLING ---
     ax.axhline(0, color='black', linewidth=1, linestyle='--', zorder=5)
-    ax.text(-0.45, 0.05, "Mean Expected Value (0$\sigma$)", ha='left', va='bottom',
-            fontsize=8, style='italic', color='#333333')
+    ax.set_title(title, fontsize=fs_label, fontweight='bold', loc='left', pad=10)
+
+    ax.set_ylim(fixed_ylim)
+    ax.set_xlim(-0.5, 2.5)
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
@@ -244,51 +254,85 @@ def draw_budget_with_sem(ax, data, var_list, palette, x_labels, net_vals, net_er
     ax.set_xticks([])
     ax.set_yticks([])
 
-    # Calculate limits dynamically
-    all_y = []
-    for i, d in enumerate(data):
-        pos_sum = sum([v['mean'] for v in d.values() if v['mean'] > 0])
-        neg_sum = sum([v['mean'] for v in d.values() if v['mean'] < 0])
-        all_y.extend([pos_sum + 0.3, neg_sum - 0.3])
-
-    # Add net line extent with errors
-    for v, err in zip(net_vals, net_errs):
-        all_y.append(v - err)
-        all_y.append(v + err)
-
-    y_max = max(all_y)
-    y_min = min(all_y)
-
-    ax.set_ylim(y_min * 1.1, y_max * 1.1)
-    ax.set_xlim(-0.5, 2.5)
-
-    # Zone Text
-    ax.text(-0.45, y_max * 0.8, "Enhancement",
-            ha='left', va='center', fontsize=9, color='gray', alpha=0.6)
-    ax.text(-0.45, y_min * 0.8, "Suppression",
-            ha='left', va='center', fontsize=9, color='gray', alpha=0.6)
-
 
 # ==========================================
-# 5. EXECUTE
+# 3. EXECUTION
 # ==========================================
-fig, ax = plt.subplots(figsize=(9, 6), dpi=300)
+print("Loading data...")
+shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
+df_main = shapvals_df.copy()
 
-draw_budget_with_sem(ax, scenario_data, VARS, PALETTE, SCENARIO_LABELS, net_nep_values, net_nep_errors)
+fig = plt.figure(figsize=(18, 9), dpi=300)
+outer_gs = gridspec.GridSpec(1, 2, width_ratios=[0.55, 0.45], wspace=0.1)
+gs_left = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec=outer_gs[0])
+gs_right = gridspec.GridSpecFromSubplotSpec(2, 2, subplot_spec=outer_gs[1], wspace=0.15, hspace=0.1)
 
+# --- PASS 1: CALC & LIMITS ---
+print("Calculating stats...")
+panels_data = []
+
+# Global
+df_global = df_main[df_main['IGBP'].isin(IGBP_CLASSES)]
+g_data, g_net, g_err = calculate_budget_stats(df_global)
+panels_data.append({
+    'data': g_data, 'net': g_net, 'err': g_err,
+    'title': "a | Global Forest Response (All Sites)",
+    'is_small': False, 'gs': gs_left[0], 'show_scenario_lables': True
+})
+
+# Subpanels
+for i, igbp in enumerate(IGBP_CLASSES):
+    df_sub = df_main[df_main['IGBP'] == igbp]
+    s_data, s_net, s_err = calculate_budget_stats(df_sub)
+
+    row, col = i // 2, i % 2
+    letter = chr(98 + i)
+    show_scenario_lables = True if row == 1 else False
+    panels_data.append({
+        'data': s_data, 'net': s_net, 'err': s_err,
+        'title': f"{letter} | {IGBP_NAMES[igbp]}",
+        'is_small': True, 'gs': gs_right[row, col],
+        'show_scenario_lables': show_scenario_lables
+    })
+
+# Limits
+all_mins, all_maxs = [], []
+for p in panels_data:
+    p_min, p_max = get_panel_limits(p['data'], p['net'], p['err'])
+    all_mins.append(p_min)
+    all_maxs.append(p_max)
+
+GRAND_Y_MIN = min(all_mins)
+GRAND_Y_MAX = max(all_maxs)
+FIXED_YLIM = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.05)
+
+# --- PASS 2: DRAW ---
+print("Drawing panels...")
+for p in panels_data:
+    ax = fig.add_subplot(p['gs'])
+    draw_panel(ax, p['data'], p['net'], p['err'], p['title'], FIXED_YLIM, is_small=p['is_small'],
+               show_scenario_lables=p['show_scenario_lables'])
+
+    if not p['is_small']:
+        ax.text(-0.5, 0.05, "Mean Expected Value (0$\sigma$)", ha='left', va='bottom',
+                fontsize=10, style='italic', color='#333333')
+
+# --- LEGEND ---
 legend_elements = [Patch(facecolor=c, label=l) for l, c in zip(VAR_LABELS.values(), PALETTE.values())]
+legend_elements.append(Line2D([0], [0], color='black', lw=1.5, marker='o', label='Net effect'))
 legend_elements.append(
-    Line2D([0], [0], color='black', marker='|', markeredgewidth=1.5, markersize=10, lw=0, label='Std. Err. (SEM)'))
-legend_elements.append(Line2D([0], [0], color='black', lw=0, marker='o', label='Net Mean'))
+    Line2D([0], [0], color='black', marker='|', markeredgewidth=1.5, markersize=10, lw=0, label='Standard deviation'))
 
-ax.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.05),
-          ncol=6, frameon=False, fontsize=9)
+fig.legend(handles=legend_elements, loc='lower center', ncol=6,
+           bbox_to_anchor=(0.5, 0.02), frameon=False, fontsize=11)
 
-plt.subplots_adjust(left=0.02, right=0.98, top=0.95, bottom=0.1)
+# plt.suptitle("Biophysical Attribution of Carbon Sink Anomalies",
+#              fontsize=16, fontweight='bold', y=0.97)
 
-# Save
+plt.subplots_adjust(left=0.03, right=0.97, top=0.92, bottom=0.1)
+
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'55_FIG-SHAP_Budget_Net_Mean_SEM_{FLUX}.png'
+outfilepath = dir_out / f'55_FIG-SHAP_Budget_Unified_Connected_SD_{FLUX}.png'
 print(f"Saved to {outfilepath}")
 plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
 
