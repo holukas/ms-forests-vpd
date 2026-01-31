@@ -193,6 +193,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
                 'Feature': feature_col,
                 'n_sites': len(data),
                 'Scenario': col,
+                'Mean': data.mean(),
                 'Median': data.median(),
                 'Min': data.min(),
                 'Max': data.max(),
@@ -203,7 +204,8 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     featurestats_df = pd.DataFrame(stats_list)
     # print(stats_df.to_string(index=False))
 
-    medians = pivot.median(axis=0)
+    means = pivot.mean(axis=0)
+    # medians = pivot.median(axis=0)
     q1 = pivot.quantile(0.25, axis=0)
     q3 = pivot.quantile(0.75, axis=0)
     x_coords = np.arange(n_scenarios)
@@ -282,8 +284,8 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     # Median trend line and nodes
     lw_trend = 2.0
     s_node = 25
-    ax.plot(x_coords, medians, color=color, linewidth=lw_trend, alpha=1.0, zorder=5)
-    ax.scatter(x_coords, medians, facecolor=color, edgecolor='white', linewidth=1.0, s=s_node, zorder=6)
+    ax.plot(x_coords, means, color=color, linewidth=lw_trend, alpha=1.0, zorder=5)
+    ax.scatter(x_coords, means, facecolor=color, edgecolor='white', linewidth=1.0, s=s_node, zorder=6)
 
     # Formatting
     ax.set_ylim(y_limits)

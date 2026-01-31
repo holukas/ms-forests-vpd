@@ -16,15 +16,15 @@ import src.files as files
 FLUX = 'NEP_ZSCORE'
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 SCENARIO_ORDER = [1, 4, 5]
-SCENARIO_LABELS = ['Normal', 'Hot & Dry', 'Extremes']
+SCENARIO_LABELS = ['Normal', 'Hot & dry', 'Compound\nextremes']
 
 # Variable Order
 VARS = ['SWIN_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE']
 
 VAR_LABELS = {
     'VPD_ZSCORE': 'VPD effect',
-    'SWC_ZSCORE': 'Soil moisture effect',
     'TA_ZSCORE': 'Air temperature effect',
+    'SWC_ZSCORE': 'Soil moisture effect',
     'SWIN_ZSCORE': 'Radiation effect'
 }
 
@@ -41,8 +41,8 @@ SHAP_SUFFIX_SD = '_SHAPVALS_OVR_SD'  # Using SD column for uncertainty
 
 PALETTE = {
     'VPD_ZSCORE': '#D55E00',
-    'SWC_ZSCORE': '#009E73',
     'TA_ZSCORE': '#CC79A7',
+    'SWC_ZSCORE': '#009E73',
     'SWIN_ZSCORE': '#E69F00'
 }
 BLUE = '#0072B2'
@@ -82,6 +82,7 @@ def calculate_budget_stats(df_input):
     scen_data = []
     net_vals = []
     net_errs = []
+    site_net_counts = []
 
     for scen_id in SCENARIO_ORDER:
         df_scen = df_input[df_input['SCENARIO'] == scen_id].copy()
@@ -120,7 +121,7 @@ def calculate_budget_stats(df_input):
         # Site-level means (sum of drivers per site)
         all_avg_cols = [v + SHAP_SUFFIX_AVG for v in VARS if (v + SHAP_SUFFIX_AVG) in df_scen.columns]
         site_net_means = df_scen[all_avg_cols].sum(axis=1)
-        site_net_counts = len(df_scen[all_avg_cols].dropna())
+        site_net_counts.append(len(df_scen[all_avg_cols].dropna()))
 
         # # Site-level SDs (approximate via propagation if direct column missing)
         # all_sd_cols = [v + SHAP_SUFFIX_SD for v in VARS if (v + SHAP_SUFFIX_SD) in df_scen.columns]
@@ -163,12 +164,12 @@ def get_panel_limits(data, net_vals, net_errs):
     return min(min_vals), max(max_vals)
 
 
-def draw_panel(ax, data, net_vals, net_errs, title, fixed_ylim, show_scenario_lables, is_small=False):
+def draw_panel(ax, data, net_vals, net_errs, net_counts, title, fixed_ylim, show_scenario_labels, is_small=False):
     x_centers = [0, 1, 2]
     bar_width = 0.28 if not is_small else 0.28
     x_centers_shifted_left = np.array(x_centers) - bar_width / 3
     x_centers_shifted_right = np.array(x_centers) + bar_width / 2.5
-    alpha_ribbon = 0.35
+    alpha_ribbon = 0.25
 
     fs_val = 12 if not is_small else 12
     fs_label = 12 if not is_small else 12
@@ -176,7 +177,7 @@ def draw_panel(ax, data, net_vals, net_errs, title, fixed_ylim, show_scenario_la
 
     node_pos = [{} for _ in range(len(data))]
 
-    # --- DRAW BARS (No Error Bars) ---
+    # Draw bars
     for i, d in enumerate(data):
         cx = x_centers[i]
 
@@ -186,17 +187,14 @@ def draw_panel(ax, data, net_vals, net_errs, title, fixed_ylim, show_scenario_la
             val = d[var]['mean']
             if val < 0:
                 continue
-
             top = current_y + val
             bottom = current_y
             ax.bar(cx, val, width=bar_width, bottom=bottom, color=PALETTE[var], edgecolor='white', linewidth=0.5,
                    zorder=10)
-
-            if (abs(val) > 0.05) and not is_small:
+            if (abs(val) > 0.01) and not is_small:
                 ax.text(x_centers_shifted_right[i], bottom + val / 2, f"+{val:.2f}", ha='right', va='center',
                         fontsize=fs_val - 1, color='white', fontweight='bold',
                         path_effects=[pe.withStroke(linewidth=1.2, foreground=PALETTE[var])], zorder=20)
-
             node_pos[i][var] = (bottom, top)
             current_y += val
 
@@ -206,26 +204,23 @@ def draw_panel(ax, data, net_vals, net_errs, title, fixed_ylim, show_scenario_la
             val = d[var]['mean']
             if val >= 0:
                 continue
-
             top = current_y
             bottom = current_y + val
             ax.bar(cx, abs(val), width=bar_width, bottom=bottom, color=PALETTE[var], edgecolor='white', linewidth=0.5,
                    zorder=10)
-
-            if (abs(val) > 0.05) and not is_small:
+            if (abs(val) > 0.01) and not is_small:
                 ax.text(x_centers_shifted_right[i], bottom + abs(val) / 2, f"{val:.2f}", ha='right', va='center',
                         fontsize=fs_val - 1, color='white', fontweight='bold',
                         path_effects=[pe.withStroke(linewidth=1.2, foreground=PALETTE[var])], zorder=20)
-
             node_pos[i][var] = (bottom, top)
             current_y += val
 
         # Scenario Labels
-        if show_scenario_lables:
-            ax.text(cx, fixed_ylim[0] + (abs(fixed_ylim[0]) * 0.05), SCENARIO_LABELS[i],
-                    ha='center', va='bottom', fontsize=fs_tick, fontweight='bold')
+        if show_scenario_labels:
+            ax.text(cx, fixed_ylim[0] + (abs(fixed_ylim[0]) * 0.07), SCENARIO_LABELS[i],
+                    ha='center', va='top', fontsize=fs_tick, fontweight='bold')
 
-    # --- DRAW RIBBONS ---
+    # Ribbons
     for i in range(len(data) - 1):
         x_start, x_end = x_centers[i] + bar_width / 2, x_centers[i + 1] - bar_width / 2
         x_curve = np.linspace(x_start, x_end, 100)
@@ -233,32 +228,39 @@ def draw_panel(ax, data, net_vals, net_errs, title, fixed_ylim, show_scenario_la
             if var not in node_pos[i] or var not in node_pos[i + 1]: continue
             s_bot, s_top = node_pos[i][var]
             e_bot, e_top = node_pos[i + 1][var]
-            if abs(s_top - s_bot) < 0.005 and abs(e_top - e_bot) < 0.005: continue
-
+            if abs(s_top - s_bot) < 0.005 and abs(e_top - e_bot) < 0.005:
+                continue
             y_top = sigmoid(x_curve, x_start, x_end, s_top, e_top)
             y_bot = sigmoid(x_curve, x_start, x_end, s_bot, e_bot)
             ax.fill_between(x_curve, y_bot, y_top, color=PALETTE[var], alpha=alpha_ribbon, edgecolor='none', zorder=1)
 
     # Net values (marker + pooled sd)
+    ax.plot(x_centers_shifted_left, net_vals, '-', color='#808080', linewidth=2, markersize=10, zorder=19)
+
+    mew = 1.5 if is_small else 2
+    elinewidth = 1.5 if is_small else 2
     ax.errorbar(x_centers_shifted_left, net_vals, yerr=net_errs, fmt='D', color='white',
-                ecolor='black', elinewidth=2, capsize=4, zorder=23, ms=10, mec='black', mew=2)
+                ecolor='black', elinewidth=elinewidth, capsize=4, zorder=23, ms=10, mec='black', mew=mew)
 
     # Net Labels
     for x, y in zip(x_centers_shifted_left, net_vals):
         offset = 0
-        # offset = 0 if not is_small else 0
-        # offset = offset if y >= 0 else -offset * 1.5
         bbox = dict(boxstyle="round,pad=0.1", fc="white", ec="none", alpha=0.6)
         ax.text(x - 0.1, y + offset, f"{y:+.2f}", fontsize=fs_val, fontweight='bold',
                 ha='right', va='center', bbox=bbox, zorder=25)
 
-    # --- STYLING ---
+    # Counts
+    for x, y in zip(x_centers, net_counts):
+        ypos = 0.42 if is_small else 0.37
+        smaller = 1 if is_small else 0
+        ax.text(x, ypos, f"n={y}", fontsize=fs_val - smaller, fontweight='normal',
+                ha='center', va='center', zorder=25)
+
+    # Styling
     ax.axhline(0, color='black', linewidth=1, linestyle='--', zorder=5)
     ax.set_title(title, fontsize=fs_label, fontweight='bold', loc='left', pad=10)
-
     ax.set_ylim(fixed_ylim)
     ax.set_xlim(-0.5, 2.5)
-
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -291,7 +293,7 @@ g_data, g_net, g_err, g_counts = calculate_budget_stats(df_global)
 panels_data.append({
     'data': g_data, 'net': g_net, 'err': g_err, 'counts': g_counts,
     'title': "a | Global forest response (all sites)",
-    'is_small': False, 'gs': gs_left[0], 'show_scenario_lables': True
+    'is_small': False, 'gs': gs_left[0], 'show_scenario_labels': True
 })
 
 # Subpanels
@@ -306,7 +308,7 @@ for i, igbp in enumerate(IGBP_CLASSES):
         'data': s_data, 'net': s_net, 'err': s_err, 'counts': s_counts,
         'title': f"{letter} | {IGBP_NAMES[igbp]}",
         'is_small': True, 'gs': gs_right[row, col],
-        'show_scenario_lables': show_scenario_lables
+        'show_scenario_labels': show_scenario_lables
     })
 
 # Get limits for y-axis scaling, same for all plots
@@ -317,14 +319,14 @@ for p in panels_data:
     all_maxs.append(p_max)
 GRAND_Y_MIN = min(all_mins)
 GRAND_Y_MAX = max(all_maxs)
-FIXED_YLIM = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.05)
+FIXED_YLIM = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.2)
 
 # Draw
 print("Drawing panels...")
 for p in panels_data:
     ax = fig.add_subplot(p['gs'])
-    draw_panel(ax, p['data'], p['net'], p['err'], p['title'], FIXED_YLIM, is_small=p['is_small'],
-               show_scenario_lables=p['show_scenario_lables'])
+    draw_panel(ax, p['data'], p['net'], p['err'], p['counts'], p['title'], FIXED_YLIM, is_small=p['is_small'],
+               show_scenario_labels=p['show_scenario_labels'])
     if not p['is_small']:
         ax.text(-0.5, 0.05, "Mean Expected Value (0$\sigma$)", ha='left', va='bottom',
                 fontsize=10, style='italic', color='#333333')

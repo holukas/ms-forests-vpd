@@ -23,8 +23,9 @@ N_SCENARIOS = len(SCENARIO_ORDER)
 # Variables
 VARIABLES_BASE = ['VPD_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'SWIN_ZSCORE']
 VAR_TITLES = ['Vapor pressure deficit effect', 'Air temperature effect',
-              'Soil water content effect', 'Incoming shortwave radiation effect']
-SHAP_SUFFIX = '_SHAPVALS_OVR_MEDIAN'
+              'Soil moisture effect', 'Radiation effect']
+SHAP_SUFFIX = '_SHAPVALS_OVR_AVG'
+# SHAP_SUFFIX = '_SHAPVALS_OVR_MEDIAN'
 SHAP_COLS = [v + SHAP_SUFFIX for v in VARIABLES_BASE]
 
 # Okabe-Ito palette (colorblind friendly)
@@ -166,10 +167,10 @@ plt.subplots_adjust(left=0.1, right=0.98, top=0.95, bottom=0.07)
 # CREATE TABLE 1
 # --------------
 var_map = {
-    'VPD_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Vapor pressure deficit',
-    'TA_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Air temperature',
-    'SWC_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Soil water content',
-    'SWIN_ZSCORE_SHAPVALS_OVR_MEDIAN': 'Incoming shortwave radiation'
+    'VPD_ZSCORE_SHAPVALS_OVR_AVG': 'Vapor pressure deficit',
+    'TA_ZSCORE_SHAPVALS_OVR_AVG': 'Air temperature',
+    'SWC_ZSCORE_SHAPVALS_OVR_AVG': 'Soil moisture',
+    'SWIN_ZSCORE_SHAPVALS_OVR_AVG': 'Radiation'
 }
 df = featurestats_df.copy()
 df['Driver'] = df['Feature'].map(var_map)
@@ -183,7 +184,7 @@ df['NegImpact'] = df.apply(lambda r: f"{r['Sites < 0']} ({r['% < 0']:.0f})", axi
 SCENARIO_ORDER = ['Normal', 'Dry and hot', 'Compound extremes']
 IGBP_ORDER = ['All sites', 'ENF', 'DBF', 'MF', 'EBF']
 VAR_ORDER = ['Vapor pressure deficit', 'Air temperature',
-             'Soil water content', 'Incoming shortwave radiation']
+             'Soil moisture', 'Radiation']
 table_1 = df.pivot_table(index=['Driver', 'IGBP'],
                          columns='Scenario',
                          values='Stats',
