@@ -17,6 +17,22 @@ FLUX = 'NEP_ZSCORE'
 # FLUX = 'RECO_ZSCORE'
 CONDITIONAL = True  # SHAP
 
+# Aggregation combos: xvar / yvar
+VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['SWIN_ZSCORE', 'TA_ZSCORE']
+# VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['SWIN_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
+# aggfunc = 'median'
+
+# ------------------------------
+# Agg groups, use z-scores:
+# NEP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# ET:   [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# ------------------------------
+
 # Load settings
 settings = files.read_settings_file("../../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
@@ -34,8 +50,8 @@ subsets_df = pd.read_csv(infile)
 
 shapvals_sites_agg_long_df = None
 sites_df = None
-
 for ix, siteconfig in subsets_df.iterrows():
+
     igbp = siteconfig['IGBP']
     site = siteconfig['SITE']
 
@@ -72,18 +88,6 @@ for ix, siteconfig in subsets_df.iterrows():
             cur_scenario_dict[f'{k}_OVR_ABS_MEDIAN'] = series.abs().median()
             cur_scenario_dict[f'{k}_OVR_ABS_SD'] = series.abs().std()
 
-        # Calculate net for each high-resolution observation
-        cur_scenario_dict['NET_SHAPVALS_OVR_AVG'] = subset['SUM'].mean()
-        cur_scenario_dict['NET_SHAPVALS_OVR_SEM'] = subset['SUM'].sem()
-
-        # Calculating the net effect SD directly from individual observations ensures
-        # that the internal relationships and trade-offs between variables are preserved
-        # at every time step. This row-wise approach allows the resulting standard
-        # deviation to naturally incorporate the covariance between drivers, providing
-        # a more accurate measure of total uncertainty than simply aggregating
-        # pre-calculated feature statistics.
-        cur_scenario_dict['NET_SHAPVALS_OVR_SD'] = subset['SUM'].std()
-
         new_row_df = pd.DataFrame([cur_scenario_dict], index=[site])
 
         if not isinstance(sites_df, pd.DataFrame):
@@ -91,7 +95,33 @@ for ix, siteconfig in subsets_df.iterrows():
         else:
             sites_df = pd.concat([sites_df, new_row_df], axis=0)
 
-# Save to file
+    # print(sites_df[['SCENARIO', 'N_VALUES', 'VPD_SHAPVALS_OVR_AVG', 'TA_SHAPVALS_OVR_AVG', 'SWIN_SHAPVALS_OVR_AVG',
+    #                 'SWC_SHAPVALS_OVR_AVG']])
+    # print(sites_df)
+
+_sites_df = sites_df.copy()
+_sites_df = _sites_df.drop('SITE', axis=1, inplace=False)
+_sites_df = _sites_df.drop('CONDITION', axis=1, inplace=False)
+_sites_df = _sites_df.drop('IGBP', axis=1, inplace=False)
+_sites_df = _sites_df.groupby('SCENARIO').mean()
+
+# import matplotlib.pyplot as plt
+# import matplotlib.gridspec as gridspec
+# fig = plt.figure(figsize=(9, 6), dpi=150, facecolor="white")
+# gs = gridspec.GridSpec(1, 1)  # rows, cols
+# # gs.update(wspace=.3, hspace=.2, left=0.03, right=0.94, top=0.97, bottom=0.04)
+# ax = fig.add_subplot(gs[0, 0])
+# plotdf = _sites_df[['TA_SHAPVALS_OVR_AVG', 'VPD_SHAPVALS_OVR_AVG',
+#                    'SWIN_SHAPVALS_OVR_AVG', 'SWC_SHAPVALS_OVR_AVG']].copy()
+# plotdf.plot.bar(ax=ax)
+# # plotdf = plotdf.pivot(index='SITE', columns='Group', values='Value')
+# # sites_df['TA_SHAPVALS_OVRSUMRANGE'].plot.bar(color='#EF5350', ax=ax, legend=False, width=.7)
+# # sites_df['TA_SHAPVALS_OVRSUMRANGE'].plot.bar(color='#03A9F4', ax=ax, legend=False, width=.7)
+# # sites_df['TA_SHAPVALS_NEGSUM'].plot.bar(color='#03A9F4', legend=False, width=.7)
+# fig.tight_layout()
+# fig.show()
+
+# 43_SHAPVALUES-conditional_AggregatedAcrossIGBP-MF_BIN+TA_ZSCORE+BIN+VPD_ZSCORE_NEP_ZSCORE.parquet
 outfilepath = dv.save_parquet(
     filename=f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}",
     data=sites_df,

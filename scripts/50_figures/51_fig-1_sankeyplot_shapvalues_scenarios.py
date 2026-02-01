@@ -63,86 +63,91 @@ def sigmoid(x, x_start, x_end, y_start, y_end):
     return y_start + s * (y_end - y_start)
 
 
-def calculate_global_sd(means, stds):
-    """
-    Calculates the pooled Global Standard Deviation from site-level statistics.
-    Formula: sqrt(Mean(Within-Site Variance) + Variance(Between-Site Means))
-    """
-    means = np.array(means)
-    stds = np.array(stds)
-    # 1. Average Within-Site Variance
-    mean_variance = np.mean(stds ** 2) if len(stds) > 0 else 0
-    # 2. Variance Between Sites
-    between_site_variance = np.var(means) if len(means) > 0 else 0
-    # 3. Total Global SD
-    return np.sqrt(mean_variance + between_site_variance)
-
-
 def calculate_budget_stats(df_input):
     scen_data = []
-    net_vals = []
-    net_errs = []
-    site_net_counts = []
+    list_net_shapvals = []
+    list_net_shapvals_sd = []
+    list_net_shapvals_sem = []
+    list_net_shapvals_count = []
 
     for scen_id in SCENARIO_ORDER:
         df_scen = df_input[df_input['SCENARIO'] == scen_id].copy()
-
         if len(df_scen) == 0:
-            # scen_dict = {v: {'mean': 0} for v in VARS}
-            # scen_data.append(scen_dict)
-            # net_vals.append(0)
-            # net_errs.append(0)
-            # continue
             raise ValueError(f"Scenario {scen_id} has no data.")
 
         scen_dict = {}
 
         # Individual drivers (calculate mean for bars)
         for var in VARS:
-            col_avg = var + SHAP_SUFFIX_AVG
-            if col_avg not in df_scen.columns:
-                raise ValueError(f"Column '{col_avg}' not found in dataframe.")
 
-            # Get the data vector for the specific driver
-            data_vec = df_scen[col_avg]
+            # Required cols
+            col_mean = var + SHAP_SUFFIX_AVG
+            col_sd = var + SHAP_SUFFIX_SD
+            req_cols = [col_mean, col_sd]
+            # Check if ALL required columns are available
+            if not set(req_cols).issubset(df_scen.columns):
+                missing = list(set(req_cols) - set(df_scen.columns))
+                raise ValueError(f"Required columns missing from dataframe: {missing}")
 
-            # Calculate the Mean (for the bar height)
-            mean_val = data_vec.mean()
+            # Site-level vectors
+            sitemeans_vec = df_scen[col_mean]
+            sitemeans_sd_vec = df_scen[col_sd]
 
-            # Calculate the SEM (Standard Error of the Mean)
-            # Note: sem = std / sqrt(n)
-            sem_val = data_vec.sem()
-            count_val = data_vec.count()
+            # Calculate the mean of site-means (for the bar height)
+            sitemeans_mean = sitemeans_vec.mean()
+            sitemeans_count = sitemeans_vec.count()
+            sitemeans_sem = sitemeans_vec.sem()  # SEM of site-means (standard error of the mean), sem = std / sqrt(n)
+
+            # Calculate the SD of site-means
+            # Law of total variance
+            mean_of_variances = (sitemeans_sd_vec ** 2).mean()  # Average of within-site variances
+            variance_of_means = sitemeans_vec.var(ddof=0)  # Variance of the site means
+            total_sd = np.sqrt(mean_of_variances + variance_of_means)  # Global SD
 
             # Store in dict
-            scen_dict[var] = {'mean': mean_val, 'sem': sem_val}
+            scen_dict[var] = {
+                'mean': sitemeans_mean,
+                'sem': sitemeans_sem,
+                'global_sd': total_sd,
+                'n_sites': sitemeans_count
+            }
 
-        # Net effect (calculate mean and pooled SD for error bars)
-        # Site-level means (sum of drivers per site)
-        all_avg_cols = [v + SHAP_SUFFIX_AVG for v in VARS if (v + SHAP_SUFFIX_AVG) in df_scen.columns]
-        site_net_means = df_scen[all_avg_cols].sum(axis=1)
-        site_net_counts.append(len(df_scen[all_avg_cols].dropna()))
+        # -------------------------------
+        # Net effect (sum of SHAP values)
+        # -------------------------------
 
-        # # Site-level SDs (approximate via propagation if direct column missing)
-        # all_sd_cols = [v + SHAP_SUFFIX_SD for v in VARS if (v + SHAP_SUFFIX_SD) in df_scen.columns]
-        # if len(all_sd_cols) > 0:
-        #     # Sqrt(Sum of Variances) assuming independence (Lower bound approx)
-        #     site_net_variances = (df_scen[all_sd_cols] ** 2).sum(axis=1)
-        #     site_net_sds = np.sqrt(site_net_variances)
-        # else:
-        #     site_net_sds = np.zeros(len(df_scen))
+        # Required net cols
+        col_net_shapvals = 'NET_SHAPVALS_OVR_AVG'
+        col_net_shapvals_sd = 'NET_SHAPVALS_OVR_SD'
+        req_net_cols = [col_net_shapvals, col_net_shapvals_sd]
+        # Check if ALL required columns are available
+        if not set(req_net_cols).issubset(df_scen.columns):
+            missing = list(set(req_net_cols) - set(df_scen.columns))
+            raise ValueError(f"Required columns missing from dataframe: {missing}")
 
-        # # 3. Calculate Global Pooled SD
-        global_net_mean = site_net_means.mean()
-        global_net_sem = site_net_means.sem()
-        # global_net_sd = calculate_global_sd(site_net_means, site_net_sds)
+        # Site-level vectors
+        net_shapvals_vec = df_scen[col_net_shapvals]
+        net_shapvals_sd_vec = df_scen[col_net_shapvals_sd]
 
-        net_vals.append(global_net_mean)
-        net_errs.append(global_net_sem)
+        # Calculate net mean
+        net_shapvals_mean = net_shapvals_vec.mean()
+        net_shapvals_count = net_shapvals_vec.count()
+        net_shapvals_sem = net_shapvals_vec.sem()  # sem = std / sqrt(n)
 
+        # Calculate the SD of site-means
+        # Law of total variance
+        net_mean_of_variances = (net_shapvals_sd_vec ** 2).mean()  # Average of within-site variances
+        net_variance_of_means = net_shapvals_vec.var(ddof=0)  # Variance of the site means
+        net_total_sd = np.sqrt(net_mean_of_variances + net_variance_of_means)  # Global SD
+
+        # Collect
+        list_net_shapvals.append(net_shapvals_mean)
+        list_net_shapvals_sd.append(net_total_sd)
+        list_net_shapvals_sem.append(net_shapvals_sem)
+        list_net_shapvals_count.append(len(df_scen[col_net_shapvals].dropna()))
         scen_data.append(scen_dict)
 
-    return scen_data, net_vals, net_errs, site_net_counts
+    return scen_data, list_net_shapvals, list_net_shapvals_sem, list_net_shapvals_sd, list_net_shapvals_count
 
 
 def get_panel_limits(data, net_vals, net_errs):
@@ -289,23 +294,24 @@ panels_data = []
 # Global
 df_global = df_main[df_main['IGBP'].isin(IGBP_CLASSES)]
 df_global = df_global[df_global['SCENARIO'].isin(SCENARIO_ORDER)]
-g_data, g_net, g_err, g_counts = calculate_budget_stats(df_global)
+# scen_data, net_shapvals, net_shapvals_sem, net_shapvals_sd, net_shapvals_count
+g_data, g_net_shapvals, g_net_shapvals_sem, g_net_shapvals_sd, g_net_counts = calculate_budget_stats(df_global)
 panels_data.append({
-    'data': g_data, 'net': g_net, 'err': g_err, 'counts': g_counts,
-    'title': "a | Global forest response (all sites)",
+    'data': g_data, 'net': g_net_shapvals, 'err': g_net_shapvals_sem, 'total_sd': g_net_shapvals_sd,
+    'counts': g_net_counts, 'title': "a | Global forest response (all sites)",
     'is_small': False, 'gs': gs_left[0], 'show_scenario_labels': True
 })
 
 # Subpanels
 for i, igbp in enumerate(IGBP_CLASSES):
     df_sub = df_main[df_main['IGBP'] == igbp]
-    s_data, s_net, s_err, s_counts = calculate_budget_stats(df_sub)
+    s_data, s_net, s_err, s_sd, s_counts = calculate_budget_stats(df_sub)
 
     row, col = i // 2, i % 2
     letter = chr(98 + i)
     show_scenario_lables = True if row == 1 else False
     panels_data.append({
-        'data': s_data, 'net': s_net, 'err': s_err, 'counts': s_counts,
+        'data': s_data, 'net': s_net, 'err': s_err, 'sd': s_sd, 'counts': s_counts,
         'title': f"{letter} | {IGBP_NAMES[igbp]}",
         'is_small': True, 'gs': gs_right[row, col],
         'show_scenario_labels': show_scenario_lables
@@ -338,7 +344,7 @@ legend_elements.append(Line2D([0], [0], color='none', marker='D', markerfacecolo
                               markeredgecolor='black', markeredgewidth=2, markersize=10, label='Net effect'))
 # noinspection PyTypeChecker
 legend_elements.append(Line2D([0], [0], color='black', marker='|', markeredgewidth=2, markersize=10, lw=0,
-                              label='Standard error'))
+                              label='Standard error of the mean'))
 fig.legend(handles=legend_elements, loc='lower center', ncol=6,
            bbox_to_anchor=(0.5, 0.02), frameon=False, fontsize=12)
 

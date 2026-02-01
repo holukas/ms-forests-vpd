@@ -24,9 +24,11 @@ N_SCENARIOS = len(SCENARIO_ORDER)
 VARIABLES_BASE = ['VPD_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'SWIN_ZSCORE']
 VAR_TITLES = ['Vapor pressure deficit effect', 'Air temperature effect',
               'Soil moisture effect', 'Radiation effect']
+
 SHAP_SUFFIX = '_SHAPVALS_OVR_AVG'
-# SHAP_SUFFIX = '_SHAPVALS_OVR_MEDIAN'
 SHAP_COLS = [v + SHAP_SUFFIX for v in VARIABLES_BASE]
+SHAP_SD_SUFFIX = '_SHAPVALS_OVR_SD'
+SHAP_SD_COLS = [v + SHAP_SD_SUFFIX for v in VARIABLES_BASE]
 
 # Okabe-Ito palette (colorblind friendly)
 COLORS = ['#D55E00', '#CC79A7', '#009E73', '#E69F00']
@@ -59,9 +61,12 @@ shap_type = 'conditional'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 filepath = Path(results_outdir) / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
-df_main = shapvals_df[['SITE', 'IGBP', 'SCENARIO'] + SHAP_COLS].copy()
+df_main = shapvals_df[['SITE', 'IGBP', 'SCENARIO'] + SHAP_COLS + SHAP_SD_COLS].copy()
 df_main = df_main.loc[df_main['SCENARIO'].isin(SCENARIO_ORDER)].copy()
 df_main = df_main.loc[df_main['IGBP'].isin(IGBP_CLASSES)].copy()
+
+# Calc sum of SHAP values for each site and scenario (i.e. for each row)
+df_main[f'NETSUM{SHAP_SUFFIX}'] = df_main[SHAP_COLS].sum(axis=1)
 
 # Global scaling
 # Global limits for NEP are: (np.float64(), np.float64(1.536760039509245))
@@ -166,6 +171,7 @@ plt.subplots_adjust(left=0.1, right=0.98, top=0.95, bottom=0.07)
 # --------------
 # CREATE TABLE 1
 # --------------
+# Means
 var_map = {
     'VPD_ZSCORE_SHAPVALS_OVR_AVG': 'Vapor pressure deficit',
     'TA_ZSCORE_SHAPVALS_OVR_AVG': 'Air temperature',
@@ -176,66 +182,101 @@ df = featurestats_df.copy()
 df['Driver'] = df['Feature'].map(var_map)
 scen_map = {1: 'Normal', 4: 'Dry and hot', 5: 'Compound extremes'}
 df['Scenario'] = df['Scenario'].map(scen_map)
-# Construct formatted strings for table cells
-df['Stats'] = df.apply(lambda r: f"{r['Median']:.2f} ({r['Min']:.2f}, {r['Max']:.2f})", axis=1)
-df['NegImpact'] = df.apply(lambda r: f"{r['Sites < 0']} ({r['% < 0']:.0f})", axis=1)
 
-# Pivot to wide format for table in MS Word
+# 1. Create the formatted string column (for display)
+df['Stats'] = df.apply(lambda r: f"{r['Mean']:.2f}±{r['SD']:.2f} ({r['Min']:.2f}, {r['Max']:.2f})", axis=1)
+
+# 2. Create pivots
 SCENARIO_ORDER = ['Normal', 'Dry and hot', 'Compound extremes']
 IGBP_ORDER = ['All sites', 'ENF', 'DBF', 'MF', 'EBF']
 VAR_ORDER = ['Vapor pressure deficit', 'Air temperature',
              'Soil moisture', 'Radiation']
-table_1 = df.pivot_table(index=['Driver', 'IGBP'],
-                         columns='Scenario',
-                         values='Stats',
-                         aggfunc='first')
 
-# Reorder columns (Scenarios) and the second level of the index (IGBP)
-table_1 = table_1.reindex(columns=SCENARIO_ORDER)
-table_1 = table_1.reindex(level='IGBP', index=IGBP_ORDER)
-table_1 = table_1.reindex(level='Driver', index=VAR_ORDER)
+# Pivot A: The formatted strings for the table
+table_str = df.pivot_table(index=['IGBP', 'Driver'],
+                           columns='Scenario',
+                           values='Stats',
+                           aggfunc='first')
+
+# Pivot B: The numeric Means for calculating sums
+table_num = df.pivot_table(index=['IGBP', 'Driver'],
+                           columns='Scenario',
+                           values='Mean',
+                           aggfunc='first')
+
+# Reorder
+table_str = table_str.reindex(columns=SCENARIO_ORDER)
+table_num = table_num.reindex(columns=SCENARIO_ORDER)
 
 # Format table for output
-# Driver names are on separate rows
-# Create a list to store the rows for the "grouped" version
 grouped_rows = []
 
-# 3. Iterate through each unique driver to insert the header row
-for driver in table_1.index.levels[0]:
-    # Add the "Header" row for the Driver
-    # We use None or empty strings for the scenario columns in this header row
-    grouped_rows.append(
-        {'Environmental driver / IGBP': f"{driver}", 'Normal': '', 'Dry and hot': '', 'Compound extremes': ''})
+# Iterate through each IGBP class (Outer Layer)
+for igbp in IGBP_ORDER:
+    # 1. Add the Header Row (The Site/Class Name)
+    grouped_rows.append({
+        'IGBP / Environmental driver': f"{igbp}",
+        'Normal': '',
+        'Dry and hot': '',
+        'Compound extremes': ''
+    })
 
-    # Get the data for just this driver
-    driver_data = table_1.loc[driver]
+    # Check if data exists for this IGBP
+    if igbp in table_str.index.get_level_values(0):
+        # Slice data for this IGBP
+        igbp_data_str = table_str.loc[igbp]
+        igbp_data_num = table_num.loc[igbp]
 
-    # Add each IGBP row under this driver
-    for igbp, row in driver_data.iterrows():
+        # Initialize sums for this IGBP block
+        sums = {scen: 0.0 for scen in SCENARIO_ORDER}
+
+        # 2. Add rows for each Driver
+        for driver in VAR_ORDER:
+            if driver in igbp_data_str.index:
+                row_str = igbp_data_str.loc[driver]
+                row_num = igbp_data_num.loc[driver]
+
+                # Add to the list
+                grouped_rows.append({
+                    'IGBP / Environmental driver': f"  {driver}",
+                    'Normal': row_str['Normal'],
+                    'Dry and hot': row_str['Dry and hot'],
+                    'Compound extremes': row_str['Compound extremes']
+                })
+
+                # Add to the sums (handling NaNs if any)
+                for scen in SCENARIO_ORDER:
+                    val = row_num[scen]
+                    if pd.notna(val):
+                        sums[scen] += val
+
+        # 3. Add the Net Sum Row
+        # This matches the "Sum of Means" used in your stacked plots
         grouped_rows.append({
-            'Environmental driver / IGBP': f"  {igbp}",  # Indent for better visual hierarchy
-            'Normal': row['Normal'],
-            'Dry and hot': row['Dry and hot'],
-            'Compound extremes': row['Compound extremes']
+            'IGBP / Environmental driver': "  Net sum",
+            'Normal': f"{sums['Normal']:.2f}",
+            'Dry and hot': f"{sums['Dry and hot']:.2f}",
+            'Compound extremes': f"{sums['Compound extremes']:.2f}"
         })
 
-# 4. Create the final "Presentation" DataFrame
-table_1 = pd.DataFrame(grouped_rows)
-table_1.set_index('Environmental driver / IGBP', inplace=True)
+# Create final DataFrame
+table_1_final = pd.DataFrame(grouped_rows)
+table_1_final.set_index('IGBP / Environmental driver', inplace=True)
 
-# Save table to file
+# Save
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'52_TABLE-1_Scenarios_ShapMedians_{FLUX}.csv'
-table_1.to_csv(outfilepath, index=True)
+outfilepath = dir_out / f'52_TABLE-1_Scenarios_ShapMeans_WithNetSum_{FLUX}.csv'
+table_1_final.to_csv(outfilepath, index=True)
 
 # Show table
 pd.set_option('display.max_rows', 3000)
-print(table_1.to_string(index=True))
+pd.set_option('display.width', 1000)
+print(table_1_final.to_string(index=True))
 
-# Save fig to file
-dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'52_FIG-2_Scenarios_SinaPlots_ShapMedians_{FLUX}.png'
-fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
+# # Save fig to file
+# dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+# outfilepath = dir_out / f'52_FIG-2_Scenarios_SinaPlots_ShapMeans_{FLUX}.png'
+# fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
 
-# Show figure
-plt.show()
+# # Show figure
+# plt.show()

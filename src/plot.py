@@ -194,6 +194,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
                 'n_sites': len(data),
                 'Scenario': col,
                 'Mean': data.mean(),
+                'SD': data.std(),
                 'Median': data.median(),
                 'Min': data.min(),
                 'Max': data.max(),
