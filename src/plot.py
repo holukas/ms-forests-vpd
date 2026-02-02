@@ -530,7 +530,8 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
 
     # Tick Styling
     if show_x:
-        ax.set_xticklabels(scenario_labels, rotation=45, ha='right', color='black')
+        # ax.set_xticklabels(scenario_labels, rotation=45, ha='right', color='black')
+        ax.set_xticklabels(scenario_labels, rotation=45, ha='right', color='black', rotation_mode='anchor')
         ax.tick_params(axis='x', length=4, width=0.8)
     else:
         ax.set_xticklabels([])
