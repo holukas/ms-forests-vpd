@@ -1,5 +1,6 @@
 import diive as dv
 import matplotlib.gridspec as gridspec
+import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -7,6 +8,217 @@ from matplotlib import ticker
 from scipy.stats import gaussian_kde
 
 from src.common import findpoi
+
+
+def get_panel_limits(df: pd.DataFrame):
+    max_vals = []
+    min_vals = []
+
+    # Process each bar (grouped by IGBP and Scenario)
+    grouped = df.groupby(['igbp', 'scenario'])
+
+    for name, group in grouped:
+        # Separate individual drivers from the Net effect
+        components = group[group['Variable'] != 'NET_SHAPVALS']
+        net_row = group[group['Variable'] == 'NET_SHAPVALS']
+
+        # Check stack heights (sum of means)
+        pos_sum = components.loc[components['mean'] > 0, 'mean'].sum()
+        neg_sum = components.loc[components['mean'] < 0, 'mean'].sum()
+
+        max_vals.append(pos_sum)
+        min_vals.append(neg_sum)
+
+        # Check net point with error bars
+
+        if not net_row.empty:
+            net_val = net_row['mean'].values[0]
+            net_err = net_row['sem'].values[0]
+
+            max_vals.append(net_val + net_err)
+            min_vals.append(net_val - net_err)
+
+    # Return global min and max
+    if not max_vals:
+        return 0.0, 0.0
+
+    return min(min_vals), max(max_vals)
+
+
+def sigmoid(x, x_start, x_end, y_start, y_end):
+    x_norm = (x - x_start) / (x_end - x_start)
+    s = 0.5 * (1 + np.tanh(6 * (x_norm - 0.5)))
+    return y_start + s * (y_end - y_start)
+
+
+def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, scenario_labels, is_small=False):
+    # Constants
+    SCENARIO_IDS = [1, 4, 5]  # The scenario IDs in dataframe column 'scenario'
+
+    x_centers = [0, 1, 2]
+    bar_width = 0.4 if not is_small else 0.4
+    x_centers_shifted_left = np.array(x_centers) - bar_width / 3
+    x_centers_shifted_right = np.array(x_centers) + bar_width / 2.5
+    alpha_ribbon = 0.25
+
+    fs_val = 12 if not is_small else 12
+    fs_label = 12 if not is_small else 12
+    fs_tick = 12 if not is_small else 12
+
+    # Storage for ribbon coordinates and net lines
+    node_pos = [{} for _ in range(len(SCENARIO_IDS))]
+    net_vals = []
+    net_errs = []
+    net_counts = []
+
+    # Iterate through scenarios to draw bars and collect Net data
+    for i, scen_id in enumerate(SCENARIO_IDS):
+        cx = x_centers[i]
+
+        # Filter df for this scenario
+        df_s = df[df['scenario'] == scen_id]
+        if df_s.empty:
+            # Handle empty data (add placeholders to keep alignment)
+            net_vals.append(np.nan)
+            net_errs.append(np.nan)
+            net_counts.append(0)
+            continue
+
+        # Extract net data
+        net_row = df_s[df_s['Variable'] == 'NET_SHAPVALS']
+        if not net_row.empty:
+            # Use .values[0] to safely get the scalar
+            net_vals.append(net_row['mean'].values[0])
+            net_errs.append(net_row['sem'].values[0])
+            net_counts.append(int(net_row['n_sites'].values[0]))
+        else:
+            raise ValueError("Expected net row to exist in dataframe.")
+            # net_vals.append(0)
+            # net_errs.append(0)
+            # net_counts.append(0)
+
+        # Draw bars: positive stack
+        current_y = 0.0
+        for var in vars:
+            # Find row for this variable
+            row = df_s[df_s['Variable'] == var]
+            if row.empty:
+                continue
+
+            val = row['mean'].values[0]
+            if val < 0:
+                continue  # Skip negatives in this pass
+
+            top = current_y + val
+            bottom = current_y
+
+            ax.bar(cx, val, width=bar_width, bottom=bottom, color=palette[var],
+                   edgecolor='white', linewidth=0.5, zorder=10)
+
+            if (abs(val) > 0.01) and not is_small:
+                ax.text(x_centers_shifted_right[i], bottom + val / 2, f"+{val:.2f}", ha='right', va='center',
+                        fontsize=fs_val - 1, color='white', fontweight='bold',
+                        path_effects=[pe.withStroke(linewidth=1.2, foreground=palette[var])], zorder=20)
+
+            node_pos[i][var] = (bottom, top)
+            current_y += val
+
+        # Draw bars: negative stack
+        current_y = 0.0
+        for var in vars:
+            row = df_s[df_s['Variable'] == var]
+            if row.empty:
+                continue
+
+            val = row['mean'].values[0]
+            if val >= 0:
+                continue  # Skip positives in this pass
+
+            # Stack downwards
+            top = current_y
+            bottom = current_y + val
+
+            ax.bar(cx, abs(val), width=bar_width, bottom=bottom, color=palette[var],
+                   edgecolor='white', linewidth=0.5, zorder=10)
+
+            if (abs(val) > 0.01) and not is_small:
+                ax.text(x_centers_shifted_right[i], bottom + abs(val) / 2, f"{val:.2f}", ha='right', va='center',
+                        fontsize=fs_val - 1, color='white', fontweight='bold',
+                        path_effects=[pe.withStroke(linewidth=1.2, foreground=palette[var])], zorder=20)
+
+            node_pos[i][var] = (bottom, top)
+            current_y += val
+
+        # Scenario Labels
+        if show_scenario_labels:
+            ax.text(cx, fixed_ylim[0] + (abs(fixed_ylim[0]) * 0.07), scenario_labels[i],
+                    ha='center', va='top', fontsize=fs_tick, fontweight='bold')
+
+    # Draw ribbons
+    for i in range(len(SCENARIO_IDS) - 1):
+        x_start, x_end = x_centers[i] + bar_width / 2, x_centers[i + 1] - bar_width / 2
+        x_curve = np.linspace(x_start, x_end, 100)
+
+        for var in vars:
+            # Check if var exists in both steps
+            if var not in node_pos[i] or var not in node_pos[i + 1]:
+                continue
+
+            s_bot, s_top = node_pos[i][var]
+            e_bot, e_top = node_pos[i + 1][var]
+
+            # Skip if negligible height
+            if abs(s_top - s_bot) < 0.005 and abs(e_top - e_bot) < 0.005:
+                continue
+
+            y_top = sigmoid(x_curve, x_start, x_end, s_top, e_top)
+            y_bot = sigmoid(x_curve, x_start, x_end, s_bot, e_bot)
+            ax.fill_between(x_curve, y_bot, y_top, color=palette[var],
+                            alpha=alpha_ribbon, edgecolor='none', zorder=1)
+
+    # Net values and error bars (SEM)
+
+    # Connector line
+    ax.plot(x_centers_shifted_left, net_vals, '-', color='#808080',
+            linewidth=2, markersize=10, zorder=19)
+
+    # Error bars (net effect)
+    mew = 1.5 if is_small else 2
+    elinewidth = 1.5 if is_small else 2
+    ax.errorbar(x_centers_shifted_left, net_vals, yerr=net_errs, fmt='D', color='white',
+                ecolor='black', elinewidth=elinewidth, capsize=4, zorder=23,
+                ms=10, mec='black', mew=mew)
+
+    # Net Labels (text boxes)
+    for x, y in zip(x_centers_shifted_left, net_vals):
+        offset = 0
+        bbox = dict(boxstyle="round,pad=0.1", fc="white", ec="none", alpha=0.6)
+        ax.text(x - 0.1, y + offset, f"{y:+.2f}", fontsize=fs_val, fontweight='bold',
+                ha='right', va='center', bbox=bbox, zorder=25)
+
+    # Counts (n=...)
+    for x, y in zip(x_centers, net_counts):
+        ypos = 0.42 if is_small else 0.37
+        smaller = 1 if is_small else 0
+        ax.text(x, ypos, f"n={y}", fontsize=fs_val - smaller, fontweight='normal',
+                ha='center', va='center', zorder=25)
+
+    # Styling
+    ax.axhline(0, color='black', linewidth=1, linestyle='--', zorder=25)
+    ax.set_title(title, fontsize=fs_label, fontweight='bold', loc='left', pad=10)
+    ax.set_ylim(fixed_ylim)
+
+    if not is_small:
+        ax.set_xlim(-1, 2.3)
+    else:
+        ax.set_xlim(-0.3, 2.3)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.set_xticks([])
+    ax.set_yticks([])
 
 
 def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_min, show_annotate, show_annotate_short,
@@ -176,36 +388,40 @@ def style_ax(ax, title, ax_labels_fontsize):
 
 def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limits, is_top_row, group_name,
                         scenario_labels, show_x=False, show_y=False, is_main=False, is_first=False):
-    # SHAP value means per site
+    # Pivot for means (site x scenario)
     pivot = df.pivot(index='SITE', columns='SCENARIO', values=feature_col).reindex(columns=columns)
 
-    # SHAP value SDs per site
-    sd_col = feature_col.replace('_AVG', '_SD')
+    # Pivot for SDs (site x scenario)
+    sd_col = feature_col.replace('_SHAPVALS_OVR_AVG', '_SHAPVALS_OVR_SD')
     pivot_sd = df.pivot(index='SITE', columns='SCENARIO', values=sd_col).reindex(columns=columns)
 
     if pivot.dropna(how='all').empty:
         ax.set_visible(False)
-        return
+        return pd.DataFrame()
 
-    # Stats: collect in table
     stats_list = []
+
+    # Loop through scenarios to calculate stats
     for col in [1, 4, 5]:
 
         # Drop NaNs for the specific scenario
         data_vec = pivot[col].dropna()
 
         # Selects rows from data_sd where the index exists in data
-        data_sd_vec = pivot_sd[col].copy()
-        data_sd_vec = data_sd_vec.loc[data_sd_vec.index.intersection(data_vec.index)]
-
-        # Calculate total SD using the law of total variance (sqrt(mean of variances + variance of means)).
-        # This approach treats sites as equally representative (macro-average), normalizing
-        # differences in sample counts between sites.
-        mean_of_variances = (data_sd_vec ** 2).mean()  # Average of within-site variances
-        variance_of_means = data_vec.var(ddof=0)  # Variance of the site means
-        total_sd = np.sqrt(mean_of_variances + variance_of_means)  # Global SD
+        if col in pivot_sd:
+            data_sd_vec = pivot_sd[col].loc[data_vec.index]
+        else:
+            raise ValueError(f'Scenario {col} not found in pivot_sd')
 
         if not data_vec.empty:
+            # Calculation of total SD
+            # Calculate total SD using the law of total variance (sqrt(mean of variances + variance of means)).
+            # This approach treats sites as equally representative (macro-average), normalizing
+            # differences in sample counts between sites.
+            mean_of_variances = (data_sd_vec ** 2).mean()  # Average of within-site variances
+            variance_of_means = data_vec.var(ddof=0)  # Variance of the site means
+            total_sd = np.sqrt(mean_of_variances + variance_of_means)  # Global SD
+
             stats_list.append({
                 'IGBP': group_name,
                 'Feature': feature_col,

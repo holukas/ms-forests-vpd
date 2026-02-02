@@ -4,27 +4,29 @@ import diive as dv
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
 import matplotlib.path as mpath
-import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 import src.files as files
+import src.plot as plot
+import src.scenarios as scenarios
 
 # ==========================================
-# 1. SETTINGS
+# SETTINGS
 # ==========================================
 FLUX = 'NEP_ZSCORE'
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 SCENARIO_ORDER = [1, 4, 5]
 SCENARIO_LABELS = ['Normal', 'Hot & dry', 'Compound\nextremes']
 
-# Variable Order
+# Variables
 VARS = ['SWIN_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE']
 
 VAR_LABELS = {
-    'VPD_ZSCORE': 'VPD effect',
+    'VPD_ZSCORE': 'Vapor pressure deficit effect',
     'TA_ZSCORE': 'Air temperature effect',
     'SWC_ZSCORE': 'Soil moisture effect',
     'SWIN_ZSCORE': 'Radiation effect'
@@ -37,7 +39,7 @@ IGBP_NAMES = {
     'EBF': 'Evergreen broadleaf forests'
 }
 
-# Column Suffixes
+# Column suffixes
 SHAP_SUFFIX_AVG = '_SHAPVALS_OVR_AVG'
 SHAP_SUFFIX_SD = '_SHAPVALS_OVR_SD'  # Using SD column for uncertainty
 
@@ -55,293 +57,78 @@ shap_type = 'conditional'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 filepath = Path(results_outdir) / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet"
 
-
 # ==========================================
-# 2. HELPER FUNCTIONS
+# EXECUTION
 # ==========================================
-def sigmoid(x, x_start, x_end, y_start, y_end):
-    x_norm = (x - x_start) / (x_end - x_start)
-    s = 0.5 * (1 + np.tanh(6 * (x_norm - 0.5)))
-    return y_start + s * (y_end - y_start)
 
-
-def calculate_budget_stats(df_input):
-    scen_data = []
-    list_net_shapvals = []
-    list_net_shapvals_sd = []
-    list_net_shapvals_sem = []
-    list_net_shapvals_count = []
-
-    for scen_id in SCENARIO_ORDER:
-        df_scen = df_input[df_input['SCENARIO'] == scen_id].copy()
-        if len(df_scen) == 0:
-            raise ValueError(f"Scenario {scen_id} has no data.")
-
-        scen_dict = {}
-
-        # Individual drivers (calculate mean for bars)
-        for var in VARS:
-
-            # Required cols
-            col_mean = var + SHAP_SUFFIX_AVG
-            col_sd = var + SHAP_SUFFIX_SD
-            req_cols = [col_mean, col_sd]
-            # Check if ALL required columns are available
-            if not set(req_cols).issubset(df_scen.columns):
-                missing = list(set(req_cols) - set(df_scen.columns))
-                raise ValueError(f"Required columns missing from dataframe: {missing}")
-
-            # Site-level vectors
-            sitemeans_vec = df_scen[col_mean]
-            sitemeans_sd_vec = df_scen[col_sd]
-
-            # Calculate the mean of site-means (for the bar height)
-            sitemeans_mean = sitemeans_vec.mean()
-            sitemeans_count = sitemeans_vec.count()
-            sitemeans_sem = sitemeans_vec.sem()  # SEM of site-means (standard error of the mean), sem = std / sqrt(n)
-
-            # Calculate the SD of site-means
-            # Law of total variance
-            mean_of_variances = (sitemeans_sd_vec ** 2).mean()  # Average of within-site variances
-            variance_of_means = sitemeans_vec.var(ddof=0)  # Variance of the site means
-            total_sd = np.sqrt(mean_of_variances + variance_of_means)  # Global SD
-
-            # Store in dict
-            scen_dict[var] = {
-                'mean': sitemeans_mean,
-                'sem': sitemeans_sem,
-                'global_sd': total_sd,
-                'n_sites': sitemeans_count
-            }
-
-        # -------------------------------
-        # Net effect (sum of SHAP values)
-        # -------------------------------
-
-        # Required net cols
-        col_net_shapvals = 'NET_SHAPVALS_OVR_AVG'
-        col_net_shapvals_sd = 'NET_SHAPVALS_OVR_SD'
-        req_net_cols = [col_net_shapvals, col_net_shapvals_sd]
-        # Check if ALL required columns are available
-        if not set(req_net_cols).issubset(df_scen.columns):
-            missing = list(set(req_net_cols) - set(df_scen.columns))
-            raise ValueError(f"Required columns missing from dataframe: {missing}")
-
-        # Site-level vectors
-        net_shapvals_vec = df_scen[col_net_shapvals]
-        net_shapvals_sd_vec = df_scen[col_net_shapvals_sd]
-
-        # Calculate net mean
-        net_shapvals_mean = net_shapvals_vec.mean()
-        net_shapvals_count = net_shapvals_vec.count()
-        net_shapvals_sem = net_shapvals_vec.sem()  # sem = std / sqrt(n)
-
-        # Calculate total SD using the law of total variance (sqrt(mean of variances + variance of means)).
-        # This approach treats sites as equally representative (macro-average), normalizing
-        # differences in sample counts between sites.
-        net_mean_of_variances = (net_shapvals_sd_vec ** 2).mean()  # Average of within-site variances
-        net_variance_of_means = net_shapvals_vec.var(ddof=0)  # Variance of the site means
-        net_total_sd = np.sqrt(net_mean_of_variances + net_variance_of_means)  # Global SD
-
-        # Collect
-        list_net_shapvals.append(net_shapvals_mean)
-        list_net_shapvals_sd.append(net_total_sd)
-        list_net_shapvals_sem.append(net_shapvals_sem)
-        list_net_shapvals_count.append(len(df_scen[col_net_shapvals].dropna()))
-        scen_data.append(scen_dict)
-
-    return scen_data, list_net_shapvals, list_net_shapvals_sem, list_net_shapvals_sd, list_net_shapvals_count
-
-
-def get_panel_limits(data, net_vals, net_errs):
-    max_vals = []
-    min_vals = []
-
-    # Check Stack Heights
-    for d in data:
-        pos_sum = sum([d[v]['mean'] for v in VARS if d[v]['mean'] > 0])
-        neg_sum = sum([d[v]['mean'] for v in VARS if d[v]['mean'] < 0])
-        max_vals.append(pos_sum)
-        min_vals.append(neg_sum)
-
-    # Check Net Lines with SD Errors
-    for val, err in zip(net_vals, net_errs):
-        max_vals.append(val + err)
-        min_vals.append(val - err)
-
-    return min(min_vals), max(max_vals)
-
-
-def draw_panel(ax, data, net_vals, net_errs, net_counts, title, fixed_ylim, show_scenario_labels, is_small=False):
-    x_centers = [0, 1, 2]
-    bar_width = 0.4 if not is_small else 0.4
-    x_centers_shifted_left = np.array(x_centers) - bar_width / 3
-    x_centers_shifted_right = np.array(x_centers) + bar_width / 2.5
-    alpha_ribbon = 0.25
-
-    fs_val = 12 if not is_small else 12
-    fs_label = 12 if not is_small else 12
-    fs_tick = 12 if not is_small else 12
-
-    node_pos = [{} for _ in range(len(data))]
-
-    # Draw bars
-    for i, d in enumerate(data):
-        cx = x_centers[i]
-
-        # Positive Stack
-        current_y = 0.0
-        for var in VARS:
-            val = d[var]['mean']
-            if val < 0:
-                continue
-            top = current_y + val
-            bottom = current_y
-            ax.bar(cx, val, width=bar_width, bottom=bottom, color=PALETTE[var], edgecolor='white', linewidth=0.5,
-                   zorder=10)
-            if (abs(val) > 0.01) and not is_small:
-                ax.text(x_centers_shifted_right[i], bottom + val / 2, f"+{val:.2f}", ha='right', va='center',
-                        fontsize=fs_val - 1, color='white', fontweight='bold',
-                        path_effects=[pe.withStroke(linewidth=1.2, foreground=PALETTE[var])], zorder=20)
-            node_pos[i][var] = (bottom, top)
-            current_y += val
-
-        # Negative Stack
-        current_y = 0.0
-        for var in VARS:
-            val = d[var]['mean']
-            if val >= 0:
-                continue
-            top = current_y
-            bottom = current_y + val
-            ax.bar(cx, abs(val), width=bar_width, bottom=bottom, color=PALETTE[var], edgecolor='white', linewidth=0.5,
-                   zorder=10)
-            if (abs(val) > 0.01) and not is_small:
-                ax.text(x_centers_shifted_right[i], bottom + abs(val) / 2, f"{val:.2f}", ha='right', va='center',
-                        fontsize=fs_val - 1, color='white', fontweight='bold',
-                        path_effects=[pe.withStroke(linewidth=1.2, foreground=PALETTE[var])], zorder=20)
-            node_pos[i][var] = (bottom, top)
-            current_y += val
-
-        # Scenario Labels
-        if show_scenario_labels:
-            ax.text(cx, fixed_ylim[0] + (abs(fixed_ylim[0]) * 0.07), SCENARIO_LABELS[i],
-                    ha='center', va='top', fontsize=fs_tick, fontweight='bold')
-
-    # Ribbons
-    for i in range(len(data) - 1):
-        x_start, x_end = x_centers[i] + bar_width / 2, x_centers[i + 1] - bar_width / 2
-        x_curve = np.linspace(x_start, x_end, 100)
-        for var in VARS:
-            if var not in node_pos[i] or var not in node_pos[i + 1]: continue
-            s_bot, s_top = node_pos[i][var]
-            e_bot, e_top = node_pos[i + 1][var]
-            if abs(s_top - s_bot) < 0.005 and abs(e_top - e_bot) < 0.005:
-                continue
-            y_top = sigmoid(x_curve, x_start, x_end, s_top, e_top)
-            y_bot = sigmoid(x_curve, x_start, x_end, s_bot, e_bot)
-            ax.fill_between(x_curve, y_bot, y_top, color=PALETTE[var], alpha=alpha_ribbon, edgecolor='none', zorder=1)
-
-    # Net values (marker + pooled sd)
-    ax.plot(x_centers_shifted_left, net_vals, '-', color='#808080', linewidth=2, markersize=10, zorder=19)
-
-    mew = 1.5 if is_small else 2
-    elinewidth = 1.5 if is_small else 2
-    ax.errorbar(x_centers_shifted_left, net_vals, yerr=net_errs, fmt='D', color='white',
-                ecolor='black', elinewidth=elinewidth, capsize=4, zorder=23, ms=10, mec='black', mew=mew)
-
-    # Net Labels
-    for x, y in zip(x_centers_shifted_left, net_vals):
-        offset = 0
-        bbox = dict(boxstyle="round,pad=0.1", fc="white", ec="none", alpha=0.6)
-        ax.text(x - 0.1, y + offset, f"{y:+.2f}", fontsize=fs_val, fontweight='bold',
-                ha='right', va='center', bbox=bbox, zorder=25)
-
-    # Counts
-    for x, y in zip(x_centers, net_counts):
-        ypos = 0.42 if is_small else 0.37
-        smaller = 1 if is_small else 0
-        ax.text(x, ypos, f"n={y}", fontsize=fs_val - smaller, fontweight='normal',
-                ha='center', va='center', zorder=25)
-
-    # Styling
-    ax.axhline(0, color='black', linewidth=1, linestyle='--', zorder=25)
-    ax.set_title(title, fontsize=fs_label, fontweight='bold', loc='left', pad=10)
-    ax.set_ylim(fixed_ylim)
-    if not is_small:
-        ax.set_xlim(-1, 2.3)
-    else:
-        ax.set_xlim(-0.3, 2.3)
-
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-    ax.set_xticks([])
-    ax.set_yticks([])
-
-
-# ==========================================
-# 3. EXECUTION
-# ==========================================
+# Data
 print("Loading data...")
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 df_main = shapvals_df.copy()
 
-# Figure setup
+# Select required IGBPs and scenarios
+df_global = df_main[df_main['IGBP'].isin(IGBP_CLASSES)]
+df_global = df_global[df_global['SCENARIO'].isin(SCENARIO_ORDER)]
+
+# ------------------------
+# CALCULATE SCENARIO STATS
+# ------------------------
+print("Calculating scenario stats...")
+
+# Global
+# Calculate scenario stats across all sites
+scenario_stats = scenarios.calculate_scenario_stats(
+    df_input=df_global, igbp='global', scenario_order=SCENARIO_ORDER, vars=VARS,
+    shap_suffix_avg=SHAP_SUFFIX_AVG, shap_suffix_sd=SHAP_SUFFIX_SD)
+
+# IGBPs
+# Calculate scenario stats for each IGBP
+for i, igbp in enumerate(IGBP_CLASSES):
+    df_igbp = df_global[df_global['IGBP'] == igbp]
+    igbp_data = scenarios.calculate_scenario_stats(
+        df_input=df_igbp, igbp=igbp, scenario_order=SCENARIO_ORDER, vars=VARS,
+        shap_suffix_avg=SHAP_SUFFIX_AVG, shap_suffix_sd=SHAP_SUFFIX_SD)
+    # s_data, s_net, s_err, s_sd, s_counts = calculate_budget_stats(df_sub)
+    scenario_stats = pd.concat([scenario_stats, igbp_data], axis=0)
+
+# Get limits for y-axis scaling, same for all plots
+GRAND_Y_MIN, GRAND_Y_MAX = plot.get_panel_limits(df=scenario_stats)
+FIXED_YLIM = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.2)
+
+# ------
+# FIGURE
+# ------
 fig = plt.figure(figsize=(18, 9), dpi=300)
 outer_gs = gridspec.GridSpec(1, 2, width_ratios=[0.55, 0.45], wspace=0.1)
 gs_left = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec=outer_gs[0])
 gs_right = gridspec.GridSpecFromSubplotSpec(2, 2, subplot_spec=outer_gs[1], wspace=0.15, hspace=0.1)
 
-# --- PASS 1: CALC & LIMITS ---
-print("Calculating stats...")
+# Panel settings
 panels_data = []
 
 # Global
-# Calculate budget stats across all sites and setup panel settings
-df_global = df_main[df_main['IGBP'].isin(IGBP_CLASSES)]
-df_global = df_global[df_global['SCENARIO'].isin(SCENARIO_ORDER)]
-# scen_data, net_shapvals, net_shapvals_sem, net_shapvals_sd, net_shapvals_count
-g_data, g_net_shapvals, g_net_shapvals_sem, g_net_shapvals_sd, g_net_counts = calculate_budget_stats(df_global)
-panels_data.append({
-    'data': g_data, 'net': g_net_shapvals, 'err': g_net_shapvals_sem, 'total_sd': g_net_shapvals_sd,
-    'counts': g_net_counts, 'title': "a | Global forest response (all sites)",
-    'is_small': False, 'gs': gs_left[0], 'show_scenario_labels': True
-})
+_data = scenario_stats.loc[scenario_stats['igbp'] == 'global'].copy()
+panels_data.append({'data': _data, 'title': "a | Global forest response (all sites)",
+                    'is_small': False, 'gs': gs_left[0], 'show_scenario_labels': True})
 
-# Subpanels
-# Calculate budget stats for each IGBP and setup panel settings
+# IGBP
 for i, igbp in enumerate(IGBP_CLASSES):
-    df_sub = df_main[df_main['IGBP'] == igbp]
-    s_data, s_net, s_err, s_sd, s_counts = calculate_budget_stats(df_sub)
-
     row, col = i // 2, i % 2
     letter = chr(98 + i)
     show_scenario_lables = True if row == 1 else False
-    panels_data.append({
-        'data': s_data, 'net': s_net, 'err': s_err, 'total_sd': s_sd, 'counts': s_counts,
-        'title': f"{letter} | {IGBP_NAMES[igbp]}",
-        'is_small': True, 'gs': gs_right[row, col],
-        'show_scenario_labels': show_scenario_lables
-    })
+    _data = scenario_stats.loc[scenario_stats['igbp'] == igbp].copy()
+    panels_data.append({'data': _data, 'title': f"{letter} | {IGBP_NAMES[igbp]}",
+                        'is_small': True, 'gs': gs_right[row, col], 'show_scenario_labels': show_scenario_lables})
 
-# Get limits for y-axis scaling, same for all plots
-all_mins, all_maxs = [], []
-for p in panels_data:
-    p_min, p_max = get_panel_limits(p['data'], p['net'], p['err'])
-    all_mins.append(p_min)
-    all_maxs.append(p_max)
-GRAND_Y_MIN = min(all_mins)
-GRAND_Y_MAX = max(all_maxs)
-FIXED_YLIM = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.2)
+
 
 # Draw
 print("Drawing panels...")
 for pix, p in enumerate(panels_data):
     ax = fig.add_subplot(p['gs'])
-    draw_panel(ax, p['data'], p['net'], p['err'], p['counts'], p['title'], FIXED_YLIM, is_small=p['is_small'],
-               show_scenario_labels=p['show_scenario_labels'])
+    plot.draw_panel(ax=ax, df=p['data'], title=p['title'], fixed_ylim=FIXED_YLIM, is_small=p['is_small'],
+                    show_scenario_labels=p['show_scenario_labels'], vars=VARS, palette=PALETTE,
+                    scenario_labels=SCENARIO_LABELS)
     if not p['is_small']:
         ax.text(x=-0.97, y=0.04, s=r'$\uparrow$' + 'Positive effect ($\sigma$)\nincreased uptake\nreduced release',
                 fontsize=12, color='black', ha='left', va='bottom')
