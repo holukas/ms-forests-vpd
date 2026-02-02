@@ -176,7 +176,12 @@ def style_ax(ax, title, ax_labels_fontsize):
 
 def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limits, is_top_row, group_name,
                         scenario_labels, show_x=False, show_y=False, is_main=False, is_first=False):
+    # SHAP value means per site
     pivot = df.pivot(index='SITE', columns='SCENARIO', values=feature_col).reindex(columns=columns)
+
+    # SHAP value SDs per site
+    sd_col = feature_col.replace('_AVG', '_SD')
+    pivot_sd = df.pivot(index='SITE', columns='SCENARIO', values=sd_col).reindex(columns=columns)
 
     if pivot.dropna(how='all').empty:
         ax.set_visible(False)
@@ -185,30 +190,45 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     # Stats: collect in table
     stats_list = []
     for col in [1, 4, 5]:
+
         # Drop NaNs for the specific scenario
-        data = pivot[col].dropna()
-        if not data.empty:
+        data_vec = pivot[col].dropna()
+
+        # Selects rows from data_sd where the index exists in data
+        data_sd_vec = pivot_sd[col].copy()
+        data_sd_vec = data_sd_vec.loc[data_sd_vec.index.intersection(data_vec.index)]
+
+        # Calculate total SD using the law of total variance (sqrt(mean of variances + variance of means)).
+        # This approach treats sites as equally representative (macro-average), normalizing
+        # differences in sample counts between sites.
+        mean_of_variances = (data_sd_vec ** 2).mean()  # Average of within-site variances
+        variance_of_means = data_vec.var(ddof=0)  # Variance of the site means
+        total_sd = np.sqrt(mean_of_variances + variance_of_means)  # Global SD
+
+        if not data_vec.empty:
             stats_list.append({
                 'IGBP': group_name,
                 'Feature': feature_col,
-                'n_sites': len(data),
+                'n_sites': len(data_vec),
                 'Scenario': col,
-                'Mean': data.mean(),
-                'SD': data.std(),
-                'Median': data.median(),
-                'Min': data.min(),
-                'Max': data.max(),
-                'Sites < 0': (data < 0).sum(),
-                '% < 0': (data < 0).mean() * 100
+                'Mean': data_vec.mean(),
+                'total_SD': total_sd,
+                'SEM': data_vec.sem(),
+                'Median': data_vec.median(),
+                'Min': data_vec.min(),
+                'Max': data_vec.max(),
+                'P25': data_vec.quantile(0.25),
+                'P75': data_vec.quantile(0.75),
+                'Sites < 0': (data_vec < 0).sum(),
+                '% < 0': (data_vec < 0).mean() * 100
             })
     # Display as table
     featurestats_df = pd.DataFrame(stats_list)
-    # print(stats_df.to_string(index=False))
 
-    means = pivot.mean(axis=0)
-    # medians = pivot.median(axis=0)
-    q1 = pivot.quantile(0.25, axis=0)
-    q3 = pivot.quantile(0.75, axis=0)
+    means = featurestats_df['Mean']
+    p25 = featurestats_df['P25']
+    p75 = featurestats_df['P75']
+
     x_coords = np.arange(n_scenarios)
 
     # Ghost lines (faint)
@@ -217,32 +237,32 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     ax.plot(x_coords, pivot.T.values, color='gray', alpha=alpha_ghost, linewidth=lw_ghost, zorder=1)
 
     # IQR ribbon
-    ax.fill_between(x_coords, q1, q3, color=color, alpha=0.25, linewidth=0, zorder=2)
+    ax.fill_between(x_coords, p25, p75, color=color, alpha=0.25, linewidth=0, zorder=2)
 
     # Sina / jitter points
     # Controlled jitter that respects density but stays tight
     for x_i, scen in enumerate(columns):
         if scen not in pivot:
             continue
-        data = pivot[scen].dropna()
-        if len(data) < 2:
-            ax.scatter([x_i] * len(data), data, color=color, s=2, alpha=0.5, zorder=3)
+        data_vec = pivot[scen].dropna()
+        if len(data_vec) < 2:
+            ax.scatter([x_i] * len(data_vec), data_vec, color=color, s=2, alpha=0.5, zorder=3)
             continue
 
-        kde = gaussian_kde(data)
-        density = kde(data)
+        kde = gaussian_kde(data_vec)
+        density = kde(data_vec)
         # Normalize width for jitter
         width_factor = 0.15
         width = (density / density.max()) * width_factor
         rng = np.random.RandomState(42 + x_i)
-        jitter = rng.uniform(-1, 1, size=len(data)) * width
+        jitter = rng.uniform(-1, 1, size=len(data_vec)) * width
 
         # Plot points
         s_sina = 4 if is_main else 4
         alpha_sina = 0.4 if is_main else 0.5
-        ax.scatter(x_i + jitter, data, color=color, s=s_sina, alpha=alpha_sina, linewidth=0, zorder=3)
+        ax.scatter(x_i + jitter, data_vec, color=color, s=s_sina, alpha=alpha_sina, linewidth=0, zorder=3)
 
-        n_sites = len(data)
+        n_sites = len(data_vec)
 
         # Sample size annotation, show in first row only
         if is_top_row:
@@ -250,16 +270,13 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
                     fontsize=7, color='#555555', ha='center', va='center')
 
         # Percentage of sites below zero (i.e., negatively affected)
-        n_sites_below_zero = data[data < 0].count()
+        n_sites_below_zero = data_vec[data_vec < 0].count()
         perc_n_sites_below_zero = n_sites_below_zero / n_sites * 100
 
         # Decide text label
         text = f'{perc_n_sites_below_zero:.0f}%'
-        # text = f'{perc_n_sites_below_zero:.0f}% negative' if is_first else f'{perc_n_sites_below_zero:.0f}%'
 
         # Implement percentage pill background
-        # We use white text for high-impact visibility if the background is dark,
-        # or keep the line color for the text and use a faint version for the pill.
         alpha = 0.8 if perc_n_sites_below_zero > 70 else 0.5
         ax.text(x_coords[x_i], -1.38, text,
                 fontsize=7,
@@ -273,16 +290,8 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
                     edgecolor='none',  # No border for a cleaner look
                     alpha=alpha  # Slight transparency to stay approachable
                 ))
-        # Percentage of sites below zero (i.e., negatively affected)
-        # n_sites_below_zero = data[data < 0].count()
-        # perc_n_sites_below_zero = n_sites_below_zero / n_sites * 100
-        # text = f'{perc_n_sites_below_zero:.0f}% negative' if is_first else f'{perc_n_sites_below_zero:.0f}%'
-        # ax.text(x_coords[x_i], -1.3, text,
-        #         fontsize=7, color=color, ha='center', va='center')
-        # # ax.text(x_coords[x_i], -1.2, f'{n_sites_below_zero} ({perc_n_sites_below_zero:.0f}%)',
-        # #         fontsize=6, color='#555555', ha='center', va='center')
 
-    # Median trend line and nodes
+    # Mean trend line and nodes
     lw_trend = 2.0
     s_node = 25
     ax.plot(x_coords, means, color=color, linewidth=lw_trend, alpha=1.0, zorder=5)
@@ -290,15 +299,8 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
 
     # Formatting
     ax.set_ylim(y_limits)
-    # 1. Shade the Negative Region (add this before the zero line)
-    # Use a very light gray to indicate the "constraint zone"
-    ax.axhspan(y_limits[0], 0, facecolor='#f0f0f0', alpha=0.6, zorder=0)
-    # 2. Zero line
+    ax.axhspan(y_limits[0], 0, facecolor='#f0f0f0', alpha=0.6, zorder=0)  # Shade the negative region
     ax.axhline(0, color='black', linestyle='--', linewidth=0.6, alpha=0.6, zorder=0)
-    # # Formatting
-    # ax.set_ylim(y_limits)
-    # # Zero line
-    # ax.axhline(0, color='black', linestyle='--', linewidth=0.6, alpha=0.5, zorder=0)
 
     # Format x-axis
     ax.set_xlim(-0.5, 2.5)
@@ -324,13 +326,6 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     else:
         ax.set_yticklabels([])
         ax.tick_params(axis='y', length=0)
-
-    # # Highlight "All Sites" background
-    # if is_main:
-    #     ax.patch.set_facecolor('#f7f7f7')
-    #     ax.patch.set_alpha(0.5)
-    # else:
-    #     ax.patch.set_alpha(0.0)
 
     return featurestats_df
 

@@ -61,12 +61,11 @@ shap_type = 'conditional'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 filepath = Path(results_outdir) / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet"
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
-df_main = shapvals_df[['SITE', 'IGBP', 'SCENARIO'] + SHAP_COLS + SHAP_SD_COLS].copy()
+df_main = shapvals_df.copy()
+# df_main = shapvals_df[['SITE', 'IGBP', 'SCENARIO'] + SHAP_COLS + SHAP_SD_COLS].copy()
 df_main = df_main.loc[df_main['SCENARIO'].isin(SCENARIO_ORDER)].copy()
 df_main = df_main.loc[df_main['IGBP'].isin(IGBP_CLASSES)].copy()
 
-# Calc sum of SHAP values for each site and scenario (i.e. for each row)
-df_main[f'NETSUM{SHAP_SUFFIX}'] = df_main[SHAP_COLS].sum(axis=1)
 
 # Global scaling
 # Global limits for NEP are: (np.float64(), np.float64(1.536760039509245))
@@ -101,7 +100,7 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
     # Using figure text allows exact placement independent of axis coordinates
     y_pos = 0.82 - (row * 0.22)  # Approximate calculation based on height
 
-    # Add Variable Title on the far left (Y-Axis Label equivalent)
+    # Add variable title on the far left (y-axis label equivalent)
     # Create a dummy axis for the label if needed, or use fig.text
     # Here we put it on the first axes ylabel for alignment
 
@@ -145,7 +144,6 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS, VAR_TITLES)):
 
         # Column headers
         if row == 0:
-            # fig.suptitle("XXX")
             ax.set_title(group_name, fontsize=7, fontweight='bold', pad=8, color='black')
 
         # y-axis label (only for first column)
@@ -184,7 +182,7 @@ scen_map = {1: 'Normal', 4: 'Dry and hot', 5: 'Compound extremes'}
 df['Scenario'] = df['Scenario'].map(scen_map)
 
 # 1. Create the formatted string column (for display)
-df['Stats'] = df.apply(lambda r: f"{r['Mean']:.2f}±{r['SD']:.2f} ({r['Min']:.2f}, {r['Max']:.2f})", axis=1)
+df['Stats'] = df.apply(lambda r: f"{r['Mean']:.2f}±{r['total_SD']:.2f} ({r['Min']:.2f}, {r['Max']:.2f})", axis=1)
 
 # 2. Create pivots
 SCENARIO_ORDER = ['Normal', 'Dry and hot', 'Compound extremes']
@@ -278,5 +276,5 @@ print(table_1_final.to_string(index=True))
 # outfilepath = dir_out / f'52_FIG-2_Scenarios_SinaPlots_ShapMeans_{FLUX}.png'
 # fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
 
-# # Show figure
-# plt.show()
+# Show figure
+plt.show()

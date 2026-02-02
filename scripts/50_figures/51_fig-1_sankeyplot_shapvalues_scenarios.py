@@ -2,6 +2,8 @@ from pathlib import Path
 
 import diive as dv
 import matplotlib.gridspec as gridspec
+import matplotlib.patches as mpatches
+import matplotlib.path as mpath
 import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
@@ -134,8 +136,9 @@ def calculate_budget_stats(df_input):
         net_shapvals_count = net_shapvals_vec.count()
         net_shapvals_sem = net_shapvals_vec.sem()  # sem = std / sqrt(n)
 
-        # Calculate the SD of site-means
-        # Law of total variance
+        # Calculate total SD using the law of total variance (sqrt(mean of variances + variance of means)).
+        # This approach treats sites as equally representative (macro-average), normalizing
+        # differences in sample counts between sites.
         net_mean_of_variances = (net_shapvals_sd_vec ** 2).mean()  # Average of within-site variances
         net_variance_of_means = net_shapvals_vec.var(ddof=0)  # Variance of the site means
         net_total_sd = np.sqrt(net_mean_of_variances + net_variance_of_means)  # Global SD
@@ -171,7 +174,7 @@ def get_panel_limits(data, net_vals, net_errs):
 
 def draw_panel(ax, data, net_vals, net_errs, net_counts, title, fixed_ylim, show_scenario_labels, is_small=False):
     x_centers = [0, 1, 2]
-    bar_width = 0.28 if not is_small else 0.28
+    bar_width = 0.4 if not is_small else 0.4
     x_centers_shifted_left = np.array(x_centers) - bar_width / 3
     x_centers_shifted_right = np.array(x_centers) + bar_width / 2.5
     alpha_ribbon = 0.25
@@ -262,10 +265,14 @@ def draw_panel(ax, data, net_vals, net_errs, net_counts, title, fixed_ylim, show
                 ha='center', va='center', zorder=25)
 
     # Styling
-    ax.axhline(0, color='black', linewidth=1, linestyle='--', zorder=5)
+    ax.axhline(0, color='black', linewidth=1, linestyle='--', zorder=25)
     ax.set_title(title, fontsize=fs_label, fontweight='bold', loc='left', pad=10)
     ax.set_ylim(fixed_ylim)
-    ax.set_xlim(-0.5, 2.5)
+    if not is_small:
+        ax.set_xlim(-1, 2.3)
+    else:
+        ax.set_xlim(-0.3, 2.3)
+
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -292,6 +299,7 @@ print("Calculating stats...")
 panels_data = []
 
 # Global
+# Calculate budget stats across all sites and setup panel settings
 df_global = df_main[df_main['IGBP'].isin(IGBP_CLASSES)]
 df_global = df_global[df_global['SCENARIO'].isin(SCENARIO_ORDER)]
 # scen_data, net_shapvals, net_shapvals_sem, net_shapvals_sd, net_shapvals_count
@@ -303,6 +311,7 @@ panels_data.append({
 })
 
 # Subpanels
+# Calculate budget stats for each IGBP and setup panel settings
 for i, igbp in enumerate(IGBP_CLASSES):
     df_sub = df_main[df_main['IGBP'] == igbp]
     s_data, s_net, s_err, s_sd, s_counts = calculate_budget_stats(df_sub)
@@ -311,7 +320,7 @@ for i, igbp in enumerate(IGBP_CLASSES):
     letter = chr(98 + i)
     show_scenario_lables = True if row == 1 else False
     panels_data.append({
-        'data': s_data, 'net': s_net, 'err': s_err, 'sd': s_sd, 'counts': s_counts,
+        'data': s_data, 'net': s_net, 'err': s_err, 'total_sd': s_sd, 'counts': s_counts,
         'title': f"{letter} | {IGBP_NAMES[igbp]}",
         'is_small': True, 'gs': gs_right[row, col],
         'show_scenario_labels': show_scenario_lables
@@ -329,13 +338,47 @@ FIXED_YLIM = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.2)
 
 # Draw
 print("Drawing panels...")
-for p in panels_data:
+for pix, p in enumerate(panels_data):
     ax = fig.add_subplot(p['gs'])
     draw_panel(ax, p['data'], p['net'], p['err'], p['counts'], p['title'], FIXED_YLIM, is_small=p['is_small'],
                show_scenario_labels=p['show_scenario_labels'])
     if not p['is_small']:
-        ax.text(-0.5, 0.05, "Mean Expected Value (0$\sigma$)", ha='left', va='bottom',
-                fontsize=10, style='italic', color='#333333')
+        ax.text(x=-0.97, y=0.04, s=r'$\uparrow$' + 'Positive effect ($\sigma$)\nincreased uptake\nreduced release',
+                fontsize=12, color='black', ha='left', va='bottom')
+        ax.text(x=-0.97, y=-0.04, s='increased release\nreduced uptake\n' + r'$\downarrow$Negative effect ($\sigma$)',
+                fontsize=12, color='black', ha='left', va='top')
+
+        # Draw up and down area arrows
+        # Define vertices
+        vertices_up = [(-0.3, 0), (-0.3, 0.15), (-0.65, 0.2), (-1, 0.15), (-1, 0), (-0.3, 0)]
+        vertices_down = [(-0.3, 0), (-0.3, -0.15), (-0.65, -0.2), (-1, -0.15), (-1, 0), (-0.3, 0)]
+
+
+        def add_gradient_arrow(vertices, color_main, direction='up'):
+            # Create Path
+            path = mpath.Path(vertices)
+            patch = mpatches.PathPatch(path, facecolor='none', edgecolor='none')
+            ax.add_patch(patch)
+
+            # Define gradient (top to bottom)
+            # Custom colormap from chosen color to a lighter/faded version
+            gradient = np.linspace(0, 1, 256).reshape(256, 1)
+            if direction == 'down':
+                gradient = np.flipud(gradient)  # Flip for the down arrow
+
+            # Display and clip
+            # Extent should cover the bounding box of the arrow
+            ymin, ymax = (0, 0.2) if direction == 'up' else (-0.2, 0)
+            im = ax.imshow(gradient, interpolation='bicubic',
+                           extent=[-1, -0.3, ymin, ymax],
+                           cmap=plt.cm.colors.LinearSegmentedColormap.from_list('custom', [color_main, '#ffffff']),
+                           aspect='auto', alpha=0.6, zorder=3)
+            im.set_clip_path(patch)
+
+
+        # Add arrows
+        add_gradient_arrow(vertices_up, '#829460', direction='up')  # Sage Green
+        add_gradient_arrow(vertices_down, '#4E6E81', direction='down')  # Slate Blue
 
 # Legend
 legend_elements = [Patch(facecolor=c, label=l) for l, c in zip(VAR_LABELS.values(), PALETTE.values())]
@@ -352,7 +395,7 @@ fig.legend(handles=legend_elements, loc='lower center', ncol=6,
 plt.subplots_adjust(left=0.03, right=0.97, top=0.92, bottom=0.1)
 
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'55_FIG-SHAP_Budget_Unified_Connected_SD_{FLUX}.png'
+outfilepath = dir_out / f'51_FIG-1_SankeyPlotSHAPValuesScenarios_{FLUX}.png'
 print(f"Saved to {outfilepath}")
 plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
 
