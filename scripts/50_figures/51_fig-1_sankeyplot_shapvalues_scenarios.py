@@ -2,10 +2,7 @@ from pathlib import Path
 
 import diive as dv
 import matplotlib.gridspec as gridspec
-import matplotlib.patches as mpatches
-import matplotlib.path as mpath
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
@@ -120,15 +117,13 @@ for i, igbp in enumerate(IGBP_CLASSES):
     panels_data.append({'data': _data, 'title': f"{letter} | {IGBP_NAMES[igbp]}",
                         'is_small': True, 'gs': gs_right[row, col], 'show_scenario_labels': show_scenario_lables})
 
-
-
 # Draw
 print("Drawing panels...")
 for pix, p in enumerate(panels_data):
     ax = fig.add_subplot(p['gs'])
     plot.draw_panel(ax=ax, df=p['data'], title=p['title'], fixed_ylim=FIXED_YLIM, is_small=p['is_small'],
                     show_scenario_labels=p['show_scenario_labels'], vars=VARS, palette=PALETTE,
-                    scenario_labels=SCENARIO_LABELS)
+                    scenario_labels=SCENARIO_LABELS, shap_suffix_avg=SHAP_SUFFIX_AVG)
     if not p['is_small']:
         ax.text(x=-0.97, y=0.04, s=r'$\uparrow$' + 'Positive effect ($\sigma$)\nincreased uptake\nreduced release',
                 fontsize=12, color='black', ha='left', va='bottom')
@@ -140,32 +135,9 @@ for pix, p in enumerate(panels_data):
         vertices_up = [(-0.3, 0), (-0.3, 0.15), (-0.65, 0.2), (-1, 0.15), (-1, 0), (-0.3, 0)]
         vertices_down = [(-0.3, 0), (-0.3, -0.15), (-0.65, -0.2), (-1, -0.15), (-1, 0), (-0.3, 0)]
 
-
-        def add_gradient_arrow(vertices, color_main, direction='up'):
-            # Create Path
-            path = mpath.Path(vertices)
-            patch = mpatches.PathPatch(path, facecolor='none', edgecolor='none')
-            ax.add_patch(patch)
-
-            # Define gradient (top to bottom)
-            # Custom colormap from chosen color to a lighter/faded version
-            gradient = np.linspace(0, 1, 256).reshape(256, 1)
-            if direction == 'down':
-                gradient = np.flipud(gradient)  # Flip for the down arrow
-
-            # Display and clip
-            # Extent should cover the bounding box of the arrow
-            ymin, ymax = (0, 0.2) if direction == 'up' else (-0.2, 0)
-            im = ax.imshow(gradient, interpolation='bicubic',
-                           extent=[-1, -0.3, ymin, ymax],
-                           cmap=plt.cm.colors.LinearSegmentedColormap.from_list('custom', [color_main, '#ffffff']),
-                           aspect='auto', alpha=0.6, zorder=3)
-            im.set_clip_path(patch)
-
-
         # Add arrows
-        add_gradient_arrow(vertices_up, '#829460', direction='up')  # Sage Green
-        add_gradient_arrow(vertices_down, '#4E6E81', direction='down')  # Slate Blue
+        plot.add_gradient_arrow(ax=ax, vertices=vertices_up, color_main='#829460', direction='up')  # Sage Green
+        plot.add_gradient_arrow(ax=ax, vertices=vertices_down, color_main='#4E6E81', direction='down')  # Slate Blue
 
 # Legend
 legend_elements = [Patch(facecolor=c, label=l) for l, c in zip(VAR_LABELS.values(), PALETTE.values())]

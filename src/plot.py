@@ -1,5 +1,7 @@
 import diive as dv
 import matplotlib.gridspec as gridspec
+import matplotlib.patches as mpatches
+import matplotlib.path as mpath
 import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +10,28 @@ from matplotlib import ticker
 from scipy.stats import gaussian_kde
 
 from src.common import findpoi
+
+
+def add_gradient_arrow(ax, vertices, color_main, direction='up'):
+    # Create Path
+    path = mpath.Path(vertices)
+    patch = mpatches.PathPatch(path, facecolor='none', edgecolor='none')
+    ax.add_patch(patch)
+
+    # Define gradient (top to bottom)
+    # Custom colormap from chosen color to a lighter/faded version
+    gradient = np.linspace(0, 1, 256).reshape(256, 1)
+    if direction == 'down':
+        gradient = np.flipud(gradient)  # Flip for the down arrow
+
+    # Display and clip
+    # Extent should cover the bounding box of the arrow
+    ymin, ymax = (0, 0.2) if direction == 'up' else (-0.2, 0)
+    im = ax.imshow(gradient, interpolation='bicubic',
+                   extent=[-1, -0.3, ymin, ymax],
+                   cmap=plt.cm.colors.LinearSegmentedColormap.from_list('custom', [color_main, '#ffffff']),
+                   aspect='auto', alpha=0.6, zorder=3)
+    im.set_clip_path(patch)
 
 
 def get_panel_limits(df: pd.DataFrame):
@@ -51,7 +75,8 @@ def sigmoid(x, x_start, x_end, y_start, y_end):
     return y_start + s * (y_end - y_start)
 
 
-def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, scenario_labels, is_small=False):
+def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, scenario_labels,
+               shap_suffix_avg, is_small=False):
     # Constants
     SCENARIO_IDS = [1, 4, 5]  # The scenario IDs in dataframe column 'scenario'
 
@@ -101,7 +126,8 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
         current_y = 0.0
         for var in vars:
             # Find row for this variable
-            row = df_s[df_s['Variable'] == var]
+            mean_col = var + shap_suffix_avg
+            row = df_s[df_s['Variable'] == mean_col]
             if row.empty:
                 continue
 
@@ -126,7 +152,8 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
         # Draw bars: negative stack
         current_y = 0.0
         for var in vars:
-            row = df_s[df_s['Variable'] == var]
+            mean_col = var + shap_suffix_avg
+            row = df_s[df_s['Variable'] == mean_col]
             if row.empty:
                 continue
 
