@@ -37,12 +37,13 @@ VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWIN_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
-aggfunc = 'median'
+aggfunc = 'mean'
+# aggfunc = 'median'
 
 # ------------------------------
 # Agg groups, use z-scores:
-# NEP:  [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
-# ET:   [x]TA/VPD [x]SWIN/TA [x]SWC/VPD [x]SWIN/VPD [x]TA/SWC
+# NEP:  [x]TA/VPD [ ]SWIN/TA [d]SWC/VPD [ ]SWIN/VPD [d]TA/SWC
+# ET:   [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # ------------------------------
@@ -71,7 +72,7 @@ shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.loc[shapvals_sites_agg_l
 print(f"Number of sites: {len(shapvals_sites_agg_long_df['SITE'].unique())}")
 
 # Keep required columns only
-targets = ('_SHAPVALS', 'BIN_')
+targets = ('_SHAPVALS', 'BIN_', '_ZSCORE')
 keepcols = [c for c in shapvals_sites_agg_long_df.columns if
             any(str(c).startswith(t) or str(c).endswith(t) for t in targets)]
 shapvals_sites_agg_long_df = shapvals_sites_agg_long_df[keepcols].copy()

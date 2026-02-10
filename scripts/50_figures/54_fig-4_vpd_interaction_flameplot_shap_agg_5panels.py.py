@@ -36,7 +36,7 @@ x_in_filename, y_in_filename = plotvars[4], plotvars[5]
 # xvar, yvar, zvar = 'TA_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE'
 # ------------------------------
 
-aggfunc, CONDITIONAL = 'median', True
+aggfunc, CONDITIONAL = 'mean', True
 n_sites_min, cb_digits, area_size = 10, 1, 50
 cmap, igbps = 'RdYlBu', ['ENF', 'DBF', 'MF', 'EBF']
 
@@ -58,9 +58,11 @@ xlabel = f'{beautify[xvar]} (z-score)'
 ylabel = f'{beautify[yvar]} (z-score)'
 zlabel = f'{beautify[zvar]} effect (z-score)'
 
-# Column names in dataframe
-xcol = (f"{xvar}", aggfunc)
-ycol = (f"{yvar}", aggfunc)
+# Column names in dataframe, bins use 'median' to have unique bin IDs
+xagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
+yagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
+xcol = (f"{xvar}", xagg)
+ycol = (f"{yvar}", yagg)
 zcol = (f"{zvar}", aggfunc)
 count_vals_col = (f"{zvar}", "count")
 
@@ -79,7 +81,7 @@ fig, gs, ax_all, axes_sub, cax = plot.layout_5panels(figsize=(19.8, 8.1), add_co
 filedf, subsetdf, n_sites = files.load_data(
     suffix='Sites', shap_type=shap_type, dir_res=dir_res, flux=FLUX, count_vals_col=count_vals_col,
     n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol], site_filter=None, x_in_filename=x_in_filename,
-    y_in_filename=y_in_filename)
+    y_in_filename=y_in_filename, aggfunc=aggfunc)
 
 # Plot
 plot.flameplot(df=subsetdf, fig=fig, ax=ax_all, cmap=cmap, title=None, cb_digits_after_comma=cb_digits,
@@ -96,12 +98,13 @@ texts = [(2, 0.1, r"$\uparrow$ dry", 'left', 'bottom'), (2, -0.1, r"$\downarrow$
          (-0.1, 3.5, r"$\leftarrow$ cool", 'right', 'center'), (0.1, 3.5, r"warm $\rightarrow$", 'left', 'center')]
 for x, y, s, h, v in texts:
     ax_all.text(x, y, s, ha=h, va=v, **t_params)
-minmaxlocs = plot_markers(ax_all, subsetdf,
-                          xvals=f'{xvar}_median', yvals=f'{yvar}_median', zvals=f'{zvar}_median',
-                          flux_txt=beautify[FLUX], annotate=True, ax_labels_fontsize=AX_LABELS_FONTSIZE,
-                          area_size=area_size)
-print(f"[ALL SITES] Highest increase found at x={minmaxlocs['max'][0]}, y={minmaxlocs['max'][1]}")
-print(f"[ALL SITES] Highest decrease found at x={minmaxlocs['min'][0]}, y={minmaxlocs['min'][1]}")
+# TODO
+# minmaxlocs = plot_markers(ax_all, subsetdf,
+#                           xvals=f'{xvar}_{aggfunc}', yvals=f'{yvar}_{aggfunc}', zvals=f'{zvar}_{aggfunc}',
+#                           flux_txt=beautify[FLUX], annotate=True, ax_labels_fontsize=AX_LABELS_FONTSIZE,
+#                           area_size=area_size)
+# print(f"[ALL SITES] Highest increase found at x={minmaxlocs['max'][0]}, y={minmaxlocs['max'][1]}")
+# print(f"[ALL SITES] Highest decrease found at x={minmaxlocs['min'][0]}, y={minmaxlocs['min'][1]}")
 
 # ---------------
 # SUBPLOTS (IGBP)
@@ -119,7 +122,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     df_igbp, df_subset, n_sites_sub = files.load_data(
         suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, flux=FLUX, count_vals_col=count_vals_col,
         n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol], site_filter=filedf.index, x_in_filename=x_in_filename,
-        y_in_filename=y_in_filename)
+        y_in_filename=y_in_filename, aggfunc=aggfunc)
     plot.flameplot(df=df_subset, fig=fig, ax=ax, cmap=cmap, title=None, show_colormap=False,
                    vmin=vmin, vmax=vmax, xlabel=xl, ylabel=yl)
     plot.style_ax(ax, f"({letter}) {igbp} (n={n_sites_sub[1]}, min. {n_sites_sub[0]})",
@@ -128,7 +131,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     ax.axvline(0, c='k', ls='--', lw=1, zorder=99)
     ax.set_aspect('equal')
     minmaxlocs = plot_markers(ax, df_subset,
-                              xvals=f'{xvar}_median', yvals=f'{yvar}_median', zvals=f'{zvar}_median',
+                              xvals=f'{xvar}_{xagg}', yvals=f'{yvar}_{yagg}', zvals=f'{zvar}_{aggfunc}',
                               flux_txt=beautify[FLUX], annotate=False, ax_labels_fontsize=AX_LABELS_FONTSIZE,
                               area_size=area_size)
     # Format subplot

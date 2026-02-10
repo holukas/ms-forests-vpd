@@ -22,7 +22,8 @@ VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWIN_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
-aggfunc = 'median'
+aggfunc = 'mean'
+# aggfunc = 'median'
 
 # ------------------------------
 # Agg groups, use z-scores:
@@ -60,7 +61,7 @@ print(f"Found IGBPs: {igbps}")
 shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.drop('SITE', axis=1, inplace=False)
 
 # Keep required columns only
-targets = ('_SHAPVALS', 'BIN_')
+targets = ('_SHAPVALS', 'BIN_', '_ZSCORE')
 keepcols = [c for c in shapvals_sites_agg_long_df.columns
             if any(str(c).startswith(t)
                    or str(c).endswith(t)

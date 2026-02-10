@@ -18,23 +18,7 @@ from src.fit import fit_polynomial
 
 # Main Fig. 3
 # plotvars = [FLUX, xvar, yvar, zvar, x_in_filename, y_in_filename]
-# plotvars = ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'SWC_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-
-# plotvars = ['NEP_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'SWC_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'VPD_ZSCORE_SHAPVALS', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'SWC_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-
-# plotvars = ['NEP_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
-
-# plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
-
-plotvars = ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'VPD_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-
-plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'SWC_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
+plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
 
 FLUX = plotvars[0]
 xvar, yvar, zvar = plotvars[1], plotvars[2], plotvars[3]
@@ -60,7 +44,7 @@ x_in_filename, y_in_filename = plotvars[4], plotvars[5]
 
 aggfunc, CONDITIONAL = 'mean', True
 # aggfunc, CONDITIONAL = 'median', True
-n_sites_min = 30
+n_sites_min = 10
 colors_list = ['#9C27B0', '#26C6DA', '#546E7A', '#FB8C00', '#C62828']
 custom_cmap = matplotlib.colors.ListedColormap(colors_list)
 igbps = ['ENF', 'DBF', 'MF', 'EBF']
@@ -71,13 +55,10 @@ beautify = {
     "GPP_ZSCORE": "GPP",
     "RECO_ZSCORE": "RECO",
     "TA_ZSCORE": "TA",
-    "BIN_TA_ZSCORE": "TA",
     "TA_ZSCORE_SHAPVALS": "TA",
     "BIN_VPD_ZSCORE": "VPD",
-    "VPD_ZSCORE": "VPD",
     "VPD_ZSCORE_SHAPVALS": "VPD",
     "SWC_ZSCORE": "SWC",
-    "BIN_SWC_ZSCORE": "SWC",
     "SWC_ZSCORE_SHAPVALS": "SWC",
     "SWIN_ZSCORE": "SWIN",
 }
@@ -93,7 +74,7 @@ ycol = (f"{yvar}", aggfunc)
 ycol_sem = (f"{yvar}", "sem")
 ycol_iqr25 = (f"{yvar}", "q25")
 ycol_iqr75 = (f"{yvar}", "q75")
-zcol = (f"{zvar}", aggfunc)
+zcol = (f"BIN_{zvar}", aggfunc)
 count_vals_col = (f"{yvar}", "count")
 
 # Options
@@ -101,10 +82,6 @@ show_txt_effect = True
 show_shap_thresholds = True
 show_z_colors = True
 show_fit = True
-color_fitline = '#D84315'
-color_points = '#607D8B'
-colors_symbols = ['black', 'black', 'black']
-# colors_symbols = ['#F9A825', '#2E7D32', '#8E24AA']
 # ------------------------------
 
 # Load settings
@@ -134,8 +111,7 @@ fig, gs, ax_all, axes_sub = plot.layout_5panels((13.86, 6.67), add_colorbar_ax=F
 # Load data
 filedf, subsetdf, n_sites = files.load_data(
     suffix='Sites', shap_type=shap_type, dir_res=dir_res, flux=FLUX,
-    count_vals_col=count_vals_col, n_sites_min=n_sites_min,
-    subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75, ycol_sem],
+    count_vals_col=count_vals_col, n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75],
     site_filter=None, x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
 
 # Extract the data from the DataFrame
@@ -151,7 +127,7 @@ binned_z = pd.cut(Z_data, bins=5, labels=bin_labels)
 poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data, Y_data=Y_data)
 print(f"Polynomial fit ALL SITES: "
       f"y={poly_coeffs[0]:.3f}x4+{poly_coeffs[1]:.3f}x3+{poly_coeffs[2]:.3f}x2"
-      f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
+      f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[4]:.3f}; r2={r_squared:.3f}\n")
 
 # Iterate through each temperature bin and plot the corresponding data points
 scatterhandles = []
@@ -163,14 +139,14 @@ for i, label in reversed(list(enumerate(bin_labels))):
         fill_color = colors_list[i]
         edge_color = fill_color
     else:
-        fill_color = color_points
-        edge_color = color_points
+        fill_color = '#546E7A'
+        edge_color = '#546E7A'
 
     scatterplot = ax_all.scatter(X_data[indices], Y_data[indices],
                                  label=f'{label} {beautify[zvar]}',
-                                 alpha=1,
+                                 alpha=0.4,
                                  s=30,
-                                 color='none',
+                                 color=fill_color,
                                  edgecolors=edge_color,
                                  zorder=98)
     scatterhandles.append(scatterplot)
@@ -178,19 +154,16 @@ for i, label in reversed(list(enumerate(bin_labels))):
 if show_fit:
     fillbetweenplot = plot.add_fit(ax=ax_all, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
                                    poly_func=poly_func, r_squared=r_squared, show_annotate=True,
-                                   fontsize=AX_LABELS_FONTSIZE, color=color_fitline)
+                                   fontsize=AX_LABELS_FONTSIZE)
 else:
     fillbetweenplot = None
 
 # IQR
 iqr_low25 = subsetdf.iloc[:, 3].values
 iqr_high75 = subsetdf.iloc[:, 4].values
-_sem = subsetdf.iloc[:, 5].values
-plotparams = dict(marker='o', s=5, zorder=1, alpha=1, edgecolors='none', color=color_points)
-# iqrplot = ax_all.scatter(X_data, iqr_low25, label="IQR", **plotparams)
-# ax_all.scatter(X_data, iqr_high75, **plotparams)
-iqrplot = ax_all.scatter(X_data, Y_data - _sem, label="IQR", **plotparams)
-ax_all.scatter(X_data, Y_data + _sem, **plotparams)
+plotparams = dict(marker='o', s=5, zorder=1, alpha=.2, edgecolors='none', color='#6c757d')
+iqrplot = ax_all.scatter(X_data, iqr_low25, label="IQR", **plotparams)
+ax_all.scatter(X_data, iqr_high75, **plotparams)
 
 # Legend 2 for IQR and fill_between plot
 if show_fit:
@@ -222,34 +195,32 @@ idx = (np.abs(y_fit - 0)).argmin()
 ydim_max = iqr_high75.max() * 1.2
 ydim_min = iqr_low25.min()
 ax_all.set_ylim(ydim_min, ydim_max)
-# ax_all.set_xlim(-1, 1)
 
 # Add text and connecting dashed lines for SHAP max, zero, and min
 if show_shap_thresholds:
     plot.show_shap_thresholds(ax=ax_all, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix,
                               idx=idx, ydim_max=ydim_max, ydim_min=ydim_min, show_annotate=True,
-                              fontsize=AX_LABELS_FONTSIZE, show_annotate_short=False,
-                              colors_symbols=colors_symbols)
+                              fontsize=AX_LABELS_FONTSIZE, show_annotate_short=False)
 
-# # todo Add arrow to highlight one of the IQR data points
-# select_x = 1.7
-# locations1 = (X_data == select_x)  # Create a boolean mask for locations where X_data is 1.7
-# filtered_iqr = iqr_low25[locations1]  # Filter iqr_low25 using the boolean mask
-# min_iqr_value = np.min(filtered_iqr)  # Find the minimum value in the filtered array
-#
-# # Combine both conditions: X_data is *select_x* AND median_minus_sd is the minimum value
-# final_location_mask = (X_data == select_x) & (iqr_low25 == min_iqr_value)
-# iqr_point_index = np.where(final_location_mask)[0][0]  # Get the index of the element that meets both criteria
-# iqr_x = float(X_data[iqr_point_index])
-# iqr_y = float(iqr_low25[iqr_point_index])
-#
-# ax_all.annotate(
-#     f'IQR for site data',
-#     xy=(iqr_x, iqr_y),
-#     xytext=(iqr_x + 0, iqr_y - 0.2),  # Adjust text position as needed
-#     arrowprops=dict(arrowstyle="->", color='#6c757d', lw=1.5),
-#     fontsize=AX_LABELS_FONTSIZE, color='#6c757d', ha='right', va='center'
-# )
+# Add arrow to highlight one of the IQR data points
+select_x = 1.7
+locations1 = (X_data == select_x)  # Create a boolean mask for locations where X_data is 1.7
+filtered_iqr = iqr_low25[locations1]  # Filter iqr_low25 using the boolean mask
+min_iqr_value = np.min(filtered_iqr)  # Find the minimum value in the filtered array
+
+# Combine both conditions: X_data is *select_x* AND median_minus_sd is the minimum value
+final_location_mask = (X_data == select_x) & (iqr_low25 == min_iqr_value)
+iqr_point_index = np.where(final_location_mask)[0][0]  # Get the index of the element that meets both criteria
+iqr_x = float(X_data[iqr_point_index])
+iqr_y = float(iqr_low25[iqr_point_index])
+
+ax_all.annotate(
+    f'IQR for site data',
+    xy=(iqr_x, iqr_y),
+    xytext=(iqr_x + 0, iqr_y - 0.2),  # Adjust text position as needed
+    arrowprops=dict(arrowstyle="->", color='#6c757d', lw=1.5),
+    fontsize=AX_LABELS_FONTSIZE, color='#6c757d', ha='right', va='center'
+)
 
 if show_txt_effect:
     # Add text for negative effect
@@ -282,8 +253,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Filter using index from main dataset (keeplocs logic)
     df_igbp, df_subset, n_sites_sub = files.load_data(
         suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, flux=FLUX,
-        count_vals_col=count_vals_col, n_sites_min=n_sites_min,
-        subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75, ycol_sem],
+        count_vals_col=count_vals_col, n_sites_min=n_sites_min, subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75],
         site_filter=filedf.index, x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
     # Extract the data from the DataFrame
     X_data = df_subset.iloc[:, 0].values
@@ -303,12 +273,12 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
                                                                                          Y_data=Y_data_nonan)
     print(f"Polynomial coefficients {igbp}: "
           f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
-          f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
+          f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[4]:.3f}; r2={r_squared:.3f}\n")
 
     if show_fit:
         fillbetweenplot = plot.add_fit(ax=ax, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
                                        poly_func=poly_func, r_squared=r_squared, show_annotate=False,
-                                       fontsize=AX_LABELS_FONTSIZE, color=color_fitline)
+                                       fontsize=AX_LABELS_FONTSIZE)
     else:
         fillbetweenplot = None
 
@@ -321,7 +291,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
             fill_color = '#546E7A'
             edge_color = '#546E7A'
         scatterplot = ax.scatter(
-            X_data[indices], Y_data[indices], label=f'{label} {beautify[zvar]}', alpha=0.1,
+            X_data[indices], Y_data[indices], label=f'{label} {beautify[zvar]}', alpha=0.2,
             s=30, color=fill_color, edgecolors=edge_color, zorder=98)
     plot.style_ax(ax, f"({letter}) {igbp} (n={n_sites_sub[1]}, min. {n_sites_sub[0]})",
                   ax_labels_fontsize=AX_LABELS_FONTSIZE)
@@ -332,8 +302,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
         max_ix = np.argmax(y_fit)
         plot.show_shap_thresholds(
             ax=ax, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix, idx=idx, ydim_max=ydim_max,
-            ydim_min=ydim_min, show_annotate=True, fontsize=AX_LABELS_FONTSIZE, show_annotate_short=True,
-            colors_symbols=colors_symbols)
+            ydim_min=ydim_min, show_annotate=True, fontsize=AX_LABELS_FONTSIZE, show_annotate_short=True)
 
     # Format subplot
     plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels, showxticklabels=showxticklabels,

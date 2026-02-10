@@ -3,7 +3,7 @@ import scipy.stats as stats
 
 def fit_polynomial(X_data, Y_data):
     # Fit polynomial
-    degree = 4
+    degree = 3
     # poly_coeffs = np.polyfit(X_data, Y_data, degree)
     poly_coeffs, residuals, _, _, _ = np.polyfit(X_data, Y_data, degree, full=True)
     poly_func = np.poly1d(poly_coeffs)

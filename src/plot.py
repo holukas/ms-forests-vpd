@@ -249,7 +249,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
 
 
 def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_min, show_annotate, show_annotate_short,
-                         fontsize):
+                         fontsize, colors_symbols):
     y_top = ax.get_ylim()[-1]
     y_bottom = ax.get_ylim()[0]
 
@@ -270,7 +270,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
 
     # Maximum positive effect
     # ax_all.scatter(x_fit[max_ix], y_fit[max_ix], color='black', marker='^', edgecolors='none', **_params2)
-    ax.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor='black', **_params2)
+    ax.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor=colors_symbols[0], **_params2)
     if show_annotate:
         # Get the y-position for the text below the plotted points
         text_y_pos_max = y_fit[max_ix] - 0.45 * (ydim_max - ydim_min)
@@ -284,7 +284,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
         ax.plot([x_fit[max_ix], x_fit[max_ix]], [y_bottom, text_y_pos_max], **_params)
 
     # Threshold
-    ax.scatter(x_fit[idx], y_fit[idx], c="none", edgecolors='black', **_params2)
+    ax.scatter(x_fit[idx], y_fit[idx], c="none", edgecolors=colors_symbols[1], **_params2)
     if show_annotate:
         text_y_pos_zero = y_fit[idx] - 0.45 * (ydim_max - ydim_min)
         if show_annotate_short:
@@ -298,7 +298,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
 
     # Maximum negative impact
     # ax_all.scatter(x_fit[min_ix], y_fit[min_ix], color='black', marker='_', edgecolors='none', **_params2)
-    ax.scatter(x_fit[min_ix], y_fit[min_ix], color='none', marker='v', edgecolor='black', **_params2)
+    ax.scatter(x_fit[min_ix], y_fit[min_ix], color='none', marker='v', edgecolor=colors_symbols[2], **_params2)
     if show_annotate:
         text_y_pos_min = ydim_min * 0.99
         # text_y_pos_min = y_fit[min_ix] - 0.15 * (ydim_max - ydim_min) + show_annotate_short_yoffset[2]
@@ -339,13 +339,14 @@ def format(ax, fontsize, showxticklabels, showyticklabels, xtickdigits, ytickdig
     ax.grid(False)
 
 
-def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared, show_annotate, fontsize):
+def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared,
+            show_annotate, fontsize, color: str = '#004e98'):
     # Plot fitted polynomial curve
-    ax.plot(x_fit, y_fit, color='#004e98', linewidth=3, zorder=99)
+    ax.plot(x_fit, y_fit, color=color, linewidth=3, zorder=99)
     # label=rf'$y = {poly_coeffs[0]:.4f}x^4 - {poly_coeffs[1]:.4f}x^3 + {poly_coeffs[2]:.4f}x^2 + {poly_coeffs[3]:.4f}x - {poly_coeffs[4]:.4f}$'
 
     # Plot prediction interval
-    fillbetweenplot = ax.fill_between(x_fit, pi_lower, pi_upper, color='#004e98', alpha=0.2,
+    fillbetweenplot = ax.fill_between(x_fit, pi_lower, pi_upper, color=color, alpha=0.2,
                                       label='95% prediction interval', zorder=1)
 
     if show_annotate:
@@ -362,8 +363,8 @@ def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared, show_ann
         ax.annotate(f'Fitted 4th degree\npolynomial (r$^2$={r_squared:.2f})',
                     xy=(arrow_x, arrow_y),
                     xytext=(arrow_x - 0.2, arrow_y + 0.4),  # Adjust text position as needed
-                    arrowprops=dict(arrowstyle="->", color='#004e98', lw=1.5),
-                    fontsize=fontsize, color='#004e98', ha='left', va='center', zorder=100)
+                    arrowprops=dict(arrowstyle="->", color=color, lw=1.5),
+                    fontsize=fontsize, color=color, ha='left', va='center', zorder=100)
     return fillbetweenplot
 
 
