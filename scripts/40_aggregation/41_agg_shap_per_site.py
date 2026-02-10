@@ -107,7 +107,7 @@ for ix, siteconfig in subsets_df.iterrows():
 
 
 outfilepath = dv.save_parquet(
-    filename=f"41_SHAPVALUES-{shap_type}_AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}",
+    filename=f"41_SHAPVALUES-{shap_type}_{aggfunc}AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}",
     data=shapvals_sites_agg_long_df,
     outpath=dir_out)
-# shapvals_sites_agg_long_df.to_csv(outfilepath.replace('.parquet', '.csv'))
+shapvals_sites_agg_long_df.to_csv(outfilepath.replace('.parquet', '.csv'))

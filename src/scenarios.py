@@ -32,8 +32,8 @@ def calculate_scenario_stats(df_input, igbp, scenario_order, vars, shap_suffix_a
             sitemeans_mean = sitemeans_vec.mean()
             sitemeans_count = sitemeans_vec.count()
             sitemeans_sem = sitemeans_vec.sem()  # SEM of site-means (standard error of the mean), sem = std / sqrt(n)
-            sitemeans_min = sitemeans_vec.min()  # SEM of site-means (standard error of the mean), sem = std / sqrt(n)
-            sitemeans_max = sitemeans_vec.max()  # SEM of site-means (standard error of the mean), sem = std / sqrt(n)
+            sitemeans_min = sitemeans_vec.min()
+            sitemeans_max = sitemeans_vec.max()
 
             # Calculate the SD of site-means
             # Law of total variance

@@ -64,7 +64,8 @@ dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 dir_out.mkdir(parents=True, exist_ok=True)
 
 # Load SHAP values aggregated per site
-filepath = Path(dir_prev_results) / f"41_SHAPVALUES-{shap_type}_AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"
+filepath = Path(
+    dir_prev_results) / f"41_SHAPVALUES-{shap_type}_{aggfunc}AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"
 shapvals_sites_agg_long_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.loc[shapvals_sites_agg_long_df['IGBP'] != 'DNF']
 print(f"Number of sites: {len(shapvals_sites_agg_long_df['SITE'].unique())}")
@@ -92,8 +93,7 @@ shapvals_sites_grouped_agg_df = aggregate_shap_values_across_sites(
 # Save to Parquet
 # 41_SHAPVALUES-conditional_AggregatedPerSite_BIN-TA_ZSCORE+BIN-VPD_ZSCORE+NEP_ZSCORE
 outfilepath = dv.save_parquet(
-    filename=f"42_SHAPVALUES-{shap_type}_AggregatedAcrossSites_BIN-{xvar}+BIN-{yvar}+{FLUX}",
+    filename=f"42_SHAPVALUES-{shap_type}_{aggfunc}AggregatedAcrossSites_BIN-{xvar}+BIN-{yvar}+{FLUX}",
     data=shapvals_sites_grouped_agg_df,
     outpath=dir_out)
-# print(f"Saved SHAP values across all files as mean to file {outfilepath}.")
-# shapvals_sites_grouped_agg_df.to_csv(outfilepath.replace('.parquet', '.csv'))
+shapvals_sites_grouped_agg_df.to_csv(outfilepath.replace('.parquet', '.csv'))
