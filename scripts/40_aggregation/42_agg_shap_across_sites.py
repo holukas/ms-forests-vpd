@@ -25,18 +25,18 @@ from src.aggregation import aggregate_shap_values_across_sites
 # NEP, ET, GPP, RECO, TA, VPD, SWIN, SWC
 
 # Settings for searching in the correct (sub)folder
-# FLUX = 'NEP_ZSCORE'
-FLUX = 'ET_ZSCORE'
+FLUX = 'NEP_ZSCORE'
+# FLUX = 'ET_ZSCORE'
 # FLUX = 'GPP_ZSCORE'
 # FLUX = 'RECO_ZSCORE'
 CONDITIONAL = True  # SHAP
 
 # Aggregation combos: xvar / yvar
-# VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
+VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWIN_ZSCORE', 'TA_ZSCORE']
 # VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWIN_ZSCORE', 'VPD_ZSCORE']
-VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
+# VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
 aggfunc = 'median'
 
 # ------------------------------
