@@ -32,9 +32,9 @@ FLUX = 'NEP_ZSCORE'
 CONDITIONAL = True  # SHAP
 
 # Aggregation combos: xvar / yvar
-VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWIN_ZSCORE', 'TA_ZSCORE']
-# VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
+VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWIN_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
 aggfunc = 'mean'
@@ -42,7 +42,7 @@ aggfunc = 'mean'
 
 # ------------------------------
 # Agg groups, use z-scores:
-# NEP:  [x]TA/VPD [ ]SWIN/TA [d]SWC/VPD [ ]SWIN/VPD [d]TA/SWC
+# NEP:  [x]TA/VPD [ ]SWIN/TA [x]SWC/VPD [ ]SWIN/VPD [x]TA/SWC
 # ET:   [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
 # RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC

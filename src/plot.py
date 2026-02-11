@@ -312,16 +312,19 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
         ax.plot([x_fit[min_ix], x_fit[min_ix]], [y_bottom, text_y_pos_min], **_params)
 
 
-def format(ax, fontsize, showxticklabels, showyticklabels, xtickdigits, ytickdigits):
+def format(ax, fontsize, showxticklabels, showyticklabels, xtickdigits, ytickdigits,
+           showbottomspine, showleftspine):
     # Hide the top and right spines
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_linewidth(1)
-    ax.spines['left'].set_linewidth(1)
+    ax.spines['bottom'].set_linewidth(1) if showbottomspine else ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_linewidth(1) if showleftspine else ax.spines['left'].set_visible(False)
+
+    ax.tick_params(axis='y', which='major', left=False)
 
     # Set the tick width for both x and y axes
-    ax.tick_params(axis='both', which='major', width=1, length=5, labelsize=fontsize)
-    ax.tick_params(axis='both', which='minor', width=1, length=2, labelsize=fontsize)
+    ax.tick_params(axis='x', which='major', width=1, length=5, labelsize=fontsize)
+    # ax.tick_params(axis='both', which='minor', width=1, length=2, labelsize=fontsize)
 
     # Visibility for ticklabels
     if showxticklabels:
@@ -366,6 +369,24 @@ def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared,
                     arrowprops=dict(arrowstyle="->", color=color, lw=1.5),
                     fontsize=fontsize, color=color, ha='left', va='center', zorder=100)
     return fillbetweenplot
+
+
+def layout_1row_5panels(figsize, add_colorbar_ax: bool = False):
+    """
+    Creates a figure with 5 panels arranged in a single row.
+    Optionally adds a 6th narrow column for a colorbar.
+    """
+    fig = plt.figure(figsize=figsize, dpi=150, facecolor="white")
+    ncols = 6
+    width_ratios = [1, 1, 1, 1, 1, 0.1]
+    gs = gridspec.GridSpec(1, ncols, width_ratios=width_ratios)
+    axes = [fig.add_subplot(gs[0, i]) for i in range(5)]
+    if add_colorbar_ax:
+        # Create the colorbar axis in the last column (index 5)
+        cax = fig.add_subplot(gs[0, 5])
+        return fig, gs, axes, cax
+    else:
+        return fig, gs, axes
 
 
 def layout_5panels(figsize, add_colorbar_ax: bool = False):
