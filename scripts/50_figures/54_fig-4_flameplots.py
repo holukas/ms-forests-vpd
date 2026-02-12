@@ -21,7 +21,7 @@ plotvars_rows = [
 
 # Shared plotting constants
 aggfunc, CONDITIONAL = 'mean', True
-n_sites_min, cb_digits, area_size = 30, 1, 50
+n_sites_min, cb_digits, area_size = 50, 1, 50
 cmap, igbps = 'RdYlBu', ['ENF', 'DBF', 'MF', 'EBF']
 AX_LABELS_FONTSIZE = 18
 
@@ -45,7 +45,8 @@ fig = plt.figure(figsize=(22, 15), dpi=150, facecolor="white")
 gs = mpl.gridspec.GridSpec(3, 6, width_ratios=[1, 1, 1, 1, 1, 0.1])
 
 # Create 2D axes list: axes_grid[row][col]
-axes_grid = [[fig.add_subplot(gs[r, c]) for c in range(5)] for r in range(3)]
+n_rows = len(plotvars_rows)
+axes_grid = [[fig.add_subplot(gs[r, c]) for c in range(5)] for r in range(n_rows)]
 cax = fig.add_subplot(gs[1, 5])  # Colorbar
 
 # Main loop (rows)
@@ -72,7 +73,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
     dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 
     # Pre-calculate for scaling z-values (colors)
-    allsites_df, allsites_subset_df, _ = files.load_data(
+    allsites_df, allsites_subset_df, n_info = files.load_data(
         suffix='Sites', shap_type=shap_type, dir_res=dir_res, flux=FLUX,
         count_vals_col=count_vals_col, n_sites_min=n_sites_min,
         subsetcols=[xcol, ycol, zcol], site_filter=None,
@@ -112,6 +113,8 @@ for row_idx, plotvars in enumerate(plotvars_rows):
             trans = transforms.blended_transform_factory(ax.transAxes, fig.transFigure)
             fig.text(0.5, 0.99, coltitle, transform=trans,
                      fontsize=AX_LABELS_FONTSIZE * 1.2, ha='center', va='top', weight='bold')
+            fig.text(0.5, 0.965, f"n={n_info[1]} (min. {n_info[0]})", transform=trans,
+                     fontsize=AX_LABELS_FONTSIZE, ha='center', va='top', weight='normal')
 
 
         # Panel letters
@@ -133,6 +136,12 @@ for row_idx, plotvars in enumerate(plotvars_rows):
         ax.set_xlabel(xlabel, fontsize=AX_LABELS_FONTSIZE)
         ax.set_ylabel(ylabel, fontsize=AX_LABELS_FONTSIZE)
         ax.yaxis.label.set_visible(col_idx == 0)
+
+
+
+        # # xmin, xmax = ax.get_xlim()
+        # if row_idx in [0, 2]:
+        #     ax.set_xlim(-2.7, 2.4)
 
         # Spines
         ax.spines['top'].set_visible(False)
@@ -179,6 +188,6 @@ cb.ax.yaxis.set_major_formatter(ticker.FuncFormatter(cb_formatter))
 cb.set_label(zlabel, size=AX_LABELS_FONTSIZE, labelpad=20)
 cb.ax.tick_params(labelsize=AX_LABELS_FONTSIZE)
 
-plt.tight_layout(rect=[0, 0, 1, 0.96])  # Leave room for the super-title
+plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave room for the super-title
 gs.update(wspace=0.15, hspace=0.3)
 plt.show()
