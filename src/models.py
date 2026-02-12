@@ -23,6 +23,7 @@ def train_xgboost_models_and_shap(target: str, features: list,
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
     subset = dv.load_parquet(filepath, sanitize_timestamp=False)
+    # subset = subset.head(100)  # todo deactivate, for testing only
     print(f"Records: {len(subset)}")
 
     # Target and features
@@ -58,7 +59,6 @@ def train_xgboost_models_and_shap(target: str, features: list,
     # Train the model
     print("Training model with early stopping based on a validation set...")
     model.fit(X_for_training, y_for_training, eval_set=[(X_val, y_val)], verbose=False)
-    # OLD: model.fit(X, y, eval_set=[(X, y)], verbose=False)
 
     # Evaluate model performance on the test set
     print("Evaluating model and calculating SHAP for the ENTIRE dataset...")
@@ -81,7 +81,8 @@ def train_xgboost_models_and_shap(target: str, features: list,
         explainer = shap.PartitionExplainer(model.predict, background_data)
         shap_explanation = explainer(X)  # Explain the ENTIRE dataset
         shap_values = shap_explanation.values
-        expected_value = shap_explanation.base_values[0]
+        # expected_value = shap_explanation.base_values[0]
+        expected_value = shap_explanation.base_values
     else:
         print("Calculating SHAP values using TreeExplainer ...")
         explainer = shap.TreeExplainer(model)
@@ -102,9 +103,14 @@ def train_xgboost_models_and_shap(target: str, features: list,
     # Merge SHAP values with measured
     merged = pd.concat([X, shapdf], axis=1)
 
-    # from diive.core.plotting.scatter import ScatterXY
-    # ScatterXY(x=merged[vpd_var], y=merged[f'{vpd_var}_SHAPVALS'], nbins=20,
-    #           binagg='median').plot()
+    # Add additional columns (e.g., other fluxes)
+    current_cols = merged.columns.tolist()
+    available_cols = subset.columns.tolist()
+    additional_cols = [col for col in available_cols if col not in current_cols]
+    for addcol in additional_cols:
+        print(f"Adding column {addcol} to SHAP dataframe.")
+        merged[addcol] = subset[addcol].copy()
+    merged = merged.sort_index(axis=1)
 
     substr = "conditional" if conditional else "standard"
     outfilepath = dv.save_parquet(

@@ -11,19 +11,19 @@ from src.models import train_xgboost_models_and_shap
 
 # ------------------------------
 # Variables
-# FLUX = 'NEP_ZSCORE'
+FLUX = 'NEP_ZSCORE'
 # FLUX = 'ET_ZSCORE'
 # FLUX = 'GPP_ZSCORE'
-FLUX = 'RECO_ZSCORE'
+# FLUX = 'RECO_ZSCORE'
 FEATURES = ['TA_ZSCORE', 'SWIN_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE']
 CONDITIONAL = True  # Use conditional SHAP instead of standard SHAP
 
 # ------------------------------
 # Calculate SHAP values for:
-# [r] NEP_ZSCORE
-# [r] ET_ZSCORE
-# [r] GPP_ZSCORE
-# [r] RECO_ZSCORE
+# [x] NEP_ZSCORE
+# [ ] ET_ZSCORE
+# [ ] GPP_ZSCORE
+# [ ] RECO_ZSCORE
 # ------------------------------
 
 
@@ -53,10 +53,6 @@ with open(modelstxt, 'w') as file:
 
 _subsets_df = subsets_df.copy()
 for ix, siteconfig in _subsets_df.iterrows():
-    # # TODO testing
-    # if ix > 10:
-    #     break
-
     train_xgboost_models_and_shap(
         features=FEATURES,
         target=FLUX,
