@@ -29,7 +29,7 @@ def load_data(suffix, shap_type, dir_res, flux, n_sites_min, aggfunc, subsetcols
 
     # Apply count threshold (n_sites_min for main plot, 0 for IGBP b/c we simply count the
     # number of available sites in the previous line)
-    threshold = n_sites_min if suffix == 'Sites' else 0
+    threshold = n_sites_min if suffix == 'Sites' else 3
     mask = filedf[count_vals_col] >= threshold
     filedf = filedf[mask].copy()
 

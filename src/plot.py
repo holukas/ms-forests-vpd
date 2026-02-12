@@ -313,21 +313,20 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
 
 
 def format(ax, fontsize, showxticklabels, showyticklabels, xtickdigits, ytickdigits,
-           showbottomspine, showleftspine):
-    # Hide the top and right spines
+           showbottomspine, showleftspine, showymajorticks):
+    # Spines
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_linewidth(1) if showbottomspine else ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_linewidth(1) if showleftspine else ax.spines['left'].set_visible(False)
 
-    ax.tick_params(axis='y', which='major', left=False)
-
-    # Set the tick width for both x and y axes
+    # Ticks
+    ax.tick_params(axis='y', which='major', width=1, length=5, labelsize=fontsize, left=showymajorticks)
     ax.tick_params(axis='x', which='major', width=1, length=5, labelsize=fontsize)
-    # ax.tick_params(axis='both', which='minor', width=1, length=2, labelsize=fontsize)
 
-    # Visibility for ticklabels
+    # Ticklabels
     if showxticklabels:
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
         ax.xaxis.set_major_formatter(ticker.FormatStrFormatter(f"{f'%.{xtickdigits}f'}"))
         ax.tick_params(axis='x', labelbottom=True)
     else:
@@ -623,23 +622,5 @@ def flameplot(df: pd.DataFrame, fig, ax: plt.axis, vmin: float = None, vmax: flo
         cb_extend=cb_extend
     )
     hm.plot()
-    # hm.export_borderless_heatmap(
-    #     name="TEST",
-    #     outpath=r"F:\Sync\luhk_work\20 - CODING\29 - WORKBENCH\ms_co2_penalty\data\outputs\borderless_heatmaps")
-    # ax = hm.get_ax()
-
-    # ax.set_xlabel('Air temperature (z-score)')
-    # ax.set_ylabel("Vapor pressure deficit (z-score)")
-    if title:
-        ax.set_title(title, fontsize=18, pad=10, y=1.02)
-
-    # Hide the top and right spines
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_linewidth(1)
-    ax.spines['left'].set_linewidth(1)
-    ax.tick_params(axis='both', which='major', width=1, length=5)
-    ax.tick_params(axis='both', which='minor', width=1, length=2)
-    # ax.axvline(x=0, color='black', linestyle='-', lw=99)
 
     return hm.p  # Return the pcolormesh object
