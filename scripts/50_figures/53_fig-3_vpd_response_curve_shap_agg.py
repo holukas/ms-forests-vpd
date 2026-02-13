@@ -18,23 +18,9 @@ from src.fit import fit_polynomial
 
 # Main Fig. 3
 # plotvars = [FLUX, xvar, yvar, zvar, x_in_filename, y_in_filename]
-# plotvars = ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'SWC_ZSCORE', 'TA_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-
-# plotvars = ['NEP_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'SWC_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'VPD_ZSCORE_SHAPVALS', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'SWC_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-
-# plotvars = ['NEP_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-# plotvars = ['NEP_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
-
-# plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
-
-plotvars = ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'VPD_ZSCORE', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE']
-
-plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'SWC_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
+# plotvars = ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'TA_ZSCORE_SHAPVALS', 'SWC_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-SWC_ZSCORE']
+# plotvars = ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'SWC_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-SWC_ZSCORE']
+plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
 
 FLUX = plotvars[0]
 xvar, yvar, zvar = plotvars[1], plotvars[2], plotvars[3]
@@ -60,7 +46,6 @@ x_in_filename, y_in_filename = plotvars[4], plotvars[5]
 
 aggfunc, CONDITIONAL = 'mean', True
 # aggfunc, CONDITIONAL = 'median', True
-n_sites_min = 30
 colors_list = ['#9C27B0', '#26C6DA', '#546E7A', '#FB8C00', '#C62828']
 custom_cmap = matplotlib.colors.ListedColormap(colors_list)
 igbps = ['ENF', 'DBF', 'MF', 'EBF']
@@ -87,14 +72,14 @@ AX_LABELS_FONTSIZE = 10
 xlabel = rf'{beautify[xvar]} ($\sigma$)'
 ylabel = rf'{beautify[yvar]} effect ($\sigma$)'
 
-# Column names in dataframe
-xcol = (f"{xvar}", aggfunc)
-ycol = (f"{yvar}", aggfunc)
+# Bins always use 'median', b/c using 'mean' results in floating point errors
+xagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
+yagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
+xcol, ycol, zcol = (f"{xvar}", xagg), (f"{yvar}", yagg), (f"{zvar}", aggfunc)
+count_vals_col = (f"{zvar}", "count")
 ycol_sem = (f"{yvar}", "sem")
 ycol_iqr25 = (f"{yvar}", "q25")
 ycol_iqr75 = (f"{yvar}", "q75")
-zcol = (f"{zvar}", aggfunc)
-count_vals_col = (f"{yvar}", "count")
 
 # Options
 show_txt_effect = True
@@ -134,7 +119,7 @@ fig, gs, ax_all, axes_sub = plot.layout_5panels((13.86, 6.67), add_colorbar_ax=F
 # Load data
 filedf, subsetdf, n_sites = files.load_data(
     suffix='Sites', shap_type=shap_type, dir_res=dir_res, flux=FLUX,
-    count_vals_col=count_vals_col, n_sites_min=n_sites_min,
+    count_vals_col=count_vals_col,
     subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75, ycol_sem],
     site_filter=None, x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
 
@@ -145,13 +130,15 @@ Z_data = subsetdf.iloc[:, 2].values
 
 # Bin z data into 5 categories
 bin_labels = ['Lowest', 'Low', 'Medium', 'High', 'Highest']
-binned_z = pd.cut(Z_data, bins=5, labels=bin_labels)
+# binned_z = pd.cut(Z_data, bins=5, labels=bin_labels)
+# retbins=True returns (categories, bins)
+binned_z, bin_edges = pd.cut(Z_data, bins=5, labels=bin_labels, retbins=True)
 
 # Fit polynomial
 poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data, Y_data=Y_data)
-print(f"Polynomial fit ALL SITES: "
-      f"y={poly_coeffs[0]:.3f}x4+{poly_coeffs[1]:.3f}x3+{poly_coeffs[2]:.3f}x2"
-      f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
+# todo print(f"Polynomial fit ALL SITES: "
+#       f"y={poly_coeffs[0]:.3f}x4+{poly_coeffs[1]:.3f}x3+{poly_coeffs[2]:.3f}x2"
+#       f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
 
 # Iterate through each temperature bin and plot the corresponding data points
 scatterhandles = []
@@ -265,7 +252,7 @@ ax_all.set_ylabel(ylabel, fontsize=AX_LABELS_FONTSIZE)
 
 # ax_all.legend(bbox_to_anchor=(0.05, 0.95), loc='upper right', frameon=False)
 plot.format(ax=ax_all, fontsize=AX_LABELS_FONTSIZE, showyticklabels=True, showxticklabels=True,
-            xtickdigits=0, ytickdigits=1)
+            xtickdigits=0, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
 ax_all.axhline(0, color='k', linestyle='--', linewidth=1)
 
 # ---------------
@@ -282,7 +269,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Filter using index from main dataset (keeplocs logic)
     df_igbp, df_subset, n_sites_sub = files.load_data(
         suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, flux=FLUX,
-        count_vals_col=count_vals_col, n_sites_min=n_sites_min,
+        count_vals_col=count_vals_col,
         subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75, ycol_sem],
         site_filter=filedf.index, x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
     # Extract the data from the DataFrame
@@ -301,9 +288,9 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     Z_data_nonan = df_subset_nonan.iloc[:, 2].values
     poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data_nonan,
                                                                                          Y_data=Y_data_nonan)
-    print(f"Polynomial coefficients {igbp}: "
-          f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
-          f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
+    # todo print(f"Polynomial coefficients {igbp}: "
+    #       f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
+    #       f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
 
     if show_fit:
         fillbetweenplot = plot.add_fit(ax=ax, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
@@ -312,17 +299,35 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     else:
         fillbetweenplot = None
 
+    # Recalculate bins for this specific subplot using GLOBAL edges
+    # This ensures "High" in ENF is the same value range as "High" in All Sites
+    binned_z_sub = pd.cut(Z_data, bins=bin_edges, labels=bin_labels)
+
     for i, label in reversed(list(enumerate(bin_labels))):
-        indices = np.where(binned_z.codes == i)[0]
+        # Get indices from the LOCAL binned object
+        indices = np.where(binned_z_sub.codes == i)[0]
+        # indices = np.where(binned_z.codes == i)[0]
+
+        # Skip if this bin is empty for this IGBP
+        if len(indices) == 0:
+            continue
+
         if show_z_colors:
             fill_color = colors_list[i]
             edge_color = fill_color
         else:
             fill_color = '#546E7A'
             edge_color = '#546E7A'
+
         scatterplot = ax.scatter(
-            X_data[indices], Y_data[indices], label=f'{label} {beautify[zvar]}', alpha=0.1,
-            s=30, color=fill_color, edgecolors=edge_color, zorder=98)
+            X_data[indices], Y_data[indices],
+            label=f'{label} {beautify[zvar]}',
+            alpha=0.1,
+            s=30,
+            color=fill_color,
+            edgecolors=edge_color,
+            zorder=98)
+
     plot.style_ax(ax, f"({letter}) {igbp} (n={n_sites_sub[1]}, min. {n_sites_sub[0]})",
                   ax_labels_fontsize=AX_LABELS_FONTSIZE)
 
@@ -337,7 +342,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
 
     # Format subplot
     plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels, showxticklabels=showxticklabels,
-                xtickdigits=0, ytickdigits=1)
+                xtickdigits=0, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
     ax.axhline(0, color='k', linestyle='--', linewidth=1)
 
 fig.tight_layout()

@@ -16,33 +16,32 @@ import src.plot as plot
 # Order: explained flux, x-bins, y-bins, z-colors, x in filename, y in filename, colormap for row,
 # show colormap for row (if False shows one overall colormap for all rows)
 
-# # 1: Physical drivers (atmosphere, drivers)
-# # 2: Supply limitation (soil, constraints; supply vs. demand)
-# # 3: Physiological response (plant, response)
-
-# # SHAP values heatmaps
-# plotvars_rows = [
-#     ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-#     'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-#     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-#     ['NEP_ZSCORE', 'BIN_ET_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-#     'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-# ]
-# figsize = (19, 13)
-
-# Flux heatmaps
+# SHAP values heatmaps
+# 1: Physical drivers (atmosphere, drivers)
+# 2: Supply limitation (soil, constraints; supply vs. demand)
+# 3: Physiological response (plant, response)
 plotvars_rows = [
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'GPP_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'BrBG', True],
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'RECO_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'coolwarm', True],
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'ET_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
+    ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+     'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+    ['NEP_ZSCORE', 'BIN_ET_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+     'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
 ]
-figsize = (19, 13 / 3 * 4)
+figsize = (19, 13)
+
+# # Flux heatmaps
+# plotvars_rows = [
+#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',
+#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
+#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'GPP_ZSCORE',
+#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'BrBG', True],
+#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'RECO_ZSCORE',
+#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'coolwarm', True],
+#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'ET_ZSCORE',
+#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
+# ]
+# figsize = (19, 13 / 3 * 4)
 
 # Shared plotting constants
 aggfunc, CONDITIONAL = 'mean', True
@@ -94,7 +93,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
     # Labels & Column logic
     xlabel = rf'{beautify[xvar]} ($\sigma$)'
     ylabel = rf'{beautify[yvar]} ($\sigma$)'
-    zlabel = rf'{beautify[zvar]} effect ($\sigma$)'
+    zlabel = rf'{beautify[zvar]} effect ($\sigma$)' if '_SHAPVALS' in zvar else rf'{beautify[zvar]} ($\sigma$)'
 
     # Bins always use 'median', b/c using 'mean' results in floating point errors
     xagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
@@ -119,9 +118,10 @@ for row_idx, plotvars in enumerate(plotvars_rows):
         absmax = np.max(allsites_subset_df.iloc[:, 2].abs())
         cax = fig.add_subplot(gs[row_idx, 5])
         plot.create_colormap(fig=fig, ax=cax, cmap=cmap, label=zlabel, absmax=absmax, labelsize=AX_LABELS_FONTSIZE)
-
-    # if row_idx == 0:
-    #     absmax = np.max([allsites_subset_df.iloc[:, 2].abs().min(), allsites_subset_df.iloc[:, 2].abs().max()])
+    else:
+        if row_idx == 0:
+            absmax = np.max([allsites_subset_df.iloc[:, 2].abs().min(), allsites_subset_df.iloc[:, 2].abs().max()])
+            cax = fig.add_subplot(gs[1, 5])
 
     # Inner loop (columns)
     panel_igbp = [None] + igbps
