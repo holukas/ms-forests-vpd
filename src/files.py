@@ -10,7 +10,7 @@ from diive.core.times.times import insert_timestamp
 from scipy.stats import zscore
 
 
-def load_data(suffix, shap_type, dir_res, flux, n_sites_min, aggfunc, subsetcols: list,
+def load_data(suffix, shap_type, dir_res, flux, aggfunc, subsetcols: list,
               x_in_filename: str, y_in_filename: str, count_vals_col: tuple[str, str] = False, site_filter=None):
     """
     Loads parquet, flattens cols, optionally filters by index.

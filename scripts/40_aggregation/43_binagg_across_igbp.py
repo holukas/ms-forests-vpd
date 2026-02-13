@@ -18,19 +18,20 @@ CONDITIONAL = True  # SHAP
 
 # Aggregation combos: xvar / yvar
 # VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
-# VARS = ['SWIN_ZSCORE', 'TA_ZSCORE']
-VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
-# VARS = ['SWIN_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
+# VARS = ['ET_ZSCORE', 'VPD_ZSCORE']
+VARS = ['ET_ZSCORE', 'SWC_ZSCORE']
+
 aggfunc = 'mean'
 # aggfunc = 'median'
 
 # ------------------------------
 # Agg groups, use z-scores:
-# NEP:  [x]TA/VPD [ ]SWIN/TA [x]SWC/VPD [ ]SWIN/VPD [x]TA/SWC
-# ET:   [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
-# GPP:  [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
-# RECO: [ ]TA/VPD [ ]SWIN/TA [ ]SWC/VPD [ ]SWIN/VPD [ ]TA/SWC
+# NEP:  [x]TA/VPD [x]SWC/VPD [x]TA/SWC [x] ET/VPD [x] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
+# ET:   [ ]TA/VPD [ ]SWC/VPD [ ]TA/SWC [ ] ET/VPD [ ] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
+# GPP:  [ ]TA/VPD [ ]SWC/VPD [ ]TA/SWC [ ] ET/VPD [ ] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
+# RECO: [ ]TA/VPD [ ]SWC/VPD [ ]TA/SWC [ ] ET/VPD [ ] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
 # ------------------------------
 
 xvar = VARS[0]

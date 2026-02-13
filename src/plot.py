@@ -1,4 +1,5 @@
 import diive as dv
+import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
 import matplotlib.path as mpath
@@ -10,6 +11,23 @@ from matplotlib import ticker
 from scipy.stats import gaussian_kde
 
 from src.common import findpoi
+
+
+def create_colormap(fig, ax, cmap, label, absmax, labelsize):
+    norm = mpl.colors.Normalize(vmin=-absmax, vmax=absmax)
+    sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+    cb = fig.colorbar(sm, cax=ax, extend='both')
+    cb.ax.yaxis.set_major_locator(ticker.MultipleLocator(0.2))
+    cb.ax.yaxis.set_major_formatter(ticker.FuncFormatter(cb_formatter))
+    cb.set_label(label, size=labelsize, labelpad=20)
+    cb.ax.tick_params(labelsize=labelsize)
+
+
+def cb_formatter(x, pos):
+    """Custom format: 0 as '0', others as '0.1f'"""
+    if np.isclose(x, 0, atol=1e-5):
+        return "0"
+    return f"{x:.1f}"
 
 
 def add_gradient_arrow(ax, vertices, color_main, direction='up'):

@@ -9,26 +9,58 @@ import numpy as np
 from matplotlib import ticker
 
 import src.files as files
-from src.plot import plot_markers
+import src.plot as plot
 
 # --- SETTINGS ---
 # Each inner list represents one row
+# Order: explained flux, x-bins, y-bins, z-colors, x in filename, y in filename, colormap for row,
+# show colormap for row (if False shows one overall colormap for all rows)
+
+# # 1: Physical drivers (atmosphere, drivers)
+# # 2: Supply limitation (soil, constraints; supply vs. demand)
+# # 3: Physiological response (plant, response)
+
+# # SHAP values heatmaps
+# plotvars_rows = [
+#     ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+#     'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+#     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+#     ['NEP_ZSCORE', 'BIN_ET_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+#     'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+# ]
+# figsize = (19, 13)
+
+# Flux heatmaps
 plotvars_rows = [
-    ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE'],
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE'],
-    ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_SWC_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'BIN-TA_ZSCORE', 'BIN-SWC_ZSCORE'],
+    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',
+     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
+    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'GPP_ZSCORE',
+     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'BrBG', True],
+    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'RECO_ZSCORE',
+     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'coolwarm', True],
+    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'ET_ZSCORE',
+     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
 ]
+figsize = (19, 13 / 3 * 4)
 
 # Shared plotting constants
 aggfunc, CONDITIONAL = 'mean', True
-n_sites_min, cb_digits, area_size = 50, 1, 50
-cmap, igbps = 'RdYlBu', ['ENF', 'DBF', 'MF', 'EBF']
+cb_digits, area_size = 1, 9
+igbps = ['ENF', 'DBF', 'MF', 'EBF']
+facecolor = 'white'
+# facecolor = '#faf9f6'
 AX_LABELS_FONTSIZE = 18
 
 beautify = {
+    "GPP_ZSCORE": "GPP",
+    "RECO_ZSCORE": "RECO",
     "NEP_ZSCORE": "NEP",
     "ET_ZSCORE": "ET",
+    "VPD_ZSCORE": "Vapor pressure deficit",
+    "BIN_ET_ZSCORE": "Evapotranspiration",
     "BIN_TA_ZSCORE": "Air temperature",
+    "TA_ZSCORE_SHAPVALS": "Air temperature",
     "BIN_VPD_ZSCORE": "Vapor pressure deficit",
     "BIN_SWC_ZSCORE": "Soil moisture",
     "SWC_ZSCORE_SHAPVALS": "Soil moisture",
@@ -41,13 +73,14 @@ beautify = {
 }
 
 # Figure layout
-fig = plt.figure(figsize=(22, 15), dpi=150, facecolor="white")
-gs = mpl.gridspec.GridSpec(3, 6, width_ratios=[1, 1, 1, 1, 1, 0.1])
+n_rows = len(plotvars_rows)
+fig = plt.figure(figsize=figsize, dpi=150, facecolor="white")
+gs = mpl.gridspec.GridSpec(n_rows, 6, width_ratios=[1, 1, 1, 1, 1, 0.1])
 
 # Create 2D axes list: axes_grid[row][col]
-n_rows = len(plotvars_rows)
 axes_grid = [[fig.add_subplot(gs[r, c]) for c in range(5)] for r in range(n_rows)]
-cax = fig.add_subplot(gs[1, 5])  # Colorbar
+# cax = fig.add_subplot(gs[1, 5])  # Colorbar
+show_row_colormap = False
 
 # Main loop (rows)
 for row_idx, plotvars in enumerate(plotvars_rows):
@@ -55,6 +88,8 @@ for row_idx, plotvars in enumerate(plotvars_rows):
     FLUX = plotvars[0]
     xvar, yvar, zvar = plotvars[1], plotvars[2], plotvars[3]
     x_in_filename, y_in_filename = plotvars[4], plotvars[5]
+    cmap = plotvars[6]
+    show_row_colormap = plotvars[7]
 
     # Labels & Column logic
     xlabel = rf'{beautify[xvar]} ($\sigma$)'
@@ -72,14 +107,21 @@ for row_idx, plotvars in enumerate(plotvars_rows):
     settings = files.read_settings_file("../../config/settings.yaml")
     dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 
-    # Pre-calculate for scaling z-values (colors)
+    # todo check Pre-calculate for scaling z-values (colors)
     allsites_df, allsites_subset_df, n_info = files.load_data(
         suffix='Sites', shap_type=shap_type, dir_res=dir_res, flux=FLUX,
-        count_vals_col=count_vals_col, n_sites_min=n_sites_min,
+        count_vals_col=count_vals_col,
         subsetcols=[xcol, ycol, zcol], site_filter=None,
         x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc
     )
-    absmax = np.max([allsites_subset_df.iloc[:, 2].abs().min(), allsites_subset_df.iloc[:, 2].abs().max()])
+
+    if show_row_colormap:
+        absmax = np.max(allsites_subset_df.iloc[:, 2].abs())
+        cax = fig.add_subplot(gs[row_idx, 5])
+        plot.create_colormap(fig=fig, ax=cax, cmap=cmap, label=zlabel, absmax=absmax, labelsize=AX_LABELS_FONTSIZE)
+
+    # if row_idx == 0:
+    #     absmax = np.max([allsites_subset_df.iloc[:, 2].abs().min(), allsites_subset_df.iloc[:, 2].abs().max()])
 
     # Inner loop (columns)
     panel_igbp = [None] + igbps
@@ -93,7 +135,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
         else:
             _, df_to_plot, n_info = files.load_data(
                 suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, flux=FLUX,
-                count_vals_col=count_vals_col, n_sites_min=n_sites_min,
+                count_vals_col=count_vals_col,
                 subsetcols=[xcol, ycol, zcol], site_filter=allsites_df.index,
                 x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
             # title_suffix = f"{igbp} (n={n_info[1]})"
@@ -103,7 +145,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
         hm = dv.heatmapxyz(
             ax=ax, x=df_to_plot.iloc[:, 0], y=df_to_plot.iloc[:, 1], z=df_to_plot.iloc[:, 2],
             # xlabel=xlabel, ylabel=ylabel, zlabel=zlabel,
-            cmap=cmap, vmin=-absmax, vmax=absmax, color_bad='white',
+            cmap=cmap, vmin=-absmax, vmax=absmax, color_bad=facecolor,
             show_colormap=False, show_grid=False)
         hm.plot()
 
@@ -116,7 +158,6 @@ for row_idx, plotvars in enumerate(plotvars_rows):
             fig.text(0.5, 0.965, f"n={n_info[1]} (min. {n_info[0]})", transform=trans,
                      fontsize=AX_LABELS_FONTSIZE, ha='center', va='top', weight='normal')
 
-
         # Panel letters
         letter_idx = row_idx * 5 + col_idx
         letter = string.ascii_lowercase[letter_idx]
@@ -128,20 +169,19 @@ for row_idx, plotvars in enumerate(plotvars_rows):
         ax.axvline(0, c='k', ls='--', lw=1, zorder=99)
 
         # Marker and annotations
-        plot_markers(ax, df_to_plot, xvals=f'{xvar}_{xagg}', yvals=f'{yvar}_{yagg}',
-                     zvals=f'{zvar}_{aggfunc}', flux_txt=beautify[FLUX], annotate=False,
-                     ax_labels_fontsize=AX_LABELS_FONTSIZE, area_size=area_size)
+        plot.plot_markers(ax, df_to_plot, xvals=f'{xvar}_{xagg}', yvals=f'{yvar}_{yagg}',
+                          zvals=f'{zvar}_{aggfunc}', flux_txt=beautify[FLUX], annotate=False,
+                          ax_labels_fontsize=AX_LABELS_FONTSIZE, area_size=area_size)
 
         # Labels
         ax.set_xlabel(xlabel, fontsize=AX_LABELS_FONTSIZE)
         ax.set_ylabel(ylabel, fontsize=AX_LABELS_FONTSIZE)
         ax.yaxis.label.set_visible(col_idx == 0)
 
-
-
-        # # xmin, xmax = ax.get_xlim()
-        # if row_idx in [0, 2]:
-        #     ax.set_xlim(-2.7, 2.4)
+        xmin, xmax = ax.get_xlim()
+        ax.set_xlim(xmin * 1.1, xmax * 1.15)
+        ymin, ymax = ax.get_ylim()
+        ax.set_ylim(ymin * 1.1, ymax * 1.1)
 
         # Spines
         ax.spines['top'].set_visible(False)
@@ -168,26 +208,13 @@ for row_idx, plotvars in enumerate(plotvars_rows):
             ax.tick_params(axis='y', labelleft=False)  # Hide labels
 
         # Appearance
+        ax.set_facecolor(facecolor)
         ax.set_aspect('equal')
         ax.grid(False)
 
-# --- COLORBAR (Unified for all rows) ---
-# Note: This uses the absmax from the LAST row processed.
-# If rows have different scales, you might need two colorbars.
-def cb_formatter(x, pos):
-    """Custom format: 0 as '0', others as '0.1f'"""
-    if np.isclose(x, 0, atol=1e-5):
-        return "0"
-    return f"{x:.1f}"
-
-norm = mpl.colors.Normalize(vmin=-absmax, vmax=absmax)
-sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-cb = fig.colorbar(sm, cax=cax, extend='both')
-cb.ax.yaxis.set_major_locator(ticker.MultipleLocator(0.2))
-cb.ax.yaxis.set_major_formatter(ticker.FuncFormatter(cb_formatter))
-cb.set_label(zlabel, size=AX_LABELS_FONTSIZE, labelpad=20)
-cb.ax.tick_params(labelsize=AX_LABELS_FONTSIZE)
+if not show_row_colormap:
+    plot.create_colormap(fig=fig, ax=cax, cmap=cmap, label=zlabel, absmax=absmax, labelsize=AX_LABELS_FONTSIZE)
 
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave room for the super-title
-gs.update(wspace=0.15, hspace=0.3)
+gs.update(wspace=0.1, hspace=0.3)
 plt.show()
