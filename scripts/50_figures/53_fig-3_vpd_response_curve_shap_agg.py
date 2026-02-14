@@ -186,11 +186,13 @@ else:
     handles = [iqrplot]
 
 # Legends for main figure
-legend1 = ax_all.legend(handles=scatterhandles, loc='upper left', bbox_to_anchor=(0.38, 0.98),
+legend1 = ax_all.legend(handles=scatterhandles, loc='upper left',
+                        bbox_to_anchor=(0.38, 0.95),
                         frameon=False, ncol=1, fontsize=AX_LABELS_FONTSIZE, labelspacing=.3,
                         title="Aggregated site data",
                         title_fontsize=AX_LABELS_FONTSIZE)
-legend2 = ax_all.legend(handles=handles, loc='upper left', bbox_to_anchor=(0.68, 0.98),
+legend2 = ax_all.legend(handles=handles, loc='upper left',
+                        bbox_to_anchor=(0.68, 0.95),
                         frameon=False, ncol=1, labelspacing=.3, fontsize=AX_LABELS_FONTSIZE)
 # Add Legend 1 back to the figure
 # This is the crucial step to prevent the first legend from being removed
@@ -199,8 +201,13 @@ ax_all.add_artist(legend1)
 min_ix = np.argmin(y_fit)
 max_ix = np.argmax(y_fit)
 
-plot.style_ax(ax=ax_all, title=f"(a) All sites (n={n_sites[1]}, min. {n_sites[0]})",
-              ax_labels_fontsize=AX_LABELS_FONTSIZE)
+# Panel letter
+letter = 'a'
+igbp = 'Global forests'
+ax_all.text(0, 1.05, f"{letter} | {igbp}", transform=ax_all.transAxes, zorder=99,
+            size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
+ax_all.text(0.3, 1.05, f"(n={n_sites[1]}, min. {n_sites[0]})", transform=ax_all.transAxes, zorder=99,
+            size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
 
 # Find value closest to "SHAP zero"
 idx = (np.abs(y_fit - 0)).argmin()
@@ -209,6 +216,9 @@ idx = (np.abs(y_fit - 0)).argmin()
 ydim_max = iqr_high75.max() * 1.2
 ydim_min = iqr_low25.min()
 ax_all.set_ylim(ydim_min, ydim_max)
+xdim_min = X_data.min()
+xdim_max = X_data.max()
+ax_all.set_xlim(xdim_min, xdim_max * 1.05)
 # ax_all.set_xlim(-1, 1)
 
 # Add text and connecting dashed lines for SHAP max, zero, and min
@@ -238,14 +248,6 @@ if show_shap_thresholds:
 #     fontsize=AX_LABELS_FONTSIZE, color='#6c757d', ha='right', va='center'
 # )
 
-if show_txt_effect:
-    # Add text for negative effect
-    ax_all.text(x=2.1, y=-0.03, s='reduced uptake/increased release\n' + r'$\downarrow$Negative effect',
-                fontsize=AX_LABELS_FONTSIZE, color='black', ha='left', va='top')
-
-    # Add text for positive effect
-    ax_all.text(x=2.1, y=0.03, s=r'$\uparrow$' + 'Positive effect\nincreased uptake/reduced release',
-                fontsize=AX_LABELS_FONTSIZE, color='black', ha='left', va='bottom')
 
 ax_all.set_xlabel(xlabel, fontsize=AX_LABELS_FONTSIZE)
 ax_all.set_ylabel(ylabel, fontsize=AX_LABELS_FONTSIZE)
@@ -328,8 +330,11 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
             edgecolors=edge_color,
             zorder=98)
 
-    plot.style_ax(ax, f"({letter}) {igbp} (n={n_sites_sub[1]}, min. {n_sites_sub[0]})",
-                  ax_labels_fontsize=AX_LABELS_FONTSIZE)
+    # Panel letters
+    ax.text(0, 1.1, f"{letter} | {igbp}", transform=ax.transAxes, zorder=99,
+            size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
+    ax.text(0.3, 1.1, f"(n={n_sites_sub[1]}, min. {n_sites_sub[0]})", transform=ax.transAxes, zorder=99,
+            size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
 
     # Add text and connecting dashed lines for SHAP max, zero, and min
     if show_shap_thresholds:

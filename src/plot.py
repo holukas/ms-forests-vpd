@@ -1,5 +1,6 @@
 import diive as dv
 import matplotlib as mpl
+import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
 import matplotlib.path as mpath
@@ -271,7 +272,61 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
     y_top = ax.get_ylim()[-1]
     y_bottom = ax.get_ylim()[0]
 
-    _params = dict(color='black', linestyle='--', linewidth=1, zorder=100)
+    # Define the threshold X value
+    threshold_x = x_fit[idx]
+
+    # Facilitation zone (left of threshold)
+    # Shade area between y=0 and all the way to the top (positive)
+    mask_facil = x_fit <= threshold_x
+    x_facil = x_fit[mask_facil]
+    y_facil = y_fit[mask_facil]
+    ax.fill_between(x_facil, 0, 1, where=(y_facil > 0), color='#1f77b4', alpha=0.1, zorder=0)
+
+    # --- ZONE B: LIMITATION (Right of Threshold) ---
+    mask_limit = x_fit >= threshold_x
+    x_limit = x_fit[mask_limit]
+
+    # Get the absolute bottom of the current plot axis
+    y_bottom_axis = ax.get_ylim()[0]
+
+    if len(x_limit) > 1:
+        # 1. Define the Rectangle Vertices (Clockwise or Counter-Clockwise)
+        # Top-Left -> Top-Right -> Bottom-Right -> Bottom-Left -> Close
+        verts = [
+            (x_limit[0], 0),  # Start at Threshold (Y=0)
+            (x_limit[-1], 0),  # End at Max X (Y=0)
+            (x_limit[-1], y_bottom_axis),  # Down to axis bottom
+            (x_limit[0], y_bottom_axis),  # Back to start X at axis bottom
+            (x_limit[0], 0)  # Close loop
+        ]
+
+        # Create path patch
+        path = mpath.Path(verts)
+        patch = mpatches.PathPatch(path, facecolor='none', edgecolor='none')
+        ax.add_patch(patch)
+
+        # 2. Define Gradient (White -> Red)
+        # Using the alpha=0.3 red you set up before
+        c_start = mcolors.to_rgba('#d62728', alpha=0.05)
+        c_end = mcolors.to_rgba('#d62728', alpha=0.15)
+        colors = [c_start, c_end]
+        cmap_grad = mcolors.LinearSegmentedColormap.from_list('fader', colors)
+
+        # 3. Draw the Gradient Image
+        # Note: extent corresponds to [left, right, bottom, top]
+        # We fill from y_bottom_axis up to 0
+        im = ax.imshow(
+            np.linspace(0, 1, 256).reshape(1, 256),
+            aspect='auto',
+            cmap=cmap_grad,
+            extent=[x_limit.min(), x_limit.max(), y_bottom_axis, 0],
+            zorder=0
+        )
+
+        # 4. Clip (Optional for rectangle, but good for safety)
+        im.set_clip_path(patch)
+
+    _params = dict(color='black', linestyle=':', linewidth=1, zorder=100)
     _params2 = dict(linewidth=2, zorder=100, s=200, alpha=1)
     _params3 = dict(color='black', fontsize=fontsize, linespacing=1.2)
 
@@ -301,6 +356,24 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
         ax.plot([x_fit[max_ix], x_fit[max_ix]], [text_y_pos_max + y_offset_topline, y_fit[max_ix] - 0], **_params)
         ax.plot([x_fit[max_ix], x_fit[max_ix]], [y_bottom, text_y_pos_max], **_params)
 
+        # Penalty zone
+        if not show_annotate_short:
+            mid_point_x = threshold_x + (x_fit.max() - threshold_x) / 1.1
+            ax.text(mid_point_x, -0.15, "VPD-limited regime",
+                    color='#d62728', alpha=1, ha='right', va='top',
+                    fontsize=fontsize, style='italic', weight='bold')
+            ax.text(mid_point_x, -0.2, "reduced uptake\nincreased release",
+                    color='#d62728', alpha=1, ha='right', va='top',
+                    fontsize=fontsize, style='italic', weight='normal')
+
+            mid_x_facil = x_facil.min() + (x_facil.max() - x_facil.min()) / 1.1
+            ax.text(mid_x_facil, 0.4, "Facilitation zone",
+                    color='#1f77b4', alpha=1, ha='right', va='bottom',
+                    fontsize=fontsize, weight='bold', style='italic', zorder=1)
+            ax.text(mid_x_facil, 0.3, "increased uptake\nreduced release",
+                    color='#1f77b4', alpha=1, ha='right', va='bottom',
+                    fontsize=fontsize, weight='normal', style='italic', zorder=1)
+
     # Threshold
     ax.scatter(x_fit[idx], y_fit[idx], c="none", edgecolors=colors_symbols[1], **_params2)
     if show_annotate:
@@ -308,13 +381,13 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
         if show_annotate_short:
             showntext = f'(x={x_fit[idx]:.2f})'
         else:
-            showntext = f'Threshold\n(x={x_fit[idx]:.2f})'
+            showntext = f'Limitation threshold\n(x={x_fit[idx]:.2f})'
         ax.text(x_fit[idx], text_y_pos_zero, showntext,
                 va='bottom', ha='center', **_params3)
         ax.plot([x_fit[idx], x_fit[idx]], [text_y_pos_zero + y_offset_topline, y_fit[idx] - 0], **_params)
         ax.plot([x_fit[idx], x_fit[idx]], [y_bottom, text_y_pos_zero], **_params)
 
-    # Maximum negative impact
+    # Maximum limitation
     # ax_all.scatter(x_fit[min_ix], y_fit[min_ix], color='black', marker='_', edgecolors='none', **_params2)
     ax.scatter(x_fit[min_ix], y_fit[min_ix], color='none', marker='v', edgecolor=colors_symbols[2], **_params2)
     if show_annotate:
@@ -323,7 +396,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
         if show_annotate_short:
             showntext = f'(x={x_fit[min_ix]:.2f})'
         else:
-            showntext = f'Maximum negative effect\n(x={x_fit[min_ix]:.2f})'
+            showntext = f'Maximum limitation\n(x={x_fit[min_ix]:.2f})'
         ax.text(x_fit[min_ix] + 0.2, text_y_pos_min, showntext,
                 va='bottom', ha='right', **_params3)
         ax.plot([x_fit[min_ix], x_fit[min_ix]], [text_y_pos_min + y_offset_topline, y_fit[min_ix] - 0], **_params)
