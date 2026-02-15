@@ -269,35 +269,68 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
 
 def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_min, show_annotate, show_annotate_short,
                          fontsize, colors_symbols):
-    y_top = ax.get_ylim()[-1]
-    y_bottom = ax.get_ylim()[0]
+    color_limzone = '#d6604d'
+    color_facilzone = '#4393c3'
 
-    # Define the threshold X value
     threshold_x = x_fit[idx]
 
-    # Facilitation zone (left of threshold)
-    # Shade area between y=0 and all the way to the top (positive)
-    mask_facil = x_fit <= threshold_x
-    x_facil = x_fit[mask_facil]
-    y_facil = y_fit[mask_facil]
-    ax.fill_between(x_facil, 0, 1, where=(y_facil > 0), color='#1f77b4', alpha=0.1, zorder=0)
-
-    # --- ZONE B: LIMITATION (Right of Threshold) ---
-    mask_limit = x_fit >= threshold_x
-    x_limit = x_fit[mask_limit]
-
-    # Get the absolute bottom of the current plot axis
+    # Get axis limits
+    y_top_axis = ax.get_ylim()[1]
     y_bottom_axis = ax.get_ylim()[0]
 
+    # FACILITATION ZONE (left of threshold)
+    mask_facil = x_fit <= threshold_x
+    x_facil = x_fit[mask_facil]
+
+    if len(x_facil) > 1:
+        # Define rectangle vertices (upwards from 0 to top)
+        verts_facil = [
+            (x_facil[0], 0),  # Start at left (y=0)
+            (x_facil[-1], 0),  # End at threshold (y=0)
+            (x_facil[-1], y_top_axis),  # Up to axis top
+            (x_facil[0], y_top_axis),  # Back to start X at axis top
+            (x_facil[0], 0)  # Close loop
+        ]
+
+        # Create path patch
+        path_facil = mpath.Path(verts_facil)
+        patch_facil = mpatches.PathPatch(path_facil, facecolor='none', edgecolor='none')
+        ax.add_patch(patch_facil)
+
+        # Gradient (blue)
+        # imshow plots left-to-right (Index 0 -> Index 255)
+        # So index 0 (left) = higher alpha, index 255 (right) = lower alpha
+        c_blue_start = mcolors.to_rgba(color_facilzone, alpha=0.15)
+        c_blue_end = mcolors.to_rgba(color_facilzone, alpha=0.05)
+        colors_facil = [c_blue_start, c_blue_end]
+        cmap_grad_facil = mcolors.LinearSegmentedColormap.from_list('fader_blue', colors_facil)
+
+        # Draw the gradient image
+        # Extent fills from 0 UP to y_top_axis
+        im_facil = ax.imshow(
+            np.linspace(0, 1, 256).reshape(1, 256),
+            aspect='auto',
+            cmap=cmap_grad_facil,
+            extent=[x_facil.min(), x_facil.max(), 0, y_top_axis],
+            zorder=0
+        )
+        im_facil.set_clip_path(patch_facil)
+
+    # ------------------------------------
+    # LIMITATION ZONE (right of threshold)
+    # ------------------------------------
+    y_bottom_axis = ax.get_ylim()[0]  # Absolute bottom of current plot axis
+    mask_limit = x_fit >= threshold_x
+    x_limit = x_fit[mask_limit]
     if len(x_limit) > 1:
-        # 1. Define the Rectangle Vertices (Clockwise or Counter-Clockwise)
-        # Top-Left -> Top-Right -> Bottom-Right -> Bottom-Left -> Close
+        # Define rectangle vertices (clockwise or counter-clockwise)
+        # top-left -> top-right -> bottom-right -> bottom-left -> close
         verts = [
-            (x_limit[0], 0),  # Start at Threshold (Y=0)
-            (x_limit[-1], 0),  # End at Max X (Y=0)
-            (x_limit[-1], y_bottom_axis),  # Down to axis bottom
-            (x_limit[0], y_bottom_axis),  # Back to start X at axis bottom
-            (x_limit[0], 0)  # Close loop
+            (x_limit[0], 0),  # start at threshold (y=0)
+            (x_limit[-1], 0),  # end at max x (y=0)
+            (x_limit[-1], y_bottom_axis),  # down to axis bottom
+            (x_limit[0], y_bottom_axis),  # back to start x at axis bottom
+            (x_limit[0], 0)  # close loop
         ]
 
         # Create path patch
@@ -305,16 +338,15 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
         patch = mpatches.PathPatch(path, facecolor='none', edgecolor='none')
         ax.add_patch(patch)
 
-        # 2. Define Gradient (White -> Red)
-        # Using the alpha=0.3 red you set up before
-        c_start = mcolors.to_rgba('#d62728', alpha=0.05)
-        c_end = mcolors.to_rgba('#d62728', alpha=0.15)
+        # Gradient (red)
+        c_start = mcolors.to_rgba(color_limzone, alpha=0.1)
+        c_end = mcolors.to_rgba(color_limzone, alpha=0.05)
         colors = [c_start, c_end]
         cmap_grad = mcolors.LinearSegmentedColormap.from_list('fader', colors)
 
-        # 3. Draw the Gradient Image
-        # Note: extent corresponds to [left, right, bottom, top]
-        # We fill from y_bottom_axis up to 0
+        # Draw gradient image
+        # Extent corresponds to [left, right, bottom, top]
+        # Fill from y_bottom_axis up to 0
         im = ax.imshow(
             np.linspace(0, 1, 256).reshape(1, 256),
             aspect='auto',
@@ -322,10 +354,26 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
             extent=[x_limit.min(), x_limit.max(), y_bottom_axis, 0],
             zorder=0
         )
-
-        # 4. Clip (Optional for rectangle, but good for safety)
         im.set_clip_path(patch)
 
+    ax.plot([x_fit[idx], x_fit[idx]], [y_bottom_axis, 0],
+            color=color_limzone, linestyle='-', linewidth=1, zorder=1)
+    color = 'black'
+
+    mid_point_x = threshold_x + (x_fit.max() - threshold_x) / 1.05
+    ax.text(mid_point_x, -0.05, "VPD-limited regime",
+            color=color_limzone, alpha=1, ha='right', va='top',
+            fontsize=fontsize, style='italic', weight='bold')
+    ax.text(mid_point_x, -0.1, "reduced uptake\nincreased release",
+            color=color_limzone, alpha=1, ha='right', va='top',
+            fontsize=fontsize, style='italic', weight='normal')
+
+    # Annotation arrows
+
+
+    # -----------------------
+    # ANNOTATIONS AND MARKERS
+    # -----------------------
     _params = dict(color='black', linestyle=':', linewidth=1, zorder=100)
     _params2 = dict(linewidth=2, zorder=100, s=200, alpha=1)
     _params3 = dict(color='black', fontsize=fontsize, linespacing=1.2)
@@ -336,72 +384,73 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
     # As relative_height goes up (1.0), the factor goes DOWN
     bbox = ax.get_position()
     relative_height = bbox.height  # Height of ax as a fraction of figure (0.0 to 1.0)
-    y_range = y_top - y_bottom
+    y_range = y_top_axis - y_bottom_axis
     scaling_factor = 0.02 + (0.04 / relative_height)
     scaling_factor = min(0.08, scaling_factor)  # Clamp so it does not get huge on small plots
     y_offset_topline = y_range * scaling_factor
 
-    # Maximum positive effect
-    # ax_all.scatter(x_fit[max_ix], y_fit[max_ix], color='black', marker='^', edgecolors='none', **_params2)
-    ax.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor=colors_symbols[0], **_params2)
-    if show_annotate:
-        # Get the y-position for the text below the plotted points
-        text_y_pos_max = y_fit[max_ix] - 0.45 * (ydim_max - ydim_min)
-        if show_annotate_short:
-            showntext = f'(x={x_fit[max_ix]:.2f})'
-        else:
-            showntext = f'Maximum positive effect\n(x={x_fit[max_ix]:.2f})'
-        ax.text(x_fit[max_ix], text_y_pos_max, showntext,
-                va='bottom', ha='center', **_params3)
-        ax.plot([x_fit[max_ix], x_fit[max_ix]], [text_y_pos_max + y_offset_topline, y_fit[max_ix] - 0], **_params)
-        ax.plot([x_fit[max_ix], x_fit[max_ix]], [y_bottom, text_y_pos_max], **_params)
+    # # Maximum facilitation
+    # ax.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor=colors_symbols[0], **_params2)
+    # if show_annotate:
+    #     # Get the y-position for the text below the plotted points
+    #     text_y_pos_max = y_fit[max_ix] - 0.45 * (ydim_max - ydim_min)
+    #     if show_annotate_short:
+    #         showntext = f'(x={x_fit[max_ix]:.2f})'
+    #     else:
+    #         showntext = f'Max. facilitation\n(x={x_fit[max_ix]:.2f})'
+    #     ax.text(x_fit[max_ix], text_y_pos_max, showntext,
+    #             va='bottom', ha='center', **_params3)
+    #     ax.plot([x_fit[max_ix], x_fit[max_ix]], [text_y_pos_max + y_offset_topline, y_fit[max_ix] - 0], **_params)
+    #     ax.plot([x_fit[max_ix], x_fit[max_ix]], [y_bottom_axis, text_y_pos_max], **_params)
+    #
+    #     # Penalty zone
+    #     if not show_annotate_short:
+    #         mid_point_x = threshold_x + (x_fit.max() - threshold_x) / 1.05
+    #         ax.text(mid_point_x, -0.05, "VPD-limited regime",
+    #                 color=color_limzone, alpha=1, ha='right', va='top',
+    #                 fontsize=fontsize, style='italic', weight='bold')
+    #         ax.text(mid_point_x, -0.1, "reduced uptake\nincreased release",
+    #                 color=color_limzone, alpha=1, ha='right', va='top',
+    #                 fontsize=fontsize, style='italic', weight='normal')
+    #
+    #         mid_x_facil = x_facil.min() + (x_facil.max() - x_facil.min()) / 1.05
+    #         ax.text(mid_x_facil, 0.4, "Facilitation zone",
+    #                 color=color_facilzone, alpha=1, ha='right', va='bottom',
+    #                 fontsize=fontsize, weight='bold', style='italic', zorder=1)
+    #         ax.text(mid_x_facil, 0.32, "increased uptake\nreduced release",
+    #                 color=color_facilzone, alpha=1, ha='right', va='bottom',
+    #                 fontsize=fontsize, weight='normal', style='italic', zorder=1)
 
-        # Penalty zone
-        if not show_annotate_short:
-            mid_point_x = threshold_x + (x_fit.max() - threshold_x) / 1.1
-            ax.text(mid_point_x, -0.15, "VPD-limited regime",
-                    color='#d62728', alpha=1, ha='right', va='top',
-                    fontsize=fontsize, style='italic', weight='bold')
-            ax.text(mid_point_x, -0.2, "reduced uptake\nincreased release",
-                    color='#d62728', alpha=1, ha='right', va='top',
-                    fontsize=fontsize, style='italic', weight='normal')
-
-            mid_x_facil = x_facil.min() + (x_facil.max() - x_facil.min()) / 1.1
-            ax.text(mid_x_facil, 0.4, "Facilitation zone",
-                    color='#1f77b4', alpha=1, ha='right', va='bottom',
-                    fontsize=fontsize, weight='bold', style='italic', zorder=1)
-            ax.text(mid_x_facil, 0.3, "increased uptake\nreduced release",
-                    color='#1f77b4', alpha=1, ha='right', va='bottom',
-                    fontsize=fontsize, weight='normal', style='italic', zorder=1)
+    # # Threshold
+    # ax.scatter(x_fit[idx], y_fit[idx], c="none", edgecolors=colors_symbols[1], **_params2)
+    # if show_annotate:
+    #     text_y_pos_zero = y_fit[idx] - 0.45 * (ydim_max - ydim_min)
+    #     if show_annotate_short:
+    #         showntext = f'(x={x_fit[idx]:.2f})'
+    #     else:
+    #         showntext = f'Limitation threshold\n(x={x_fit[idx]:.2f})'
+    #     ax.text(x_fit[idx], text_y_pos_zero, showntext,
+    #             va='bottom', ha='center', **_params3)
+    #     ax.plot([x_fit[idx], x_fit[idx]], [text_y_pos_zero + y_offset_topline, y_fit[idx] - 0], **_params)
+    #     ax.plot([x_fit[idx], x_fit[idx]], [y_bottom_axis, text_y_pos_zero], **_params)
 
     # Threshold
     ax.scatter(x_fit[idx], y_fit[idx], c="none", edgecolors=colors_symbols[1], **_params2)
     if show_annotate:
-        text_y_pos_zero = y_fit[idx] - 0.45 * (ydim_max - ydim_min)
-        if show_annotate_short:
-            showntext = f'(x={x_fit[idx]:.2f})'
-        else:
-            showntext = f'Limitation threshold\n(x={x_fit[idx]:.2f})'
-        ax.text(x_fit[idx], text_y_pos_zero, showntext,
-                va='bottom', ha='center', **_params3)
-        ax.plot([x_fit[idx], x_fit[idx]], [text_y_pos_zero + y_offset_topline, y_fit[idx] - 0], **_params)
-        ax.plot([x_fit[idx], x_fit[idx]], [y_bottom, text_y_pos_zero], **_params)
+        ax.annotate(f'Limitation\nthreshold (x={x_fit[idx]:.2f})',
+                    xy=(x_fit[idx], y_fit[idx]),
+                    xytext=(x_fit[idx] - 0.1, y_fit[idx] - 0.3),  # Adjust text position as needed
+                    arrowprops=dict(arrowstyle="->", color=color, lw=1.5),
+                    fontsize=fontsize, color=color, ha='center', va='center', zorder=100)
 
-    # Maximum limitation
-    # ax_all.scatter(x_fit[min_ix], y_fit[min_ix], color='black', marker='_', edgecolors='none', **_params2)
+    # Max. limitation
     ax.scatter(x_fit[min_ix], y_fit[min_ix], color='none', marker='v', edgecolor=colors_symbols[2], **_params2)
     if show_annotate:
-        text_y_pos_min = ydim_min * 0.99
-        # text_y_pos_min = y_fit[min_ix] - 0.15 * (ydim_max - ydim_min) + show_annotate_short_yoffset[2]
-        if show_annotate_short:
-            showntext = f'(x={x_fit[min_ix]:.2f})'
-        else:
-            showntext = f'Maximum limitation\n(x={x_fit[min_ix]:.2f})'
-        ax.text(x_fit[min_ix] + 0.2, text_y_pos_min, showntext,
-                va='bottom', ha='right', **_params3)
-        ax.plot([x_fit[min_ix], x_fit[min_ix]], [text_y_pos_min + y_offset_topline, y_fit[min_ix] - 0], **_params)
-        ax.plot([x_fit[min_ix], x_fit[min_ix]], [y_bottom, text_y_pos_min], **_params)
-
+        ax.annotate(f'Max. limitation (x={x_fit[min_ix]:.2f})',
+                    xy=(x_fit[min_ix], y_fit[min_ix]),
+                    xytext=(x_fit[min_ix] - 0.5, y_fit[min_ix] - 0.1),  # Adjust text position as needed
+                    arrowprops=dict(arrowstyle="->", color=color, lw=1.5),
+                    fontsize=fontsize, color=color, ha='right', va='center', zorder=100)
 
 def format(ax, fontsize, showxticklabels, showyticklabels, xtickdigits, ytickdigits,
            showbottomspine, showleftspine, showymajorticks):
@@ -446,16 +495,17 @@ def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared,
         # Add an arrow to the fitted line
         # Find a point on the line to place the arrow.
         # Let's place it a little past the middle of the x-range.
-        arrow_x = 3
+        arrow_x = 2
         arrow_y = poly_func(arrow_x)
         # Find a point slightly to the left to define the arrow direction
         tail_x = arrow_x - 0.1
         tail_y = poly_func(tail_x)
         # Calculate the angle of the line at this point to get the correct arrow orientation
         angle = np.arctan2(arrow_y - tail_y, arrow_x - tail_x) * 180 / np.pi
-        ax.annotate(f'Fitted 4th degree\npolynomial (r$^2$={r_squared:.2f})',
+        supscript = r'$^{th}$'
+        ax.annotate(f'Poly. fit (4{supscript} order)',
                     xy=(arrow_x, arrow_y),
-                    xytext=(arrow_x - 0.2, arrow_y + 0.4),  # Adjust text position as needed
+                    xytext=(arrow_x + 0, arrow_y + 0.2),  # Adjust text position as needed
                     arrowprops=dict(arrowstyle="->", color=color, lw=1.5),
                     fontsize=fontsize, color=color, ha='left', va='center', zorder=100)
     return fillbetweenplot

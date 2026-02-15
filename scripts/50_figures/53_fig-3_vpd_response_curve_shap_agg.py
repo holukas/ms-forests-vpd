@@ -86,7 +86,7 @@ show_txt_effect = True
 show_shap_thresholds = True
 show_z_colors = True
 show_fit = True
-color_fitline = '#D84315'
+color_fitline = '#263238'
 color_points = '#607D8B'
 colors_symbols = ['black', 'black', 'black']
 # colors_symbols = ['#F9A825', '#2E7D32', '#8E24AA']
@@ -155,9 +155,9 @@ for i, label in reversed(list(enumerate(bin_labels))):
 
     scatterplot = ax_all.scatter(X_data[indices], Y_data[indices],
                                  label=f'{label} {beautify[zvar]}',
-                                 alpha=1,
+                                 alpha=.8,
                                  s=30,
-                                 color='none',
+                                 color=fill_color,
                                  edgecolors=edge_color,
                                  zorder=98)
     scatterhandles.append(scatterplot)
@@ -170,14 +170,16 @@ else:
     fillbetweenplot = None
 
 # IQR
-iqr_low25 = subsetdf.iloc[:, 3].values
-iqr_high75 = subsetdf.iloc[:, 4].values
+# iqr_low25 = subsetdf.iloc[:, 3].values
+# iqr_high75 = subsetdf.iloc[:, 4].values
 _sem = subsetdf.iloc[:, 5].values
+_sem_upper = Y_data + _sem
+_sem_lower = Y_data - _sem
 plotparams = dict(marker='o', s=5, zorder=1, alpha=1, edgecolors='none', color=color_points)
 # iqrplot = ax_all.scatter(X_data, iqr_low25, label="IQR", **plotparams)
 # ax_all.scatter(X_data, iqr_high75, **plotparams)
-iqrplot = ax_all.scatter(X_data, Y_data - _sem, label="IQR", **plotparams)
-ax_all.scatter(X_data, Y_data + _sem, **plotparams)
+iqrplot = ax_all.scatter(X_data, _sem_lower, label="Standard error", **plotparams)
+ax_all.scatter(X_data, _sem_upper, **plotparams)
 
 # Legend 2 for IQR and fill_between plot
 if show_fit:
@@ -213,8 +215,8 @@ ax_all.text(0.3, 1.05, f"(n={n_sites[1]}, min. {n_sites[0]})", transform=ax_all.
 idx = (np.abs(y_fit - 0)).argmin()
 
 # Detect min/max value shown in plot, is also used for subplots
-ydim_max = iqr_high75.max() * 1.2
-ydim_min = iqr_low25.min()
+ydim_max = _sem_upper.max() * 1.5
+ydim_min = _sem_lower.min() * 1.15
 ax_all.set_ylim(ydim_min, ydim_max)
 xdim_min = X_data.min()
 xdim_max = X_data.max()
