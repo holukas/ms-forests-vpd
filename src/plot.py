@@ -278,7 +278,9 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
     y_top_axis = ax.get_ylim()[1]
     y_bottom_axis = ax.get_ylim()[0]
 
+    # -------------------------------------
     # FACILITATION ZONE (left of threshold)
+    # -------------------------------------
     mask_facil = x_fit <= threshold_x
     x_facil = x_fit[mask_facil]
 
@@ -300,8 +302,8 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
         # Gradient (blue)
         # imshow plots left-to-right (Index 0 -> Index 255)
         # So index 0 (left) = higher alpha, index 255 (right) = lower alpha
-        c_blue_start = mcolors.to_rgba(color_facilzone, alpha=0.15)
-        c_blue_end = mcolors.to_rgba(color_facilzone, alpha=0.05)
+        c_blue_start = mcolors.to_rgba(color_facilzone, alpha=0.05)
+        c_blue_end = mcolors.to_rgba(color_facilzone, alpha=0.1)
         colors_facil = [c_blue_start, c_blue_end]
         cmap_grad_facil = mcolors.LinearSegmentedColormap.from_list('fader_blue', colors_facil)
 
@@ -360,16 +362,20 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
             color=color_limzone, linestyle='-', linewidth=1, zorder=1)
     color = 'black'
 
-    mid_point_x = threshold_x + (x_fit.max() - threshold_x) / 1.05
-    ax.text(mid_point_x, -0.05, "VPD-limited regime",
-            color=color_limzone, alpha=1, ha='right', va='top',
-            fontsize=fontsize, style='italic', weight='bold')
-    ax.text(mid_point_x, -0.1, "reduced uptake\nincreased release",
-            color=color_limzone, alpha=1, ha='right', va='top',
-            fontsize=fontsize, style='italic', weight='normal')
-
-    # Annotation arrows
-
+    # mid_point_x = threshold_x + (x_fit.max() - threshold_x) / 1.05
+    if show_annotate and not show_annotate_short:
+        ax.text(x_fit[min_ix] - 0.1, -0.05, "Carbon penalty",
+                color=color_limzone, alpha=1, ha='right', va='top',
+                fontsize=fontsize * 1.2, style='italic', weight='bold')
+        ax.text(x_fit[min_ix] - 0.1, -0.1, "reduced uptake\nincreased release",
+                color=color_limzone, alpha=1, ha='right', va='top',
+                fontsize=fontsize * 1.2, style='italic', weight='normal')
+        ax.text(x_fit[idx] - 0.1, y_top_axis * 0.95, "Carbon subsidy",
+                color=color_facilzone, alpha=1, ha='right', va='top',
+                fontsize=fontsize * 1.2, weight='bold', style='italic', zorder=1)
+        ax.text(x_fit[idx] - 0.1, y_top_axis * 0.85, "increased uptake\nreduced release",
+                color=color_facilzone, alpha=1, ha='right', va='top',
+                fontsize=fontsize * 1.2, weight='normal', style='italic', zorder=1)
 
     # -----------------------
     # ANNOTATIONS AND MARKERS
@@ -434,23 +440,39 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
     #     ax.plot([x_fit[idx], x_fit[idx]], [text_y_pos_zero + y_offset_topline, y_fit[idx] - 0], **_params)
     #     ax.plot([x_fit[idx], x_fit[idx]], [y_bottom_axis, text_y_pos_zero], **_params)
 
+    # Maximum facilitation
+    ax.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor=colors_symbols[0], **_params2)
+
     # Threshold
     ax.scatter(x_fit[idx], y_fit[idx], c="none", edgecolors=colors_symbols[1], **_params2)
-    if show_annotate:
-        ax.annotate(f'Limitation\nthreshold (x={x_fit[idx]:.2f})',
-                    xy=(x_fit[idx], y_fit[idx]),
-                    xytext=(x_fit[idx] - 0.1, y_fit[idx] - 0.3),  # Adjust text position as needed
-                    arrowprops=dict(arrowstyle="->", color=color, lw=1.5),
-                    fontsize=fontsize, color=color, ha='center', va='center', zorder=100)
 
     # Max. limitation
     ax.scatter(x_fit[min_ix], y_fit[min_ix], color='none', marker='v', edgecolor=colors_symbols[2], **_params2)
+
     if show_annotate:
-        ax.annotate(f'Max. limitation (x={x_fit[min_ix]:.2f})',
+        # ann_txt = f'Max. facilitation\n(x={x_fit[max_ix]:.2f})' if not show_annotate_short:
+        ann_txt = f'Max. facilitation\n(x={x_fit[max_ix]:.2f})' \
+            if not show_annotate_short else f'(x={x_fit[max_ix]:.2f})'
+        ax.annotate(ann_txt,
+                    xy=(x_fit[max_ix], y_fit[max_ix]),
+                    xytext=(x_fit[max_ix] + 0.14, y_fit[max_ix] - 0.33),  # Adjust text position as needed
+                    arrowprops=dict(arrowstyle="->", color=color, lw=2, shrinkB=10),
+                    fontsize=fontsize, color=color, ha='center', va='center', zorder=100)
+        ann_txt = f'Limitation threshold\n(x={x_fit[idx]:.2f})' \
+            if not show_annotate_short else f'(x={x_fit[idx]:.2f})'
+        ax.annotate(ann_txt,
+                    xy=(x_fit[idx], y_fit[idx]),
+                    xytext=(x_fit[idx] - 0.8, y_fit[idx] - 0.3),  # Adjust text position as needed
+                    arrowprops=dict(arrowstyle="->", color=color, lw=2, shrinkB=10),
+                    fontsize=fontsize, color=color, ha='center', va='center', zorder=100)
+        ann_txt = f'Max. limitation\n(x={x_fit[min_ix]:.2f})' \
+            if not show_annotate_short else f'(x={x_fit[min_ix]:.2f})'
+        ax.annotate(ann_txt,
                     xy=(x_fit[min_ix], y_fit[min_ix]),
-                    xytext=(x_fit[min_ix] - 0.5, y_fit[min_ix] - 0.1),  # Adjust text position as needed
-                    arrowprops=dict(arrowstyle="->", color=color, lw=1.5),
-                    fontsize=fontsize, color=color, ha='right', va='center', zorder=100)
+                    xytext=(x_fit[min_ix] - 1, y_fit[min_ix] - 0.05),  # Adjust text position as needed
+                    arrowprops=dict(arrowstyle="-|>", color=color, lw=2, shrinkB=10),
+                    fontsize=fontsize, color=color, ha='center', va='center', zorder=100)
+
 
 def format(ax, fontsize, showxticklabels, showyticklabels, xtickdigits, ytickdigits,
            showbottomspine, showleftspine, showymajorticks):
@@ -482,20 +504,19 @@ def format(ax, fontsize, showxticklabels, showyticklabels, xtickdigits, ytickdig
 
 
 def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared,
-            show_annotate, fontsize, color: str = '#004e98'):
+            show_annotate, fontsize, linewidth, color: str = '#004e98'):
     # Plot fitted polynomial curve
-    ax.plot(x_fit, y_fit, color=color, linewidth=3, zorder=99)
-    # label=rf'$y = {poly_coeffs[0]:.4f}x^4 - {poly_coeffs[1]:.4f}x^3 + {poly_coeffs[2]:.4f}x^2 + {poly_coeffs[3]:.4f}x - {poly_coeffs[4]:.4f}$'
-
     # Plot prediction interval
+    ax.plot(x_fit, y_fit, color=color, linewidth=linewidth, zorder=99)
+    # label=rf'$y = {poly_coeffs[0]:.4f}x^4 - {poly_coeffs[1]:.4f}x^3 + {poly_coeffs[2]:.4f}x^2 + {poly_coeffs[3]:.4f}x - {poly_coeffs[4]:.4f}$'
     fillbetweenplot = ax.fill_between(x_fit, pi_lower, pi_upper, color=color, alpha=0.2,
-                                      label='95% prediction interval', zorder=1)
+                                      label='95% pred. interval', zorder=1)
 
     if show_annotate:
         # Add an arrow to the fitted line
         # Find a point on the line to place the arrow.
         # Let's place it a little past the middle of the x-range.
-        arrow_x = 2
+        arrow_x = 1
         arrow_y = poly_func(arrow_x)
         # Find a point slightly to the left to define the arrow direction
         tail_x = arrow_x - 0.1
@@ -505,9 +526,9 @@ def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared,
         supscript = r'$^{th}$'
         ax.annotate(f'Poly. fit (4{supscript} order)',
                     xy=(arrow_x, arrow_y),
-                    xytext=(arrow_x + 0, arrow_y + 0.2),  # Adjust text position as needed
-                    arrowprops=dict(arrowstyle="->", color=color, lw=1.5),
-                    fontsize=fontsize, color=color, ha='left', va='center', zorder=100)
+                    xytext=(arrow_x + 0.5, arrow_y - 0.3),  # Adjust text position as needed
+                    arrowprops=dict(arrowstyle="-|>", color=color, lw=2),
+                    fontsize=fontsize, color=color, ha='right', va='center', zorder=100)
     return fillbetweenplot
 
 

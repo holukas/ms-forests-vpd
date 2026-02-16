@@ -58,15 +58,15 @@ beautify = {
     "TA_ZSCORE": "TA",
     "BIN_TA_ZSCORE": "TA",
     "TA_ZSCORE_SHAPVALS": "TA",
-    "BIN_VPD_ZSCORE": "VPD",
-    "VPD_ZSCORE": "VPD",
-    "VPD_ZSCORE_SHAPVALS": "VPD",
+    "BIN_VPD_ZSCORE": "Vapor pressure deficit",
+    "VPD_ZSCORE": "Vapor pressure deficit",
+    "VPD_ZSCORE_SHAPVALS": "Vapor pressure deficit",
     "SWC_ZSCORE": "SWC",
     "BIN_SWC_ZSCORE": "SWC",
     "SWC_ZSCORE_SHAPVALS": "SWC",
     "SWIN_ZSCORE": "SWIN",
 }
-AX_LABELS_FONTSIZE = 10
+AX_LABELS_FONTSIZE = 12
 
 # Labels & Columns
 xlabel = rf'{beautify[xvar]} ($\sigma$)'
@@ -155,7 +155,7 @@ for i, label in reversed(list(enumerate(bin_labels))):
 
     scatterplot = ax_all.scatter(X_data[indices], Y_data[indices],
                                  label=f'{label} {beautify[zvar]}',
-                                 alpha=.8,
+                                 alpha=.5,
                                  s=30,
                                  color=fill_color,
                                  edgecolors=edge_color,
@@ -163,21 +163,18 @@ for i, label in reversed(list(enumerate(bin_labels))):
     scatterhandles.append(scatterplot)
 
 if show_fit:
-    fillbetweenplot = plot.add_fit(ax=ax_all, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
-                                   poly_func=poly_func, r_squared=r_squared, show_annotate=True,
-                                   fontsize=AX_LABELS_FONTSIZE, color=color_fitline)
+    fillbetweenplot = plot.add_fit(
+        ax=ax_all, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
+        poly_func=poly_func, r_squared=r_squared, show_annotate=True,
+        fontsize=AX_LABELS_FONTSIZE, color=color_fitline, linewidth=3)
 else:
     fillbetweenplot = None
 
 # IQR
-# iqr_low25 = subsetdf.iloc[:, 3].values
-# iqr_high75 = subsetdf.iloc[:, 4].values
 _sem = subsetdf.iloc[:, 5].values
 _sem_upper = Y_data + _sem
 _sem_lower = Y_data - _sem
 plotparams = dict(marker='o', s=5, zorder=1, alpha=1, edgecolors='none', color=color_points)
-# iqrplot = ax_all.scatter(X_data, iqr_low25, label="IQR", **plotparams)
-# ax_all.scatter(X_data, iqr_high75, **plotparams)
 iqrplot = ax_all.scatter(X_data, _sem_lower, label="Standard error", **plotparams)
 ax_all.scatter(X_data, _sem_upper, **plotparams)
 
@@ -188,14 +185,14 @@ else:
     handles = [iqrplot]
 
 # Legends for main figure
-legend1 = ax_all.legend(handles=scatterhandles, loc='upper left',
-                        bbox_to_anchor=(0.38, 0.95),
+legend1 = ax_all.legend(handles=scatterhandles,
+                        bbox_to_anchor=(0.45, 0.7),
                         frameon=False, ncol=1, fontsize=AX_LABELS_FONTSIZE, labelspacing=.3,
                         title="Aggregated site data",
                         title_fontsize=AX_LABELS_FONTSIZE)
-legend2 = ax_all.legend(handles=handles, loc='upper left',
-                        bbox_to_anchor=(0.68, 0.95),
-                        frameon=False, ncol=1, labelspacing=.3, fontsize=AX_LABELS_FONTSIZE)
+# legend2 = ax_all.legend(handles=handles,
+#                         bbox_to_anchor=(0.36, 0.3),
+#                         frameon=False, ncol=1, labelspacing=.3, fontsize=AX_LABELS_FONTSIZE)
 # Add Legend 1 back to the figure
 # This is the crucial step to prevent the first legend from being removed
 ax_all.add_artist(legend1)
@@ -208,14 +205,14 @@ letter = 'a'
 igbp = 'Global forests'
 ax_all.text(0, 1.05, f"{letter} | {igbp}", transform=ax_all.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
-ax_all.text(0.3, 1.05, f"(n={n_sites[1]}, min. {n_sites[0]})", transform=ax_all.transAxes, zorder=99,
+ax_all.text(0.4, 1.05, f"(n={n_sites[1]}, min. {n_sites[0]})", transform=ax_all.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
 
 # Find value closest to "SHAP zero"
 idx = (np.abs(y_fit - 0)).argmin()
 
 # Detect min/max value shown in plot, is also used for subplots
-ydim_max = _sem_upper.max() * 1.5
+ydim_max = _sem_upper.max() * 1.6
 ydim_min = _sem_lower.min() * 1.15
 ax_all.set_ylim(ydim_min, ydim_max)
 xdim_min = X_data.min()
@@ -299,7 +296,8 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     if show_fit:
         fillbetweenplot = plot.add_fit(ax=ax, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
                                        poly_func=poly_func, r_squared=r_squared, show_annotate=False,
-                                       fontsize=AX_LABELS_FONTSIZE, color=color_fitline)
+                                       fontsize=AX_LABELS_FONTSIZE, color=color_fitline,
+                                       linewidth=2)
     else:
         fillbetweenplot = None
 
@@ -326,8 +324,8 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
         scatterplot = ax.scatter(
             X_data[indices], Y_data[indices],
             label=f'{label} {beautify[zvar]}',
-            alpha=0.1,
-            s=30,
+            alpha=0.25,
+            s=15,
             color=fill_color,
             edgecolors=edge_color,
             zorder=98)
