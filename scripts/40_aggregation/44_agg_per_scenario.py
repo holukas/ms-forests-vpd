@@ -46,7 +46,7 @@ for ix, siteconfig in subsets_df.iterrows():
     keepcols = [c for c in shapvals_df.columns if "_SHAPVALS" in c]
 
     scenarios = [s.scenario_0, s.scenario_1, s.scenario_2, s.scenario_3,
-                 s.scenario_4, s.scenario_5]
+                 s.scenario_4, s.scenario_5, s.scenario_6]
 
     for i, scen in enumerate(scenarios):
         subset, ta, vpd, swc, condition = scen(shapvals_df)

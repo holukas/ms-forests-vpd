@@ -16,8 +16,8 @@ import src.scenarios as scenarios
 FLUX = 'NEP_ZSCORE'
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 COLUMN_ORDER = ['All sites'] + IGBP_CLASSES
-SCENARIO_ORDER = [1, 4, 5]
-SCENARIO_LABELS = ['Normal', 'Hot & dry', 'Compound\nextremes']
+SCENARIO_ORDER = [1, 2, 3, 4, 5, 6]
+SCENARIO_LABELS = [1, 2, 3, 4, 5, 6]
 N_SCENARIOS = len(SCENARIO_ORDER)
 
 # Variables
@@ -35,7 +35,8 @@ SHAP_COLS_SD = [v + SHAP_SUFFIX_SD for v in VARS]
 COLORS = ['#D55E00', '#CC79A7', '#009E73', '#E69F00']
 
 # Figure dimensions (double column ~183mm width)
-FIG_WIDTH_INCHES = 7.2
+FIG_WIDTH_INCHES = 12
+# FIG_WIDTH_INCHES = 7.2
 FIG_HEIGHT_INCHES = 8.5
 
 # Style settings
@@ -88,6 +89,9 @@ else:
 # GRAND_Y_MIN, GRAND_Y_MAX = plot.get_panel_limits(df=scenario_stats)
 # FIXED_YLIM = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.2)
 
+
+# ------
+# ------
 # ------
 # FIGURE
 # ------
@@ -114,7 +118,6 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS_AVG, VAR_TITLES)):
     # Here we put it on the first axes ylabel for alignment
 
     # Iterate Columns
-    # Map visual columns (0, 2, 3, 4, 5) to data groups. Skip col 1 (Spacer)
     current_col_idx = 0
 
     for grid_col in range(6):

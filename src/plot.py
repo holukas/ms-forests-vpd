@@ -405,7 +405,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
     ax.scatter(x_fit[min_ix], y_fit[min_ix], color='none', marker='v', edgecolor=colors_symbols[2], **_params2)
 
     if show_annotate:
-        _fontsize = fontsize* 0.9 if show_annotate_short else fontsize
+        _fontsize = fontsize * 0.9 if show_annotate_short else fontsize
 
         if not show_annotate_short:
             ann_txt = f'Max. gain\nx={x_fit[max_ix]:.2f}'
@@ -588,7 +588,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     stats_list = []
 
     # Loop through scenarios to calculate stats
-    for col in [1, 4, 5]:
+    for col in [1, 2, 3, 4, 5, 6]:
 
         # Drop NaNs for the specific scenario
         data_vec = pivot[col].dropna()
@@ -638,7 +638,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     lw_ghost = 0.5
     ax.plot(x_coords, pivot.T.values, color='gray', alpha=alpha_ghost, linewidth=lw_ghost, zorder=1)
 
-    # IQR ribbon
+    # todo IQR ribbon
     ax.fill_between(x_coords, p25, p75, color=color, alpha=0.25, linewidth=0, zorder=2)
 
     # Sina / jitter points
@@ -705,7 +705,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     ax.axhline(0, color='black', linestyle='--', linewidth=0.6, alpha=0.6, zorder=0)
 
     # Format x-axis
-    ax.set_xlim(-0.5, 2.5)
+    ax.set_xlim(-0.5, 5.5)
     ax.set_xticks(x_coords)
 
     # Clean spines
