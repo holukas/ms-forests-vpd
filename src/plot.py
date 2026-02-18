@@ -364,18 +364,18 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
 
     # mid_point_x = threshold_x + (x_fit.max() - threshold_x) / 1.05
     if show_annotate and not show_annotate_short:
-        ax.text(x_fit[min_ix] - 0.1, -0.05, "Carbon penalty",
+        ax.text(x_fit[min_ix] - 0.15, -0.05, "Carbon penalty",
                 color=color_limzone, alpha=1, ha='right', va='top',
                 fontsize=fontsize * 1.2, style='italic', weight='bold')
-        ax.text(x_fit[min_ix] - 0.1, -0.1, "reduced uptake\nincreased release",
-                color=color_limzone, alpha=1, ha='right', va='top',
-                fontsize=fontsize * 1.2, style='italic', weight='normal')
-        ax.text(x_fit[idx] - 0.1, y_top_axis * 0.95, "Carbon subsidy",
+        # ax.text(x_fit[min_ix] - 0.1, -0.1, "reduced uptake\nincreased release",
+        #         color=color_limzone, alpha=1, ha='right', va='top',
+        #         fontsize=fontsize * 1.2, style='italic', weight='normal')
+        ax.text(x_fit[idx] - 0.15, y_top_axis * 0.92, "Carbon gain",
                 color=color_facilzone, alpha=1, ha='right', va='top',
                 fontsize=fontsize * 1.2, weight='bold', style='italic', zorder=1)
-        ax.text(x_fit[idx] - 0.1, y_top_axis * 0.85, "increased uptake\nreduced release",
-                color=color_facilzone, alpha=1, ha='right', va='top',
-                fontsize=fontsize * 1.2, weight='normal', style='italic', zorder=1)
+        # ax.text(x_fit[idx] - 0.1, y_top_axis * 0.85, "increased uptake\nreduced release",
+        #         color=color_facilzone, alpha=1, ha='right', va='top',
+        #         fontsize=fontsize * 1.2, weight='normal', style='italic', zorder=1)
 
     # -----------------------
     # ANNOTATIONS AND MARKERS
@@ -395,51 +395,6 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
     scaling_factor = min(0.08, scaling_factor)  # Clamp so it does not get huge on small plots
     y_offset_topline = y_range * scaling_factor
 
-    # # Maximum facilitation
-    # ax.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor=colors_symbols[0], **_params2)
-    # if show_annotate:
-    #     # Get the y-position for the text below the plotted points
-    #     text_y_pos_max = y_fit[max_ix] - 0.45 * (ydim_max - ydim_min)
-    #     if show_annotate_short:
-    #         showntext = f'(x={x_fit[max_ix]:.2f})'
-    #     else:
-    #         showntext = f'Max. facilitation\n(x={x_fit[max_ix]:.2f})'
-    #     ax.text(x_fit[max_ix], text_y_pos_max, showntext,
-    #             va='bottom', ha='center', **_params3)
-    #     ax.plot([x_fit[max_ix], x_fit[max_ix]], [text_y_pos_max + y_offset_topline, y_fit[max_ix] - 0], **_params)
-    #     ax.plot([x_fit[max_ix], x_fit[max_ix]], [y_bottom_axis, text_y_pos_max], **_params)
-    #
-    #     # Penalty zone
-    #     if not show_annotate_short:
-    #         mid_point_x = threshold_x + (x_fit.max() - threshold_x) / 1.05
-    #         ax.text(mid_point_x, -0.05, "VPD-limited regime",
-    #                 color=color_limzone, alpha=1, ha='right', va='top',
-    #                 fontsize=fontsize, style='italic', weight='bold')
-    #         ax.text(mid_point_x, -0.1, "reduced uptake\nincreased release",
-    #                 color=color_limzone, alpha=1, ha='right', va='top',
-    #                 fontsize=fontsize, style='italic', weight='normal')
-    #
-    #         mid_x_facil = x_facil.min() + (x_facil.max() - x_facil.min()) / 1.05
-    #         ax.text(mid_x_facil, 0.4, "Facilitation zone",
-    #                 color=color_facilzone, alpha=1, ha='right', va='bottom',
-    #                 fontsize=fontsize, weight='bold', style='italic', zorder=1)
-    #         ax.text(mid_x_facil, 0.32, "increased uptake\nreduced release",
-    #                 color=color_facilzone, alpha=1, ha='right', va='bottom',
-    #                 fontsize=fontsize, weight='normal', style='italic', zorder=1)
-
-    # # Threshold
-    # ax.scatter(x_fit[idx], y_fit[idx], c="none", edgecolors=colors_symbols[1], **_params2)
-    # if show_annotate:
-    #     text_y_pos_zero = y_fit[idx] - 0.45 * (ydim_max - ydim_min)
-    #     if show_annotate_short:
-    #         showntext = f'(x={x_fit[idx]:.2f})'
-    #     else:
-    #         showntext = f'Limitation threshold\n(x={x_fit[idx]:.2f})'
-    #     ax.text(x_fit[idx], text_y_pos_zero, showntext,
-    #             va='bottom', ha='center', **_params3)
-    #     ax.plot([x_fit[idx], x_fit[idx]], [text_y_pos_zero + y_offset_topline, y_fit[idx] - 0], **_params)
-    #     ax.plot([x_fit[idx], x_fit[idx]], [y_bottom_axis, text_y_pos_zero], **_params)
-
     # Maximum facilitation
     ax.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor=colors_symbols[0], **_params2)
 
@@ -450,28 +405,49 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
     ax.scatter(x_fit[min_ix], y_fit[min_ix], color='none', marker='v', edgecolor=colors_symbols[2], **_params2)
 
     if show_annotate:
-        # ann_txt = f'Max. facilitation\n(x={x_fit[max_ix]:.2f})' if not show_annotate_short:
-        ann_txt = f'Max. facilitation\n(x={x_fit[max_ix]:.2f})' \
-            if not show_annotate_short else f'(x={x_fit[max_ix]:.2f})'
+        _fontsize = fontsize* 0.9 if show_annotate_short else fontsize
+
+        if not show_annotate_short:
+            ann_txt = f'Max. gain\nx={x_fit[max_ix]:.2f}'
+            offx = 0.14
+            offy = -0.33
+        else:
+            ann_txt = f'x={x_fit[max_ix]:.2f}'
+            offx = 0.14
+            offy = -0.33
         ax.annotate(ann_txt,
                     xy=(x_fit[max_ix], y_fit[max_ix]),
-                    xytext=(x_fit[max_ix] + 0.14, y_fit[max_ix] - 0.33),  # Adjust text position as needed
+                    xytext=(x_fit[max_ix] + offx, y_fit[max_ix] * -1 * 0.5),  # Adjust text position as needed
                     arrowprops=dict(arrowstyle="->", color=color, lw=2, shrinkB=10),
-                    fontsize=fontsize, color=color, ha='center', va='center', zorder=100)
-        ann_txt = f'Limitation threshold\n(x={x_fit[idx]:.2f})' \
-            if not show_annotate_short else f'(x={x_fit[idx]:.2f})'
+                    fontsize=_fontsize, color=color, ha='center', va='center', zorder=100)
+
+        if not show_annotate_short:
+            ann_txt = f'Penalty threshold\nx={x_fit[idx]:.2f}'
+            offx = 0.8
+            offy = 0.3
+        else:
+            ann_txt = f'x={x_fit[idx]:.2f}'
+            offx = 0.7
+            offy = 0.6
         ax.annotate(ann_txt,
                     xy=(x_fit[idx], y_fit[idx]),
-                    xytext=(x_fit[idx] - 0.8, y_fit[idx] - 0.3),  # Adjust text position as needed
+                    xytext=(x_fit[idx] - offx, y_fit[idx] - offy),  # Adjust text position as needed
                     arrowprops=dict(arrowstyle="->", color=color, lw=2, shrinkB=10),
-                    fontsize=fontsize, color=color, ha='center', va='center', zorder=100)
-        ann_txt = f'Max. limitation\n(x={x_fit[min_ix]:.2f})' \
-            if not show_annotate_short else f'(x={x_fit[min_ix]:.2f})'
+                    fontsize=_fontsize, color=color, ha='center', va='center', zorder=100)
+
+        if not show_annotate_short:
+            ann_txt = f'Max. penalty\nx={x_fit[min_ix]:.2f}'
+            offx = 1
+            offy = 0.05
+        else:
+            ann_txt = f'x={x_fit[min_ix]:.2f}'
+            offx = 2
+            offy = 0
         ax.annotate(ann_txt,
                     xy=(x_fit[min_ix], y_fit[min_ix]),
-                    xytext=(x_fit[min_ix] - 1, y_fit[min_ix] - 0.05),  # Adjust text position as needed
+                    xytext=(x_fit[min_ix] - offx, y_bottom_axis * 0.9),  # Adjust text position as needed
                     arrowprops=dict(arrowstyle="-|>", color=color, lw=2, shrinkB=10),
-                    fontsize=fontsize, color=color, ha='center', va='center', zorder=100)
+                    fontsize=_fontsize, color=color, ha='center', va='center', zorder=100)
 
 
 def format(ax, fontsize, showxticklabels, showyticklabels, xtickdigits, ytickdigits,

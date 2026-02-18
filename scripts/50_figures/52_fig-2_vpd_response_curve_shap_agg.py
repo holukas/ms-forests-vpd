@@ -217,7 +217,7 @@ ydim_min = _sem_lower.min() * 1.15
 ax_all.set_ylim(ydim_min, ydim_max)
 xdim_min = X_data.min()
 xdim_max = X_data.max()
-ax_all.set_xlim(xdim_min, xdim_max * 1.05)
+ax_all.set_xlim(xdim_min, xdim_max * 1.06)
 # ax_all.set_xlim(-1, 1)
 
 # Add text and connecting dashed lines for SHAP max, zero, and min
@@ -289,9 +289,12 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     Z_data_nonan = df_subset_nonan.iloc[:, 2].values
     poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data_nonan,
                                                                                          Y_data=Y_data_nonan)
-    # todo print(f"Polynomial coefficients {igbp}: "
-    #       f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
-    #       f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
+    # Find value closest to "SHAP zero"
+    idx = (np.abs(y_fit - 0)).argmin()
+
+    print(f"Polynomial coefficients {igbp}: "
+          f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
+          f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[4]:.3f}; r2={r_squared:.3f}\n")
 
     if show_fit:
         fillbetweenplot = plot.add_fit(ax=ax, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
@@ -356,5 +359,5 @@ fig.show()
 
 # Save fig to file
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'53_FIG-3_ResponseCurve_ShapMedians_{FLUX}_{xvar}+{yvar}+{zvar}.png'
+outfilepath = dir_out / f'52_FIG-2_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}.png'
 fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
