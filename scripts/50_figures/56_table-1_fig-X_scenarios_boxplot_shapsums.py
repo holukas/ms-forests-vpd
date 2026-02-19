@@ -178,12 +178,42 @@ plt.subplots_adjust(left=0.1, right=0.98, top=0.95, bottom=0.07)
 # Save function helper
 # plt.savefig('transition_plot.pdf', dpi=300, bbox_inches='tight')
 
-# --------------
-# CREATE TABLE 1
-# --------------
 # ------------------------
-# CALCULATE SCENARIO STATS
+# CONFIGURATION
 # ------------------------
+SCENARIO_ORDER_NAMES = ['1', '2', '3', '4', '5', '6']
+scen_map = {1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6'}
+
+# CHANGED: 'Global forests' instead of 'All sites'
+IGBP_ORDER = ['Global forests', 'ENF', 'DBF', 'MF', 'EBF']
+VAR_ORDER = ['Vapor pressure deficit', 'Air temperature', 'Soil moisture', 'Radiation']
+
+# Map raw variable names to display names
+var_map = {
+    'VPD_ZSCORE_SHAPVALS_OVR_AVG': 'Vapor pressure deficit',
+    'TA_ZSCORE_SHAPVALS_OVR_AVG': 'Air temperature',
+    'SWC_ZSCORE_SHAPVALS_OVR_AVG': 'Soil moisture',
+    'SWIN_ZSCORE_SHAPVALS_OVR_AVG': 'Radiation',
+    'NET_SHAPVALS': 'Net sum'
+}
+
+# ---------------------------------------------------------
+# 1. DEFINE SCENARIO CONDITIONS (THE HEADER LOGIC)
+# ---------------------------------------------------------
+SCENARIO_DEFINITIONS = {
+    'Vapor pressure deficit':
+        ['normal', 'unrestricted', 'unrestricted', 'unrestricted', 'unrestricted', 'very dry'],
+    'Air temperature':
+        ['normal', 'warm', 'warm', 'hot', 'hot', 'hot'],
+    'Soil moisture':
+        ['normal', 'normal', 'dry', 'dry', 'very dry', 'very dry'],
+    'Radiation':
+        ['normal', 'unrestricted', 'unrestricted', 'unrestricted', 'unrestricted', 'unrestricted']
+}
+
+# ---------------------------------------------------------
+# 2. CALCULATE SCENARIO STATS (Existing Code)
+# ---------------------------------------------------------
 print("Calculating scenario stats...")
 
 # Global
@@ -199,124 +229,137 @@ for i, igbp in enumerate(IGBP_CLASSES):
     igbp_data = scenarios.calculate_scenario_stats(
         df_input=df_igbp, igbp=igbp, scenario_order=SCENARIO_ORDER, vars=VARS,
         shap_suffix_avg=SHAP_SUFFIX_AVG, shap_suffix_sd=SHAP_SUFFIX_SD)
-    # s_data, s_net, s_err, s_sd, s_counts = calculate_budget_stats(df_sub)
     scenario_stats = pd.concat([scenario_stats, igbp_data], axis=0)
 
 # ---------------------------------------------------------
-# ADJUSTED TABLE 1 CREATION USING scenario_stats
+# 3. PREPARE DATA FOR TABLE
 # ---------------------------------------------------------
 df = scenario_stats.copy()
 
-# 1. Map Columns for Display
-# --------------------------
-# Map Variable Names
-var_map = {
-    'VPD_ZSCORE_SHAPVALS_OVR_AVG': 'Vapor pressure deficit',
-    'TA_ZSCORE_SHAPVALS_OVR_AVG': 'Air temperature',
-    'SWC_ZSCORE_SHAPVALS_OVR_AVG': 'Soil moisture',
-    'SWIN_ZSCORE_SHAPVALS_OVR_AVG': 'Radiation',
-    'NET_SHAPVALS': 'Net sum'  # Map the Net row directly
-}
-
-# Ensure we map whatever column holds the variable name (e.g., 'Variable' or 'Feature')
-# Assuming the column is named 'Variable' based on your previous dataframe printout
+# Determine column name for variable
 if 'Variable' in df.columns:
-    df['Driver'] = df['Variable'].map(var_map)
+    var_col = 'Variable'
 elif 'Feature' in df.columns:
-    df['Driver'] = df['Feature'].map(var_map)
+    var_col = 'Feature'
+else:
+    var_col = 'Variable'  # Fallback
 
-# Map Scenarios
-scen_map = {1: 'Normal', 4: 'Dry and hot', 5: 'Compound extremes'}
+df['Driver'] = df[var_col].map(var_map).fillna(df[var_col])
 df['Scenario_Name'] = df['scenario'].map(scen_map)
 
-# Map IGBP (Normalize 'global' to 'All sites' to match IGBP_ORDER)
-igbp_map = {'global': 'All sites'}
-# Fill remaining IGBPs with themselves if not in map
+# CHANGED: Map 'global' to 'Global forests'
+igbp_map = {'global': 'Global forests'}
 df['IGBP_Display'] = df['igbp'].replace(igbp_map)
 
-# 2. Format Statistics String
-# ---------------------------
-# Check if Min/Max exist, otherwise formatting will fail
-if 'min' in df.columns and 'max' in df.columns:
-    df['Stats'] = df.apply(lambda r: f"{r['mean']:.2f}±{r['total_sd']:.2f} ({r['min']:.2f}, {r['max']:.2f})", axis=1)
-else:
-    # Fallback if Min/Max are missing from the aggregate stats
-    print("Warning: Min/Max columns missing, showing Mean±SD only.")
-    df['Stats'] = df.apply(lambda r: f"{r['mean']:.2f}±{r['total_sd']:.2f}", axis=1)
+# Format Statistics
+def format_stats(r):
+    if pd.isna(r['mean']): return "n/a"
+    m = r['mean']
+    sd = r['total_sd']
+    if 'min' in r and 'max' in r and not pd.isna(r['min']):
+        return f"{m:.2f}±{sd:.2f} ({r['min']:.2f}, {r['max']:.2f})"
+    else:
+        return f"{m:.2f}±{sd:.2f}"
 
-# 3. Pivot
-# --------
-SCENARIO_ORDER_NAMES = ['Normal', 'Dry and hot', 'Compound extremes']
-IGBP_ORDER = ['All sites', 'ENF', 'DBF', 'MF', 'EBF']
-VAR_ORDER = ['Vapor pressure deficit', 'Air temperature', 'Soil moisture', 'Radiation']
+df['Stats'] = df.apply(format_stats, axis=1)
 
-# We only need one pivot now because we don't need to sum numeric values manually
+# Pivot
 table_str = df.pivot_table(index=['IGBP_Display', 'Driver'],
                            columns='Scenario_Name',
                            values='Stats',
                            aggfunc='first')
-
-# Reorder columns to ensure correct scenario sequence
 table_str = table_str.reindex(columns=SCENARIO_ORDER_NAMES)
 
-# 4. Construct Final Ordered List
-# -------------------------------
-grouped_rows = []
+# ---------------------------------------------------------
+# 4. CONSTRUCT ROWS (HEADER + DATA)
+# ---------------------------------------------------------
+final_rows = []
 
+# # --- A. ADD SCENARIO NUMBER ROW ---
+# # This creates the row: "Scenario" | 1 | 2 | 3 | 4 | 5 | 6
+# row_scen_num = {'index': 'Scenario'}
+# for col in SCENARIO_ORDER_NAMES:
+#     row_scen_num[col] = col
+# final_rows.append(row_scen_num)
+
+# --- B. ADD SCENARIO CONDITIONS HEADER ---
+# 1. Main Header Title
+final_rows.append({'index': 'Scenario conditions',
+                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': ''})
+
+# 2. Condition Rows (VPD, Temp, etc.)
+for driver in VAR_ORDER:
+    # Get the list of conditions for this driver
+    conditions = SCENARIO_DEFINITIONS.get(driver, ['?'] * 6)
+
+    row_cond = {'index': f"  {driver}"}
+    for idx, col_name in enumerate(SCENARIO_ORDER_NAMES):
+        if idx < len(conditions):
+            row_cond[col_name] = conditions[idx]
+        else:
+            row_cond[col_name] = '-'
+    final_rows.append(row_cond)
+
+final_rows.append({'index': '',
+                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': ''})
+
+final_rows.append({'index': 'IGBP / Environmental driver',
+                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': ''})
+
+# --- C. ADD DATA ROWS (IGBP GROUPS) ---
+# Iterate through 'Global forests' then IGBPs
 for igbp in IGBP_ORDER:
-    # A. Header Row (IGBP Name)
-    grouped_rows.append({
-        'IGBP / Environmental driver': f"{igbp}",
-        'Normal': '', 'Dry and hot': '', 'Compound extremes': ''
+    # Header Row (IGBP Name)
+    final_rows.append({
+        'index': f"{igbp}",
+        '1': '', '2': '', '3': '', '4': '', '5': '', '6': ''
     })
 
-    # Check if data exists for this IGBP
     if igbp in table_str.index.get_level_values(0):
         igbp_data = table_str.loc[igbp]
 
-        # B. Component Rows (Iterate specific order)
+        # Component Rows
         for driver in VAR_ORDER:
+            row_dict = {'index': f"  {driver}"}
             if driver in igbp_data.index:
-                row = igbp_data.loc[driver]
-                grouped_rows.append({
-                    'IGBP / Environmental driver': f"  {driver}",
-                    'Normal': row.get('Normal', ''),
-                    'Dry and hot': row.get('Dry and hot', ''),
-                    'Compound extremes': row.get('Compound extremes', '')
-                })
+                for col in SCENARIO_ORDER_NAMES:
+                    val = igbp_data.loc[driver, col]
+                    row_dict[col] = val if pd.notna(val) else '-'
+            else:
+                for col in SCENARIO_ORDER_NAMES: row_dict[col] = '-'
+            final_rows.append(row_dict)
 
-        # C. Net Sum Row (Look it up directly)
+        # Net Sum Row
+        net_row_dict = {'index': "  Net sum"}
         if 'Net sum' in igbp_data.index:
-            row = igbp_data.loc['Net sum']
-            grouped_rows.append({
-                'IGBP / Environmental driver': "  Net sum",
-                'Normal': row.get('Normal', ''),
-                'Dry and hot': row.get('Dry and hot', ''),
-                'Compound extremes': row.get('Compound extremes', '')
-            })
+            for col in SCENARIO_ORDER_NAMES:
+                val = igbp_data.loc['Net sum', col]
+                net_row_dict[col] = val if pd.notna(val) else '-'
         else:
-            # Fallback if Net sum is missing for some reason
-            grouped_rows.append({'IGBP / Environmental driver': "  Net sum", 'Normal': 'n/a', 'Dry and hot': 'n/a',
-                                 'Compound extremes': 'n/a'})
+            for col in SCENARIO_ORDER_NAMES: net_row_dict[col] = '-'
+        final_rows.append(net_row_dict)
 
-# 5. Finalize
-table_1_final = pd.DataFrame(grouped_rows)
-table_1_final.set_index('IGBP / Environmental driver', inplace=True)
+# ---------------------------------------------------------
+# 5. FINALIZE & SAVE
+# ---------------------------------------------------------
+table_1_final = pd.DataFrame(final_rows)
+table_1_final.set_index('index', inplace=True)
 
 # Save
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'52_TABLE-1_Scenarios_ShapMeans_WithNetSum_{FLUX}.csv'
+outfilepath = dir_out / f'52_TABLE-1_Scenarios_ShapMeans_WithConditions_{FLUX}.csv'
 table_1_final.to_csv(outfilepath, index=True)
 
 # Show table
 pd.set_option('display.max_rows', 3000)
 pd.set_option('display.width', 1000)
+print(f"Table saved to: {outfilepath}")
 print(table_1_final.to_string(index=True))
 
-# Save fig to file
-dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'52_FIG-2_Scenarios_SinaPlots_ShapMeans_{FLUX}.png'
-fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
-
-# Show figure
-plt.show()
+# # Save fig to file
+# dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+# outfilepath = dir_out / f'56_FIG-X_Scenarios_SinaPlots_ShapMeans_{FLUX}.png'
+# fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
+#
+# # Show figure
+# plt.show()

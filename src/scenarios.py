@@ -131,6 +131,7 @@ def scenario_1(df, a: float = 0.6745):
     mask_ta = (df['TA_ZSCORE'] >= -a) & (df['TA_ZSCORE'] <= a)
     mask_vpd = (df['VPD_ZSCORE'] >= -a) & (df['VPD_ZSCORE'] <= a)
     mask_swc = (df['SWC_ZSCORE'] >= -a) & (df['SWC_ZSCORE'] <= a)
+    # combined_mask = mask_ta & mask_swc
     combined_mask = mask_ta & mask_vpd & mask_swc
     df = df.loc[combined_mask].copy()
     condition = "normal conditions"
@@ -140,6 +141,7 @@ def scenario_1(df, a: float = 0.6745):
 def scenario_2(df, a: float = 0.6745, c: float = 1.25):
     """Warmer conditions, soil moisture normal"""
     mask_ta = (df['TA_ZSCORE'] > a) & (df['TA_ZSCORE'] <= c)
+    # mask_swc = df['SWC_ZSCORE'] <= a
     mask_swc = (df['SWC_ZSCORE'] >= -a) & (df['SWC_ZSCORE'] <= a)
     combined_mask = mask_ta & mask_swc
     df = df.loc[combined_mask].copy()
