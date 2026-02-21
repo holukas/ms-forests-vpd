@@ -356,10 +356,10 @@ pd.set_option('display.width', 1000)
 print(f"Table saved to: {outfilepath}")
 print(table_1_final.to_string(index=True))
 
-# # Save fig to file
-# dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-# outfilepath = dir_out / f'56_FIG-X_Scenarios_SinaPlots_ShapMeans_{FLUX}.png'
-# fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
-#
-# # Show figure
-# plt.show()
+# Save fig to file
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+outfilepath = dir_out / f'56_FIG-X_Scenarios_SinaPlots_ShapMeans_{FLUX}.png'
+fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
+
+# Show figure
+plt.show()

@@ -16,8 +16,8 @@ import src.scenarios as scenarios
 # ==========================================
 FLUX = 'NEP_ZSCORE'
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
-SCENARIO_ORDER = [1, 2, 3, 4, 5, 6, 7, 8]
-SCENARIO_LABELS = [f"Scenario {sl}" for sl in SCENARIO_ORDER]
+SCENARIO_ORDER = [1, 4, 5]
+SCENARIO_LABELS = ['Normal', 'Hot & dry', 'Compound\nextremes']
 
 # Variables
 VARS = ['SWIN_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE']
@@ -47,8 +47,6 @@ PALETTE = {
     'SWIN_ZSCORE': '#E69F00'
 }
 BLUE = '#0072B2'
-
-AX_LABELS_FONTSIZE = 12
 
 # Paths
 settings = files.read_settings_file("../../config/settings.yaml")
@@ -87,65 +85,59 @@ for i, igbp in enumerate(IGBP_CLASSES):
     igbp_data = scenarios.calculate_scenario_stats(
         df_input=df_igbp, igbp=igbp, scenario_order=SCENARIO_ORDER, vars=VARS,
         shap_suffix_avg=SHAP_SUFFIX_AVG, shap_suffix_sd=SHAP_SUFFIX_SD)
+    # s_data, s_net, s_err, s_sd, s_counts = calculate_budget_stats(df_sub)
     scenario_stats = pd.concat([scenario_stats, igbp_data], axis=0)
 
 # Get limits for y-axis scaling, same for all plots
 GRAND_Y_MIN, GRAND_Y_MAX = plot.get_panel_limits(df=scenario_stats)
-FIXED_YLIM_MAIN = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 2.2)
-FIXED_YLIM_SUB = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1)
+FIXED_YLIM = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.2)
 
 # ------
 # FIGURE
 # ------
-
-# Figure settings
-gain = 1.5
-fig = plt.figure(figsize=(11 * gain, 9 * gain), dpi=150)
-outer_gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1], width_ratios=[1], wspace=0.1)
-gs_top = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec=outer_gs[0])
-gs_bottom = gridspec.GridSpecFromSubplotSpec(1, 4, subplot_spec=outer_gs[1], wspace=0.15, hspace=0.1)
+fig = plt.figure(figsize=(18, 9), dpi=300)
+outer_gs = gridspec.GridSpec(1, 2, width_ratios=[0.55, 0.45], wspace=0.1)
+gs_left = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec=outer_gs[0])
+gs_right = gridspec.GridSpecFromSubplotSpec(2, 2, subplot_spec=outer_gs[1], wspace=0.15, hspace=0.1)
 
 # Panel settings
 panels_data = []
 
 # Global
 _data = scenario_stats.loc[scenario_stats['igbp'] == 'global'].copy()
-panels_data.append({'data': _data, 'title': "a | Global forests",
-                    'is_small': False, 'gs': gs_top[0], 'show_scenario_labels': True})
+panels_data.append({'data': _data, 'title': "a | Global forest response (all sites)",
+                    'is_small': False, 'gs': gs_left[0], 'show_scenario_labels': True})
 
 # IGBP
 for i, igbp in enumerate(IGBP_CLASSES):
-    row, col = 0, i
+    row, col = i // 2, i % 2
     letter = chr(98 + i)
     show_scenario_lables = True if row == 1 else False
     _data = scenario_stats.loc[scenario_stats['igbp'] == igbp].copy()
     panels_data.append({'data': _data, 'title': f"{letter} | {IGBP_NAMES[igbp]}",
-                        'is_small': True, 'gs': gs_bottom[row, col], 'show_scenario_labels': show_scenario_lables})
+                        'is_small': True, 'gs': gs_right[row, col], 'show_scenario_labels': show_scenario_lables})
 
 # Draw
 print("Drawing panels...")
 for pix, p in enumerate(panels_data):
     ax = fig.add_subplot(p['gs'])
-    fixedy = FIXED_YLIM_MAIN if not p['is_small'] else FIXED_YLIM_SUB
-    plot.draw_panel(ax=ax, df=p['data'], title=p['title'], fixed_ylim=fixedy, is_small=p['is_small'],
+    plot.draw_panel(ax=ax, df=p['data'], title=p['title'], fixed_ylim=FIXED_YLIM, is_small=p['is_small'],
                     show_scenario_labels=p['show_scenario_labels'], vars=VARS, palette=PALETTE,
-                    scenario_ids=SCENARIO_ORDER, scenario_labels=SCENARIO_LABELS, shap_suffix_avg=SHAP_SUFFIX_AVG)
-
+                    scenario_labels=SCENARIO_LABELS, shap_suffix_avg=SHAP_SUFFIX_AVG)
     if not p['is_small']:
-        color_limzone = '#d6604d'
-        color_facilzone = '#4393c3'
-        ax.text(x=-0.65, y=0.04, s='Carbon gain', fontweight='bold', zorder=99,
-                fontsize=AX_LABELS_FONTSIZE * 1.2, color=color_facilzone, ha='center', va='bottom')
-        ax.text(x=-0.65, y=-0.04, s='Carbon penalty', fontweight='bold', zorder=99,
-                fontsize=AX_LABELS_FONTSIZE * 1.2, color=color_limzone, ha='center', va='top')
+        ax.text(x=-0.97, y=0.04, s=r'$\uparrow$' + 'Positive effect ($\sigma$)\nincreased uptake\nreduced release',
+                fontsize=12, color='black', ha='left', va='bottom')
+        ax.text(x=-0.97, y=-0.04, s='increased release\nreduced uptake\n' + r'$\downarrow$Negative effect ($\sigma$)',
+                fontsize=12, color='black', ha='left', va='top')
 
         # Draw up and down area arrows
         # Define vertices
         vertices_up = [(-0.3, 0), (-0.3, 0.15), (-0.65, 0.2), (-1, 0.15), (-1, 0), (-0.3, 0)]
         vertices_down = [(-0.3, 0), (-0.3, -0.15), (-0.65, -0.2), (-1, -0.15), (-1, 0), (-0.3, 0)]
+
         # Add arrows
-        plot.add_gradient_arrow(ax=ax, vertices=vertices_up, color_main=color_facilzone, direction='up')  # Sage Green
-        plot.add_gradient_arrow(ax=ax, vertices=vertices_down, color_main=color_limzone, direction='down')  # Slate Blue
+        plot.add_gradient_arrow(ax=ax, vertices=vertices_up, color_main='#829460', direction='up')  # Sage Green
+        plot.add_gradient_arrow(ax=ax, vertices=vertices_down, color_main='#4E6E81', direction='down')  # Slate Blue
 
 # Legend
 legend_elements = [Patch(facecolor=c, label=l) for l, c in zip(VAR_LABELS.values(), PALETTE.values())]
@@ -161,9 +153,9 @@ fig.legend(handles=legend_elements, loc='lower center', ncol=6,
 # Adjust
 plt.subplots_adjust(left=0.03, right=0.97, top=0.92, bottom=0.1)
 
-# dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-# outfilepath = dir_out / f'51_FIG-1_SankeyPlotSHAPValuesScenarios_{FLUX}.png'
-# print(f"Saved to {outfilepath}")
-# plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+outfilepath = dir_out / f'51_FIG-1_SankeyPlotSHAPValuesScenarios_{FLUX}.png'
+print(f"Saved to {outfilepath}")
+plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
 
 plt.show()

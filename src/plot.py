@@ -95,28 +95,25 @@ def sigmoid(x, x_start, x_end, y_start, y_end):
 
 
 def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, scenario_labels,
-               shap_suffix_avg, is_small=False):
-    # Constants
-    SCENARIO_IDS = [1, 4, 5]  # The scenario IDs in dataframe column 'scenario'
-
-    x_centers = [0, 1, 2]
+               scenario_ids, shap_suffix_avg, is_small=False):
+    x_centers = [x for x in range(0, len(scenario_ids))]
     bar_width = 0.4 if not is_small else 0.4
     x_centers_shifted_left = np.array(x_centers) - bar_width / 3
     x_centers_shifted_right = np.array(x_centers) + bar_width / 2.5
     alpha_ribbon = 0.25
 
-    fs_val = 12 if not is_small else 12
+    fs_val = 12 if not is_small else 10
     fs_label = 12 if not is_small else 12
     fs_tick = 12 if not is_small else 12
 
     # Storage for ribbon coordinates and net lines
-    node_pos = [{} for _ in range(len(SCENARIO_IDS))]
+    node_pos = [{} for _ in range(len(scenario_ids))]
     net_vals = []
     net_errs = []
     net_counts = []
 
     # Iterate through scenarios to draw bars and collect Net data
-    for i, scen_id in enumerate(SCENARIO_IDS):
+    for i, scen_id in enumerate(scenario_ids):
         cx = x_centers[i]
 
         # Filter df for this scenario
@@ -137,9 +134,6 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
             net_counts.append(int(net_row['n_sites'].values[0]))
         else:
             raise ValueError("Expected net row to exist in dataframe.")
-            # net_vals.append(0)
-            # net_errs.append(0)
-            # net_counts.append(0)
 
         # Draw bars: positive stack
         current_y = 0.0
@@ -195,13 +189,89 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
             node_pos[i][var] = (bottom, top)
             current_y += val
 
-        # Scenario Labels
+        # Scenario Labels, N-counts, and Condition Rectangles (ABOVE the bars)
         if show_scenario_labels:
-            ax.text(cx, fixed_ylim[0] + (abs(fixed_ylim[0]) * 0.07), scenario_labels[i],
+            scenario_symbols = {
+                'VPD_ZSCORE':
+                    ['normal', '-', '-', '-', '-', '-', '-', '↑↑↑ extreme'],
+                'TA_ZSCORE':
+                    ['normal', '↑ warm', '↑ warm', '↑↑ hot', '↑↑ hot', '↑↑↑ extreme', '↑↑↑ extreme', '↑↑↑ extreme'],
+                'SWC_ZSCORE':
+                    ['normal', 'normal', '↓ dry', '↓ dry', '↓↓ very dry', '↓↓  very dry', '↓↓↓ extreme', '↓↓↓ extreme'],
+                'SWIN_ZSCORE':
+                    ['normal', '-', '-', '-', '-', '-', '-', '-']
+            }
+
+            y_range = fixed_ylim[1] - fixed_ylim[0]
+            box_height = y_range * 0.055  # Slightly thinner to fit everything
+            box_width = bar_width * 0.8
+
+            # 1. Scenario Name (S1, S2...)
+            y_scen_label = fixed_ylim[1] - (y_range * 0.01)
+            ax.text(cx, y_scen_label, scenario_labels[i],
                     ha='center', va='top', fontsize=fs_tick, fontweight='bold')
 
+            # 2. Site count (n=...)
+            y_n_label = y_scen_label - (y_range * 0.03)
+            current_n = net_counts[-1] if len(net_counts) > 0 else 0
+            ax.text(cx, y_n_label, f"n={current_n}",
+                    ha='center', va='top', fontsize=fs_tick, color='black')
+
+            # 3. Condition Boxes (Start drawing below the 'n=...' text)
+            # Use exactly 0.04 here for the top of the boxes
+            top_y_boxes = y_n_label - (y_range * 0.04)
+
+            for var_idx, var in enumerate(vars):
+                # Stack downwards
+                box_y = top_y_boxes - (var_idx * box_height) - box_height
+
+                color = palette[var]
+                symbol = scenario_symbols[var][i]
+
+                # Draw Rectangle
+                rect = plt.Rectangle(
+                    (cx - (box_width / 2), box_y), box_width, box_height,
+                    facecolor=color, alpha=0, edgecolor=color,
+                    lw=1, zorder=99, clip_on=False)
+                ax.add_patch(rect)
+
+                # Add Symbol Text
+                if symbol:
+                    fs = 12
+                    ax.text(cx, box_y + (box_height / 2), symbol,
+                            ha='center', va='center', fontsize=fs,
+                            fontweight='bold', color=color, zorder=100)
+
+    # Add row labels to the left of the condition boxes
+    if show_scenario_labels:
+        y_range = fixed_ylim[1] - fixed_ylim[0]
+        box_height = y_range * 0.055
+
+        # Recalculate same starting position
+        y_scen_label = fixed_ylim[1] - (y_range * 0.01)
+        # Note: Changed from 0.06 to 0.03 to match the loop above
+        y_n_label = y_scen_label - (y_range * 0.03)
+
+        # Note: Changed from 0.02 to 0.04 to match the loop above EXACTLY
+        top_y_boxes = y_n_label - (y_range * 0.04)
+
+        var_display_names = {
+            'VPD_ZSCORE': 'VPD',
+            'TA_ZSCORE': 'Air temperature',
+            'SWC_ZSCORE': 'Soil moisture',
+            'SWIN_ZSCORE': 'Radiation'
+        }
+
+        for var_idx, var in enumerate(vars):
+            box_y = top_y_boxes - (var_idx * box_height) - box_height
+            label_text = var_display_names.get(var, var)
+            ax.text(x_centers[0] - (bar_width * 0.5) - 0.1, box_y + (box_height / 2),
+                    label_text, ha='right', va='center', fontsize=12,
+                    fontweight='bold', color=palette[var], zorder=100)
+
+
     # Draw ribbons
-    for i in range(len(SCENARIO_IDS) - 1):
+    for i in range(len(scenario_ids) - 1):
         x_start, x_end = x_centers[i] + bar_width / 2, x_centers[i + 1] - bar_width / 2
         x_curve = np.linspace(x_start, x_end, 100)
 
@@ -239,15 +309,9 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
     for x, y in zip(x_centers_shifted_left, net_vals):
         offset = 0
         bbox = dict(boxstyle="round,pad=0.1", fc="white", ec="none", alpha=0.6)
-        ax.text(x - 0.1, y + offset, f"{y:+.2f}", fontsize=fs_val, fontweight='bold',
+        _x = x - 0.1 if not is_small else x - 0.2
+        ax.text(_x, y + offset, f"{y:+.2f}", fontsize=fs_val, fontweight='bold',
                 ha='right', va='center', bbox=bbox, zorder=25)
-
-    # Counts (n=...)
-    for x, y in zip(x_centers, net_counts):
-        ypos = 0.42 if is_small else 0.37
-        smaller = 1 if is_small else 0
-        ax.text(x, ypos, f"n={y}", fontsize=fs_val - smaller, fontweight='normal',
-                ha='center', va='center', zorder=25)
 
     # Styling
     ax.axhline(0, color='black', linewidth=1, linestyle='--', zorder=25)
@@ -255,9 +319,9 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
     ax.set_ylim(fixed_ylim)
 
     if not is_small:
-        ax.set_xlim(-1, 2.3)
+        ax.set_xlim(x_centers[0] - 1, x_centers[-1] + 0.3)
     else:
-        ax.set_xlim(-0.3, 2.3)
+        ax.set_xlim(x_centers[0] - 0.3, x_centers[-1] + 0.3)
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
