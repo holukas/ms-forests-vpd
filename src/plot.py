@@ -45,9 +45,9 @@ def add_gradient_arrow(ax, vertices, color_main, direction='up'):
 
     # Display and clip
     # Extent should cover the bounding box of the arrow
-    ymin, ymax = (0, 0.2) if direction == 'up' else (-0.2, 0)
+    ymin, ymax = (0, 0.25) if direction == 'up' else (-0.25, 0)
     im = ax.imshow(gradient, interpolation='bicubic',
-                   extent=[-1, -0.3, ymin, ymax],
+                   extent=[-1.9, -0.5, ymin, ymax],
                    cmap=plt.cm.colors.LinearSegmentedColormap.from_list('custom', [color_main, '#ffffff']),
                    aspect='auto', alpha=0.6, zorder=3)
     im.set_clip_path(patch)
@@ -154,7 +154,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
             ax.bar(cx, val, width=bar_width, bottom=bottom, color=palette[var],
                    edgecolor='white', linewidth=0.5, zorder=10)
 
-            if (abs(val) > 0.01) and not is_small:
+            if (abs(val) >= 0.02) and not is_small:
                 ax.text(x_centers_shifted_right[i], bottom + val / 2, f"+{val:.2f}", ha='right', va='center',
                         fontsize=fs_val - 1, color='white', fontweight='bold',
                         path_effects=[pe.withStroke(linewidth=1.2, foreground=palette[var])], zorder=20)
@@ -181,8 +181,9 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
             ax.bar(cx, abs(val), width=bar_width, bottom=bottom, color=palette[var],
                    edgecolor='white', linewidth=0.5, zorder=10)
 
-            if (abs(val) > 0.01) and not is_small:
-                ax.text(x_centers_shifted_right[i], bottom + abs(val) / 2, f"{val:.2f}", ha='right', va='center',
+            if (abs(val) >= 0.02) and not is_small:
+                div = 3 if abs(val) >= 0.4 else 2  # Displays text below middle of bar, for looong bars
+                ax.text(x_centers_shifted_right[i], bottom + abs(val) / div, f"{val:.2f}", ha='right', va='center',
                         fontsize=fs_val - 1, color='white', fontweight='bold',
                         path_effects=[pe.withStroke(linewidth=1.2, foreground=palette[var])], zorder=20)
 
@@ -319,7 +320,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
     ax.set_ylim(fixed_ylim)
 
     if not is_small:
-        ax.set_xlim(x_centers[0] - 1, x_centers[-1] + 0.3)
+        ax.set_xlim(x_centers[0] - 2, x_centers[-1] + 0.3)
     else:
         ax.set_xlim(x_centers[0] - 0.3, x_centers[-1] + 0.3)
 

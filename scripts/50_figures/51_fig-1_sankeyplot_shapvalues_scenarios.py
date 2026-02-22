@@ -99,7 +99,7 @@ FIXED_YLIM_SUB = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1)
 # ------
 
 # Figure settings
-gain = 1.5
+gain = 1.3
 fig = plt.figure(figsize=(11 * gain, 9 * gain), dpi=150)
 outer_gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1], width_ratios=[1], wspace=0.1)
 gs_top = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec=outer_gs[0])
@@ -127,6 +127,8 @@ print("Drawing panels...")
 for pix, p in enumerate(panels_data):
     ax = fig.add_subplot(p['gs'])
     fixedy = FIXED_YLIM_MAIN if not p['is_small'] else FIXED_YLIM_SUB
+
+    # Draw panel
     plot.draw_panel(ax=ax, df=p['data'], title=p['title'], fixed_ylim=fixedy, is_small=p['is_small'],
                     show_scenario_labels=p['show_scenario_labels'], vars=VARS, palette=PALETTE,
                     scenario_ids=SCENARIO_ORDER, scenario_labels=SCENARIO_LABELS, shap_suffix_avg=SHAP_SUFFIX_AVG)
@@ -134,15 +136,15 @@ for pix, p in enumerate(panels_data):
     if not p['is_small']:
         color_limzone = '#d6604d'
         color_facilzone = '#4393c3'
-        ax.text(x=-0.65, y=0.04, s='Carbon gain', fontweight='bold', zorder=99,
-                fontsize=AX_LABELS_FONTSIZE * 1.2, color=color_facilzone, ha='center', va='bottom')
-        ax.text(x=-0.65, y=-0.04, s='Carbon penalty', fontweight='bold', zorder=99,
-                fontsize=AX_LABELS_FONTSIZE * 1.2, color=color_limzone, ha='center', va='top')
+        ax.text(x=-1.2, y=0.04, s='Carbon gain', fontweight='bold', zorder=99,
+                fontsize=AX_LABELS_FONTSIZE * 1.3, color=color_facilzone, ha='center', va='bottom')
+        ax.text(x=-1.2, y=-0.04, s='Carbon penalty', fontweight='bold', zorder=99,
+                fontsize=AX_LABELS_FONTSIZE * 1.3, color=color_limzone, ha='center', va='top')
 
         # Draw up and down area arrows
         # Define vertices
-        vertices_up = [(-0.3, 0), (-0.3, 0.15), (-0.65, 0.2), (-1, 0.15), (-1, 0), (-0.3, 0)]
-        vertices_down = [(-0.3, 0), (-0.3, -0.15), (-0.65, -0.2), (-1, -0.15), (-1, 0), (-0.3, 0)]
+        vertices_up = [(-0.5, 0), (-0.5, 0.15), (-1.2, 0.25), (-1.9, 0.15), (-1.9, 0), (-0.5, 0)]
+        vertices_down = [(-0.5, 0), (-0.5, -0.15), (-1.2, -0.25), (-1.9, -0.15), (-1.9, 0), (-0.5, 0)]
         # Add arrows
         plot.add_gradient_arrow(ax=ax, vertices=vertices_up, color_main=color_facilzone, direction='up')  # Sage Green
         plot.add_gradient_arrow(ax=ax, vertices=vertices_down, color_main=color_limzone, direction='down')  # Slate Blue
