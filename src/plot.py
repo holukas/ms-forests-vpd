@@ -95,16 +95,16 @@ def sigmoid(x, x_start, x_end, y_start, y_end):
 
 
 def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, scenario_labels,
-               scenario_ids, shap_suffix_avg, is_small=False):
+               scenario_ids, shap_suffix_avg, fontsize, is_small=False):
     x_centers = [x for x in range(0, len(scenario_ids))]
     bar_width = 0.4 if not is_small else 0.4
     x_centers_shifted_left = np.array(x_centers) - bar_width / 3
     x_centers_shifted_right = np.array(x_centers) + bar_width / 2.5
     alpha_ribbon = 0.25
 
-    fs_val = 12 if not is_small else 10
-    fs_label = 12 if not is_small else 12
-    fs_tick = 12 if not is_small else 12
+    fs_val = fontsize if not is_small else 10
+    fs_label = fontsize * 1.2 if not is_small else fontsize * 1.2
+    fs_tick = fontsize if not is_small else fontsize
 
     # Storage for ribbon coordinates and net lines
     node_pos = [{} for _ in range(len(scenario_ids))]
@@ -204,7 +204,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
             }
 
             y_range = fixed_ylim[1] - fixed_ylim[0]
-            box_height = y_range * 0.055  # Slightly thinner to fit everything
+            box_height = y_range * 0.035  # Slightly thinner to fit everything
             box_width = bar_width * 0.8
 
             # 1. Scenario Name (S1, S2...)
@@ -246,7 +246,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
     # Add row labels to the left of the condition boxes
     if show_scenario_labels:
         y_range = fixed_ylim[1] - fixed_ylim[0]
-        box_height = y_range * 0.055
+        box_height = y_range * 0.035
 
         # Recalculate same starting position
         y_scen_label = fixed_ylim[1] - (y_range * 0.01)
@@ -257,10 +257,10 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
         top_y_boxes = y_n_label - (y_range * 0.04)
 
         var_display_names = {
-            'VPD_ZSCORE': 'VPD',
-            'TA_ZSCORE': 'Air temperature',
-            'SWC_ZSCORE': 'Soil moisture',
-            'SWIN_ZSCORE': 'Radiation'
+            'VPD_ZSCORE': 'Vapor pressure deficit   ',
+            'TA_ZSCORE': 'Air temperature   ',
+            'SWC_ZSCORE': 'Soil moisture   ',
+            'SWIN_ZSCORE': 'Radiation   '
         }
 
         for var_idx, var in enumerate(vars):

@@ -21,29 +21,29 @@ import src.plot as plot
 # 1: Physical drivers (atmosphere, drivers)
 # 2: Supply limitation (soil, constraints; supply vs. demand)
 # 3: Physiological response (plant, response)
-# plotvars_rows = [
-#     ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-#      'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-#     ['NEP_ZSCORE', 'BIN_ET_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-#      'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-# ]
-# figsize = (19, 13)
-
-# Figure 3
-# Flux heatmaps
 plotvars_rows = [
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'GPP_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'BrBG', True],
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'RECO_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'coolwarm', True],
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'ET_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
+    ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+     'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+    ['NEP_ZSCORE', 'BIN_ET_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+     'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
 ]
-figsize = (19, 13 / 3 * 4)
+figsize = (19, 13)
+
+# # Figure 3
+# # Flux heatmaps
+# plotvars_rows = [
+#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',
+#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
+#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'GPP_ZSCORE',
+#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'BrBG', True],
+#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'RECO_ZSCORE',
+#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'coolwarm', True],
+#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'ET_ZSCORE',
+#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
+# ]
+# figsize = (19, 13 / 3 * 4)
 
 # Shared plotting constants
 aggfunc, CONDITIONAL = 'mean', True

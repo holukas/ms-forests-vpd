@@ -30,10 +30,10 @@ VAR_LABELS = {
 }
 
 IGBP_NAMES = {
-    'ENF': 'Evergreen needleleaf forests',
-    'DBF': 'Deciduous broadleaf forests',
-    'MF': 'Mixed forests',
-    'EBF': 'Evergreen broadleaf forests'
+    'ENF': 'ENF',  # 'Evergreen needleleaf forests',
+    'DBF': 'DBF',  # 'Deciduous broadleaf forests',
+    'MF': 'MF',  # 'Mixed forests',
+    'EBF': 'EBF'  # 'Evergreen broadleaf forests'
 }
 
 # Column suffixes
@@ -91,8 +91,8 @@ for i, igbp in enumerate(IGBP_CLASSES):
 
 # Get limits for y-axis scaling, same for all plots
 GRAND_Y_MIN, GRAND_Y_MAX = plot.get_panel_limits(df=scenario_stats)
-FIXED_YLIM_MAIN = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 2.2)
-FIXED_YLIM_SUB = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1)
+FIXED_YLIM_MAIN = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.6)
+FIXED_YLIM_SUB = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.05)
 
 # ------
 # FIGURE
@@ -101,9 +101,9 @@ FIXED_YLIM_SUB = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1)
 # Figure settings
 gain = 1.3
 fig = plt.figure(figsize=(11 * gain, 9 * gain), dpi=150)
-outer_gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1], width_ratios=[1], wspace=0.1)
+outer_gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1], width_ratios=[1], hspace=0.05)
 gs_top = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec=outer_gs[0])
-gs_bottom = gridspec.GridSpecFromSubplotSpec(1, 4, subplot_spec=outer_gs[1], wspace=0.15, hspace=0.1)
+gs_bottom = gridspec.GridSpecFromSubplotSpec(1, 4, subplot_spec=outer_gs[1], wspace=0.15)
 
 # Panel settings
 panels_data = []
@@ -122,24 +122,30 @@ for i, igbp in enumerate(IGBP_CLASSES):
     panels_data.append({'data': _data, 'title': f"{letter} | {IGBP_NAMES[igbp]}",
                         'is_small': True, 'gs': gs_bottom[row, col], 'show_scenario_labels': show_scenario_lables})
 
-# Draw
+# -----------
+# DRAW PANELS
+# -----------
+first_ax = None
 print("Drawing panels...")
 for pix, p in enumerate(panels_data):
     ax = fig.add_subplot(p['gs'])
+    if pix == 0:
+        first_ax = ax  # Store first ax b/c I want the legend here
     fixedy = FIXED_YLIM_MAIN if not p['is_small'] else FIXED_YLIM_SUB
 
     # Draw panel
     plot.draw_panel(ax=ax, df=p['data'], title=p['title'], fixed_ylim=fixedy, is_small=p['is_small'],
                     show_scenario_labels=p['show_scenario_labels'], vars=VARS, palette=PALETTE,
-                    scenario_ids=SCENARIO_ORDER, scenario_labels=SCENARIO_LABELS, shap_suffix_avg=SHAP_SUFFIX_AVG)
+                    scenario_ids=SCENARIO_ORDER, scenario_labels=SCENARIO_LABELS, shap_suffix_avg=SHAP_SUFFIX_AVG,
+                    fontsize=AX_LABELS_FONTSIZE)
 
     if not p['is_small']:
         color_limzone = '#d6604d'
         color_facilzone = '#4393c3'
-        ax.text(x=-1.2, y=0.04, s='Carbon gain', fontweight='bold', zorder=99,
-                fontsize=AX_LABELS_FONTSIZE * 1.3, color=color_facilzone, ha='center', va='bottom')
-        ax.text(x=-1.2, y=-0.04, s='Carbon penalty', fontweight='bold', zorder=99,
-                fontsize=AX_LABELS_FONTSIZE * 1.3, color=color_limzone, ha='center', va='top')
+        ax.text(x=-1.2, y=0.04, s='Carbon gain', fontweight='bold', zorder=99, style='italic',
+                fontsize=AX_LABELS_FONTSIZE * 1.2, color=color_facilzone, ha='center', va='bottom')
+        ax.text(x=-1.2, y=-0.04, s='Carbon penalty', fontweight='bold', zorder=99, style='italic',
+                fontsize=AX_LABELS_FONTSIZE * 1.2, color=color_limzone, ha='center', va='top')
 
         # Draw up and down area arrows
         # Define vertices
@@ -157,15 +163,21 @@ legend_elements.append(Line2D([0], [0], color='none', marker='D', markerfacecolo
 # noinspection PyTypeChecker
 legend_elements.append(Line2D([0], [0], color='black', marker='|', markeredgewidth=2, markersize=10, lw=0,
                               label='Standard error of the mean'))
-fig.legend(handles=legend_elements, loc='lower center', ncol=6,
-           bbox_to_anchor=(0.5, 0.02), frameon=False, fontsize=12)
+
+first_ax.legend(handles=legend_elements, loc='lower left', ncol=3,
+                bbox_to_anchor=(0.02, 0.14), frameon=False, fontsize=AX_LABELS_FONTSIZE)
 
 # Adjust
-plt.subplots_adjust(left=0.03, right=0.97, top=0.92, bottom=0.1)
+plt.subplots_adjust(left=0.035, right=0.975, top=0.95, bottom=0.02)
 
+# # Save fig
 # dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
 # outfilepath = dir_out / f'51_FIG-1_SankeyPlotSHAPValuesScenarios_{FLUX}.png'
 # print(f"Saved to {outfilepath}")
 # plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
+#
+# # Save panels data
+# scenario_stats.to_csv(dir_out / f"51_FIG-1_SankeyPlotSHAPValuesScenarios_{FLUX}_DATA.csv", index=False)
+
 
 plt.show()
