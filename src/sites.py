@@ -117,7 +117,7 @@ pd.set_option('display.max_columns', 3000)
 
 def get_dataset_info_icos(pattern_dir, searchdir, pattern_file):
     # Get info for ICOS sites
-    icos = SiteList(searchdir=searchdir, identifiers=pattern_dir, pattern_file=pattern_file, origin='ICOS')
+    icos = SiteList(searchdir=searchdir, identifiers=pattern_dir, pattern_file=pattern_file, downloaded_via='ICOS')
     icos.run()
     allsites_icos = icos.get_site_info()
 
@@ -140,21 +140,17 @@ def get_dataset_info_icos(pattern_dir, searchdir, pattern_file):
         lon_icos = float(info_icos[info_icos['VARIABLE'] == 'LOCATION_LONG']['DATAVALUE'].iloc[0])
         lat_icos = float(info_icos[info_icos['VARIABLE'] == 'LOCATION_LAT']['DATAVALUE'].iloc[0])
         igbp_icos = str(info_icos[info_icos['VARIABLE'] == 'IGBP']['DATAVALUE'].iloc[0])
-        mat_icos = str(info_icos[info_icos['VARIABLE'] == 'MAT']['DATAVALUE'].iloc[0])
-        map_icos = str(info_icos[info_icos['VARIABLE'] == 'MAP']['DATAVALUE'].iloc[0])
 
         allsites_icos.loc[allsites_icos['SITE'] == site, 'ELEVATION'] = elev_icos
         allsites_icos.loc[allsites_icos['SITE'] == site, 'LON'] = lon_icos
         allsites_icos.loc[allsites_icos['SITE'] == site, 'LAT'] = lat_icos
         allsites_icos.loc[allsites_icos['SITE'] == site, 'IGBP'] = igbp_icos
-        allsites_icos.loc[allsites_icos['SITE'] == site, 'MAT'] = mat_icos
-        allsites_icos.loc[allsites_icos['SITE'] == site, 'MAP'] = map_icos
     return allsites_icos
 
 
 def get_dataset_info_fxn_cp(searchdir, pattern_dir, infofile, pattern_file) -> pd.DataFrame:
     # Get info for FLUXNET sites
-    fxn = SiteList(searchdir=searchdir, identifiers=pattern_dir, origin="FLUXNET_CP", pattern_file=pattern_file)
+    fxn = SiteList(searchdir=searchdir, identifiers=pattern_dir, downloaded_via="FLUXNET_CP", pattern_file=pattern_file)
     fxn.run()
     allsites_fxn = fxn.get_site_info()
 
@@ -163,8 +159,7 @@ def get_dataset_info_fxn_cp(searchdir, pattern_dir, infofile, pattern_file) -> p
 
     # Read CSV with additional site info from EFDC / FLUXNET
     siteinfo_fxn = pd.read_csv(infofile)
-    siteinfo_fxn = siteinfo_fxn[['Site Code', 'IGBP Code', 'Site Latitude', 'Site Longitude',
-                                 'Mean Annual Temperature', 'Mean Annual Precpitation']].copy()
+    siteinfo_fxn = siteinfo_fxn[['Site Code', 'IGBP Code', 'Site Latitude', 'Site Longitude']].copy()
 
     # Add info to site df
     allsites_fxn = allsites_fxn.merge(siteinfo_fxn, left_on='SITE', right_on='Site Code')
@@ -175,20 +170,18 @@ def get_dataset_info_fxn_cp(searchdir, pattern_dir, infofile, pattern_file) -> p
         'IGBP Code': 'IGBP',
         'Site Latitude': 'LAT',
         'Site Longitude': 'LON',
-        'Mean Annual Temperature': 'MAT',
-        'Mean Annual Precpitation': 'MAP',
     }
     allsites_fxn = allsites_fxn.rename(columns=rename_dict, inplace=False)
     allsites_fxn = allsites_fxn.sort_values(by=['SITE'], ascending=True, inplace=False)
     return allsites_fxn
 
 
-def get_dataset_info_japanflux(searchdir, pattern_dir, infofile, origin, pattern_file) -> pd.DataFrame:
+def get_dataset_info_japanflux(searchdir, pattern_dir, infofile, downloaded_via, pattern_file) -> pd.DataFrame:
     """JapanFlux2024"""
 
     # Read site info from JapanFlux2024
     info = pd.read_csv(infofile)
-    sitelist = SiteList(searchdir=searchdir, identifiers=pattern_dir, origin=origin, pattern_file=pattern_file,
+    sitelist = SiteList(searchdir=searchdir, identifiers=pattern_dir, downloaded_via=downloaded_via, pattern_file=pattern_file,
                         info=info)
     sitelist.run()
     allsites = sitelist.get_site_info()
@@ -227,10 +220,51 @@ def get_dataset_info_japanflux(searchdir, pattern_dir, infofile, origin, pattern
     return allsites
 
 
-def get_dataset_info_fluxnet_ameriflux(searchdir, pattern_dir, infofile, origin, pattern_file) -> pd.DataFrame:
+def get_dataset_info_fluxnet_shuttle(searchdir, pattern_dir, infofile, downloaded_via, pattern_file) -> pd.DataFrame:
+    """Datasets downloaded with fluxnet-shuttle CLI."""
+    sitelist = SiteList(searchdir=searchdir, identifiers=pattern_dir,
+                        downloaded_via=downloaded_via, pattern_file=pattern_file)
+    sitelist.run()
+    allsites = sitelist.get_site_info()
+
+    # Read CSV with additional site info from EFDC / FLUXNET
+
+    info = pd.read_csv(infofile)
+
+    for ix, row in allsites.iterrows():
+        site = row['SITE']
+        sitelocs = info['site_id'] == site
+        siteinfo = info[sitelocs].copy()
+
+        # Elevation not available
+        elev = np.nan
+
+        try:
+            lon = float(siteinfo['location_long'].iloc[0])
+        except IndexError:
+            lon = np.nan
+
+        try:
+            lat = float(siteinfo['location_lat'].iloc[0])
+        except IndexError:
+            lat = np.nan
+
+        try:
+            igbp = str(siteinfo['igbp'].iloc[0])
+        except IndexError:
+            igbp = np.nan
+
+        allsites.loc[allsites['SITE'] == site, 'IGBP'] = igbp
+        allsites.loc[allsites['SITE'] == site, 'LON'] = lon
+        allsites.loc[allsites['SITE'] == site, 'LAT'] = lat
+        allsites.loc[allsites['SITE'] == site, 'ELEVATION'] = elev
+    return allsites
+
+
+def get_dataset_info_fluxnet_ameriflux(searchdir, pattern_dir, infofile, downloaded_via, pattern_file) -> pd.DataFrame:
     """FLUXNET_ORG and AMERIFLUX files have the same structure."""
     # Get info for AMERIFLUX sites
-    sitelist = SiteList(searchdir=searchdir, identifiers=pattern_dir, origin=origin, pattern_file=pattern_file)
+    sitelist = SiteList(searchdir=searchdir, identifiers=pattern_dir, downloaded_via=downloaded_via, pattern_file=pattern_file)
     sitelist.run()
     allsites = sitelist.get_site_info()
 
@@ -263,22 +297,11 @@ def get_dataset_info_fluxnet_ameriflux(searchdir, pattern_dir, infofile, origin,
         except IndexError:
             igbp = np.nan
 
-        try:
-            mat = str(siteinfo[siteinfo['VARIABLE'] == 'MAT']['DATAVALUE'].iloc[0])
-        except IndexError:
-            mat = np.nan
-
-        try:
-            _map = str(siteinfo[siteinfo['VARIABLE'] == 'MAP']['DATAVALUE'].iloc[0])
-        except IndexError:
-            _map = np.nan
 
         allsites.loc[allsites['SITE'] == site, 'ELEVATION'] = elev
         allsites.loc[allsites['SITE'] == site, 'LON'] = lon
         allsites.loc[allsites['SITE'] == site, 'LAT'] = lat
         allsites.loc[allsites['SITE'] == site, 'IGBP'] = igbp
-        allsites.loc[allsites['SITE'] == site, 'MAT'] = mat
-        allsites.loc[allsites['SITE'] == site, 'MAP'] = _map
     return allsites
 
 
@@ -288,13 +311,13 @@ class SiteList:
                  searchdir: str,
                  identifiers: list,
                  pattern_file: str,
-                 origin: str,
+                 downloaded_via: str,
                  info: pd.DataFrame = None):
 
         self.searchdir = searchdir
         self.identifiers = identifiers
         self.pattern_file = pattern_file
-        self.origin = origin
+        self.downloaded_via = downloaded_via
         self.info_df = info  # Only needed for JPF, contains site names in connection with ID number
 
         self.valid_folders = []
@@ -314,11 +337,11 @@ class SiteList:
 
     def _extract_sitename(self, dirname):
         site = dirname
-        for i in self.identifiers:
-            site = site.replace(i, "")
+        # for i in self.identifiers:
+        #     site = site.replace(i, "")
         # Split folder string to extract site info
         splits = site.split('_')
-        site = splits[0]
+        site = splits[1]
         return site
 
     def _collect_info(self):
@@ -331,33 +354,35 @@ class SiteList:
             dirname = dirpath.name
             dirname = str(dirname)
 
+            origin = dirname.split('_')[0]
+
             # Get site name
-            if self.origin != 'JAPANFLUX':
+            if self.downloaded_via != 'JAPANFLUX-URL':
                 site = self._extract_sitename(dirname=dirname)
             else:
                 id_jpf = str(dirpath.name).replace('JPF_', '')  # Site ID number
                 site = self.info_df.loc[self.info_df['Metadata ID'] == id_jpf, 'Site Code'].values[0]
 
-            if self.origin in ['FLUXNET_CP', 'JAPANFLUX', 'ICOS']:
+            if self.downloaded_via in ['SHUTTLE-CLI', 'FLUXNET_CP', 'JAPANFLUX-URL', 'ICOS']:
                 foundfile = search_files(searchdirs=str(dirpath), pattern=self.pattern_file)
                 filepath = str(foundfile[0])
-            elif self.origin in ['AMERIFLUX', 'FLUXNET_ORG']:
+            elif self.downloaded_via in ['AMERIFLUX', 'FLUXNET_ORG']:
                 foundfile = search_files(searchdirs=str(dirpath), pattern=self.pattern_file)
                 if not foundfile:
                     # Few sites have hourly instead of half-hourly data
-                    if self.origin == 'AMERIFLUX':
+                    if self.downloaded_via == 'AMERIFLUX':
                         filepattern = 'AMF_*_FLUXNET_FULLSET_HR_*.csv'
-                    elif self.origin == 'FLUXNET_ORG':
+                    elif self.downloaded_via == 'FLUXNET_ORG':
                         filepattern = 'FLX_*_FLUXNET2015_FULLSET_HR_*.csv'
                     else:
                         raise Exception("Origin not allowed.")
                     foundfile = search_files(searchdirs=str(dirpath), pattern=filepattern)
                 filepath = str(foundfile[0])
 
-
             d = {
                 'SITE': str(site),
-                'ORIGIN': str(self.origin),
+                'ORIGIN': str(origin),
+                'DOWNLOADED_VIA': str(self.downloaded_via),
                 '_DIRNAME': str(dirname),
                 '_DIRPATH': str(dirpath),
                 '_FILEPATH': str(filepath)
@@ -370,5 +395,3 @@ class SiteList:
     def run(self):
         self.valid_folders = self._search_folders()
         self.sites = self._collect_info()
-
-

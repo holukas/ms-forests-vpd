@@ -13,6 +13,12 @@ DIR_PLOTS_OUT: ../../data/outputs/50_plots
 # Files
 ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
 
+# VARIOUS SOURCES (from fluxnet-shuttle)
+DIR_DATA_RAW_SHUTTLE: ../../data/00_raw/from-fluxnet-shuttle
+PATTERN_DIR_SHUTTLE: ['_FLUXNET_', '_v1.3_r1_']
+PATTERN_FILE_HH_SHUTTLE: "*FLUXNET_FLUXMET_HH_*.csv"
+INFOFILE_SHUTTLE: ../../data/00_raw/from-fluxnet-shuttle/0-info/fluxnet_shuttle_snapshot_20260223T112150.csv
+
 # JAPANFLUX (JapanFlux2024 dataset)
 DIR_DATA_RAW_JPF: ../../data/00_raw/japanflux
 PATTERN_DIR_JPF: ['JPF_']
@@ -21,7 +27,7 @@ INFOFILE_JPF: ../../data/00_raw/japanflux/0-info/JapanFlux2024_SiteList_20250910
 
 # ICOS (from Carbon Portal)
 DIR_DATA_RAW_ICOS: ../../data/00_raw/icos
-PATTERN_DIR_ICOS: ['ICOSETC_', '_ARCHIVE_L2']
+PATTERN_DIR_ICOS: ['ICOS_', '_ARCHIVE_L2']
 PATTERN_FILE_HH_ICOS: ICOSETC_*_FLUXNET_HH_L2.csv
 
 # FLUXNET (from Carbon Portal)
