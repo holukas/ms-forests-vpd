@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 import src.files as files
-from src.models import train_rf_models_and_shap, train_xgboost_models_and_shap
+from src.models import train_xgboost_models_and_shap
 
 # ------------------------------
 # Variables
@@ -53,8 +53,6 @@ with open(modelstxt, 'w') as file:
 
 _subsets_df = subsets_df.copy()
 for ix, siteconfig in _subsets_df.iterrows():
-    if siteconfig['SITE'] != 'CH-Dav':
-        continue
     train_xgboost_models_and_shap(
         features=FEATURES,
         target=FLUX,
