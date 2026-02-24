@@ -20,12 +20,13 @@ _datasets_df = datasets_df.copy()
 for ix, datasetinfo in _datasets_df.iterrows():
 
     # # TODO testing
-    # if ix != 1:
+    # if ix < 50:
     #     continue
     # # TODO testing
 
     datasets_df, sites_done = files.create_parquet_files(
         datasets_df=datasets_df,
+        # data_nrows=10000,
         data_nrows=data_nrows,
         settings=settings,
         site=datasetinfo['SITE'],

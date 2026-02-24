@@ -25,11 +25,11 @@ datasets_df = datasets_df.loc[
 
 print(f"Site years: {datasets_df['N_YEARS'].sum()}")
 
-# Extended info (MAT, MAP)
-extfile = Path('../../data/outputs/10_datasets/11_datasets_info.csv')
-extended_df = pd.read_csv(extfile)
-datasets_df.loc[:, 'MAT'] = extended_df['MAT']
-datasets_df.loc[:, 'MAP'] = extended_df['MAP']
+# # Extended info (MAT, MAP)
+# extfile = Path('../../data/outputs/10_datasets/11_datasets_info.csv')
+# extended_df = pd.read_csv(extfile)
+# datasets_df.loc[:, 'MAT'] = extended_df['MAT']
+# datasets_df.loc[:, 'MAP'] = extended_df['MAP']
 
 # Save to file
 datasets_df = datasets_df.reset_index(drop=True)

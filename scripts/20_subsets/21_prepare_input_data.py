@@ -29,8 +29,8 @@ _datasets_df = datasets_df.copy()
 subsetinfo_df = pd.DataFrame()
 counter = 0
 for ix, siteconfig in _datasets_df.iterrows():
-    # if ix < 126:
-    #     continue
+    if ix < 144:
+        continue
     counter += 1
     varnames = get_variable_names(siteconfig)  # Variable names for this site
     subsetinfo = files.create_subsets_parquet_files(

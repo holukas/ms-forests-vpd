@@ -8,12 +8,14 @@ infile = Path('../../data/outputs/10_datasets/12_datasets_info_parquet.csv')
 datasets_df = pd.read_csv(infile)
 
 required_vars = dict(
-    NEE_VAR=['NEE_VUT_50', 'NEE_vUT_USTAR50'],  # Used to calculate NEP
-    NEE_QC_VAR=['NEE_VUT_50_QC', 'NEE_vUT_USTAR50'],
+    NEE_VAR=['NEE_VUT_50', 'NEE_vUT_USTAR50', 'NEE_CUT_50'],  # Used to calculate NEP
+    NEE_QC_VAR=['NEE_VUT_50_QC', 'NEE_vUT_USTAR50', 'NEE_CUT_50_QC'],
     LE_VAR='LE_F_MDS',  # Used to calculate ET
     LE_QC_VAR='LE_F_MDS_QC',
-    GPP_VAR=['GPP_NT_VUT_50', 'GPP_NT_vUT_USTAR50', 'GPP_DT_VUT_50', 'GPP_DT_vUT_USTAR50'],
-    RECO_VAR=['RECO_NT_VUT_50', 'RECO_NT_vUT_USTAR50', 'RECO_DT_VUT_50', 'RECO_DT_vUT_USTAR50'],
+    GPP_VAR=['GPP_NT_VUT_50', 'GPP_NT_vUT_USTAR50', 'GPP_NT_CUT_50',
+             'GPP_DT_VUT_50', 'GPP_DT_vUT_USTAR50', 'GPP_DT_CUT_50'],
+    RECO_VAR=['RECO_NT_VUT_50', 'RECO_NT_vUT_USTAR50', 'RECO_NT_CUT_50',
+              'RECO_DT_VUT_50', 'RECO_DT_vUT_USTAR50', 'RECO_DT_CUT_50'],
     SWIN_VAR='SW_IN_F',
     TA_VAR='TA_F',
     VPD_VAR='VPD_F',

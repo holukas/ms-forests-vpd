@@ -435,15 +435,29 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
 
             # Set flux variable
             # This assumes that incoming_df also has this variable available
-            fluxvar = 'NEE_VUT_50'
-            if fluxvar not in merged_df.columns:
-                fluxvar = 'NEE_vUT_USTAR50'  # Found for JapanFlux2024 sites
+            allowed_fluxvars = ['NEE_VUT_50', 'NEE_vUT_USTAR50', 'NEE_CUT_50']
+            fluxvar = None
+            for af in allowed_fluxvars:
+                if af in merged_df.columns:
+                    fluxvar = af
+                    break
+            if fluxvar is None:
+                raise ValueError(f"None of the allowed flux variables "
+                                 f"found in primary dataset {datasetinfo['_FILEPATH']}.")
+            # if fluxvar not in merged_df.columns:
+            #     fluxvar = 'NEE_vUT_USTAR50'  # Found for JapanFlux2024 sites
 
         # Handle lower priority datasets
         else:
             filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
                 Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
             incoming_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
+
+            # Additional datasets must have the same flux variable as the primary dataset
+            if fluxvar not in incoming_df.columns:
+                raise ValueError(f"Flux variable {fluxvar} from primary dataset not found in "
+                                 f"additional dataset {datasetinfo['_FILEPATH']}.")
+
             incoming_df['ORIGIN'] = datasetinfo['ORIGIN']
 
             freq_merged = merged_df.index.freq
