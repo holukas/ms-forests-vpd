@@ -1,10 +1,22 @@
 import time
 from pathlib import Path
 
-import openmeteo_requests
+import ee
 import pandas as pd
-import requests_cache
-from retry_requests import retry
+
+# 1. Initialize the Google Earth Engine API
+GEE_PROJECT_ID = 'soy-blend-488522-g9'
+
+try:
+    # Try initializing with the specific project
+    ee.Initialize(project=GEE_PROJECT_ID)
+    print("Earth Engine initialized successfully!")
+except Exception as e:
+    print("Earth Engine credentials not found. Opening browser to authenticate...")
+    # This will pop up a browser window for you to log in and generate a token
+    ee.Authenticate()
+    # Once authenticated, initialize again
+    ee.Initialize(project=GEE_PROJECT_ID)
 
 # Load datasets info
 infile = Path('../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv')
@@ -14,97 +26,103 @@ datasets_df = pd.read_csv(infile)
 dirout_era5 = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020')
 dirout_era5.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
 
-# 1. Setup the Open-Meteo API client with cache and retry on error
-cache_session = requests_cache.CachedSession('.cache', expire_after=-1)
-retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
-openmeteo = openmeteo_requests.Client(session=retry_session)
-
 site_id_col = 'SITE'
 lat_col = 'LAT'
 lon_col = 'LON'
 
-url = "https://archive-api.open-meteo.com/v1/archive"
 
-# 2. Loop through each site and download ERA5 data
+# 2. Define the GEE extraction function
+def get_gee_yearly_climate(lon, lat):
+    """
+    Tells Google Earth Engine to aggregate ERA5 daily data to yearly
+    values for a specific point and return the summary.
+    """
+    point = ee.Geometry.Point([lon, lat])
+    years = ee.List.sequence(1991, 2020)
+
+    def process_year(year):
+        start = ee.Date.fromYMD(year, 1, 1)
+        end = start.advance(1, 'year')
+
+        # Filter ERA5 daily data for the year
+        year_data = ee.ImageCollection("ECMWF/ERA5/DAILY").filterDate(start, end)
+
+        # Calculate MAT: Mean temperature, convert Kelvin to Celsius
+        mean_temp = year_data.select('mean_2m_air_temperature').mean().subtract(273.15)
+
+        # Calculate MAP: Sum precipitation, convert meters to mm
+        sum_precip = year_data.select('total_precipitation').sum().multiply(1000)
+
+        # Combine into a single image
+        yearly_img = mean_temp.addBands(sum_precip).rename(['MAT', 'MAP'])
+
+        # Extract the value for our exact point
+        # ERA5 native resolution is ~27.8km (27830 meters)
+        stats = yearly_img.reduceRegion(
+            reducer=ee.Reducer.first(),
+            geometry=point,
+            scale=27830
+        )
+
+        return ee.Feature(None, {
+            'Year': year,
+            'MAT': stats.get('MAT'),
+            'MAP': stats.get('MAP')
+        })
+
+    # Map the function over all 30 years and fetch the data to local memory
+    yearly_features = ee.FeatureCollection(years.map(process_year))
+    return yearly_features.getInfo()['features']
+
+
+# 3. Loop through each site and extract data
 for index, row in datasets_df.iterrows():
-    if index < 64:
-        continue
     site_id = row[site_id_col]
     lat = row[lat_col]
     lon = row[lon_col]
 
-    print(f"Fetching ERA5 Daily Air Temp & Precip for {site_id} ({lat}, {lon})...")
+    req_filepath = dirout_era5 / f'{site_id}_ERA5_Yearly_Climate_1991-2020.csv'
+    if Path(req_filepath).is_file():
+        print(f"Skipping {site_id} because file {req_filepath} already exists")
+        continue
 
-    # Switched 'hourly' to 'daily' and updated the variable names
-    params = {
-        "latitude": lat,
-        "longitude": lon,
-        "start_date": "1991-01-01",
-        "end_date": "2020-12-31",
-        "daily": ["temperature_2m_mean", "precipitation_sum"],
-        "models": "era5",
-        "timezone": "UTC"
-    }
+    print(f"Fetching ERA5 via GEE for {site_id} ({lat}, {lon})...")
 
+    max_attempts = 3
+    attempts = 0
     success = False
-    while not success:
+
+    while not success and attempts < max_attempts:
         try:
-            # Fetch data
-            responses = openmeteo.weather_api(url, params=params)
-            response = responses[0]
+            # Fetch data from Google Earth Engine
+            raw_features = get_gee_yearly_climate(lon, lat)
 
-            # Process DAILY data (changed from Hourly)
-            daily = response.Daily()
-            daily_temperature_2m = daily.Variables(0).ValuesAsNumpy()
-            daily_precipitation = daily.Variables(1).ValuesAsNumpy()
+            # Extract properties into a list of dictionaries
+            records = [feat['properties'] for feat in raw_features]
 
-            # Create a datetime index for daily data
-            daily_data = {"date": pd.date_range(
-                start=pd.to_datetime(daily.Time(), unit="s", utc=True),
-                end=pd.to_datetime(daily.TimeEnd(), unit="s", utc=True),
-                freq=pd.Timedelta(seconds=daily.Interval()),
-                inclusive="left"
-            )}
+            # Build DataFrame
+            df_yearly = pd.DataFrame(records)
 
-            # Build the daily dataframe
-            df_era5_daily = pd.DataFrame(data=daily_data)
-            df_era5_daily["ERA5_TA_2m_mean"] = daily_temperature_2m
-            df_era5_daily["ERA5_PRECIP_sum"] = daily_precipitation
+            # Clean up the DataFrame: reorder columns and handle missing data
+            df_yearly = df_yearly[['Year', 'MAT', 'MAP']]
+            df_yearly = df_yearly.dropna()  # Drop years if the point is over the ocean with no data
 
-            # --- AGGREGATE TO YEARLY ---
-            # Group by year: Mean for temperature, Sum for precipitation
-            df_yearly = df_era5_daily.groupby(df_era5_daily['date'].dt.year).agg(
-                MAT=('ERA5_TA_2m_mean', 'mean'),
-                MAP=('ERA5_PRECIP_sum', 'sum')
-            ).reset_index()
-            df_yearly.rename(columns={'date': 'Year'}, inplace=True)
-
-            # Save the YEARLY data to CSV
-            outpath = dirout_era5 / f"{site_id}_ERA5_Yearly_Climate_1991-2020.csv"
-            df_yearly.to_csv(outpath, index=False)
-
-            print(f" -> Aggregated to {len(df_yearly)} yearly records for {site_id}")
-
-            success = True
-            time.sleep(5)  # Can be shorter now since daily requests are lighter
-
-            # datasets_df.loc[datasets_df['SITE'] == site_id, 'MAT_ERA5_1991-2020'] = df_yearly['MAT'].mean()
-            # datasets_df.loc[datasets_df['SITE'] == site_id, 'MAP_ERA5_1991-2020'] = df_yearly['MAP'].mean()
-
-        except Exception as e:
-            error_msg = str(e)
-            if "Minutely API request limit" in error_msg:
-                print(" -> Rate limit hit. Sleeping for 20 seconds before retrying...")
-                time.sleep(20)
-            else:
-                print(f" -> Failed to fetch data for {site_id}: {e}")
+            if df_yearly.empty:
+                print(f" -> No data returned for {site_id} (might be over water). Skipping.")
                 break
 
-print("\nAll downloads complete!")
+            # Save the YEARLY data to CSV
+            df_yearly.to_csv(req_filepath, index=False)
 
-# # Save to file
-# datasets_df = datasets_df.reset_index(drop=True)
-# datasets_df = datasets_df.sort_values(by=['SITE'], inplace=False)
-# outfile = Path('../../data/outputs/10_datasets/16_datasets_info_parquet_vars_stats_usedsites_era5.csv')
-# print(f"\n{'-' * 80}\nSaving info about {len(datasets_df)} datasets to file {outfile}.\n{'-' * 80}")
-# datasets_df.to_csv(outfile, index=False)
+            print(f" -> Successfully saved {len(df_yearly)} yearly records for {site_id}")
+            success = True
+
+        except Exception as e:
+            attempts += 1
+            print(f" -> GEE request failed: {e}. Retrying in 5 seconds... (Attempt {attempts}/{max_attempts})")
+            time.sleep(5)
+
+    if not success:
+        print(f" -> [!] Completely failed to fetch data for {site_id} after {max_attempts} attempts.")
+
+print("\nAll downloads complete!")
