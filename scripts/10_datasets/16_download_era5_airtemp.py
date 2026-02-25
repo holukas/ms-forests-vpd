@@ -1,3 +1,35 @@
+"""
+Script: ERA5 Climate Data Extraction via Google Earth Engine
+
+Description:
+    This script leverages the Google Earth Engine (GEE) Python API to efficiently process
+    and extract 30 years (1991-2020) of historical climate data for specific study sites.
+    By querying the 'ECMWF/ERA5/DAILY' dataset, it calculates Mean Annual Temperature
+    (MAT, converted to °C) and Mean Annual Precipitation (MAP, converted to mm) directly
+    on Google's cloud servers. This approach extracts aggregated yearly summaries for
+    specific coordinates without the need to download massive raw NetCDF files locally.
+
+Workflow:
+    1. Authenticates and initializes the GEE API using a designated Cloud Project ID.
+    2. Reads target site coordinates (Latitude/Longitude) from a local dataset info CSV.
+    3. Maps over the 1991-2020 timeframe, aggregating daily temperature and precipitation.
+    4. Downloads the lightweight summary dictionary and formats it into a Pandas DataFrame.
+    5. Saves the final 30-year summary for each site as an individual CSV.
+    * Includes robust error handling, automatic retries, and skips already processed sites.
+
+Inputs:
+    - Target sites: ../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv
+      (Requires 'SITE', 'LAT', and 'LON' columns)
+
+Outputs:
+    - Individual CSV files containing 'Year', 'MAT', and 'MAP'.
+    - Saved to: ../../data/outputs/10_datasets/16_ERA5_climate_1991-2020/
+
+Dependencies:
+    - ee (earthengine-api), pandas
+    - Requires an active Google Cloud Project and one-time local GEE authentication.
+"""
+
 import time
 from pathlib import Path
 

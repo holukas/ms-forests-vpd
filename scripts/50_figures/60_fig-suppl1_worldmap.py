@@ -4,11 +4,11 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
 
-plt.rcParams['font.family'] = 'serif'
-plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
+# plt.rcParams['font.family'] = 'serif'
+# plt.rcParams['font.serif'] = ['Latin Modern Roman'] + plt.rcParams['font.serif']
 
 # Load datasets info
-infile = Path('../data/outputs/12_datasets_parquet_vars_stats_subsets.csv')
+infile = Path('../../data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv')
 datasets_df = pd.read_csv(infile)
 
 # Keep datasets where SWC is available
@@ -21,7 +21,7 @@ n_sites_total = len(datasets_df)
 
 # Define the path to your locally saved world map shapefile
 shapefile_path = str(
-    Path(r"/data/worldmap/ne_10m_admin_0_countries.shp"))
+    Path(r"../../data/worldmap/ne_10m_admin_0_countries.shp"))
 world = gpd.read_file(shapefile_path)
 
 # Create a GeoDataFrame from your site data
