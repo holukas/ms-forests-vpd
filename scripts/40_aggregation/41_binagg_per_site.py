@@ -21,14 +21,13 @@ FLUX = 'NEP_ZSCORE'
 CONDITIONAL = True  # SHAP
 
 # Aggregation combos: xvar / yvar
-VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
+# VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
 # VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
 # VARS = ['ET_ZSCORE', 'VPD_ZSCORE']
-# VARS = ['ET_ZSCORE', 'SWC_ZSCORE']
+VARS = ['ET_ZSCORE', 'SWC_ZSCORE']
 
 aggfunc = 'mean'
-# aggfunc = 'median'
 
 # ------------------------------
 # Agg groups, use z-scores:

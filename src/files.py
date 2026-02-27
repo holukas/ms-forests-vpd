@@ -1,5 +1,6 @@
-from pathlib import Path
 import logging
+from pathlib import Path
+
 import diive as dv
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
@@ -27,27 +28,33 @@ def load_data(suffix, shap_type, dir_res, flux, aggfunc, subsetcols: list,
     if site_filter is not None:
         filedf = filedf[filedf.index.isin(site_filter)].copy()
 
-    # Apply count threshold (n_sites_min for main plot, 0 for IGBP b/c we simply count the
-    # number of available sites in the previous line)
-    threshold = np.ceil(filedf[count_vals_col].max() / 2)
+    # Get total number of sites used for aggregations
+    n_sites = list(set(filedf['N_SITES'].tolist()))
+    if len(n_sites) > 1:
+        raise ValueError(f"Multiple values for N_SITES: {n_sites}")
+    n_sites = int(n_sites[0])
+
+    # Apply count threshold, at least half of total sites needed
+    # threshold = np.ceil(filedf[count_vals_col].max() / 2)
+    threshold = np.ceil(n_sites / 2)
     # threshold = n_sites_min if suffix == 'Sites' else 9
     mask = filedf[count_vals_col] >= threshold
     filedf = filedf[mask].copy()
 
-    # Count number of sites (min, max)
+    # Count number of sites (min, max) per bin class
     # Note that zero counts are not relevant for the plots b/c
     # they are not shown in the plots, i.e., for the minimum
     # we need to get the next lowest number.
     _counts = filedf[count_vals_col]
     min_count = _counts[_counts > 0].min()
     max_count = _counts[_counts > 0].max()
-    n_sites = [min_count, max_count]
+    minmax_counts = [min_count, max_count]
 
     # Prepare subset for plotting
     subsetdf = filedf[subsetcols].copy()
     subsetdf.columns = ['_'.join(c).strip() for c in subsetdf.columns]
 
-    return filedf, subsetdf, n_sites
+    return filedf, subsetdf, minmax_counts, n_sites
 
 
 def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, ix: int, varnames, site: str,
@@ -191,10 +198,6 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     if len(subset['MONTH'].unique()) != 4:
         logging.warning(f"Not all 4 high-GPP months are available for site {site}.")
         # logging.warning(f"Not all 4 warmest months are available for site {site}.")
-
-
-
-
 
     # Cleanup temporary columns
     subset = subset.drop(columns=['MONTH', 'YEAR'], errors='ignore')

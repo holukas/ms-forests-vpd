@@ -117,10 +117,10 @@ fig, gs, ax_all, axes_sub = plot.layout_5panels((13.86, 6.67), add_colorbar_ax=F
 # MAIN PLOT (all sites)
 
 # Load data
-filedf, subsetdf, n_sites = files.load_data(
+filedf, subsetdf, minmax_counts, n_sites = files.load_data(
     suffix='Sites', shap_type=shap_type, dir_res=dir_res, flux=FLUX,
     count_vals_col=count_vals_col,
-    subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75, ycol_sem],
+    subsetcols=[xcol, ycol, zcol, ycol_sem],
     site_filter=None, x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
 
 # Extract the data from the DataFrame
@@ -170,8 +170,8 @@ if show_fit:
 else:
     fillbetweenplot = None
 
-# IQR
-_sem = subsetdf.iloc[:, 5].values
+# SEM
+_sem = subsetdf.iloc[:, 3].values
 _sem_upper = Y_data + _sem
 _sem_lower = Y_data - _sem
 plotparams = dict(marker='o', s=5, zorder=1, alpha=1, edgecolors='none', color=color_points)
@@ -205,7 +205,7 @@ letter = 'a'
 igbp = 'Global forests'
 ax_all.text(0, 1.05, f"{letter} | {igbp}", transform=ax_all.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
-ax_all.text(0.4, 1.05, f"(n={n_sites[1]}, min. {n_sites[0]})", transform=ax_all.transAxes, zorder=99,
+ax_all.text(0.4, 1.05, f"(n={n_sites}, min. {minmax_counts[0]})", transform=ax_all.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
 
 # Find value closest to "SHAP zero"
@@ -268,10 +268,10 @@ configs = zip(
 )
 for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Filter using index from main dataset (keeplocs logic)
-    df_igbp, df_subset, n_sites_sub = files.load_data(
+    df_igbp, df_subset, minmax_counts_sub, n_sites_sub = files.load_data(
         suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, flux=FLUX,
         count_vals_col=count_vals_col,
-        subsetcols=[xcol, ycol, zcol, ycol_iqr25, ycol_iqr75, ycol_sem],
+        subsetcols=[xcol, ycol, zcol, ycol_sem],
         site_filter=filedf.index, x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
     # Extract the data from the DataFrame
     X_data = df_subset.iloc[:, 0].values
@@ -292,9 +292,9 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Find value closest to "SHAP zero"
     idx = (np.abs(y_fit - 0)).argmin()
 
-    print(f"Polynomial coefficients {igbp}: "
-          f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
-          f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[4]:.3f}; r2={r_squared:.3f}\n")
+    # print(f"Polynomial coefficients {igbp}: "
+    #       f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
+    #       f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[4]:.3f}; r2={r_squared:.3f}\n")
 
     if show_fit:
         fillbetweenplot = plot.add_fit(ax=ax, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
@@ -336,7 +336,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Panel letters
     ax.text(0, 1.1, f"{letter} | {igbp}", transform=ax.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
-    ax.text(0.3, 1.1, f"(n={n_sites_sub[1]}, min. {n_sites_sub[0]})", transform=ax.transAxes, zorder=99,
+    ax.text(0.3, 1.1, f"(n={n_sites_sub}, min. {minmax_counts_sub[0]})", transform=ax.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
 
     # Add text and connecting dashed lines for SHAP max, zero, and min

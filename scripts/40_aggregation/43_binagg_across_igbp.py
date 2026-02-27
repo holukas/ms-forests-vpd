@@ -51,12 +51,25 @@ dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 dir_out.mkdir(parents=True, exist_ok=True)
 
 # Load SHAP values aggregated per site
-filepath = Path(dir_prev_results) / f"41_SHAPVALUES-{shap_type}_{aggfunc}AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"
+filepath = Path(
+    dir_prev_results) / f"41_SHAPVALUES-{shap_type}_{aggfunc}AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"
 shapvals_sites_agg_long_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.loc[shapvals_sites_agg_long_df['IGBP'] != 'DNF']
-print(f"Number of sites: {len(shapvals_sites_agg_long_df['SITE'].unique())}")
+
+# Total number of sites
+n_sites = len(shapvals_sites_agg_long_df['SITE'].unique())
+print(f"Number of sites: {n_sites}")
+
+# Number of unique IGBPs
 igbps = shapvals_sites_agg_long_df['IGBP'].unique()
 print(f"Found IGBPs: {igbps}")
+
+# Count number of sites per IGBP
+igbps_n_sites = []
+for i in igbps:
+    check_n_sites = shapvals_sites_agg_long_df.loc[shapvals_sites_agg_long_df['IGBP'] == i]
+    n_sites = len(check_n_sites['SITE'].unique())
+    igbps_n_sites.append(n_sites)
 
 # Remove site info and IGBP, cannot be aggregated
 shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.drop('SITE', axis=1, inplace=False)
@@ -69,9 +82,7 @@ keepcols = [c for c in shapvals_sites_agg_long_df.columns
                    or str(c) == 'IGBP' for t in targets)]
 shapvals_sites_agg_long_df = shapvals_sites_agg_long_df[keepcols].copy()
 
-for i in igbps:
-    # if i != 'EBF':
-    #     continue
+for ix, i in enumerate(igbps):
     print(f"\nProcessing IGBP {i} ...")
     subset = shapvals_sites_agg_long_df.loc[shapvals_sites_agg_long_df['IGBP'] == i].copy()
     subset = subset.drop('IGBP', axis=1, inplace=False)
@@ -80,6 +91,12 @@ for i in igbps:
     subset_agg_df = aggregate_shap_values_across_sites(
         df=subset, binx=binx, biny=biny
     )
+
+    # Add total number of sites aggregated
+    # Added here in this extra step, b/c the counts per bin only
+    # give the number of sites in the respective bin, not the
+    # overall number of sites that were aggregated.
+    subset_agg_df['N_SITES'] = igbps_n_sites[ix]
 
     # Save to Parquet
     # f"41_SHAPVALUES-{shap_type}_AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"

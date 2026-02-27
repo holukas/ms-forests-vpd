@@ -109,7 +109,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
     dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 
     # todo check Pre-calculate for scaling z-values (colors)
-    allsites_df, allsites_subset_df, n_info = files.load_data(
+    allsites_df, allsites_subset_df, minmax_counts, n_sites = files.load_data(
         suffix='Sites', shap_type=shap_type, dir_res=dir_res, flux=FLUX,
         count_vals_col=count_vals_col,
         subsetcols=[xcol, ycol, zcol], site_filter=None,
@@ -133,20 +133,16 @@ for row_idx, plotvars in enumerate(plotvars_rows):
         # Load Data
         if igbp is None:
             df_to_plot = allsites_subset_df
-            # title_suffix = "All sites"
         else:
-            _, df_to_plot, n_info = files.load_data(
+            _, df_to_plot, minmax_counts, n_sites = files.load_data(
                 suffix=f"IGBP-{igbp}", shap_type=shap_type, dir_res=dir_res, flux=FLUX,
                 count_vals_col=count_vals_col,
                 subsetcols=[xcol, ycol, zcol], site_filter=allsites_df.index,
                 x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
-            # title_suffix = f"{igbp} (n={n_info[1]})"
-            print(n_info)
 
         # Flameplot (heatmap)
         hm = dv.heatmapxyz(
             ax=ax, x=df_to_plot.iloc[:, 0], y=df_to_plot.iloc[:, 1], z=df_to_plot.iloc[:, 2],
-            # xlabel=xlabel, ylabel=ylabel, zlabel=zlabel,
             cmap=cmap, vmin=-absmax, vmax=absmax, color_bad=facecolor,
             show_colormap=False, show_grid=False)
         hm.plot()
@@ -157,7 +153,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
             trans = transforms.blended_transform_factory(ax.transAxes, fig.transFigure)
             fig.text(0.5, 0.99, coltitle, transform=trans,
                      fontsize=AX_LABELS_FONTSIZE * 1.2, ha='center', va='top', weight='bold')
-            fig.text(0.5, 0.965, f"n={n_info[1]} (min. {n_info[0]})", transform=trans,
+            fig.text(0.5, 0.965, f"n={n_sites} (min. {minmax_counts[0]})", transform=trans,
                      fontsize=AX_LABELS_FONTSIZE, ha='center', va='top', weight='normal')
 
         # Panel letters

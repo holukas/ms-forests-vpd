@@ -17,8 +17,8 @@ def aggregate_shap_values_across_sites(df, binx, biny) -> pd.DataFrame:
     other_aggregations = [
         'mean', 'median', 'max', 'min', 'count', 'std',
         ('sem', lambda x: x.std() / np.sqrt(x.count())),
-        ('q25', lambda x: x.quantile(0.25)),
-        ('q75', lambda x: x.quantile(0.75))
+        # ('q25', lambda x: x.quantile(0.25)),
+        # ('q75', lambda x: x.quantile(0.75))
     ]
 
     # Aggregation for binx and biny class/bin identifiers

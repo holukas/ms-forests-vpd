@@ -70,7 +70,10 @@ filepath = Path(
     dir_prev_results) / f"41_SHAPVALUES-{shap_type}_{aggfunc}AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"
 shapvals_sites_agg_long_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.loc[shapvals_sites_agg_long_df['IGBP'] != 'DNF']
-print(f"Number of sites: {len(shapvals_sites_agg_long_df['SITE'].unique())}")
+
+# Total number of sites
+n_sites = len(shapvals_sites_agg_long_df['SITE'].unique())
+print(f"Number of sites: {n_sites}")
 
 # Keep required columns only
 targets = ('_SHAPVALS', 'BIN_', '_ZSCORE')
@@ -91,6 +94,12 @@ shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.loc[
 shapvals_sites_grouped_agg_df = aggregate_shap_values_across_sites(
     df=shapvals_sites_agg_long_df, binx=binx, biny=biny
 )
+
+# Add total number of sites aggregated
+# Added here in this extra step, b/c the counts per bin only
+# give the number of sites in the respective bin, not the
+# overall number of sites that were aggregated.
+shapvals_sites_grouped_agg_df['N_SITES'] = n_sites
 
 # Save to Parquet
 # 41_SHAPVALUES-conditional_AggregatedPerSite_BIN-TA_ZSCORE+BIN-VPD_ZSCORE+NEP_ZSCORE
