@@ -10,7 +10,7 @@ import src.files as files
 from src.common import get_variable_names
 
 # Load datasets info
-infile = Path('../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv')
+infile = Path('../../data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv')
 datasets_df = pd.read_csv(infile)
 
 # Load settings
@@ -29,8 +29,8 @@ _datasets_df = datasets_df.copy()
 subsetinfo_df = pd.DataFrame()
 counter = 0
 for ix, siteconfig in _datasets_df.iterrows():
-    if ix < 144:
-        continue
+    # if ix < 144:
+    #     continue
     counter += 1
     varnames = get_variable_names(siteconfig)  # Variable names for this site
     subsetinfo = files.create_subsets_parquet_files(
@@ -51,6 +51,7 @@ for ix, siteconfig in _datasets_df.iterrows():
     subsetinfo['LAT'] = siteconfig['LAT']
     subsetinfo['LON'] = siteconfig['LON']
     subsetinfo['ELEVATION'] = siteconfig['ELEVATION']
+    subsetinfo['IGBP'] = siteconfig['IGBP']
     subsetinfo['IGBP'] = siteconfig['IGBP']
 
     newrow = pd.DataFrame.from_dict(subsetinfo, orient='index').transpose()
