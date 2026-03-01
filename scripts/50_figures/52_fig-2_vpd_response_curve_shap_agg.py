@@ -46,7 +46,14 @@ x_in_filename, y_in_filename = plotvars[4], plotvars[5]
 
 aggfunc, CONDITIONAL = 'mean', True
 # aggfunc, CONDITIONAL = 'median', True
-colors_list = ['#9C27B0', '#26C6DA', '#546E7A', '#FB8C00', '#C62828']
+
+
+colors_list = ['#9C27B0', '#0984E3', '#00B894', '#636E72', '#FDCB6E', '#FF8C00', '#B71C1C']
+# colors_list = ['#9C27B0', '#0984E3', '#00B894', '#636E72', '#FDCB6E', '#E17055', '#D63031']
+# colors_list = ['grey', '#9C27B0', '#0984E3', '#00B894', '#FDCB6E', '#E17055', '#D63031']
+# colors_list = ['#9C27B0', '#6C5CE7', '#0984E3', '#00B894', '#FDCB6E', '#E17055', '#D63031']
+# colors_list = ['#2D3436', '#6C5CE7', '#0984E3', '#00B894', '#FDCB6E', '#E17055', '#D63031']
+# colors_list = ['black', '#9C27B0', '#26C6DA', '#546E7A', '#FB8C00', '#C62828', 'red']
 custom_cmap = matplotlib.colors.ListedColormap(colors_list)
 igbps = ['ENF', 'DBF', 'MF', 'EBF']
 
@@ -127,12 +134,17 @@ filedf, subsetdf, minmax_counts, n_sites = files.load_data(
 X_data = subsetdf.iloc[:, 0].values
 Y_data = subsetdf.iloc[:, 1].values
 Z_data = subsetdf.iloc[:, 2].values
+# todo check SEM
+_sem = subsetdf.iloc[:, 3].values
+_sem_upper = Y_data + _sem
+_sem_lower = Y_data - _sem
 
 # Bin z data into 5 categories
-bin_labels = ['Lowest', 'Low', 'Medium', 'High', 'Highest']
+bin_labels = ['coldest', 'cold', 'cool', 'medium',
+              'warm', 'hot', 'hottest']
 # binned_z = pd.cut(Z_data, bins=5, labels=bin_labels)
 # retbins=True returns (categories, bins)
-binned_z, bin_edges = pd.cut(Z_data, bins=5, labels=bin_labels, retbins=True)
+binned_z, bin_edges = pd.cut(Z_data, bins=7, labels=bin_labels, retbins=True)
 
 # Fit polynomial
 poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data, Y_data=Y_data)
@@ -148,19 +160,35 @@ for i, label in reversed(list(enumerate(bin_labels))):
 
     if show_z_colors:
         fill_color = colors_list[i]
+        # edge_color = 'none'
         edge_color = fill_color
     else:
         fill_color = color_points
         edge_color = color_points
 
     scatterplot = ax_all.scatter(X_data[indices], Y_data[indices],
-                                 label=f'{label} {beautify[zvar]}',
+                                 label=f'{label}',
+                                 # label=f'{label} {beautify[zvar]}',
                                  alpha=.5,
                                  s=30,
                                  color=fill_color,
                                  edgecolors=edge_color,
                                  zorder=98)
     scatterhandles.append(scatterplot)
+
+    # plotparams = dict(marker='o', s=5, zorder=1, alpha=1, edgecolors='none', color=fill_color)
+    # semplot = ax_all.scatter(X_data[indices], _sem_lower[indices], label="Standard error", **plotparams)
+    # ax_all.scatter(X_data[indices], _sem_upper[indices], **plotparams)
+
+    # 3. Plot the error bars
+    semplot = ax_all.errorbar(X_data[indices], Y_data[indices],
+                    yerr=[_sem[indices], _sem[indices]],
+                    fmt='none',  # 'none' ensures it only plots the bars, no markers/lines
+                    ecolor=fill_color,  # Color of the error bars
+                    elinewidth=3,  # Thickness of the error bar line
+                    capsize=0,  # Length of the horizontal caps at the ends
+                    alpha=0.3,  # Match your scatter alpha, or set to 1
+                    zorder=1)  # Keeps it behind the scatter points
 
 if show_fit:
     fillbetweenplot = plot.add_fit(
@@ -170,24 +198,24 @@ if show_fit:
 else:
     fillbetweenplot = None
 
-# SEM
-_sem = subsetdf.iloc[:, 3].values
-_sem_upper = Y_data + _sem
-_sem_lower = Y_data - _sem
-plotparams = dict(marker='o', s=5, zorder=1, alpha=1, edgecolors='none', color=color_points)
-iqrplot = ax_all.scatter(X_data, _sem_lower, label="Standard error", **plotparams)
-ax_all.scatter(X_data, _sem_upper, **plotparams)
+# # SEM
+# _sem = subsetdf.iloc[:, 3].values
+# _sem_upper = Y_data + _sem
+# _sem_lower = Y_data - _sem
+# plotparams = dict(marker='o', s=5, zorder=1, alpha=1, edgecolors='none', color=color_points)
+# semplot = ax_all.scatter(X_data, _sem_lower, label="Standard error", **plotparams)
+# ax_all.scatter(X_data, _sem_upper, **plotparams)
 
 # Legend 2 for IQR and fill_between plot
 if show_fit:
-    handles = [fillbetweenplot, iqrplot]
+    handles = [fillbetweenplot, semplot]
 else:
-    handles = [iqrplot]
+    handles = [semplot]
 
 # Legends for main figure
 legend1 = ax_all.legend(handles=scatterhandles,
-                        bbox_to_anchor=(0.45, 0.7),
-                        frameon=False, ncol=1, fontsize=AX_LABELS_FONTSIZE, labelspacing=.3,
+                        bbox_to_anchor=(0.44, 0.86),
+                        frameon=False, ncol=2, fontsize=AX_LABELS_FONTSIZE, labelspacing=.3,
                         title="Aggregated site data",
                         title_fontsize=AX_LABELS_FONTSIZE)
 # legend2 = ax_all.legend(handles=handles,
@@ -227,7 +255,7 @@ if show_shap_thresholds:
                               fontsize=AX_LABELS_FONTSIZE, show_annotate_short=False,
                               colors_symbols=colors_symbols)
 
-# # todo Add arrow to highlight one of the IQR data points
+# # todo Add arrow to highlight one of the IQR/SEM data points
 # select_x = 1.7
 # locations1 = (X_data == select_x)  # Create a boolean mask for locations where X_data is 1.7
 # filtered_iqr = iqr_low25[locations1]  # Filter iqr_low25 using the boolean mask

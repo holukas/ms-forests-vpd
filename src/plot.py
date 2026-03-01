@@ -556,8 +556,7 @@ def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared,
     if show_annotate:
         # Add an arrow to the fitted line
         # Find a point on the line to place the arrow.
-        # Let's place it a little past the middle of the x-range.
-        arrow_x = 1
+        arrow_x = 1.5
         arrow_y = poly_func(arrow_x)
         # Find a point slightly to the left to define the arrow direction
         tail_x = arrow_x - 0.1
@@ -567,9 +566,9 @@ def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared,
         supscript = r'$^{th}$'
         ax.annotate(f'Poly. fit (4{supscript} order)',
                     xy=(arrow_x, arrow_y),
-                    xytext=(arrow_x + 0.5, arrow_y - 0.3),  # Adjust text position as needed
+                    xytext=(arrow_x - 1.1, arrow_y - 0.25),  # Adjust text position as needed
                     arrowprops=dict(arrowstyle="-|>", color=color, lw=2),
-                    fontsize=fontsize, color=color, ha='right', va='center', zorder=100)
+                    fontsize=fontsize, color=color, ha='left', va='center', zorder=100)
     return fillbetweenplot
 
 
