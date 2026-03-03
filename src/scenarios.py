@@ -138,60 +138,66 @@ def scenario_1(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28
 
 
 def scenario_2(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
-    """Warmer conditions, soil moisture normal"""
+    """Warmer conditions, soil moisture normal, NO extreme VPD"""
     mask_ta = (df['TA_ZSCORE'] > a) & (df['TA_ZSCORE'] <= b)
     mask_swc = (df['SWC_ZSCORE'] >= -a) & (df['SWC_ZSCORE'] <= a)
-    combined_mask = mask_ta & mask_swc
+    mask_vpd = df['VPD_ZSCORE'] <= c  # Prevents overlap with compound extremes
+    combined_mask = mask_ta & mask_swc & mask_vpd
     df = df.loc[combined_mask].copy()
     condition = "warm"
     return df, 1, -1, 0, condition
 
 
 def scenario_3(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
-    """Warmer conditions, drier soil moisture"""
+    """Warmer conditions, drier soil moisture, NO extreme VPD"""
     mask_ta = (df['TA_ZSCORE'] > a) & (df['TA_ZSCORE'] <= b)
     mask_swc = (df['SWC_ZSCORE'] >= -b) & (df['SWC_ZSCORE'] < -a)
-    combined_mask = mask_ta & mask_swc
+    mask_vpd = df['VPD_ZSCORE'] <= c
+    combined_mask = mask_ta & mask_swc & mask_vpd
     df = df.loc[combined_mask].copy()
     condition = "warm and dry"
     return df, 1, -1, 1, condition
 
 
 def scenario_4(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
-    """Hot conditions, drier soil moisture"""
+    """Hot conditions, drier soil moisture, NO extreme VPD"""
     mask_ta = (df['TA_ZSCORE'] > b) & (df['TA_ZSCORE'] <= c)
     mask_swc = (df['SWC_ZSCORE'] >= -b) & (df['SWC_ZSCORE'] < -a)
-    combined_mask = mask_ta & mask_swc
+    mask_vpd = df['VPD_ZSCORE'] <= c
+    combined_mask = mask_ta & mask_swc & mask_vpd
     df = df.loc[combined_mask].copy()
     condition = "hot and dry"
     return df, 2, -1, 1, condition
 
 
 def scenario_5(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
-    """Hot conditions, very dry soil moisture"""
+    """Hot conditions, very dry soil moisture, NO extreme VPD"""
     mask_ta = (df['TA_ZSCORE'] > b) & (df['TA_ZSCORE'] <= c)
     mask_swc = (df['SWC_ZSCORE'] >= -c) & (df['SWC_ZSCORE'] < -b)
-    combined_mask = mask_ta & mask_swc
+    mask_vpd = df['VPD_ZSCORE'] <= c
+    combined_mask = mask_ta & mask_swc & mask_vpd
     df = df.loc[combined_mask].copy()
     condition = "hot and driest"
     return df, 2, -1, 2, condition
 
 
 def scenario_6(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
-    """Extremely hot conditions, very dry soil moisture"""
+    """Extremely hot conditions, very dry soil moisture, NO extreme VPD"""
     mask_ta = df['TA_ZSCORE'] > c
     mask_swc = (df['SWC_ZSCORE'] >= -c) & (df['SWC_ZSCORE'] < -b)
-    combined_mask = mask_ta & mask_swc
+    mask_vpd = df['VPD_ZSCORE'] <= c
+    combined_mask = mask_ta & mask_swc & mask_vpd
     df = df.loc[combined_mask].copy()
     condition = "hot and driest"
     return df, 3, -1, 2, condition
 
 
 def scenario_7(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
-    """Extremely hot conditions, extremely dry soil moisture"""
+    """Extremely hot conditions, extremely dry soil moisture, NO extreme VPD"""
     mask_ta = df['TA_ZSCORE'] > c
     mask_swc = df['SWC_ZSCORE'] < -c
-    combined_mask = mask_ta & mask_swc
+    mask_vpd = df['VPD_ZSCORE'] <= c
+    combined_mask = mask_ta & mask_swc & mask_vpd
     df = df.loc[combined_mask].copy()
     condition = "hot and driest"
     return df, 3, -1, 3, condition
@@ -200,8 +206,8 @@ def scenario_7(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28
 def scenario_8(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Compound extreme: extremely hot, extremely dry soil and atmosphere conditions"""
     mask_ta = df['TA_ZSCORE'] > c
-    mask_vpd = df['VPD_ZSCORE'] > c
     mask_swc = df['SWC_ZSCORE'] < -c
+    mask_vpd = df['VPD_ZSCORE'] > c
     combined_mask = mask_ta & mask_vpd & mask_swc
     df = df.loc[combined_mask].copy()
     condition = "hot and 2 driest"

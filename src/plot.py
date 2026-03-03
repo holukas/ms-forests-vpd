@@ -97,10 +97,10 @@ def sigmoid(x, x_start, x_end, y_start, y_end):
 def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, scenario_labels,
                scenario_ids, shap_suffix_avg, fontsize, is_small=False):
     x_centers = [x for x in range(0, len(scenario_ids))]
-    bar_width = 0.4 if not is_small else 0.4
+    bar_width = 0.55 if not is_small else 0.4
     x_centers_shifted_left = np.array(x_centers) - bar_width / 3
     x_centers_shifted_right = np.array(x_centers) + bar_width / 2.5
-    alpha_ribbon = 0.25
+    alpha_ribbon = 0.35
 
     fs_val = fontsize if not is_small else 10
     fs_label = fontsize * 1.2 if not is_small else fontsize * 1.2
@@ -194,13 +194,14 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
         if show_scenario_labels:
             scenario_symbols = {
                 'VPD_ZSCORE':
-                    ['normal', '-', '-', '-', '-', '-', '-', '↑↑↑ extreme'],
+                    ['normal', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme',
+                     '↑↑↑ extreme'],
                 'TA_ZSCORE':
                     ['normal', '↑ warm', '↑ warm', '↑↑ hot', '↑↑ hot', '↑↑↑ extreme', '↑↑↑ extreme', '↑↑↑ extreme'],
                 'SWC_ZSCORE':
                     ['normal', 'normal', '↓ dry', '↓ dry', '↓↓ very dry', '↓↓  very dry', '↓↓↓ extreme', '↓↓↓ extreme'],
                 'SWIN_ZSCORE':
-                    ['normal', '-', '-', '-', '-', '-', '-', '-']
+                    ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'all']
             }
 
             y_range = fixed_ylim[1] - fixed_ylim[0]
@@ -243,6 +244,16 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
                             ha='center', va='center', fontsize=fs,
                             fontweight='bold', color=color, zorder=100)
 
+        # Site counts for small panels
+        if is_small:
+            y_range_small = fixed_ylim[1] - fixed_ylim[0]
+            y_scen_label_small = fixed_ylim[1] - (y_range_small * 0.01)
+            y_n_label_small = y_scen_label_small - (y_range_small * 0.03)
+            current_n_small = net_counts[-1] if len(net_counts) > 0 else 0
+            txt = f"n={current_n_small}" if i == 0 else f"{current_n_small}"
+            ax.text(cx, y_n_label_small, f"{txt}",
+                    ha='center', va='top', fontsize=fs_tick, color='black')
+
     # Add row labels to the left of the condition boxes
     if show_scenario_labels:
         y_range = fixed_ylim[1] - fixed_ylim[0]
@@ -269,7 +280,6 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
             ax.text(x_centers[0] - (bar_width * 0.5) - 0.1, box_y + (box_height / 2),
                     label_text, ha='right', va='center', fontsize=12,
                     fontweight='bold', color=palette[var], zorder=100)
-
 
     # Draw ribbons
     for i in range(len(scenario_ids) - 1):
@@ -330,6 +340,8 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
     ax.spines['bottom'].set_visible(False)
     ax.set_xticks([])
     ax.set_yticks([])
+
+
 
 
 def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_min, show_annotate, show_annotate_short,
