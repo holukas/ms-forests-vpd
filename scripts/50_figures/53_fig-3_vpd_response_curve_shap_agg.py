@@ -148,13 +148,13 @@ binned_z, bin_edges = pd.cut(Z_data, bins=7, labels=bin_labels, retbins=True)
 
 # Fit polynomial
 poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data, Y_data=Y_data)
-# todo print(f"Polynomial fit ALL SITES: "
-#       f"y={poly_coeffs[0]:.3f}x4+{poly_coeffs[1]:.3f}x3+{poly_coeffs[2]:.3f}x2"
-#       f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
+print(f"Polynomial fit ALL SITES: "
+      f"y={poly_coeffs[0]:.3f}x4+{poly_coeffs[1]:.3f}x3+{poly_coeffs[2]:.3f}x2"
+      f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
 
 # Iterate through each temperature bin and plot the corresponding data points
 scatterhandles = []
-for i, label in reversed(list(enumerate(bin_labels))):
+for i, label in list(enumerate(bin_labels)):
     indices = np.where(binned_z.codes == i)[0]
     # Use color and edgecolors with the same color, but adjust alpha
 
@@ -182,13 +182,13 @@ for i, label in reversed(list(enumerate(bin_labels))):
 
     # 3. Plot the error bars
     semplot = ax_all.errorbar(X_data[indices], Y_data[indices],
-                    yerr=[_sem[indices], _sem[indices]],
-                    fmt='none',  # 'none' ensures it only plots the bars, no markers/lines
-                    ecolor=fill_color,  # Color of the error bars
-                    elinewidth=3,  # Thickness of the error bar line
-                    capsize=0,  # Length of the horizontal caps at the ends
-                    alpha=0.3,  # Match your scatter alpha, or set to 1
-                    zorder=1)  # Keeps it behind the scatter points
+                              yerr=[_sem[indices], _sem[indices]],
+                              fmt='none',  # 'none' ensures it only plots the bars, no markers/lines
+                              ecolor=fill_color,  # Color of the error bars
+                              elinewidth=3,  # Thickness of the error bar line
+                              capsize=0,  # Length of the horizontal caps at the ends
+                              alpha=0.3,  # Match your scatter alpha, or set to 1
+                              zorder=1)  # Keeps it behind the scatter points
 
 if show_fit:
     fillbetweenplot = plot.add_fit(
@@ -320,9 +320,9 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Find value closest to "SHAP zero"
     idx = (np.abs(y_fit - 0)).argmin()
 
-    # print(f"Polynomial coefficients {igbp}: "
-    #       f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
-    #       f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[4]:.3f}; r2={r_squared:.3f}\n")
+    print(f"{igbp} Polynomial coefficients: "
+          f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
+          f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[4]:.3f}; r2={r_squared:.3f}\n")
 
     if show_fit:
         fillbetweenplot = plot.add_fit(ax=ax, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
@@ -336,7 +336,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # This ensures "High" in ENF is the same value range as "High" in All Sites
     binned_z_sub = pd.cut(Z_data, bins=bin_edges, labels=bin_labels)
 
-    for i, label in reversed(list(enumerate(bin_labels))):
+    for i, label in list(enumerate(bin_labels)):
         # Get indices from the LOCAL binned object
         indices = np.where(binned_z_sub.codes == i)[0]
         # indices = np.where(binned_z.codes == i)[0]

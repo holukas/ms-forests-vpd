@@ -30,8 +30,10 @@ import src.plot as plot
 #      'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
 # ]
 # figsize = (19, 13)
+# figure_info = [1, f'ShapValues-{plotvars_rows[0][3]}']
 
-# Figure 2
+
+# Figure 4
 # Flux heatmaps
 plotvars_rows = [
     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',
@@ -44,10 +46,11 @@ plotvars_rows = [
      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
 ]
 figsize = (19, 13 / 3 * 4)
+figure_info = [4, f'Fluxes-{plotvars_rows[0][3]}']
 
 # Shared plotting constants
 aggfunc, CONDITIONAL = 'mean', True
-cb_digits, area_size = 1, 9
+cb_digits, area_size = 1, 25
 igbps = ['ENF', 'DBF', 'MF', 'EBF']
 facecolor = 'white'
 # facecolor = '#faf9f6'
@@ -215,4 +218,12 @@ if not show_row_colormap:
 
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave room for the super-title
 gs.update(wspace=0.1, hspace=0.3)
+
+# Save fig
+FLUX = plotvars[0]
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+outfilepath = dir_out / f'51_FIG-{figure_info[0]}_FlamePlots{figure_info[1]}_{FLUX}.png'
+print(f"Saved to {outfilepath}")
+plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
+
 plt.show()
