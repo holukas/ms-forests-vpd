@@ -104,6 +104,8 @@ settings = files.read_settings_file("../../config/settings.yaml")
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+
 # # Load SHAP values aggregated across all sites
 # filepath = Path(
 #     results_outdir) / f"42_SHAPVALUES-{shap_type}_AggregatedAcrossSites_{filenamex}+{filenamey}+{FLUX}.parquet"
@@ -129,6 +131,10 @@ filedf, subsetdf, minmax_counts, n_sites = files.load_data(
     count_vals_col=count_vals_col,
     subsetcols=[xcol, ycol, zcol, ycol_sem],
     site_filter=None, x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
+
+# Save plot data to csv
+_outfilepath = dir_out / f'53_FIG-3_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_ALLSITES_DATA.csv'
+subsetdf.to_csv(_outfilepath, index=False)
 
 # Extract the data from the DataFrame
 X_data = subsetdf.iloc[:, 0].values
@@ -381,11 +387,14 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
                 xtickdigits=0, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
     ax.axhline(0, color='k', linestyle='--', linewidth=1)
 
+    # Save plot data to csv
+    _outfilepath = dir_out / f'53_FIG-3_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_{igbp}_DATA.csv'
+    df_subset_nonan.to_csv(_outfilepath, index=False)
+
 fig.tight_layout()
 gs.update(wspace=.2)
 fig.show()
 
 # Save fig to file
-dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'52_FIG-2_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}.png'
+outfilepath = dir_out / f'53_FIG-3_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}.png'
 fig.savefig(outfilepath, dpi=300, bbox_inches='tight')

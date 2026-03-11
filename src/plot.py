@@ -312,17 +312,22 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
     # Error bars (net effect)
     mew = 1.5 if is_small else 2
     elinewidth = 1.5 if is_small else 2
+    ms = 8 if is_small else 11
     ax.errorbar(x_centers_shifted_left, net_vals, yerr=net_errs, fmt='D', color='white',
                 ecolor='black', elinewidth=elinewidth, capsize=4, zorder=23,
-                ms=10, mec='black', mew=mew)
+                ms=ms, mec='black', mew=mew)
 
     # Net Labels (text boxes)
+    counter = 0
     for x, y in zip(x_centers_shifted_left, net_vals):
+        counter += 1
         offset = 0
         bbox = dict(boxstyle="round,pad=0.1", fc="white", ec="none", alpha=0.6)
         _x = x - 0.1 if not is_small else x - 0.2
-        ax.text(_x, y + offset, f"{y:+.2f}", fontsize=fs_val, fontweight='bold',
-                ha='right', va='center', bbox=bbox, zorder=25)
+        _y = y + offset if not is_small else y  # Show centered in subplots
+        if not is_small or counter in [1, 8]:
+            ax.text(_x, _y, f"{y:+.2f}", fontsize=fs_val, fontweight='bold',
+                    ha='right', va='center', bbox=bbox, zorder=25)
 
     # Styling
     ax.axhline(0, color='black', linewidth=1, linestyle='--', zorder=25)
@@ -332,7 +337,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
     if not is_small:
         ax.set_xlim(x_centers[0] - 2, x_centers[-1] + 0.3)
     else:
-        ax.set_xlim(x_centers[0] - 0.3, x_centers[-1] + 0.3)
+        ax.set_xlim(x_centers[0] - 0.4, x_centers[-1] + 0.3)
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
@@ -340,8 +345,6 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
     ax.spines['bottom'].set_visible(False)
     ax.set_xticks([])
     ax.set_yticks([])
-
-
 
 
 def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_min, show_annotate, show_annotate_short,
