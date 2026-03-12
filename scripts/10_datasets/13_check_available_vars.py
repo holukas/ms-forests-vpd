@@ -20,6 +20,8 @@ required_vars = dict(
     TA_VAR='TA_F',
     VPD_VAR='VPD_F',
     PREC_VAR='P_F',
+    # SWC_VAR=['SWC_F_MDS_10', 'SWC_F_MDS_9', 'SWC_F_MDS_8', 'SWC_F_MDS_7', 'SWC_F_MDS_6',
+    #          'SWC_F_MDS_5', 'SWC_F_MDS_4', 'SWC_F_MDS_3', 'SWC_F_MDS_2', 'SWC_F_MDS_1'],  # Trying to catch deeper layers first
     SWC_VAR=['SWC_F_MDS_1', 'SWC_F_MDS_2'],
     # RH_VAR=['RH', 'RH_F', 'RH_1_1_1'],
 )
@@ -27,12 +29,12 @@ required_vars = dict(
 _datasets_df = datasets_df.copy()
 for ix, site in _datasets_df.iterrows():
 
-    # # --- TODO testing
-    # # if site['SITE'] != 'AU-Cum':
-    # #     continue
-    # if ix != 1:
+    # --- TODO testing
+    # if site['SITE'] != 'AU-Cum':
     #     continue
-    # # --- TODO testing
+    # if ix > 10:
+    #     break
+    # --- TODO testing
 
     print(f"\nLoading data for site #{ix + 1} {site['SITE']} ...")
     filepath = site['_FILEPATH_PARQUET']
