@@ -9,15 +9,15 @@ from matplotlib.patches import Patch
 
 import src.files as files
 import src.plot as plot
-import src.scenarios as scenarios
+import src.stages as stages
 
 # ==========================================
 # SETTINGS
 # ==========================================
 FLUX = 'NEP_ZSCORE'
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
-SCENARIO_ORDER = [1, 2, 3, 4, 5, 6, 7, 8]
-SCENARIO_LABELS = [f"Scenario {sl}" for sl in SCENARIO_ORDER]
+STAGE_ORDER = [1, 2, 3, 4, 5, 6, 7, 8]
+STAGE_LABELS = [f"Stage {sl}" for sl in STAGE_ORDER]
 
 # Variables
 VARS = ['SWIN_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE']
@@ -65,32 +65,32 @@ print("Loading data...")
 shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 df_main = shapvals_df.copy()
 
-# Select required IGBPs and scenarios
+# Select required IGBPs and stages (scenarios)
 df_global = df_main[df_main['IGBP'].isin(IGBP_CLASSES)]
-df_global = df_global[df_global['SCENARIO'].isin(SCENARIO_ORDER)]
+df_global = df_global[df_global['SCENARIO'].isin(STAGE_ORDER)]
 
 # ------------------------
-# CALCULATE SCENARIO STATS
+# CALCULATE STAGE (SCENARIO) STATS
 # ------------------------
-print("Calculating scenario stats...")
+print("Calculating stage stats...")
 
 # Global
-# Calculate scenario stats across all sites
-scenario_stats = scenarios.calculate_scenario_stats(
-    df_input=df_global, igbp='global', scenario_order=SCENARIO_ORDER, vars=VARS,
+# Calculate stage (scenario) stats across all sites
+stage_stats = stages.calculate_stage_stats(
+    df_input=df_global, igbp='global', stage_order=STAGE_ORDER, vars=VARS,
     shap_suffix_avg=SHAP_SUFFIX_AVG, shap_suffix_sd=SHAP_SUFFIX_SD)
 
 # IGBPs
-# Calculate scenario stats for each IGBP
+# Calculate stage (scenario) stats for each IGBP
 for i, igbp in enumerate(IGBP_CLASSES):
     df_igbp = df_global[df_global['IGBP'] == igbp]
-    igbp_data = scenarios.calculate_scenario_stats(
-        df_input=df_igbp, igbp=igbp, scenario_order=SCENARIO_ORDER, vars=VARS,
+    igbp_data = stages.calculate_stage_stats(
+        df_input=df_igbp, igbp=igbp, stage_order=STAGE_ORDER, vars=VARS,
         shap_suffix_avg=SHAP_SUFFIX_AVG, shap_suffix_sd=SHAP_SUFFIX_SD)
-    scenario_stats = pd.concat([scenario_stats, igbp_data], axis=0)
+    stage_stats = pd.concat([stage_stats, igbp_data], axis=0)
 
 # Get limits for y-axis scaling, same for all plots
-GRAND_Y_MIN, GRAND_Y_MAX = plot.get_panel_limits(df=scenario_stats)
+GRAND_Y_MIN, GRAND_Y_MAX = plot.get_panel_limits(df=stage_stats)
 FIXED_YLIM_MAIN = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.7)
 FIXED_YLIM_SUB = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.4)
 
@@ -109,18 +109,18 @@ gs_bottom = gridspec.GridSpecFromSubplotSpec(1, 4, subplot_spec=outer_gs[1], wsp
 panels_data = []
 
 # Global
-_data = scenario_stats.loc[scenario_stats['igbp'] == 'global'].copy()
+_data = stage_stats.loc[stage_stats['igbp'] == 'global'].copy()
 panels_data.append({'data': _data, 'title': "a | Global forests",
-                    'is_small': False, 'gs': gs_top[0], 'show_scenario_labels': True})
+                    'is_small': False, 'gs': gs_top[0], 'show_stage_labels': True})
 
 # IGBP
 for i, igbp in enumerate(IGBP_CLASSES):
     row, col = 0, i
     letter = chr(98 + i)
-    show_scenario_lables = True if row == 1 else False
-    _data = scenario_stats.loc[scenario_stats['igbp'] == igbp].copy()
+    show_stage_lables = True if row == 1 else False
+    _data = stage_stats.loc[stage_stats['igbp'] == igbp].copy()
     panels_data.append({'data': _data, 'title': f"{letter} | {IGBP_NAMES[igbp]}",
-                        'is_small': True, 'gs': gs_bottom[row, col], 'show_scenario_labels': show_scenario_lables})
+                        'is_small': True, 'gs': gs_bottom[row, col], 'show_stage_labels': show_stage_lables})
 
 # -----------
 # DRAW PANELS
@@ -135,8 +135,8 @@ for pix, p in enumerate(panels_data):
 
     # Draw panel
     plot.draw_panel(ax=ax, df=p['data'], title=p['title'], fixed_ylim=fixedy, is_small=p['is_small'],
-                    show_scenario_labels=p['show_scenario_labels'], vars=VARS, palette=PALETTE,
-                    scenario_ids=SCENARIO_ORDER, scenario_labels=SCENARIO_LABELS, shap_suffix_avg=SHAP_SUFFIX_AVG,
+                    show_stage_labels=p['show_stage_labels'], vars=VARS, palette=PALETTE,
+                    stage_ids=STAGE_ORDER, stage_labels=STAGE_LABELS, shap_suffix_avg=SHAP_SUFFIX_AVG,
                     fontsize=AX_LABELS_FONTSIZE)
 
     if not p['is_small']:
@@ -177,11 +177,11 @@ plt.subplots_adjust(left=0.035, right=0.975, top=0.95, bottom=0.02)
 
 # Save fig
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'52_FIG-2_SankeyPlotScenarios_{FLUX}.png'
+outfilepath = dir_out / f'52_FIG-2_SankeyPlotStages_{FLUX}.png'
 print(f"Saved to {outfilepath}")
 plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
 
 # Save panels data
-scenario_stats.to_csv(dir_out / f"52_FIG-2_SankeyPlotScenarios_{FLUX}_DATA.csv", index=False)
+stage_stats.to_csv(dir_out / f"52_FIG-2_SankeyPlotStages_{FLUX}_DATA.csv", index=False)
 
 plt.show()

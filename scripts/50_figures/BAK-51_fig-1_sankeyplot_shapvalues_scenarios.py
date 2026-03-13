@@ -122,8 +122,8 @@ print("Drawing panels...")
 for pix, p in enumerate(panels_data):
     ax = fig.add_subplot(p['gs'])
     plot.draw_panel(ax=ax, df=p['data'], title=p['title'], fixed_ylim=FIXED_YLIM, is_small=p['is_small'],
-                    show_scenario_labels=p['show_scenario_labels'], vars=VARS, palette=PALETTE,
-                    scenario_labels=SCENARIO_LABELS, shap_suffix_avg=SHAP_SUFFIX_AVG)
+                    show_stage_labels=p['show_scenario_labels'], vars=VARS, palette=PALETTE,
+                    stage_labels=SCENARIO_LABELS, shap_suffix_avg=SHAP_SUFFIX_AVG)
     if not p['is_small']:
         ax.text(x=-0.97, y=0.04, s=r'$\uparrow$' + 'Positive effect ($\sigma$)\nincreased uptake\nreduced release',
                 fontsize=12, color='black', ha='left', va='bottom')

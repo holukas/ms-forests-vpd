@@ -94,9 +94,9 @@ def sigmoid(x, x_start, x_end, y_start, y_end):
     return y_start + s * (y_end - y_start)
 
 
-def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, scenario_labels,
-               scenario_ids, shap_suffix_avg, fontsize, is_small=False):
-    x_centers = [x for x in range(0, len(scenario_ids))]
+def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stage_labels,
+               stage_ids, shap_suffix_avg, fontsize, is_small=False):
+    x_centers = [x for x in range(0, len(stage_ids))]
     bar_width = 0.55 if not is_small else 0.4
     x_centers_shifted_left = np.array(x_centers) - bar_width / 3
     x_centers_shifted_right = np.array(x_centers) + bar_width / 2.5
@@ -107,13 +107,13 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
     fs_tick = fontsize if not is_small else fontsize
 
     # Storage for ribbon coordinates and net lines
-    node_pos = [{} for _ in range(len(scenario_ids))]
+    node_pos = [{} for _ in range(len(stage_ids))]
     net_vals = []
     net_errs = []
     net_counts = []
 
     # Iterate through scenarios to draw bars and collect Net data
-    for i, scen_id in enumerate(scenario_ids):
+    for i, scen_id in enumerate(stage_ids):
         cx = x_centers[i]
 
         # Filter df for this scenario
@@ -191,7 +191,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
             current_y += val
 
         # Scenario Labels, N-counts, and Condition Rectangles (ABOVE the bars)
-        if show_scenario_labels:
+        if show_stage_labels:
             scenario_symbols = {
                 'VPD_ZSCORE':
                     ['normal', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme',
@@ -210,7 +210,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
 
             # 1. Scenario Name (S1, S2...)
             y_scen_label = fixed_ylim[1] - (y_range * 0.01)
-            ax.text(cx, y_scen_label, scenario_labels[i],
+            ax.text(cx, y_scen_label, stage_labels[i],
                     ha='center', va='top', fontsize=fs_tick, fontweight='bold')
 
             # 2. Site count (n=...)
@@ -255,7 +255,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
                     ha='center', va='top', fontsize=fs_tick, color='black')
 
     # Add row labels to the left of the condition boxes
-    if show_scenario_labels:
+    if show_stage_labels:
         y_range = fixed_ylim[1] - fixed_ylim[0]
         box_height = y_range * 0.035
 
@@ -282,7 +282,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_scenario_labels, vars, palette, s
                     fontweight='bold', color=palette[var], zorder=100)
 
     # Draw ribbons
-    for i in range(len(scenario_ids) - 1):
+    for i in range(len(stage_ids) - 1):
         x_start, x_end = x_centers[i] + bar_width / 2, x_centers[i + 1] - bar_width / 2
         x_curve = np.linspace(x_start, x_end, 100)
 

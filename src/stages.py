@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 
 
-def calculate_scenario_stats(df_input, igbp, scenario_order, vars, shap_suffix_avg, shap_suffix_sd):
+def calculate_stage_stats(df_input, igbp, stage_order, vars, shap_suffix_avg, shap_suffix_sd):
     scen_data = []
 
-    for scen_id in scenario_order:
+    for scen_id in stage_order:
         df_scen = df_input[df_input['SCENARIO'] == scen_id].copy()
         if len(df_scen) == 0:
             raise ValueError(f"Scenario {scen_id} has no data.")
@@ -119,13 +119,13 @@ def calculate_scenario_stats(df_input, igbp, scenario_order, vars, shap_suffix_a
     return df
 
 
-def scenario_0(df):
+def stage_0(df):
     """Complete dataset, -1 = unrestricted"""
     condition = "all data"
     return df, -1, -1, -1, condition
 
 
-def scenario_1(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_1(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Normal conditions, 0 = normal conditions, +/-a = middle 25%"""
     # 50% of data (z-score = +/- 0.6745)
     mask_ta = (df['TA_ZSCORE'] >= -a) & (df['TA_ZSCORE'] <= a)
@@ -137,7 +137,7 @@ def scenario_1(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28
     return df, 0, 0, 0, condition
 
 
-def scenario_2(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_2(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Warmer conditions, soil moisture normal, NO extreme VPD"""
     mask_ta = (df['TA_ZSCORE'] > a) & (df['TA_ZSCORE'] <= b)
     mask_swc = (df['SWC_ZSCORE'] >= -a) & (df['SWC_ZSCORE'] <= a)
@@ -148,7 +148,7 @@ def scenario_2(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28
     return df, 1, -1, 0, condition
 
 
-def scenario_3(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_3(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Warmer conditions, drier soil moisture, NO extreme VPD"""
     mask_ta = (df['TA_ZSCORE'] > a) & (df['TA_ZSCORE'] <= b)
     mask_swc = (df['SWC_ZSCORE'] >= -b) & (df['SWC_ZSCORE'] < -a)
@@ -159,7 +159,7 @@ def scenario_3(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28
     return df, 1, -1, 1, condition
 
 
-def scenario_4(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_4(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Hot conditions, drier soil moisture, NO extreme VPD"""
     mask_ta = (df['TA_ZSCORE'] > b) & (df['TA_ZSCORE'] <= c)
     mask_swc = (df['SWC_ZSCORE'] >= -b) & (df['SWC_ZSCORE'] < -a)
@@ -170,7 +170,7 @@ def scenario_4(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28
     return df, 2, -1, 1, condition
 
 
-def scenario_5(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_5(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Hot conditions, very dry soil moisture, NO extreme VPD"""
     mask_ta = (df['TA_ZSCORE'] > b) & (df['TA_ZSCORE'] <= c)
     mask_swc = (df['SWC_ZSCORE'] >= -c) & (df['SWC_ZSCORE'] < -b)
@@ -181,7 +181,7 @@ def scenario_5(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28
     return df, 2, -1, 2, condition
 
 
-def scenario_6(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_6(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Extremely hot conditions, very dry soil moisture, NO extreme VPD"""
     mask_ta = df['TA_ZSCORE'] > c
     mask_swc = (df['SWC_ZSCORE'] >= -c) & (df['SWC_ZSCORE'] < -b)
@@ -192,7 +192,7 @@ def scenario_6(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28
     return df, 3, -1, 2, condition
 
 
-def scenario_7(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_7(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Extremely hot conditions, extremely dry soil moisture, NO extreme VPD"""
     mask_ta = df['TA_ZSCORE'] > c
     mask_swc = df['SWC_ZSCORE'] < -c
@@ -203,7 +203,7 @@ def scenario_7(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28
     return df, 3, -1, 3, condition
 
 
-def scenario_8(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_8(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Compound extreme: extremely hot, extremely dry soil and atmosphere conditions"""
     mask_ta = df['TA_ZSCORE'] > c
     mask_swc = df['SWC_ZSCORE'] < -c
