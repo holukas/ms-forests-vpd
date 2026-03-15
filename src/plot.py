@@ -444,13 +444,13 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
 
     # mid_point_x = threshold_x + (x_fit.max() - threshold_x) / 1.05
     if show_annotate and not show_annotate_short:
-        ax.text(x_fit[min_ix] - 0.15, -0.05, "Carbon penalty",
+        ax.text(x_fit[min_ix] - 0.15, -0.05, "Suppression",
                 color=color_limzone, alpha=1, ha='right', va='top',
                 fontsize=fontsize * 1.2, style='italic', weight='bold')
         # ax.text(x_fit[min_ix] - 0.1, -0.1, "reduced uptake\nincreased release",
         #         color=color_limzone, alpha=1, ha='right', va='top',
         #         fontsize=fontsize * 1.2, style='italic', weight='normal')
-        ax.text(x_fit[idx] - 0.15, y_top_axis * 0.92, "Carbon gain",
+        ax.text(x_fit[idx] - 0.15, y_top_axis * 0.92, "Stimulation",
                 color=color_facilzone, alpha=1, ha='right', va='top',
                 fontsize=fontsize * 1.2, weight='bold', style='italic', zorder=1)
         # ax.text(x_fit[idx] - 0.1, y_top_axis * 0.85, "increased uptake\nreduced release",

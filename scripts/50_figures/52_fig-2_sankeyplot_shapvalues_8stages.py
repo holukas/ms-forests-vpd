@@ -142,15 +142,15 @@ for pix, p in enumerate(panels_data):
     if not p['is_small']:
         color_limzone = '#d6604d'
         color_facilzone = '#4393c3'
-        ax.text(x=-1.2, y=0.04, s='Carbon gain', fontweight='bold', zorder=99, style='italic',
+        ax.text(x=-1.2, y=0.04, s='Stimulation', fontweight='bold', zorder=99, style='italic',
                 fontsize=AX_LABELS_FONTSIZE * 1.2, color=color_facilzone, ha='center', va='bottom')
-        ax.text(x=-1.2, y=-0.04, s='Carbon penalty', fontweight='bold', zorder=99, style='italic',
+        ax.text(x=-1.2, y=-0.04, s='Suppression', fontweight='bold', zorder=99, style='italic',
                 fontsize=AX_LABELS_FONTSIZE * 1.2, color=color_limzone, ha='center', va='top')
 
         # Draw up and down area arrows
         # Define vertices
-        vertices_up = [(-0.5, 0), (-0.5, 0.15), (-1.2, 0.25), (-1.9, 0.15), (-1.9, 0), (-0.5, 0)]
-        vertices_down = [(-0.5, 0), (-0.5, -0.15), (-1.2, -0.25), (-1.9, -0.15), (-1.9, 0), (-0.5, 0)]
+        vertices_up = [(-0.6, 0), (-0.6, 0.15), (-1.2, 0.25), (-1.8, 0.15), (-1.8, 0), (-0.5, 0)]
+        vertices_down = [(-0.6, 0), (-0.6, -0.15), (-1.2, -0.25), (-1.8, -0.15), (-1.8, 0), (-0.5, 0)]
         # Add arrows
         plot.add_gradient_arrow(ax=ax, vertices=vertices_up, color_main=color_facilzone, direction='up')  # Sage Green
         plot.add_gradient_arrow(ax=ax, vertices=vertices_down, color_main=color_limzone, direction='down')  # Slate Blue

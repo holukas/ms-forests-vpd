@@ -77,7 +77,7 @@ AX_LABELS_FONTSIZE = 12
 
 # Labels & Columns
 xlabel = rf'{beautify[xvar]} ($\sigma$)'
-ylabel = rf'{beautify[yvar]} effect ($\sigma$)'
+ylabel = rf'{beautify[yvar]} effect on {beautify[FLUX]} ($\sigma$)'
 
 # Bins always use 'median', b/c using 'mean' results in floating point errors
 xagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
@@ -245,6 +245,38 @@ ax_all.text(0.4, 1.05, f"(n={n_sites}, min. {minmax_counts[0]})", transform=ax_a
 # Find value closest to "SHAP zero"
 idx = (np.abs(y_fit - 0)).argmin()
 
+# Threshold for 95% PI lines
+# x_fit[idx]
+threshold_lower = x_fit[(np.abs(pi_lower - 0)).argmin()]
+threshold_upper = x_fit[(np.abs(pi_upper - 0)).argmin()]
+
+
+# ---
+# ---------------------------------------------------------
+# CALCULATE THRESHOLD AND 95% CI FROM POLYNOMIAL BANDS
+# ---------------------------------------------------------
+
+# Ensure y values are sorted ascending for numpy interpolation
+# Since SHAP values go from positive to negative as VPD increases,
+# we need to reverse the arrays for np.interp to work correctly.
+x_fit_rev = x_fit[::-1]
+y_fit_rev = y_fit[::-1]
+pi_lower_rev = pi_lower[::-1]
+pi_upper_rev = pi_upper[::-1]
+
+# Find where the main fit crosses 0
+threshold_main = np.interp(0, y_fit_rev, x_fit_rev)
+
+# Find where the confidence bands cross 0
+threshold_upper_bound = np.interp(0, pi_lower_rev, x_fit_rev) # Lower PI yields the UPPER VPD threshold
+threshold_lower_bound = np.interp(0, pi_upper_rev, x_fit_rev) # Upper PI yields the LOWER VPD threshold
+
+# (Optional) Print the results for your manuscript text
+print(f"VPD Threshold: {threshold_main:.2f} sigma (95% CI: [{threshold_lower_bound:.2f}, {threshold_upper_bound:.2f}])")
+
+# You can now use these exact variables to plot your dashed vertical lines!
+# ---
+
 # Detect min/max value shown in plot, is also used for subplots
 ydim_max = _sem_upper.max() * 1.6
 ydim_min = _sem_lower.min() * 1.15
@@ -295,7 +327,7 @@ ax_all.axhline(0, color='k', linestyle='--', linewidth=1)
 configs = zip(
     axes_sub, igbps,
     [" ", " ", xlabel, xlabel],
-    [ylabel, " ", ylabel, " "],
+    [" ", " ", " ", " "],  # No y label
     ['b', 'c', 'd', 'e'],
     [True, False, True, False],  # For showing yticklabels
     [False, False, True, True]  # For showing xticklabels
@@ -392,7 +424,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     df_subset_nonan.to_csv(_outfilepath, index=False)
 
 fig.tight_layout()
-gs.update(wspace=.2)
+gs.update(wspace=.1)
 fig.show()
 
 # Save fig to file
