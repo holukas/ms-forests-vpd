@@ -347,12 +347,12 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
     ax.set_yticks([])
 
 
-def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_min, show_annotate, show_annotate_short,
+def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_annotate, show_annotate_short,
                          fontsize, colors_symbols):
     color_limzone = '#d6604d'
     color_facilzone = '#4393c3'
 
-    threshold_x = x_fit[idx]
+    # threshold_main = x_fit[threshold_main_idx]
 
     # Get axis limits
     y_top_axis = ax.get_ylim()[1]
@@ -361,7 +361,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
     # -------------------------------------
     # FACILITATION ZONE (left of threshold)
     # -------------------------------------
-    mask_facil = x_fit <= threshold_x
+    mask_facil = x_fit <= threshold_main
     x_facil = x_fit[mask_facil]
 
     if len(x_facil) > 1:
@@ -402,7 +402,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
     # LIMITATION ZONE (right of threshold)
     # ------------------------------------
     y_bottom_axis = ax.get_ylim()[0]  # Absolute bottom of current plot axis
-    mask_limit = x_fit >= threshold_x
+    mask_limit = x_fit >= threshold_main
     x_limit = x_fit[mask_limit]
     if len(x_limit) > 1:
         # Define rectangle vertices (clockwise or counter-clockwise)
@@ -438,7 +438,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
         )
         im.set_clip_path(patch)
 
-    ax.plot([x_fit[idx], x_fit[idx]], [y_bottom_axis, 0],
+    ax.plot([threshold_main, threshold_main], [y_bottom_axis, 0],
             color=color_limzone, linestyle='-', linewidth=1, zorder=1)
     color = 'black'
 
@@ -450,7 +450,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
         # ax.text(x_fit[min_ix] - 0.1, -0.1, "reduced uptake\nincreased release",
         #         color=color_limzone, alpha=1, ha='right', va='top',
         #         fontsize=fontsize * 1.2, style='italic', weight='normal')
-        ax.text(x_fit[idx] - 0.15, y_top_axis * 0.92, "Stimulation",
+        ax.text(threshold_main - 0.15, y_top_axis * 0.92, "Stimulation",
                 color=color_facilzone, alpha=1, ha='right', va='top',
                 fontsize=fontsize * 1.2, weight='bold', style='italic', zorder=1)
         # ax.text(x_fit[idx] - 0.1, y_top_axis * 0.85, "increased uptake\nreduced release",
@@ -479,7 +479,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
     ax.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor=colors_symbols[0], **_params2)
 
     # Threshold
-    ax.scatter(x_fit[idx], y_fit[idx], c="none", edgecolors=colors_symbols[1], **_params2)
+    ax.scatter(threshold_main, 0, c="none", edgecolors=colors_symbols[1], **_params2)
 
     # Max. limitation
     ax.scatter(x_fit[min_ix], y_fit[min_ix], color='none', marker='v', edgecolor=colors_symbols[2], **_params2)
@@ -502,16 +502,16 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, idx, ydim_max, ydim_m
                     fontsize=_fontsize, color=color, ha='center', va='center', zorder=100)
 
         if not show_annotate_short:
-            ann_txt = f'Penalty threshold\nx={x_fit[idx]:.2f}'
+            ann_txt = f'Penalty threshold\nx={threshold_main:.2f}'
             offx = 0.8
             offy = 0.3
         else:
-            ann_txt = f'x={x_fit[idx]:.2f}'
+            ann_txt = f'x={threshold_main:.2f}'
             offx = 0.7
             offy = 0.6
         ax.annotate(ann_txt,
-                    xy=(x_fit[idx], y_fit[idx]),
-                    xytext=(x_fit[idx] - offx, y_fit[idx] - offy),  # Adjust text position as needed
+                    xy=(threshold_main, 0),
+                    xytext=(threshold_main - offx, 0 - offy),  # Adjust text position as needed
                     arrowprops=dict(arrowstyle="->", color=color, lw=2, shrinkB=10),
                     fontsize=_fontsize, color=color, ha='center', va='center', zorder=100)
 

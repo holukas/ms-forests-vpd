@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 
 import src.files as files
+import src.fit as fit
 import src.plot as plot
-from src.fit import fit_polynomial
 
 # Settings & variables
 
@@ -153,7 +153,7 @@ bin_labels = ['coldest', 'cold', 'cool', 'medium',
 binned_z, bin_edges = pd.cut(Z_data, bins=7, labels=bin_labels, retbins=True)
 
 # Fit polynomial
-poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data, Y_data=Y_data)
+poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit.fit_polynomial(X_data=X_data, Y_data=Y_data)
 print(f"Polynomial fit ALL SITES: "
       f"y={poly_coeffs[0]:.3f}x4+{poly_coeffs[1]:.3f}x3+{poly_coeffs[2]:.3f}x2"
       f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
@@ -243,39 +243,12 @@ ax_all.text(0.4, 1.05, f"(n={n_sites}, min. {minmax_counts[0]})", transform=ax_a
             size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
 
 # Find value closest to "SHAP zero"
-idx = (np.abs(y_fit - 0)).argmin()
-
-# Threshold for 95% PI lines
-# x_fit[idx]
-threshold_lower = x_fit[(np.abs(pi_lower - 0)).argmin()]
-threshold_upper = x_fit[(np.abs(pi_upper - 0)).argmin()]
+# main_thres_idx = (np.abs(y_fit - 0)).argmin()
 
 
-# ---
-# ---------------------------------------------------------
-# CALCULATE THRESHOLD AND 95% CI FROM POLYNOMIAL BANDS
-# ---------------------------------------------------------
-
-# Ensure y values are sorted ascending for numpy interpolation
-# Since SHAP values go from positive to negative as VPD increases,
-# we need to reverse the arrays for np.interp to work correctly.
-x_fit_rev = x_fit[::-1]
-y_fit_rev = y_fit[::-1]
-pi_lower_rev = pi_lower[::-1]
-pi_upper_rev = pi_upper[::-1]
-
-# Find where the main fit crosses 0
-threshold_main = np.interp(0, y_fit_rev, x_fit_rev)
-
-# Find where the confidence bands cross 0
-threshold_upper_bound = np.interp(0, pi_lower_rev, x_fit_rev) # Lower PI yields the UPPER VPD threshold
-threshold_lower_bound = np.interp(0, pi_upper_rev, x_fit_rev) # Upper PI yields the LOWER VPD threshold
-
-# (Optional) Print the results for your manuscript text
-print(f"VPD Threshold: {threshold_main:.2f} sigma (95% CI: [{threshold_lower_bound:.2f}, {threshold_upper_bound:.2f}])")
-
-# You can now use these exact variables to plot your dashed vertical lines!
-# ---
+# Calc threshold incl. upper and lower bounds from 95% fit
+threshold_main, threshold_lower, threshold_upper = (
+    fit.calc_threshold(x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper))
 
 # Detect min/max value shown in plot, is also used for subplots
 ydim_max = _sem_upper.max() * 1.6
@@ -289,7 +262,7 @@ ax_all.set_xlim(xdim_min, xdim_max * 1.06)
 # Add text and connecting dashed lines for SHAP max, zero, and min
 if show_shap_thresholds:
     plot.show_shap_thresholds(ax=ax_all, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix,
-                              idx=idx, ydim_max=ydim_max, ydim_min=ydim_min, show_annotate=True,
+                              threshold_main=threshold_main, show_annotate=True,
                               fontsize=AX_LABELS_FONTSIZE, show_annotate_short=False,
                               colors_symbols=colors_symbols)
 
@@ -353,10 +326,15 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     X_data_nonan = df_subset_nonan.iloc[:, 0].values
     Y_data_nonan = df_subset_nonan.iloc[:, 1].values
     Z_data_nonan = df_subset_nonan.iloc[:, 2].values
-    poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit_polynomial(X_data=X_data_nonan,
-                                                                                         Y_data=Y_data_nonan)
+    poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit.fit_polynomial(X_data=X_data_nonan,
+                                                                                             Y_data=Y_data_nonan)
+
+    # Calc threshold incl. upper and lower bounds from 95% fit
+    threshold_main, threshold_lower, threshold_upper = (
+        fit.calc_threshold(x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper))
+
     # Find value closest to "SHAP zero"
-    idx = (np.abs(y_fit - 0)).argmin()
+    main_thres_idx = (np.abs(y_fit - 0)).argmin()
 
     print(f"{igbp} Polynomial coefficients: "
           f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
@@ -410,8 +388,9 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
         min_ix = np.argmin(y_fit)
         max_ix = np.argmax(y_fit)
         plot.show_shap_thresholds(
-            ax=ax, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix, idx=idx, ydim_max=ydim_max,
-            ydim_min=ydim_min, show_annotate=True, fontsize=AX_LABELS_FONTSIZE, show_annotate_short=True,
+            ax=ax, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix,
+            threshold_main=threshold_main,
+            show_annotate=True, fontsize=AX_LABELS_FONTSIZE, show_annotate_short=True,
             colors_symbols=colors_symbols)
 
     # Format subplot
