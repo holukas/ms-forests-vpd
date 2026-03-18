@@ -4,7 +4,7 @@ import diive as dv
 import pandas as pd
 
 import src.files as files
-import src.scenarios as s
+import src.stages as s
 
 # ------------------------------
 # Variables
@@ -43,13 +43,13 @@ for ix, siteconfig in subsets_df.iterrows():
     filepath = dir_prev_results / filename
     print(f"\nLoading data for site #{ix + 1} {site} ({filepath})")
     shapvals_df = dv.load_parquet(filepath)
-    keepcols = [c for c in shapvals_df.columns if "_SHAPVALS" in c]
+    # keepcols = [c for c in shapvals_df.columns if "_SHAPVALS" in c]
 
     scenarios = [s.stage_0, s.stage_1, s.stage_2, s.stage_3,
                  s.stage_4, s.stage_5, s.stage_6, s.stage_7, s.stage_8]
 
     for i, scen in enumerate(scenarios):
-        subset, ta, vpd, swc, condition = scen(shapvals_df)
+        subset, ta_class, vpd_class, swc_class, condition = scen(shapvals_df)
         n_records = len(subset.index)
         cur_scenario_dict = dict()
         cur_scenario_dict['SITE'] = site
@@ -57,22 +57,23 @@ for ix, siteconfig in subsets_df.iterrows():
         cur_scenario_dict['SCENARIO'] = i
         cur_scenario_dict['CONDITION'] = condition
         cur_scenario_dict['N_VALUES'] = n_records
-        cur_scenario_dict['TA'] = ta
-        cur_scenario_dict['VPD'] = vpd
-        cur_scenario_dict['SWC'] = swc
+        cur_scenario_dict['TA_CLASS'] = ta_class
+        cur_scenario_dict['VPD_CLASS'] = vpd_class
+        cur_scenario_dict['SWC_CLASS'] = swc_class
 
-        for k in keepcols:
-            series = subset[k].copy()
-            cur_scenario_dict[f'{k}_POS_AVG'] = series[series > 0].mean()
-            cur_scenario_dict[f'{k}_NEG_AVG'] = series[series < 0].mean()
-            cur_scenario_dict[f'{k}_OVR_AVG'] = series.mean()
-            cur_scenario_dict[f'{k}_OVR_SD'] = series.std()
-            cur_scenario_dict[f'{k}_OVR_MEDIAN'] = series.median()
-            cur_scenario_dict[f'{k}_OVR_ABS_AVG'] = series.abs().mean()
-            cur_scenario_dict[f'{k}_OVR_ABS_MEDIAN'] = series.abs().median()
-            cur_scenario_dict[f'{k}_OVR_ABS_SD'] = series.abs().std()
+        for c in shapvals_df.columns:
+            series = subset[c].copy()
+            cur_scenario_dict[f'{c}_POS_AVG'] = series[series > 0].mean()
+            cur_scenario_dict[f'{c}_NEG_AVG'] = series[series < 0].mean()
+            cur_scenario_dict[f'{c}_OVR_AVG'] = series.mean()
+            cur_scenario_dict[f'{c}_OVR_SD'] = series.std()
+            cur_scenario_dict[f'{c}_OVR_MEDIAN'] = series.median()
+            cur_scenario_dict[f'{c}_OVR_ABS_AVG'] = series.abs().mean()
+            cur_scenario_dict[f'{c}_OVR_ABS_MEDIAN'] = series.abs().median()
+            cur_scenario_dict[f'{c}_OVR_ABS_SD'] = series.abs().std()
 
         # Calculate net for each high-resolution observation
+        # shapcols = [c for c in shapvals_df.columns if "_SHAPVALS" in c]
         cur_scenario_dict['NET_SHAPVALS_OVR_AVG'] = subset['SUM'].mean()
         cur_scenario_dict['NET_SHAPVALS_OVR_SEM'] = subset['SUM'].sem()
 

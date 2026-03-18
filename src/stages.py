@@ -5,10 +5,10 @@ import pandas as pd
 def calculate_stage_stats(df_input, igbp, stage_order, vars, shap_suffix_avg, shap_suffix_sd):
     scen_data = []
 
-    for scen_id in stage_order:
-        df_scen = df_input[df_input['SCENARIO'] == scen_id].copy()
+    for stage_id in stage_order:
+        df_scen = df_input[df_input['SCENARIO'] == stage_id].copy()
         if len(df_scen) == 0:
-            raise ValueError(f"Scenario {scen_id} has no data.")
+            raise ValueError(f"Stage {stage_id} has no data.")
 
         scen_dict = {}
 
@@ -16,41 +16,41 @@ def calculate_stage_stats(df_input, igbp, stage_order, vars, shap_suffix_avg, sh
         for var in vars:
 
             # Required cols
-            col_mean = var + shap_suffix_avg
-            col_sd = var + shap_suffix_sd
-            req_cols = [col_mean, col_sd]
+            col_shap_avg = var + shap_suffix_avg
+            col_shap_sd = var + shap_suffix_sd
+            req_cols = [col_shap_avg, col_shap_sd]
             # Check if ALL required columns are available
             if not set(req_cols).issubset(df_scen.columns):
                 missing = list(set(req_cols) - set(df_scen.columns))
                 raise ValueError(f"Required columns missing from dataframe: {missing}")
 
             # Site-level vectors
-            sitemeans_vec = df_scen[col_mean]
-            sitemeans_sd_vec = df_scen[col_sd]
+            sites_shap_avg = df_scen[col_shap_avg]
+            sites_shap_sd = df_scen[col_shap_sd]
 
             # Calculate stats for site-means (for the bar height)
-            sitemeans_mean = sitemeans_vec.mean()
-            sitemeans_count = sitemeans_vec.count()
-            sitemeans_sem = sitemeans_vec.sem()  # SEM of site-means (standard error of the mean), sem = std / sqrt(n)
-            sitemeans_min = sitemeans_vec.min()
-            sitemeans_max = sitemeans_vec.max()
+            stage_shap_avg = sites_shap_avg.mean()
+            stage_shap_avg_counts = sites_shap_avg.count()
+            stage_shap_avg_sem = sites_shap_avg.sem()  # SEM of site-means (standard error of the mean), sem = std / sqrt(n)
+            stage_shap_avg_min = sites_shap_avg.min()
+            stage_shap_avg_max = sites_shap_avg.max()
 
             # Calculate the SD of site-means
             # Law of total variance
-            mean_of_variances = (sitemeans_sd_vec ** 2).mean()  # Average of within-site variances
-            variance_of_means = sitemeans_vec.var(ddof=0)  # Variance of the site means
-            total_sd = np.sqrt(mean_of_variances + variance_of_means)  # Global SD
+            mean_of_variances = (sites_shap_sd ** 2).mean()  # Average of within-site variances
+            variance_of_means = sites_shap_avg.var(ddof=0)  # Variance of the site means
+            stage_shap_avg_total_sd = np.sqrt(mean_of_variances + variance_of_means)  # Global SD
 
             # Store in dict
-            scen_dict[col_mean] = {
+            scen_dict[col_shap_avg] = {
                 'igbp': igbp,
-                'scenario': scen_id,
-                'mean': sitemeans_mean,
-                'sem': sitemeans_sem,
-                'total_sd': total_sd,
-                'min': sitemeans_min,
-                'max': sitemeans_max,
-                'n_sites': sitemeans_count
+                'stage': stage_id,
+                'mean': stage_shap_avg,
+                'sem': stage_shap_avg_sem,
+                'total_sd': stage_shap_avg_total_sd,
+                'min': stage_shap_avg_min,
+                'max': stage_shap_avg_max,
+                'n_sites': stage_shap_avg_counts
             }
 
         # -------------------------------
@@ -88,7 +88,7 @@ def calculate_stage_stats(df_input, igbp, stage_order, vars, shap_suffix_avg, sh
         # Store in dict
         scen_dict['NET_SHAPVALS'] = {
             'igbp': igbp,
-            'scenario': scen_id,
+            'stage': stage_id,
             'mean': net_shapvals_mean,
             'sem': net_shapvals_sem,
             'total_sd': net_total_sd,
@@ -113,7 +113,7 @@ def calculate_stage_stats(df_input, igbp, stage_order, vars, shap_suffix_avg, sh
     df = pd.DataFrame(rows)
 
     # Reorder columns for clarity
-    cols = ['Variable', 'igbp', 'scenario', 'mean', 'sem', 'total_sd', 'min', 'max', 'n_sites']
+    cols = ['Variable', 'igbp', 'stage', 'mean', 'sem', 'total_sd', 'min', 'max', 'n_sites']
     df = df[cols]
 
     return df
@@ -125,7 +125,7 @@ def stage_0(df):
     return df, -1, -1, -1, condition
 
 
-def stage_1(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_1(df, a: float = 0.31863936):
     """Normal conditions, 0 = normal conditions, +/-a = middle 25%"""
     # 50% of data (z-score = +/- 0.6745)
     mask_ta = (df['TA_ZSCORE'] >= -a) & (df['TA_ZSCORE'] <= a)
@@ -137,8 +137,14 @@ def stage_1(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28155
     return df, 0, 0, 0, condition
 
 
-def stage_2(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
-    """Warmer conditions, soil moisture normal, NO extreme VPD"""
+def stage_2(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    # def stage_2(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+    """Warmer conditions, soil moisture normal, NO extreme VPD
+    z-score +/- 0.31863936 = middle 25%
+    z-score +/- 0.714367440280187 = next 13.75% above or below middle 25%
+    z-score +/- 1.2815515655446 = upper 10% (90th percentile) or lower 10% (10th percentile)
+
+    """
     mask_ta = (df['TA_ZSCORE'] > a) & (df['TA_ZSCORE'] <= b)
     mask_swc = (df['SWC_ZSCORE'] >= -a) & (df['SWC_ZSCORE'] <= a)
     mask_vpd = df['VPD_ZSCORE'] <= c  # Prevents overlap with compound extremes
@@ -148,7 +154,8 @@ def stage_2(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28155
     return df, 1, -1, 0, condition
 
 
-def stage_3(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_3(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    # def stage_3(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Warmer conditions, drier soil moisture, NO extreme VPD"""
     mask_ta = (df['TA_ZSCORE'] > a) & (df['TA_ZSCORE'] <= b)
     mask_swc = (df['SWC_ZSCORE'] >= -b) & (df['SWC_ZSCORE'] < -a)
@@ -159,7 +166,8 @@ def stage_3(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28155
     return df, 1, -1, 1, condition
 
 
-def stage_4(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_4(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    # def stage_4(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Hot conditions, drier soil moisture, NO extreme VPD"""
     mask_ta = (df['TA_ZSCORE'] > b) & (df['TA_ZSCORE'] <= c)
     mask_swc = (df['SWC_ZSCORE'] >= -b) & (df['SWC_ZSCORE'] < -a)
@@ -170,7 +178,8 @@ def stage_4(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28155
     return df, 2, -1, 1, condition
 
 
-def stage_5(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_5(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    # def stage_5(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Hot conditions, very dry soil moisture, NO extreme VPD"""
     mask_ta = (df['TA_ZSCORE'] > b) & (df['TA_ZSCORE'] <= c)
     mask_swc = (df['SWC_ZSCORE'] >= -c) & (df['SWC_ZSCORE'] < -b)
@@ -181,7 +190,8 @@ def stage_5(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28155
     return df, 2, -1, 2, condition
 
 
-def stage_6(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_6(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    # def stage_6(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Extremely hot conditions, very dry soil moisture, NO extreme VPD"""
     mask_ta = df['TA_ZSCORE'] > c
     mask_swc = (df['SWC_ZSCORE'] >= -c) & (df['SWC_ZSCORE'] < -b)
@@ -192,7 +202,8 @@ def stage_6(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28155
     return df, 3, -1, 2, condition
 
 
-def stage_7(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_7(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    # def stage_7(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Extremely hot conditions, extremely dry soil moisture, NO extreme VPD"""
     mask_ta = df['TA_ZSCORE'] > c
     mask_swc = df['SWC_ZSCORE'] < -c
@@ -203,7 +214,8 @@ def stage_7(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.28155
     return df, 3, -1, 3, condition
 
 
-def stage_8(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
+def stage_8(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    # def stage_8(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Compound extreme: extremely hot, extremely dry soil and atmosphere conditions"""
     mask_ta = df['TA_ZSCORE'] > c
     mask_swc = df['SWC_ZSCORE'] < -c

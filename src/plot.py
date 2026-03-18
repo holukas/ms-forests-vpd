@@ -58,7 +58,7 @@ def get_panel_limits(df: pd.DataFrame):
     min_vals = []
 
     # Process each bar (grouped by IGBP and Scenario)
-    grouped = df.groupby(['igbp', 'scenario'])
+    grouped = df.groupby(['igbp', 'stage'])
 
     for name, group in grouped:
         # Separate individual drivers from the Net effect
@@ -113,11 +113,11 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
     net_counts = []
 
     # Iterate through scenarios to draw bars and collect Net data
-    for i, scen_id in enumerate(stage_ids):
+    for i, stage_id in enumerate(stage_ids):
         cx = x_centers[i]
 
         # Filter df for this scenario
-        df_s = df[df['scenario'] == scen_id]
+        df_s = df[df['stage'] == stage_id]
         if df_s.empty:
             # Handle empty data (add placeholders to keep alignment)
             net_vals.append(np.nan)
@@ -194,12 +194,12 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
         if show_stage_labels:
             scenario_symbols = {
                 'VPD_ZSCORE':
-                    ['normal', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme',
+                    ['moderate', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme',
                      '↑↑↑ extreme'],
                 'TA_ZSCORE':
-                    ['normal', '↑ warm', '↑ warm', '↑↑ hot', '↑↑ hot', '↑↑↑ extreme', '↑↑↑ extreme', '↑↑↑ extreme'],
+                    ['moderate', '↑ high', '↑ high', '↑↑ very high', '↑↑ very high', '↑↑↑ extreme', '↑↑↑ extreme', '↑↑↑ extreme'],
                 'SWC_ZSCORE':
-                    ['normal', 'normal', '↓ dry', '↓ dry', '↓↓ very dry', '↓↓  very dry', '↓↓↓ extreme', '↓↓↓ extreme'],
+                    ['moderate', 'moderate', '↓ low', '↓ low', '↓↓ very low', '↓↓  very low', '↓↓↓ extreme', '↓↓↓ extreme'],
                 'SWIN_ZSCORE':
                     ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'all']
             }

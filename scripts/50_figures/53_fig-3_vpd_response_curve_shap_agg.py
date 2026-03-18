@@ -118,6 +118,7 @@ dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 settings = files.read_settings_file("../../config/settings.yaml")
 dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+df_coeffs = pd.DataFrame(columns=['IGBP', 'a', 'b', 'c', 'd', 'e', 'R2', 'Threshold'])  # Collect coefficients
 
 # FIGURE LAYOUT (5 panels)
 fig, gs, ax_all, axes_sub = plot.layout_5panels((13.86, 6.67), add_colorbar_ax=False)
@@ -154,9 +155,9 @@ binned_z, bin_edges = pd.cut(Z_data, bins=7, labels=bin_labels, retbins=True)
 
 # Fit polynomial
 poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit.fit_polynomial(X_data=X_data, Y_data=Y_data)
-print(f"Polynomial fit ALL SITES: "
-      f"y={poly_coeffs[0]:.3f}x4+{poly_coeffs[1]:.3f}x3+{poly_coeffs[2]:.3f}x2"
-      f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
+
+
+
 
 # Iterate through each temperature bin and plot the corresponding data points
 scatterhandles = []
@@ -250,6 +251,14 @@ ax_all.text(0.4, 1.05, f"(n={n_sites}, min. {minmax_counts[0]})", transform=ax_a
 threshold_main, threshold_lower, threshold_upper = (
     fit.calc_threshold(x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper))
 
+# Collect coefficients in dataframe
+_threshold = f'{threshold_main:.2f} [{threshold_lower:.2f}, {threshold_upper:.2f}]'
+df_coeffs.loc[len(df_coeffs)] = ['ALL SITES', poly_coeffs[0], poly_coeffs[1],
+                                 poly_coeffs[2], poly_coeffs[3], poly_coeffs[4], r_squared, _threshold]
+print(f"Polynomial fit ALL SITES: "
+      f"y={poly_coeffs[0]:.3f}x4+{poly_coeffs[1]:.3f}x3+{poly_coeffs[2]:.3f}x2"
+      f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
+
 # Detect min/max value shown in plot, is also used for subplots
 ydim_max = _sem_upper.max() * 1.6
 ydim_min = _sem_lower.min() * 1.15
@@ -336,9 +345,7 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Find value closest to "SHAP zero"
     main_thres_idx = (np.abs(y_fit - 0)).argmin()
 
-    print(f"{igbp} Polynomial coefficients: "
-          f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
-          f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[4]:.3f}; r2={r_squared:.3f}\n")
+
 
     if show_fit:
         fillbetweenplot = plot.add_fit(ax=ax, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
@@ -398,6 +405,17 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
                 xtickdigits=0, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
     ax.axhline(0, color='k', linestyle='--', linewidth=1)
 
+
+    # Collect coefficients in dataframe
+    _threshold = f'{threshold_main:.2f} [{threshold_lower:.2f}, {threshold_upper:.2f}]'
+    df_coeffs.loc[len(df_coeffs)] = [igbp, poly_coeffs[0], poly_coeffs[1], poly_coeffs[2], poly_coeffs[3],
+                                     poly_coeffs[4], r_squared, _threshold]
+
+    print(f"{igbp} Polynomial coefficients: "
+          f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
+          f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[4]:.3f}; R2={r_squared:.3f}\n")
+
+
     # Save plot data to csv
     _outfilepath = dir_out / f'53_FIG-3_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_{igbp}_DATA.csv'
     df_subset_nonan.to_csv(_outfilepath, index=False)
@@ -405,6 +423,10 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
 fig.tight_layout()
 gs.update(wspace=.1)
 fig.show()
+
+# Save coefficients to file
+_outfilepath = dir_out / f'53_FIG-3_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_DATA_COEFFICIENTS.csv'
+df_coeffs.to_csv(_outfilepath, index=False)
 
 # Save fig to file
 outfilepath = dir_out / f'53_FIG-3_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}.png'
