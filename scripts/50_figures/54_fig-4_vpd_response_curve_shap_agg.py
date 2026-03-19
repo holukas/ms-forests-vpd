@@ -77,7 +77,7 @@ AX_LABELS_FONTSIZE = 12
 
 # Labels & Columns
 xlabel = rf'{beautify[xvar]} ($\sigma$)'
-ylabel = rf'{beautify[yvar]} effect on {beautify[FLUX]} ($\sigma$)'
+ylabel = rf'{beautify[yvar]} effect on daytime {beautify[FLUX]} ($\sigma$)'
 
 # Bins always use 'median', b/c using 'mean' results in floating point errors
 xagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
@@ -425,9 +425,9 @@ gs.update(wspace=.1)
 fig.show()
 
 # Save coefficients to file
-_outfilepath = dir_out / f'53_FIG-3_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_DATA_COEFFICIENTS.csv'
+_outfilepath = dir_out / f'54_FIG-4_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_DATA_COEFFICIENTS.csv'
 df_coeffs.to_csv(_outfilepath, index=False)
 
 # Save fig to file
-outfilepath = dir_out / f'53_FIG-3_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}.png'
+outfilepath = dir_out / f'54_FIG-4_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}.png'
 fig.savefig(outfilepath, dpi=300, bbox_inches='tight')

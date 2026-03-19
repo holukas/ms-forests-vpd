@@ -30,7 +30,7 @@ plotvars_rows = [
      'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
 ]
 figsize = (19, 13)
-figure_info = [1, f'ShapValues-{plotvars_rows[0][3]}']
+figure_info = [2, f'ShapValues-{plotvars_rows[0][3]}']
 
 
 # # Figure 4
@@ -46,7 +46,7 @@ figure_info = [1, f'ShapValues-{plotvars_rows[0][3]}']
 #      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
 # ]
 # figsize = (19, 13 / 3 * 4)
-# figure_info = [4, f'Fluxes-{plotvars_rows[0][3]}']
+# figure_info = ["ExtFig", f'Fluxes-{plotvars_rows[0][3]}']
 
 # Shared plotting constants
 aggfunc, CONDITIONAL = 'mean', True
@@ -204,6 +204,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
         if col_idx == 0:
             # Show y-labels only on the first column
             ax.yaxis.set_major_formatter(ticker.FormatStrFormatter(f"{f'%.0f'}"))
+            ax.yaxis.set_major_locator(ticker.MultipleLocator(1.0))
             ax.tick_params(axis='y', labelleft=True)
         else:
             ax.tick_params(axis='y', labelleft=False)  # Hide labels
@@ -222,7 +223,7 @@ gs.update(wspace=0.1, hspace=0.3)
 # Save fig
 FLUX = plotvars[0]
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'51_FIG-{figure_info[0]}_FlamePlots{figure_info[1]}_{FLUX}.png'
+outfilepath = dir_out / f'52_FIG-{figure_info[0]}_FlamePlots{figure_info[1]}_{FLUX}.png'
 print(f"Saved to {outfilepath}")
 plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
 

@@ -91,7 +91,7 @@ for i, igbp in enumerate(IGBP_CLASSES):
 
 # Get limits for y-axis scaling, same for all plots
 GRAND_Y_MIN, GRAND_Y_MAX = plot.get_panel_limits(df=stage_stats)
-FIXED_YLIM_MAIN = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.7)
+FIXED_YLIM_MAIN = (GRAND_Y_MIN * 1.03, GRAND_Y_MAX * 1.55)
 FIXED_YLIM_SUB = (GRAND_Y_MIN * 1.05, GRAND_Y_MAX * 1.4)
 
 # ------
@@ -156,7 +156,7 @@ for pix, p in enumerate(panels_data):
         plot.add_gradient_arrow(ax=ax, vertices=vertices_down, color_main=color_limzone, direction='down')  # Slate Blue
 
         # Y-axis label for the entire figure
-        ax.text(-2.2, 0, r'Effect on NEP ($\sigma$)', va='center', ha='center',
+        ax.text(-2.2, 0, r'Effect on daytime NEP ($\sigma$)', va='center', ha='center',
                 rotation='vertical', fontsize=AX_LABELS_FONTSIZE + 2, fontweight='bold')
 
 # Legend
@@ -177,11 +177,11 @@ plt.subplots_adjust(left=0.035, right=0.975, top=0.95, bottom=0.02)
 
 # Save fig
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'52_FIG-2_SankeyPlotStages_{FLUX}.png'
+outfilepath = dir_out / f'53_FIG-3_SankeyPlotStages_{FLUX}.png'
 print(f"Saved to {outfilepath}")
 plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
 
 # Save panels data
-stage_stats.to_csv(dir_out / f"52_FIG-2_SankeyPlotStages_{FLUX}_DATA.csv", index=False)
+stage_stats.to_csv(dir_out / f"53_FIG-3_SankeyPlotStages_{FLUX}_DATA.csv", index=False)
 
 plt.show()

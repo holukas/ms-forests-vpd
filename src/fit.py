@@ -1,36 +1,42 @@
 import numpy as np
 import scipy.stats as stats
 
+import numpy as np
+
 
 def calc_threshold(x_fit, y_fit, pi_lower, pi_upper):
     """
-    Calculate threshold and 95% ci from polynomial bands
-
-    Args:
-        x:
-
-    Returns:
-
+    Calculate threshold and 95% ci from polynomial bands.
+    If multiple zero-crossings exist, it strictly returns the highest x-value crossing.
     """
 
-    # y values are sorted ascending for numpy interpolation
-    # Since SHAP values go from positive to negative as VPD increases,
-    # the arrays need to be reversed for np.interp to work correctly.
-    x_fit_rev = x_fit[::-1]
-    y_fit_rev = y_fit[::-1]
-    pi_lower_rev = pi_lower[::-1]
-    pi_upper_rev = pi_upper[::-1]
+    def find_highest_zero_crossing(x, y):
+        # Find all indices where the sign of y changes from positive to negative (or vice versa)
+        sign_changes = np.where(np.diff(np.sign(y)))[0]
 
-    # Find where the main fit crosses 0
-    threshold_main = np.interp(0, y_fit_rev, x_fit_rev)
+        if len(sign_changes) == 0:
+            return np.nan  # Return NaN if the curve never crosses zero
 
-    # Find where the confidence bands cross 0
-    threshold_lower = np.interp(0, pi_lower_rev, x_fit_rev)
-    threshold_upper = np.interp(0, pi_upper_rev, x_fit_rev)
+        roots = []
+        for i in sign_changes:
+            # Perform a precise linear interpolation exactly between the two points crossing zero
+            x0, x1 = x[i], x[i + 1]
+            y0, y1 = y[i], y[i + 1]
 
-    # (Optional) Print the results for your manuscript text
-    print(
-        f"VPD Threshold: {threshold_main:.2f} sigma (95% CI: [{threshold_lower:.2f}, {threshold_upper:.2f}])")
+            # Interpolation formula: x = x0 - y0 * (x1 - x0) / (y1 - y0)
+            root = x0 - y0 * (x1 - x0) / (y1 - y0)
+            roots.append(root)
+
+        # Select and return the maximum x-coordinate root
+        return max(roots)
+
+    # Apply the root-finding logic to the main fit and both confidence intervals
+    threshold_main = find_highest_zero_crossing(x_fit, y_fit)
+    threshold_lower = find_highest_zero_crossing(x_fit, pi_lower)
+    threshold_upper = find_highest_zero_crossing(x_fit, pi_upper)
+
+    # Print the results for your manuscript text
+    print(f"VPD Threshold: {threshold_main:.2f} sigma (95% CI: [{threshold_lower:.2f}, {threshold_upper:.2f}])")
 
     return threshold_main, threshold_lower, threshold_upper
 
