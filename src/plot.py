@@ -359,7 +359,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_
     y_bottom_axis = ax.get_ylim()[0]
 
     # -------------------------------------
-    # FACILITATION ZONE (left of threshold)
+    # STIMULATION ZONE (left of threshold)
     # -------------------------------------
     mask_facil = x_fit <= threshold_main
     x_facil = x_fit[mask_facil]
@@ -399,7 +399,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_
         im_facil.set_clip_path(patch_facil)
 
     # ------------------------------------
-    # LIMITATION ZONE (right of threshold)
+    # SUPPRESSION ZONE (right of threshold)
     # ------------------------------------
     y_bottom_axis = ax.get_ylim()[0]  # Absolute bottom of current plot axis
     mask_limit = x_fit >= threshold_main
@@ -488,21 +488,23 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_
         _fontsize = fontsize * 0.9 if show_annotate_short else fontsize
 
         if not show_annotate_short:
-            ann_txt = f'Max. gain\nx={x_fit[max_ix]:.2f}'
-            offx = 0.14
-            offy = -0.33
+            ann_txt = f'Max. stimulation\nx={x_fit[max_ix]:.2f}'
+            offx = 0.1
+            offy = 0.06
         else:
             ann_txt = f'x={x_fit[max_ix]:.2f}'
-            offx = 0.14
-            offy = -0.33
+            offx = 0.1
+            offy = 0
         ax.annotate(ann_txt,
                     xy=(x_fit[max_ix], y_fit[max_ix]),
-                    xytext=(x_fit[max_ix] + offx, y_fit[max_ix] * -1 * 0.5),  # Adjust text position as needed
+                    xytext=(x_fit[max_ix] + offx, -0.15 + offy),  # Adjust text position as needed
+                    # xy=(x_fit[max_ix], y_fit[max_ix]),
+                    # xytext=(x_fit[max_ix] + offx, y_fit[max_ix] * -1),  # Adjust text position as needed
                     arrowprops=dict(arrowstyle="->", color=color, lw=2, shrinkB=10),
                     fontsize=_fontsize, color=color, ha='center', va='center', zorder=100)
 
         if not show_annotate_short:
-            ann_txt = f'Penalty threshold\nx={threshold_main:.2f}'
+            ann_txt = f'Threshold\nx={threshold_main:.2f}'
             offx = 0.8
             offy = 0.3
         else:
@@ -516,12 +518,12 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_
                     fontsize=_fontsize, color=color, ha='center', va='center', zorder=100)
 
         if not show_annotate_short:
-            ann_txt = f'Max. penalty\nx={x_fit[min_ix]:.2f}'
+            ann_txt = f'Max. suppression\nx={x_fit[min_ix]:.2f}'
             offx = 1
             offy = 0.05
         else:
             ann_txt = f'x={x_fit[min_ix]:.2f}'
-            offx = 2
+            offx = 1.5
             offy = 0
         ax.annotate(ann_txt,
                     xy=(x_fit[min_ix], y_fit[min_ix]),
@@ -565,7 +567,7 @@ def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared,
     # Plot prediction interval
     ax.plot(x_fit, y_fit, color=color, linewidth=linewidth, zorder=99)
     # label=rf'$y = {poly_coeffs[0]:.4f}x^4 - {poly_coeffs[1]:.4f}x^3 + {poly_coeffs[2]:.4f}x^2 + {poly_coeffs[3]:.4f}x - {poly_coeffs[4]:.4f}$'
-    fillbetweenplot = ax.fill_between(x_fit, pi_lower, pi_upper, color=color, alpha=0.2,
+    fillbetweenplot = ax.fill_between(x_fit, pi_lower, pi_upper, color=color, alpha=0.25,
                                       label='95% pred. interval', zorder=1)
 
     if show_annotate:

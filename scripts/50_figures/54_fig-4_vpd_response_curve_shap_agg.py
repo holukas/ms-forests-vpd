@@ -48,12 +48,33 @@ aggfunc, CONDITIONAL = 'mean', True
 # aggfunc, CONDITIONAL = 'median', True
 
 
-colors_list = ['#9C27B0', '#0984E3', '#00B894', '#636E72', '#FDCB6E', '#FF8C00', '#B71C1C']
-# colors_list = ['#9C27B0', '#0984E3', '#00B894', '#636E72', '#FDCB6E', '#E17055', '#D63031']
-# colors_list = ['grey', '#9C27B0', '#0984E3', '#00B894', '#FDCB6E', '#E17055', '#D63031']
-# colors_list = ['#9C27B0', '#6C5CE7', '#0984E3', '#00B894', '#FDCB6E', '#E17055', '#D63031']
-# colors_list = ['#2D3436', '#6C5CE7', '#0984E3', '#00B894', '#FDCB6E', '#E17055', '#D63031']
-# colors_list = ['black', '#9C27B0', '#26C6DA', '#546E7A', '#FB8C00', '#C62828', 'red']
+# Colorblind-safe, perceptually uniform cool-to-warm gradient
+colors_list = [
+    '#313695',  # Dark Blue
+    '#4575b4',  # Medium Blue
+    '#74add1',  # Light Blue
+    '#abd9e9',  # Pale Blue
+    '#e0f3f8',  # Ice Blue
+    '#fee090',  # Pale Yellow
+    '#fdae61',  # Light Orange
+    '#f46d43',  # Orange
+    '#d73027',  # Red
+    '#a50026'   # Dark Red
+]
+bin_labels = [
+    'Extreme cold',
+    'Very cold',
+    'Cold',
+    'Cool',
+    'Neutral-cool',
+    'Neutral-warm',
+    'Warm',
+    'Hot',
+    'Very hot',
+    'Extreme heat'
+]
+# colors_list = ['#4575b4', '#91bfdb', '#e0f3f8', '#fee090', '#fc8d59', '#d73027', '#a50026']
+# colors_list = ['#9C27B0', '#0984E3', '#00B894', '#636E72', '#FDCB6E', '#FF8C00', '#B71C1C']
 custom_cmap = matplotlib.colors.ListedColormap(colors_list)
 igbps = ['ENF', 'DBF', 'MF', 'EBF']
 
@@ -65,9 +86,9 @@ beautify = {
     "TA_ZSCORE": "TA",
     "BIN_TA_ZSCORE": "TA",
     "TA_ZSCORE_SHAPVALS": "TA",
-    "BIN_VPD_ZSCORE": "Vapor pressure deficit",
-    "VPD_ZSCORE": "Vapor pressure deficit",
-    "VPD_ZSCORE_SHAPVALS": "Vapor pressure deficit",
+    "BIN_VPD_ZSCORE": "VPD",
+    "VPD_ZSCORE": "VPD",
+    "VPD_ZSCORE_SHAPVALS": "VPD",
     "SWC_ZSCORE": "SWC",
     "BIN_SWC_ZSCORE": "SWC",
     "SWC_ZSCORE_SHAPVALS": "SWC",
@@ -134,7 +155,7 @@ filedf, subsetdf, minmax_counts, n_sites = files.load_data(
     site_filter=None, x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
 
 # Save plot data to csv
-_outfilepath = dir_out / f'53_FIG-3_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_ALLSITES_DATA.csv'
+_outfilepath = dir_out / f'54_FIG-4_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_ALLSITES_DATA.csv'
 subsetdf.to_csv(_outfilepath, index=False)
 
 # Extract the data from the DataFrame
@@ -147,17 +168,15 @@ _sem_upper = Y_data + _sem
 _sem_lower = Y_data - _sem
 
 # Bin z data into 5 categories
-bin_labels = ['coldest', 'cold', 'cool', 'medium',
-              'warm', 'hot', 'hottest']
+
 # binned_z = pd.cut(Z_data, bins=5, labels=bin_labels)
 # retbins=True returns (categories, bins)
-binned_z, bin_edges = pd.cut(Z_data, bins=7, labels=bin_labels, retbins=True)
+
+# Bin z data into 10 categories
+binned_z, bin_edges = pd.cut(Z_data, bins=len(bin_labels), labels=bin_labels, retbins=True)
 
 # Fit polynomial
 poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit.fit_polynomial(X_data=X_data, Y_data=Y_data)
-
-
-
 
 # Iterate through each temperature bin and plot the corresponding data points
 scatterhandles = []
@@ -192,7 +211,7 @@ for i, label in list(enumerate(bin_labels)):
                               yerr=[_sem[indices], _sem[indices]],
                               fmt='none',  # 'none' ensures it only plots the bars, no markers/lines
                               ecolor=fill_color,  # Color of the error bars
-                              elinewidth=3,  # Thickness of the error bar line
+                              elinewidth=2,  # Thickness of the error bar line
                               capsize=0,  # Length of the horizontal caps at the ends
                               alpha=0.3,  # Match your scatter alpha, or set to 1
                               zorder=1)  # Keeps it behind the scatter points
@@ -221,10 +240,10 @@ else:
 
 # Legends for main figure
 legend1 = ax_all.legend(handles=scatterhandles,
-                        bbox_to_anchor=(0.44, 0.86),
-                        frameon=False, ncol=2, fontsize=AX_LABELS_FONTSIZE, labelspacing=.3,
-                        title="Aggregated site data",
-                        title_fontsize=AX_LABELS_FONTSIZE)
+                        bbox_to_anchor=(0.4, 0.86),
+                        frameon=False, ncol=2, fontsize=AX_LABELS_FONTSIZE * 0.85, labelspacing=.3,
+                        title="Aggregated site data by temperature regime",
+                        title_fontsize=AX_LABELS_FONTSIZE * 0.85)
 # legend2 = ax_all.legend(handles=handles,
 #                         bbox_to_anchor=(0.36, 0.3),
 #                         frameon=False, ncol=1, labelspacing=.3, fontsize=AX_LABELS_FONTSIZE)
@@ -235,16 +254,26 @@ ax_all.add_artist(legend1)
 min_ix = np.argmin(y_fit)
 max_ix = np.argmax(y_fit)
 
-# Panel letter
+# Panel letter (Bold)
 letter = 'a'
 igbp = 'Global forests'
-ax_all.text(0, 1.05, f"{letter} | {igbp}", transform=ax_all.transAxes, zorder=99,
+ax_all.text(0, 1.05, letter, transform=ax_all.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
+
+# Panel title (Normal, shifted slightly to the right)
+ax_all.text(0.05, 1.05, igbp, transform=ax_all.transAxes, zorder=99,
+            size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
+
+# Site count (Normal)
 ax_all.text(0.4, 1.05, f"(n={n_sites}, min. {minmax_counts[0]})", transform=ax_all.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
 
-# Find value closest to "SHAP zero"
-# main_thres_idx = (np.abs(y_fit - 0)).argmin()
+# # Panel letter
+# ax_all.text(0, 1.05, f"{letter} {igbp}", transform=ax_all.transAxes, zorder=99,
+#             size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
+# ax_all.text(0.4, 1.05, f"(n={n_sites}, min. {minmax_counts[0]})", transform=ax_all.transAxes, zorder=99,
+#             size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
+
 
 
 # Calc threshold incl. upper and lower bounds from 95% fit
@@ -257,7 +286,7 @@ df_coeffs.loc[len(df_coeffs)] = ['ALL SITES', poly_coeffs[0], poly_coeffs[1],
                                  poly_coeffs[2], poly_coeffs[3], poly_coeffs[4], r_squared, _threshold]
 print(f"Polynomial fit ALL SITES: "
       f"y={poly_coeffs[0]:.3f}x4+{poly_coeffs[1]:.3f}x3+{poly_coeffs[2]:.3f}x2"
-      f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[3]:.3f}; r2={r_squared:.3f}\n")
+      f"+{poly_coeffs[3]:.3f}x+{poly_coeffs[4]:.3f}; r2={r_squared:.3f}\n")
 
 # Detect min/max value shown in plot, is also used for subplots
 ydim_max = _sem_upper.max() * 1.6
@@ -345,8 +374,6 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     # Find value closest to "SHAP zero"
     main_thres_idx = (np.abs(y_fit - 0)).argmin()
 
-
-
     if show_fit:
         fillbetweenplot = plot.add_fit(ax=ax, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
                                        poly_func=poly_func, r_squared=r_squared, show_annotate=False,
@@ -357,6 +384,8 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
 
     # Recalculate bins for this specific subplot using GLOBAL edges
     # This ensures "High" in ENF is the same value range as "High" in All Sites
+    # binned_z_sub = pd.cut(Z_data, bins=bin_edges, labels=bin_labels)
+    # Recalculate bins for this specific subplot using GLOBAL edges
     binned_z_sub = pd.cut(Z_data, bins=bin_edges, labels=bin_labels)
 
     for i, label in list(enumerate(bin_labels)):
@@ -385,10 +414,21 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
             zorder=98)
 
     # Panel letters
-    ax.text(0, 1.1, f"{letter} | {igbp}", transform=ax.transAxes, zorder=99,
+    # Panel letter (Bold)
+    ax.text(0, 1.1, letter, transform=ax.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
-    ax.text(0.3, 1.1, f"(n={n_sites_sub}, min. {minmax_counts_sub[0]})", transform=ax.transAxes, zorder=99,
+
+    # Panel title (Normal, shifted slightly to the right)
+    ax.text(0.1, 1.1, igbp, transform=ax.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
+
+    # Site count (Normal)
+    ax.text(0.4, 1.1, f"(n={n_sites_sub}, min. {minmax_counts_sub[0]})", transform=ax.transAxes, zorder=99,
+            size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
+    # ax.text(0, 1.1, f"{letter} | {igbp}", transform=ax.transAxes, zorder=99,
+    #         size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
+    # ax.text(0.3, 1.1, f"(n={n_sites_sub}, min. {minmax_counts_sub[0]})", transform=ax.transAxes, zorder=99,
+    #         size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
 
     # Add text and connecting dashed lines for SHAP max, zero, and min
     if show_shap_thresholds:
@@ -405,7 +445,6 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
                 xtickdigits=0, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
     ax.axhline(0, color='k', linestyle='--', linewidth=1)
 
-
     # Collect coefficients in dataframe
     _threshold = f'{threshold_main:.2f} [{threshold_lower:.2f}, {threshold_upper:.2f}]'
     df_coeffs.loc[len(df_coeffs)] = [igbp, poly_coeffs[0], poly_coeffs[1], poly_coeffs[2], poly_coeffs[3],
@@ -415,9 +454,8 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
           f"a={poly_coeffs[0]:.3f}, b={poly_coeffs[1]:.3f}, c={poly_coeffs[2]:.3f}, "
           f"d={poly_coeffs[3]:.3f}, e={poly_coeffs[4]:.3f}; R2={r_squared:.3f}\n")
 
-
     # Save plot data to csv
-    _outfilepath = dir_out / f'53_FIG-3_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_{igbp}_DATA.csv'
+    _outfilepath = dir_out / f'54_FIG-4_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_{igbp}_DATA.csv'
     df_subset_nonan.to_csv(_outfilepath, index=False)
 
 fig.tight_layout()
