@@ -23,10 +23,14 @@ STAGE_LABELS = [f"Stage {sl}" for sl in STAGE_ORDER]
 VARS = ['SWIN_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE']
 
 VAR_LABELS = {
-    'VPD_ZSCORE': 'Vapor pressure deficit effect',
-    'TA_ZSCORE': 'Air temperature effect',
-    'SWC_ZSCORE': 'Soil moisture effect',
-    'SWIN_ZSCORE': 'Radiation effect'
+    'VPD_ZSCORE': 'VPD effect',
+    'TA_ZSCORE': 'TA effect',
+    'SWC_ZSCORE': 'SM effect',
+    'SWIN_ZSCORE': 'SW effect'
+    # 'VPD_ZSCORE': 'Vapor pressure deficit effect',
+    # 'TA_ZSCORE': 'Air temperature effect',
+    # 'SWC_ZSCORE': 'Soil moisture effect',
+    # 'SWIN_ZSCORE': 'Radiation effect'
 }
 
 IGBP_NAMES = {

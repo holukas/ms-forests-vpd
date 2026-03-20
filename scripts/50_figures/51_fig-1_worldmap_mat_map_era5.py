@@ -182,8 +182,8 @@ for igbp_class, group_df in valid_df.groupby('IGBP'):
 #         path_effects=[pe.withStroke(linewidth=3, foreground="white")], zorder=5
 #     )
 
-ax_climate.set_xlabel('Mean annual temperature (°C)', fontsize=AX_LABELS_FONTSIZE, color='#222222')
-ax_climate.set_ylabel('Mean annual precipitation (mm)', fontsize=AX_LABELS_FONTSIZE, color='#222222')
+ax_climate.set_xlabel('MAT (°C)', fontsize=AX_LABELS_FONTSIZE, color='#222222')
+ax_climate.set_ylabel('MAP (mm)', fontsize=AX_LABELS_FONTSIZE, color='#222222')
 ax_climate.set_facecolor('white')
 
 # Fixed the transform argument to ax_climate.transAxes

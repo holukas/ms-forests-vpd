@@ -268,10 +268,14 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
         top_y_boxes = y_n_label - (y_range * 0.04)
 
         var_display_names = {
-            'VPD_ZSCORE': 'Vapor pressure deficit   ',
-            'TA_ZSCORE': 'Air temperature   ',
-            'SWC_ZSCORE': 'Soil moisture   ',
-            'SWIN_ZSCORE': 'Radiation   '
+            'VPD_ZSCORE': 'VPD conditions   ',
+            'TA_ZSCORE': 'TA conditions   ',
+            'SWC_ZSCORE': 'SM conditions   ',
+            'SWIN_ZSCORE': 'SW conditions   '
+            # 'VPD_ZSCORE': 'Vapor pressure deficit   ',
+            # 'TA_ZSCORE': 'Air temperature   ',
+            # 'SWC_ZSCORE': 'Soil moisture   ',
+            # 'SWIN_ZSCORE': 'Radiation   '
         }
 
         for var_idx, var in enumerate(vars):

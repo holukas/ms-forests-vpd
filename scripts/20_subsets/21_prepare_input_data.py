@@ -1,5 +1,14 @@
 """
 Prepare input data for XGBoost models.
+
+Note:
+    One of the sites (CD-Ygb) had VPD in the wrong units. It seems that this site
+    was the only site that recorded VPD in Pa instead of hPa. I found this issue
+    after I ran the analyses. However, all analyses were run on the z-scores from
+    each site. Since VPD from CD-Ygb was also transformed to z-scores, results
+    are not affected by this issue. For the overview table in the Extended Data
+    I manually corrected the reported VPD mean by dividing by 100 (Pa --> hPa).
+
 """
 import logging
 from pathlib import Path
@@ -31,6 +40,8 @@ counter = 0
 for ix, siteconfig in _datasets_df.iterrows():
     # if ix < 144:
     #     continue
+    if siteconfig['SITE'] != "CN-Din":
+        continue
     counter += 1
     varnames = get_variable_names(siteconfig)  # Variable names for this site
     subsetinfo = files.create_subsets_parquet_files(

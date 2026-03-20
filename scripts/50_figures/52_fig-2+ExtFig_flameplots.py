@@ -61,15 +61,16 @@ beautify = {
     "RECO_ZSCORE": "RECO",
     "NEP_ZSCORE": "NEP",
     "ET_ZSCORE": "ET",
-    "VPD_ZSCORE": "Vapor pressure deficit",
-    "BIN_ET_ZSCORE": "Evapotranspiration",
-    "BIN_TA_ZSCORE": "Air temperature",
-    "TA_ZSCORE_SHAPVALS": "Air temperature",
-    "BIN_VPD_ZSCORE": "Vapor pressure deficit",
-    "BIN_SWC_ZSCORE": "Soil moisture",
-    "SWC_ZSCORE_SHAPVALS": "Soil moisture",
-    "VPD_ZSCORE_SHAPVALS": "Vapor pressure deficit",
-    "SWC_ZSCORE": "Soil moisture", "SWIN_ZSCORE": "SWIN",
+    "VPD_ZSCORE": "VPD",
+    "BIN_ET_ZSCORE": "ET",  # Evapotranspiration
+    "BIN_TA_ZSCORE": "TA",  # Air temperature
+    "TA_ZSCORE_SHAPVALS": "TA",
+    "BIN_VPD_ZSCORE": "VPD",
+    "BIN_SWC_ZSCORE": "SM",
+    "SWC_ZSCORE_SHAPVALS": "SM",
+    "SWC_ZSCORE": "SM",  # Soil moisture
+    "VPD_ZSCORE_SHAPVALS": "VPD",
+    "SWIN_ZSCORE": "SWIN",
     "ENF": "Evergreen needleleaf forests",
     "DBF": "Deciduous broadleaf forests",
     "MF": "Mixed forests",
@@ -98,7 +99,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
     # Labels & Column logic
     xlabel = rf'{beautify[xvar]} ($\sigma$)'
     ylabel = rf'{beautify[yvar]} ($\sigma$)'
-    zlabel = rf'{beautify[zvar]} effect ($\sigma$)' if '_SHAPVALS' in zvar else rf'{beautify[zvar]} ($\sigma$)'
+    zlabel = rf'{beautify[zvar]} effect on NEP ($\sigma$)' if '_SHAPVALS' in zvar else rf'{beautify[zvar]} ($\sigma$)'
 
     # Bins always use 'median', b/c using 'mean' results in floating point errors
     xagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
