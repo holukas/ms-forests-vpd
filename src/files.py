@@ -333,33 +333,18 @@ def readfile(filetype, filepath_icos, data_nrows):
     return df
 
 
+import pandas as pd
+
+
 def _compare_years(primary_df, secondary_df, fluxvar):
     """
     Reconciles two pandas DataFrames by adjusting them based on a common year.
-
-    This function compares the number of valid records in a specified common year (`first_year_primary`)
-    for two dataframes, `primary_df` and `secondary_df`. It truncates the dataframe with fewer
-    records to remove that year's data. Afterward, it truncates the secondary dataframe
-    to include only records that occurred before the start of the primary dataframe.
-
-    Parameters:
-        primary_df (pd.DataFrame): The primary DataFrame with a DatetimeIndex.
-        secondary_df (pd.DataFrame): The secondary DataFrame with a DatetimeIndex.
-
-    Returns:
-        tuple: A tuple containing the reconciled primary and secondary DataFrames.
-               (primary_df, secondary_df)
-
-    Raises:
-        TypeError: If either DataFrame does not have a pandas DatetimeIndex.
-        IndexError: If primary_df becomes empty, preventing subsequent operations.
     """
-
-    first_year_primary = primary_df.index.year.min()
-
-    # Ensure indices are datetime-like to allow year-based comparisons
+    # 1. Check types FIRST before trying to access .year
     if not isinstance(primary_df.index, pd.DatetimeIndex) or not isinstance(secondary_df.index, pd.DatetimeIndex):
         raise TypeError("DataFrames must have a DatetimeIndex.")
+
+    first_year_primary = primary_df.index.year.min()
 
     # Get the number of measured records for the specific year in each DataFrame
     n_measured_primary = (primary_df.loc[primary_df.index.year == first_year_primary, f'{fluxvar}_QC'] == 0).sum()
@@ -368,20 +353,23 @@ def _compare_years(primary_df, secondary_df, fluxvar):
 
     # Compare the number of records and truncate the appropriate DataFrame
     if n_measured_primary > n_measured_secondary:
-        # If primary df has more records for its first year, remove data for that year from secondary df
         secondary_df = secondary_df[secondary_df.index.year != first_year_primary].copy()
-
     elif n_measured_secondary > n_measured_primary:
-        # If secondary df has more records for the first year in primary df, remove data for that year from primary df
         primary_df = primary_df[primary_df.index.year != first_year_primary].copy()
 
-    # Truncate secondary_df to only keep records that precede the start of primary_df
-    # This logic assumes primary_df is chronologically later than secondary_df
-    if not primary_df.empty:
-        # If primary contains only one year, it can be empty here
-        secondary_df = secondary_df[secondary_df.index < primary_df.index.min()].copy()
-    else:
-        pass
+    # 2. Safety check: raise early if primary_df was completely emptied by the truncation
+    if primary_df.empty or secondary_df.empty:
+        raise ValueError("One or both DataFrames were completely emptied by the truncation.")
+
+    # 3. Determine which df is truly Primary (the one with the latest timestamp)
+    if secondary_df.index.max() > primary_df.index.max():
+        primary_df, secondary_df = secondary_df, primary_df
+
+    # 4. Clip Secondary so it strictly ends before Primary starts
+    secondary_df = secondary_df[secondary_df.index < primary_df.index.min()].copy()
+
+    if secondary_df.empty:
+        print("Secondary data was entirely superseded by Primary or is out of range.")
 
     return primary_df, secondary_df
 
@@ -411,10 +399,10 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
     if site in sites_done:
         return datasets_df, sites_done
 
-    # # todo testing
-    # if site != "US-Wi5":  # todo check this site, and also check used fluxvar and make consistent
-    #     return datasets_df, sites_done
-    # # todo testing
+    # todo testing
+    if site != "US-xSB":
+        return datasets_df, sites_done
+    # todo testing
 
     # # todo testing
     # if ix + 1 < 298:
@@ -487,6 +475,8 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
             merged_df = pd.concat([merged_df, incoming_df], axis=0)
             merged_df.index = pd.to_datetime(merged_df.index)
             merged_df = merged_df.sort_index()
+            if merged_df.index.duplicated().sum() > 0:
+                raise ValueError(f"Duplicate timestamps found in merged dataset for {site}.")
             merged_df.index.freq = pd.infer_freq(merged_df.index)
             sourcetxt += f"+{datasetinfo['ORIGIN']}"
             datasetinfo_updated['ORIGIN'] = sourcetxt

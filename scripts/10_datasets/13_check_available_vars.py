@@ -30,8 +30,8 @@ _datasets_df = datasets_df.copy()
 for ix, site in _datasets_df.iterrows():
 
     # --- TODO testing
-    # if site['SITE'] != 'AU-Cum':
-    #     continue
+    if site['SITE'] != 'CN-Din':
+        continue
     # if ix > 10:
     #     break
     # --- TODO testing
