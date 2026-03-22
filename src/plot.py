@@ -657,8 +657,8 @@ def style_ax(ax, title, ax_labels_fontsize):
             zorder=100, backgroundcolor='none')
 
 
-def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limits, is_top_row, group_name,
-                        scenario_labels, show_x=False, show_y=False, is_main=False, is_first=False):
+def plot_stage_panel(ax, df, feature_col, color, columns, n_scenarios, y_limits, is_top_row, group_name,
+                     stage_labels, show_x=False, show_y=False, is_main=False, is_first=False):
     # Pivot for means (site x scenario)
     pivot = df.pivot(index='SITE', columns='SCENARIO', values=feature_col).reindex(columns=columns)
 
@@ -673,7 +673,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     stats_list = []
 
     # Loop through scenarios to calculate stats
-    for col in [1, 2, 3, 4, 5, 6]:
+    for col in [1, 2, 3, 4, 5, 6, 7, 8]:
 
         # Drop NaNs for the specific scenario
         data_vec = pivot[col].dropna()
@@ -719,12 +719,12 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     x_coords = np.arange(n_scenarios)
 
     # Ghost lines (faint)
-    alpha_ghost = 0.1 if is_main else 0.15
+    alpha_ghost = 0.2 if is_main else 0.25
     lw_ghost = 0.5
     ax.plot(x_coords, pivot.T.values, color='gray', alpha=alpha_ghost, linewidth=lw_ghost, zorder=1)
 
     # todo IQR ribbon
-    ax.fill_between(x_coords, p25, p75, color=color, alpha=0.25, linewidth=0, zorder=2)
+    # ax.fill_between(x_coords, p25, p75, color=color, alpha=0.25, linewidth=0, zorder=2)
 
     # Sina / jitter points
     # Controlled jitter that respects density but stays tight
@@ -745,7 +745,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
         jitter = rng.uniform(-1, 1, size=len(data_vec)) * width
 
         # Plot points
-        s_sina = 4 if is_main else 4
+        s_sina = 6 if is_main else 5
         alpha_sina = 0.4 if is_main else 0.5
         ax.scatter(x_i + jitter, data_vec, color=color, s=s_sina, alpha=alpha_sina, linewidth=0, zorder=3)
 
@@ -753,7 +753,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
 
         # Sample size annotation, show in first row only
         if is_top_row:
-            ax.text(x_coords[x_i], 0.9, f'n={n_sites}',
+            ax.text(x_coords[x_i], 0.9, f'n={n_sites}' if is_main else f"{n_sites}",
                     fontsize=7, color='#555555', ha='center', va='center')
 
         # Percentage of sites below zero (i.e., negatively affected)
@@ -761,12 +761,12 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
         perc_n_sites_below_zero = n_sites_below_zero / n_sites * 100
 
         # Decide text label
-        text = f'{perc_n_sites_below_zero:.0f}%'
+        text = f'{perc_n_sites_below_zero:.0f}%' if is_main else f'{perc_n_sites_below_zero:.0f}'
 
         # Implement percentage pill background
-        alpha = 0.8 if perc_n_sites_below_zero > 70 else 0.5
+        alpha = 0.9 if perc_n_sites_below_zero > 66.6 else 0.5
         ax.text(x_coords[x_i], -1.38, text,
-                fontsize=7,
+                fontsize=9 if is_main else 8,
                 color='white',  # White text for high contrast inside the pill
                 fontweight='bold',  # Bold to make it pop
                 ha='center', va='center',
@@ -790,7 +790,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     ax.axhline(0, color='black', linestyle='--', linewidth=0.6, alpha=0.6, zorder=0)
 
     # Format x-axis
-    ax.set_xlim(-0.5, 5.5)
+    ax.set_xlim(-0.5, (n_scenarios - 1) + 0.5)
     ax.set_xticks(x_coords)
 
     # Clean spines
@@ -802,7 +802,7 @@ def plot_scenario_panel(ax, df, feature_col, color, columns, n_scenarios, y_limi
     # Tick Styling
     if show_x:
         # ax.set_xticklabels(scenario_labels, rotation=45, ha='right', color='black')
-        ax.set_xticklabels(scenario_labels, rotation=45, ha='right', color='black', rotation_mode='anchor')
+        ax.set_xticklabels(stage_labels, rotation=45, ha='right', color='black', rotation_mode='anchor')
         ax.tick_params(axis='x', length=4, width=0.8)
     else:
         ax.set_xticklabels([])

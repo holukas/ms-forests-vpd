@@ -399,10 +399,10 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
     if site in sites_done:
         return datasets_df, sites_done
 
-    # todo testing
-    if site != "US-xSB":
-        return datasets_df, sites_done
-    # todo testing
+    # # todo testing
+    # if site != "US-xSB":
+    #     return datasets_df, sites_done
+    # # todo testing
 
     # # todo testing
     # if ix + 1 < 298:

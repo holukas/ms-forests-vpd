@@ -8,7 +8,7 @@ import pandas as pd
 
 import src.files as files
 import src.plot as plot
-import src.scenarios as scenarios
+import src.stages as stages
 
 # ==========================================
 # SETTINGS
@@ -16,15 +16,15 @@ import src.scenarios as scenarios
 FLUX = 'NEP_ZSCORE'
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 COLUMN_ORDER = ['All sites'] + IGBP_CLASSES
-SCENARIO_ORDER = [1, 2, 3, 4, 5, 6]
-SCENARIO_LABELS = [1, 2, 3, 4, 5, 6]
-N_SCENARIOS = len(SCENARIO_ORDER)
+STAGE_ORDER = [1, 2, 3, 4, 5, 6, 7, 8]
+STAGE_LABELS = [1, 2, 3, 4, 5, 6, 7, 8]
+N_STAGES = len(STAGE_ORDER)
 
 # Variables
 VARS = ['VPD_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'SWIN_ZSCORE']
 
-VAR_TITLES = ['Vapor pressure deficit effect', 'Air temperature effect',
-              'Soil moisture effect', 'Radiation effect']
+VAR_TITLES = ['VPD effect', 'TA effect',
+              'SM effect', 'SW effect']
 
 SHAP_SUFFIX_AVG = '_SHAPVALS_OVR_AVG'
 SHAP_COLS_AVG = [v + SHAP_SUFFIX_AVG for v in VARS]
@@ -70,7 +70,7 @@ df_main = shapvals_df.copy()
 
 # Select required IGBPs and scenarios
 df_global = df_main[df_main['IGBP'].isin(IGBP_CLASSES)]
-df_global = df_global[df_global['SCENARIO'].isin(SCENARIO_ORDER)]
+df_global = df_global[df_global['SCENARIO'].isin(STAGE_ORDER)]
 
 # Global scaling
 # Global limits for NEP are: (np.float64(), np.float64(1.536760039509245))
@@ -101,7 +101,7 @@ fig = plt.figure(figsize=(FIG_WIDTH_INCHES, FIG_HEIGHT_INCHES))
 gs = gridspec.GridSpec(4, 6, figure=fig,
                        width_ratios=[2.2, 0.025, 1, 1, 1, 1],  # Spacer is 0.15 relative width
                        height_ratios=[1, 1, 1, 1],
-                       wspace=0.1, hspace=0.15)
+                       wspace=0.05, hspace=0.15)
 
 panel_counter = 0
 featurestats_df = None  # Collects stats for each feature, scenario and IGBP
@@ -143,9 +143,9 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS_AVG, VAR_TITLES)):
         is_first = (grid_col == 0) and (row == 0)
 
         # Plot feature effects and collect stats
-        cur_featurestats_df = plot.plot_scenario_panel(
-            ax, df_sub, feature_col, color, group_name=group_name, columns=SCENARIO_ORDER, n_scenarios=N_SCENARIOS,
-            scenario_labels=SCENARIO_LABELS, y_limits=FIXED_YLIM, show_x=is_bottom_row, show_y=is_left_col,
+        cur_featurestats_df = plot.plot_stage_panel(
+            ax, df_sub, feature_col, color, group_name=group_name, columns=STAGE_ORDER, n_scenarios=N_STAGES,
+            stage_labels=STAGE_LABELS, y_limits=FIXED_YLIM, show_x=is_bottom_row, show_y=is_left_col,
             is_main=is_main, is_top_row=is_top_row, is_first=is_first)
 
         # Collect feature stats in table
@@ -156,24 +156,24 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS_AVG, VAR_TITLES)):
 
         # Column headers
         if row == 0:
-            ax.set_title(group_name, fontsize=7, fontweight='bold', pad=8, color='black')
+            ax.set_title(group_name, fontsize=10, fontweight='bold', pad=8, color='black')
 
         # y-axis label (only for first column)
         if is_left_col:
             var_title = var_title.replace(" ", r"\ ")
-            label_text = r"$\mathbf{" + var_title + "}$" + "\n($\sigma$)"
-            ax.set_ylabel(label_text, fontsize=7, color="black", labelpad=4)
+            label_text = r"$\mathbf{" + var_title + "}$" + " ($\sigma$)"
+            ax.set_ylabel(label_text, fontsize=9, color="black", labelpad=4)
 
         # Panel letters: (a), (b), ...
         letter = chr(97 + panel_counter)
-        ax.text(0.05, 0.92, f"({letter})", transform=ax.transAxes,
-                fontsize=7, fontweight='bold', va='top', ha='left',
+        ax.text(0.05, 0.92, f"{letter}", transform=ax.transAxes,
+                fontsize=10, fontweight='bold', va='top', ha='left',
                 color='black', zorder=10)  # Always black for readability
 
         panel_counter += 1
 
 # Final layout adjustment
-plt.subplots_adjust(left=0.1, right=0.98, top=0.95, bottom=0.07)
+plt.subplots_adjust(left=0.05, right=0.98, top=0.95, bottom=0.07)
 
 # Save function helper
 # plt.savefig('transition_plot.pdf', dpi=300, bbox_inches='tight')
@@ -181,33 +181,33 @@ plt.subplots_adjust(left=0.1, right=0.98, top=0.95, bottom=0.07)
 # ------------------------
 # CONFIGURATION
 # ------------------------
-SCENARIO_ORDER_NAMES = ['1', '2', '3', '4', '5', '6']
-scen_map = {1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6'}
+STAGE_ORDER_NAMES = ['1', '2', '3', '4', '5', '6', '7', '8']
+scen_map = {1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8'}
 
 # CHANGED: 'Global forests' instead of 'All sites'
 IGBP_ORDER = ['Global forests', 'ENF', 'DBF', 'MF', 'EBF']
-VAR_ORDER = ['Vapor pressure deficit', 'Air temperature', 'Soil moisture', 'Radiation']
+VAR_ORDER = ['VPD', 'TA', 'SM', 'SW']
 
 # Map raw variable names to display names
 var_map = {
-    'VPD_ZSCORE_SHAPVALS_OVR_AVG': 'Vapor pressure deficit',
-    'TA_ZSCORE_SHAPVALS_OVR_AVG': 'Air temperature',
-    'SWC_ZSCORE_SHAPVALS_OVR_AVG': 'Soil moisture',
-    'SWIN_ZSCORE_SHAPVALS_OVR_AVG': 'Radiation',
+    'VPD_ZSCORE_SHAPVALS_OVR_AVG': 'VPD',
+    'TA_ZSCORE_SHAPVALS_OVR_AVG': 'TA',
+    'SWC_ZSCORE_SHAPVALS_OVR_AVG': 'SM',
+    'SWIN_ZSCORE_SHAPVALS_OVR_AVG': 'SW',
     'NET_SHAPVALS': 'Net sum'
 }
 
 # ---------------------------------------------------------
 # 1. DEFINE SCENARIO CONDITIONS (THE HEADER LOGIC)
 # ---------------------------------------------------------
-SCENARIO_DEFINITIONS = {
-    'Vapor pressure deficit':
+STAGE_DEFINITIONS = {
+    'VPD':
         ['normal', 'unrestricted', 'unrestricted', 'unrestricted', 'unrestricted', 'very dry'],
-    'Air temperature':
+    'TA':
         ['normal', 'warm', 'warm', 'hot', 'hot', 'hot'],
-    'Soil moisture':
+    'SM':
         ['normal', 'normal', 'dry', 'dry', 'very dry', 'very dry'],
-    'Radiation':
+    'SW':
         ['normal', 'unrestricted', 'unrestricted', 'unrestricted', 'unrestricted', 'unrestricted']
 }
 
@@ -218,23 +218,23 @@ print("Calculating scenario stats...")
 
 # Global
 # Calculate scenario stats across all sites
-scenario_stats = scenarios.calculate_scenario_stats(
-    df_input=df_global, igbp='global', scenario_order=SCENARIO_ORDER, vars=VARS,
+stage_stats = stages.calculate_stage_stats(
+    df_input=df_global, igbp='global', stage_order=STAGE_ORDER, vars=VARS,
     shap_suffix_avg=SHAP_SUFFIX_AVG, shap_suffix_sd=SHAP_SUFFIX_SD)
 
 # IGBPs
 # Calculate scenario stats for each IGBP
 for i, igbp in enumerate(IGBP_CLASSES):
     df_igbp = df_global[df_global['IGBP'] == igbp]
-    igbp_data = scenarios.calculate_scenario_stats(
-        df_input=df_igbp, igbp=igbp, scenario_order=SCENARIO_ORDER, vars=VARS,
+    igbp_data = stages.calculate_stage_stats(
+        df_input=df_igbp, igbp=igbp, stage_order=STAGE_ORDER, vars=VARS,
         shap_suffix_avg=SHAP_SUFFIX_AVG, shap_suffix_sd=SHAP_SUFFIX_SD)
-    scenario_stats = pd.concat([scenario_stats, igbp_data], axis=0)
+    stage_stats = pd.concat([stage_stats, igbp_data], axis=0)
 
 # ---------------------------------------------------------
 # 3. PREPARE DATA FOR TABLE
 # ---------------------------------------------------------
-df = scenario_stats.copy()
+df = stage_stats.copy()
 
 # Determine column name for variable
 if 'Variable' in df.columns:
@@ -245,7 +245,7 @@ else:
     var_col = 'Variable'  # Fallback
 
 df['Driver'] = df[var_col].map(var_map).fillna(df[var_col])
-df['Scenario_Name'] = df['scenario'].map(scen_map)
+df['Stage_Name'] = df['stage'].map(scen_map)
 
 # CHANGED: Map 'global' to 'Global forests'
 igbp_map = {'global': 'Global forests'}
@@ -265,10 +265,10 @@ df['Stats'] = df.apply(format_stats, axis=1)
 
 # Pivot
 table_str = df.pivot_table(index=['IGBP_Display', 'Driver'],
-                           columns='Scenario_Name',
+                           columns='Stage_Name',
                            values='Stats',
                            aggfunc='first')
-table_str = table_str.reindex(columns=SCENARIO_ORDER_NAMES)
+table_str = table_str.reindex(columns=STAGE_ORDER_NAMES)
 
 # ---------------------------------------------------------
 # 4. CONSTRUCT ROWS (HEADER + DATA)
@@ -285,15 +285,15 @@ final_rows = []
 # --- B. ADD SCENARIO CONDITIONS HEADER ---
 # 1. Main Header Title
 final_rows.append({'index': 'Scenario conditions',
-                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': ''})
+                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': '', '7': '', '8': ''})
 
 # 2. Condition Rows (VPD, Temp, etc.)
 for driver in VAR_ORDER:
     # Get the list of conditions for this driver
-    conditions = SCENARIO_DEFINITIONS.get(driver, ['?'] * 6)
+    conditions = STAGE_DEFINITIONS.get(driver, ['?'] * 6)
 
     row_cond = {'index': f"  {driver}"}
-    for idx, col_name in enumerate(SCENARIO_ORDER_NAMES):
+    for idx, col_name in enumerate(STAGE_ORDER_NAMES):
         if idx < len(conditions):
             row_cond[col_name] = conditions[idx]
         else:
@@ -301,10 +301,10 @@ for driver in VAR_ORDER:
     final_rows.append(row_cond)
 
 final_rows.append({'index': '',
-                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': ''})
+                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': '', '7': '', '8': ''})
 
 final_rows.append({'index': 'IGBP / Environmental driver',
-                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': ''})
+                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': '', '7': '', '8': ''})
 
 # --- C. ADD DATA ROWS (IGBP GROUPS) ---
 # Iterate through 'Global forests' then IGBPs
@@ -312,7 +312,7 @@ for igbp in IGBP_ORDER:
     # Header Row (IGBP Name)
     final_rows.append({
         'index': f"{igbp}",
-        '1': '', '2': '', '3': '', '4': '', '5': '', '6': ''
+        '1': '', '2': '', '3': '', '4': '', '5': '', '6': '', '7': '', '8': ''
     })
 
     if igbp in table_str.index.get_level_values(0):
@@ -322,21 +322,21 @@ for igbp in IGBP_ORDER:
         for driver in VAR_ORDER:
             row_dict = {'index': f"  {driver}"}
             if driver in igbp_data.index:
-                for col in SCENARIO_ORDER_NAMES:
+                for col in STAGE_ORDER_NAMES:
                     val = igbp_data.loc[driver, col]
                     row_dict[col] = val if pd.notna(val) else '-'
             else:
-                for col in SCENARIO_ORDER_NAMES: row_dict[col] = '-'
+                for col in STAGE_ORDER_NAMES: row_dict[col] = '-'
             final_rows.append(row_dict)
 
         # Net Sum Row
         net_row_dict = {'index': "  Net sum"}
         if 'Net sum' in igbp_data.index:
-            for col in SCENARIO_ORDER_NAMES:
+            for col in STAGE_ORDER_NAMES:
                 val = igbp_data.loc['Net sum', col]
                 net_row_dict[col] = val if pd.notna(val) else '-'
         else:
-            for col in SCENARIO_ORDER_NAMES: net_row_dict[col] = '-'
+            for col in STAGE_ORDER_NAMES: net_row_dict[col] = '-'
         final_rows.append(net_row_dict)
 
 # ---------------------------------------------------------
@@ -347,18 +347,20 @@ table_1_final.set_index('index', inplace=True)
 
 # Save
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'52_TABLE-1_Scenarios_ShapMeans_WithConditions_{FLUX}.csv'
-table_1_final.to_csv(outfilepath, index=True)
+# outfilepath = dir_out / f'56_TABLE-X_Stages_SinaPlots_ShapMeans_{FLUX}.csv'
+# table_1_final.to_csv(outfilepath, index=True, encoding='utf-8-sig')
+outfilepath_excel = dir_out / f'56_TABLE-X_Stages_SinaPlots_ShapMeans_{FLUX}.xlsx'
+table_1_final.to_excel(outfilepath_excel, index=True)
 
 # Show table
 pd.set_option('display.max_rows', 3000)
 pd.set_option('display.width', 1000)
-print(f"Table saved to: {outfilepath}")
+print(f"Table saved to: {outfilepath_excel}")
 print(table_1_final.to_string(index=True))
 
 # Save fig to file
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'56_FIG-X_Scenarios_SinaPlots_ShapMeans_{FLUX}.png'
+outfilepath = dir_out / f'56_FIG-X_Stages_SinaPlots_ShapMeans_{FLUX}.png'
 fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
 
 # Show figure
