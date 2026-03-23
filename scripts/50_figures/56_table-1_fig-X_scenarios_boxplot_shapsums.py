@@ -47,8 +47,8 @@ plt.rcParams.update({
     'axes.labelsize': 8,  # Axis labels
     'axes.titlesize': 8,  # Panel titles
     'axes.titleweight': 'bold',
-    'xtick.labelsize': 7,
-    'ytick.labelsize': 7,
+    'xtick.labelsize': 9,
+    'ytick.labelsize': 9,
     'axes.linewidth': 0.4,  # Spine thickness
     'xtick.major.width': 0.8,
     'ytick.major.width': 0.8,
