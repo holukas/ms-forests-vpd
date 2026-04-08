@@ -15,9 +15,9 @@ ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
 
 # VARIOUS SOURCES (from fluxnet-shuttle)
 DIR_DATA_RAW_SHUTTLE: ../../data/00_raw/from-fluxnet-shuttle
-PATTERN_DIR_SHUTTLE: ['_FLUXNET_', '_v1.3_r1_']
+PATTERN_DIR_SHUTTLE: ['_FLUXNET_', '_v1.3_r1']
 PATTERN_FILE_HH_SHUTTLE: "*FLUXNET_FLUXMET_HH_*.csv"
-INFOFILE_SHUTTLE: ../../data/00_raw/from-fluxnet-shuttle/0-info/fluxnet_shuttle_snapshot_20260318T130727.csv
+INFOFILE_SHUTTLE: ../../data/00_raw/from-fluxnet-shuttle/0-info/FORESTS_fluxnet_shuttle_snapshot_20260408T010154.csv
 
 # JAPANFLUX (JapanFlux2024 dataset)
 DIR_DATA_RAW_JPF: ../../data/00_raw/japanflux
@@ -25,10 +25,10 @@ PATTERN_DIR_JPF: ['JPF_']
 PATTERN_FILE_HH_JPF: FLX_*_JapanFLUX2024_ALLVARS_HH_*.csv
 INFOFILE_JPF: ../../data/00_raw/japanflux/0-info/JapanFlux2024_SiteList_20250910.csv
 
-# ICOS (from Carbon Portal)
-DIR_DATA_RAW_ICOS: ../../data/00_raw/icos
-PATTERN_DIR_ICOS: ['ICOS_', '_ARCHIVE_L2']
-PATTERN_FILE_HH_ICOS: ICOSETC_*_FLUXNET_HH_L2.csv
+## ICOS (from Carbon Portal) (all sites now part of fluxnet-shuttle)
+#DIR_DATA_RAW_ICOS: ../../data/00_raw/icos
+#PATTERN_DIR_ICOS: ['ICOS_', '_ARCHIVE_L2']
+#PATTERN_FILE_HH_ICOS: ICOSETC_*_FLUXNET_HH_L2.csv
 
 # FLUXNET (from Carbon Portal)
 DIR_DATA_RAW_FXN_CP: ../../data/00_raw/fluxnet_from_carbonportal

@@ -363,9 +363,15 @@ class SiteList:
                 id_jpf = str(dirpath.name).replace('JPF_', '')  # Site ID number
                 site = self.info_df.loc[self.info_df['Metadata ID'] == id_jpf, 'Site Code'].values[0]
 
+            print(f"Getting info for site {site} ({origin})...")
+
             if self.downloaded_via in ['SHUTTLE-CLI', 'FLUXNET_CP', 'JAPANFLUX-URL', 'ICOS']:
                 foundfile = search_files(searchdirs=str(dirpath), pattern=self.pattern_file)
+                if not foundfile:
+                    filepattern = '*FLUXNET_FLUXMET_HR_*.csv'
+                    foundfile = search_files(searchdirs=str(dirpath), pattern=filepattern)
                 filepath = str(foundfile[0])
+
             elif self.downloaded_via in ['AMERIFLUX', 'FLUXNET_ORG']:
                 foundfile = search_files(searchdirs=str(dirpath), pattern=self.pattern_file)
                 if not foundfile:

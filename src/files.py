@@ -427,8 +427,12 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
         # Handle the highest priority dataset first
         # This section also handles sites with only one dataset
         if ix == 0:
-            filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
-                Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
+            if any(s in str(Path(datasetinfo['_FILEPATH']).name) for s in ['_FULLSET_HR_', '_FLUXNET_FLUXMET_HR_']):
+                filetype = "FLUXNET-FULLSET-HR-CSV-60MIN"
+            else:
+                filetype = "FLUXNET-FULLSET-HH-CSV-30MIN"
+            # filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
+            #     Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
             merged_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
             merged_df['ORIGIN'] = datasetinfo['ORIGIN']
             sourcetxt += datasetinfo['ORIGIN']
@@ -451,8 +455,12 @@ def create_parquet_files(datasets_df, data_nrows, settings, ix, sites_done,
 
         # Handle lower priority datasets
         else:
-            filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
-                Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
+            if any(s in str(Path(datasetinfo['_FILEPATH']).name) for s in ['_FULLSET_HR_', '_FLUXNET_FLUXMET_HR_']):
+                filetype = "FLUXNET-FULLSET-HR-CSV-60MIN"
+            else:
+                filetype = "FLUXNET-FULLSET-HH-CSV-30MIN"
+            # filetype = "FLUXNET-FULLSET-HR-CSV-60MIN" if '_FULLSET_HR_' in str(
+            #     Path(datasetinfo['_FILEPATH']).name) else "FLUXNET-FULLSET-HH-CSV-30MIN"
             incoming_df = readfile(filetype, datasetinfo['_FILEPATH'], data_nrows)
 
             # Additional datasets must have the same flux variable as the primary dataset

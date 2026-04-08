@@ -19,6 +19,8 @@ datasets_df = pd.read_csv(infile)
 # Keep sites where SWC is available and that are not DNF (only 2 sites)
 datasets_df = datasets_df.loc[
     (datasets_df['SWC_AVG'] != '-MISSING-') &  # Condition 1: SWC must be available
+    (datasets_df['GPP_AVG'] != '-MISSING-') &  # Condition 2: GPP must be available
+    (datasets_df['RECO_AVG'] != '-MISSING-') &  # Condition 3: RECO must be available
     (datasets_df['IGBP'] != 'DNF') &  # Condition 2: IGBP must not be 'DNF' (too few sites)
     (datasets_df['N_YEARS'] >= 3)  # Condition 3: N_YEARS must be >= 3
     ].reset_index(drop=True)

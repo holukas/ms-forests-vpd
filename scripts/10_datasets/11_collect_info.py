@@ -39,13 +39,13 @@ datasets_ameriflux = sites.get_dataset_info_fluxnet_ameriflux(
     downloaded_via='AMERIFLUX'
 )
 
-# ICOS
-print("Collecting dataset info from ICOS...")
-datasets_icos = sites.get_dataset_info_icos(
-    pattern_dir=settings['PATTERN_DIR_ICOS'],
-    pattern_file=settings['PATTERN_FILE_HH_ICOS'],
-    searchdir=settings['DIR_DATA_RAW_ICOS']
-)
+# # ICOS (all sites part of fluxnet-shuttle downloads)
+# print("Collecting dataset info from ICOS...")
+# datasets_icos = sites.get_dataset_info_icos(
+#     pattern_dir=settings['PATTERN_DIR_ICOS'],
+#     pattern_file=settings['PATTERN_FILE_HH_ICOS'],
+#     searchdir=settings['DIR_DATA_RAW_ICOS']
+# )
 
 # FLUXNET (from Carbon Portal)
 print("Collecting dataset info from FLUXNET (data from Carbon Portal)...")
@@ -67,7 +67,7 @@ datasets_fxn_org = sites.get_dataset_info_fluxnet_ameriflux(
 )
 
 # Merge datasets info
-datasets_df = pd.concat([datasets_shuttle, datasets_japanflux, datasets_ameriflux, datasets_icos,
+datasets_df = pd.concat([datasets_shuttle, datasets_japanflux, datasets_ameriflux,
                          datasets_fxn_cp, datasets_fxn_org], axis=0, ignore_index=True)
 datasets_df = datasets_df.reset_index(drop=True)
 # datasets_df = datasets_df.fillna("n.a.")

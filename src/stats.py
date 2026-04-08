@@ -38,10 +38,6 @@ def basic_stats(siteinfo_df, siteconfig, ix) -> pd.DataFrame:
     siteinfo_df.loc[ix, 'NEE_N_RECORDS'] = sitedata[varnames['nee_var']].dropna().count()
     siteinfo_df.loc[ix, 'LE_AVG'] = sitedata[varnames['le_var']].mean()
     siteinfo_df.loc[ix, 'LE_N_RECORDS'] = sitedata[varnames['le_var']].dropna().count()
-    siteinfo_df.loc[ix, 'GPP_AVG'] = sitedata[varnames['gpp_var']].mean()
-    siteinfo_df.loc[ix, 'GPP_N_RECORDS'] = sitedata[varnames['gpp_var']].dropna().count()
-    siteinfo_df.loc[ix, 'RECO_AVG'] = sitedata[varnames['reco_var']].mean()
-    siteinfo_df.loc[ix, 'RECO_N_RECORDS'] = sitedata[varnames['reco_var']].dropna().count()
     siteinfo_df.loc[ix, 'SWIN_AVG'] = sitedata[varnames['swin_var']].mean()
     siteinfo_df.loc[ix, 'SWIN_N_RECORDS'] = sitedata[varnames['swin_var']].dropna().count()
     siteinfo_df.loc[ix, 'TA_AVG'] = sitedata[varnames['ta_var']].mean()
@@ -58,6 +54,22 @@ def basic_stats(siteinfo_df, siteconfig, ix) -> pd.DataFrame:
     else:
         siteinfo_df.loc[ix, 'SWC_AVG'] = '-MISSING-'
         siteinfo_df.loc[ix, 'SWC_N_RECORDS'] = '-MISSING-'
+
+    # GPP is completely missing for some sites
+    if siteconfig['GPP_VAR'] != '-MISSING-':
+        siteinfo_df.loc[ix, 'GPP_AVG'] = sitedata[varnames['gpp_var']].mean()
+        siteinfo_df.loc[ix, 'GPP_N_RECORDS'] = sitedata[varnames['gpp_var']].dropna().count()
+    else:
+        siteinfo_df.loc[ix, 'GPP_AVG'] = '-MISSING-'
+        siteinfo_df.loc[ix, 'GPP_N_RECORDS'] = '-MISSING-'
+
+    # GPP is completely missing for some sites
+    if siteconfig['RECO_VAR'] != '-MISSING-':
+        siteinfo_df.loc[ix, 'RECO_AVG'] = sitedata[varnames['reco_var']].mean()
+        siteinfo_df.loc[ix, 'RECO_N_RECORDS'] = sitedata[varnames['reco_var']].dropna().count()
+    else:
+        siteinfo_df.loc[ix, 'RECO_AVG'] = '-MISSING-'
+        siteinfo_df.loc[ix, 'RECO_N_RECORDS'] = '-MISSING-'
 
     # # RH is missing for one site (My-)
     # if siteconfig['RH_VAR'] != '-MISSING-':
