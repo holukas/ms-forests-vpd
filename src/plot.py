@@ -629,10 +629,13 @@ def layout_5panels(figsize, add_colorbar_ax: bool = False):
         return fig, gs, ax_all, axes_sub
 
 
-def plot_markers(ax, df, xvals, yvals, zvals, flux_txt, ax_labels_fontsize, area_size, annotate=False):
+def plot_markers(ax, df, xvals, yvals, zvals, flux_txt, ax_labels_fontsize, area_size, annotate=False,
+                 show_only_max_marker: bool = False):
     """Finds min/max regions, plots markers, and optionally adds arrows."""
     piv = df.pivot(index=xvals, columns=yvals, values=zvals)
-    locs = {m: findpoi(df=piv, k=area_size, agg='mean', what=m)[0] for m in ['max', 'min']}
+
+    _showaggs = ['max', 'min'] if not show_only_max_marker else ['max']
+    locs = {m: findpoi(df=piv, k=area_size, agg='mean', what=m)[0] for m in _showaggs}
 
     for m_type, (lx, ly) in locs.items():
         x, y = lx + 0.05, ly + 0.05
@@ -759,6 +762,9 @@ def plot_stage_panel(ax, df, feature_col, color, columns, n_scenarios, y_limits,
         # Percentage of sites below zero (i.e., negatively affected)
         n_sites_below_zero = data_vec[data_vec < 0].count()
         perc_n_sites_below_zero = n_sites_below_zero / n_sites * 100
+
+        # Also store in stats df
+        featurestats_df.loc[featurestats_df['Scenario'] == scen, 'PERC_N_SITES_BELOW_ZERO'] = perc_n_sites_below_zero
 
         # Decide text label
         text = f'{perc_n_sites_below_zero:.0f}%' if is_main else f'{perc_n_sites_below_zero:.0f}'

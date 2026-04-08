@@ -172,14 +172,17 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS_AVG, VAR_TITLES)):
 
         panel_counter += 1
 
-# Final layout adjustment
-plt.subplots_adjust(left=0.05, right=0.98, top=0.95, bottom=0.07)
+# Add shared x-axis label
+fig.supxlabel('Stage number', fontsize=9, fontweight='bold')
+
+# Final layout adjustment (you may need to slightly increase the bottom margin from 0.07 to 0.08 so the label doesn't get cut off)
+plt.subplots_adjust(left=0.05, right=0.98, top=0.95, bottom=0.08)
 
 # Save function helper
 # plt.savefig('transition_plot.pdf', dpi=300, bbox_inches='tight')
 
 # ------------------------
-# CONFIGURATION
+# CONFIGURATION FOR MANUSCRIPT TABLE
 # ------------------------
 STAGE_ORDER_NAMES = ['1', '2', '3', '4', '5', '6', '7', '8']
 scen_map = {1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8'}
@@ -347,10 +350,12 @@ table_1_final.set_index('index', inplace=True)
 
 # Save
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-# outfilepath = dir_out / f'56_TABLE-X_Stages_SinaPlots_ShapMeans_{FLUX}.csv'
-# table_1_final.to_csv(outfilepath, index=True, encoding='utf-8-sig')
 outfilepath_excel = dir_out / f'56_TABLE-X_Stages_SinaPlots_ShapMeans_{FLUX}.xlsx'
 table_1_final.to_excel(outfilepath_excel, index=True)
+
+# Save all collected stats in separate csv
+outfilepath = dir_out / f'56_TABLE-X_Stages_SinaPlots_ShapMeans_{FLUX}_DATA-FeatureStatsFull.csv'
+featurestats_df.to_csv(outfilepath, index=False, encoding='utf-8-sig')
 
 # Show table
 pd.set_option('display.max_rows', 3000)

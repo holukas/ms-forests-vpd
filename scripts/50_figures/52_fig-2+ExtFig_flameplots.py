@@ -16,37 +16,39 @@ import src.plot as plot
 # Order: explained flux, x-bins, y-bins, z-colors, x in filename, y in filename, colormap for row,
 # show colormap for row (if False shows one overall colormap for all rows)
 
-# Figure 3
-# SHAP values heatmaps
-# 1: Physical drivers (atmosphere, drivers)
-# 2: Supply limitation (soil, constraints; supply vs. demand)
-# 3: Physiological response (plant, response)
-plotvars_rows = [
-    ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-     'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-    ['NEP_ZSCORE', 'BIN_ET_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-     'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-]
-figsize = (19, 13)
-figure_info = [2, f'ShapValues-{plotvars_rows[0][3]}']
-
-
-# # Figure 4
-# # Flux heatmaps
+# # Figure 3
+# # SHAP values heatmaps
+# # 1: Physical drivers (atmosphere, drivers)
+# # 2: Supply limitation (soil, constraints; supply vs. demand)
+# # 3: Physiological response (plant, response)
 # plotvars_rows = [
-#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',
-#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
-#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'GPP_ZSCORE',
-#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'BrBG', True],
-#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'RECO_ZSCORE',
-#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'coolwarm', True],
-#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'ET_ZSCORE',
-#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
+#     ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+#      'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+#     ['NEP_ZSCORE', 'BIN_ET_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+#      'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
 # ]
-# figsize = (19, 13 / 3 * 4)
-# figure_info = ["ExtFig", f'Fluxes-{plotvars_rows[0][3]}']
+# figsize = (19, 13)
+# figure_info = [2, f'ShapValues-{plotvars_rows[0][3]}']
+# show_only_max_marker = False
+
+
+# Figure 4
+# Flux heatmaps
+plotvars_rows = [
+    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',
+     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
+    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'GPP_ZSCORE',
+     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'BrBG', True],
+    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'RECO_ZSCORE',
+     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'coolwarm', True],
+    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'ET_ZSCORE',
+     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
+]
+figsize = (19, 13 / 3 * 4)
+figure_info = ["ExtFig2", f'Fluxes-{plotvars_rows[0][3]}']
+show_only_max_marker = True
 
 # Shared plotting constants
 aggfunc, CONDITIONAL = 'mean', True
@@ -173,7 +175,8 @@ for row_idx, plotvars in enumerate(plotvars_rows):
         # Marker and annotations
         plot.plot_markers(ax, df_to_plot, xvals=f'{xvar}_{xagg}', yvals=f'{yvar}_{yagg}',
                           zvals=f'{zvar}_{aggfunc}', flux_txt=beautify[FLUX], annotate=False,
-                          ax_labels_fontsize=AX_LABELS_FONTSIZE, area_size=area_size)
+                          ax_labels_fontsize=AX_LABELS_FONTSIZE, area_size=area_size,
+                          show_only_max_marker=show_only_max_marker)
 
         # Labels
         ax.set_xlabel(xlabel, fontsize=AX_LABELS_FONTSIZE)
