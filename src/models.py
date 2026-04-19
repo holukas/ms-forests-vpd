@@ -1,10 +1,12 @@
 from pathlib import Path
 
 import diive as dv
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
 import xgboost as xgb
+from PyALE import ale
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
@@ -122,7 +124,7 @@ def train_rf_models_and_shap(target: str, features: list,
 def train_xgboost_models_and_shap(target: str, features: list,
                                   siteconfig, ix, modelstxt, results_outdir: Path, conditional=False) -> None:
     # # TODO testing
-    # if ix < 40:
+    # if ix != 141:
     #     return None
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
@@ -292,5 +294,125 @@ def train_xgboost_models_and_shap(target: str, features: list,
         outpath=results_outdir)
     print(f"Saved SHAP values to file {outfilepath}.")
     merged.to_csv(outfilepath.replace('.parquet', '.csv'))
+
+    return None
+
+
+def train_xgboost_models_and_ale(target: str, features: list,
+                                 siteconfig, ix, modelstxt, results_outdir: Path) -> None:
+    print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
+
+    if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
+        return None
+
+    # Load site data
+    filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
+    subset = dv.load_parquet(filepath, sanitize_timestamp=False)
+    print(f"Records: {len(subset)}")
+
+    # Target and features
+    X = subset[features].copy()
+    y = subset[target].copy()
+
+    # Train/test split for model training
+    X_for_training, X_val, y_for_training, y_val = train_test_split(
+        X, y, test_size=0.15, random_state=42
+    )
+
+    # Train XGBoost model
+    model = xgb.XGBRegressor(
+        objective='reg:squarederror',
+        n_estimators=3000,
+        max_depth=6,
+        learning_rate=0.05,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        min_child_weight=5,
+        random_state=42,
+        early_stopping_rounds=100,
+        n_jobs=-1
+    )
+
+    print("Training model with early stopping based on random validation set...")
+    model.fit(X_for_training, y_for_training, eval_set=[(X_val, y_val)], verbose=False)
+
+    # Generate predictions for the ENTIRE dataset
+    print("Generating predictions and calculating ALE for the ENTIRE dataset...")
+    y_pred_full = model.predict(X)
+
+    # Calculate EXPLANATORY POWER on the full dataset
+    r2_full = model.score(X, y)
+    rmse_full = np.sqrt(mean_squared_error(y, y_pred_full))
+    print(f"FULL DATASET (Explanatory Power) -> R2: {r2_full:.4f} / RMSE: {rmse_full:.2f}")
+
+    # Log the full-dataset performance
+    with open(modelstxt, 'a') as file:
+        file.write(f"SITE: {siteconfig['SITE']} / TARGET: {target} "
+                   f"/ R2_full: {r2_full:.4f} / RMSE_full: {rmse_full:.2f}\n")
+
+    # Calculate and plot ALE for each feature
+    print("Calculating ALE (Accumulated Local Effects) for each feature...")
+    ale_data_all_features = {}
+
+    for feature in features:
+        print(f"  Calculating ALE for {feature}...")
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ale(X=X, model=model, feature=[feature], grid_size=100)
+        plt.title(f'ALE Plot: Effect of {feature} on {target}\nSite: {siteconfig["SITE"]}')
+        plt.tight_layout()
+
+        # Extract line data from the plot
+        ax = plt.gca()
+        ale_values = []
+        for line in ax.get_lines():
+            xdata = line.get_xdata()
+            ydata = line.get_ydata()
+            if len(xdata) > 0:
+                ale_values.append({'feature_value': xdata, 'effect': ydata})
+
+        # Save ALE curve data if available
+        if ale_values:
+            ale_curve_data = pd.DataFrame({
+                'feature_value': ale_values[0]['feature_value'],
+                'effect': ale_values[0]['effect'],
+                'feature': feature,
+                'site': siteconfig['SITE'],
+                'target': target
+            })
+            ale_data_all_features[feature] = ale_curve_data
+
+            # Save individual feature ALE data
+            ale_csv_filename = f"{siteconfig['SITE']}_ale_curve_{feature}_{target}.csv"
+            ale_curve_data.to_csv(results_outdir / ale_csv_filename, index=False)
+            print(f"    Saved ALE curve data to {ale_csv_filename}")
+
+        # Save ALE plot
+        plot_filename = f"{siteconfig['SITE']}_ale_{feature}_{target}.png"
+        plt.savefig(results_outdir / plot_filename, dpi=150)
+        plt.close()
+        print(f"    Saved plot to {plot_filename}")
+
+    # Create output dataframe with predictions
+    ale_df = X.copy()
+    ale_df.index = pd.to_datetime(ale_df.index)
+    ale_df[target] = y.copy()
+    ale_df[f"{target}_PRED"] = y_pred_full.copy()
+
+    # Add additional columns from the original subset
+    current_cols = ale_df.columns.tolist()
+    available_cols = subset.columns.tolist()
+    additional_cols = [col for col in available_cols if col not in current_cols]
+    for addcol in additional_cols:
+        print(f"Adding column {addcol} to ALE dataframe.")
+        ale_df[addcol] = subset[addcol].copy()
+    ale_df = ale_df.sort_index(axis=1)
+
+    # Save results
+    outfilepath = dv.save_parquet(
+        filename=f"{siteconfig['SITE']}_ale_{target}",
+        data=ale_df,
+        outpath=results_outdir)
+    print(f"Saved ALE results to file {outfilepath}.")
+    ale_df.to_csv(outfilepath.replace('.parquet', '.csv'))
 
     return None

@@ -350,11 +350,11 @@ table_1_final.set_index('index', inplace=True)
 
 # Save
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath_excel = dir_out / f'56_TABLE-X_Stages_SinaPlots_ShapMeans_{FLUX}.xlsx'
+outfilepath_excel = dir_out / f'56_ExtendedData_TABLE-4_Stages_SinaPlots_ShapMeans_{FLUX}.xlsx'
 table_1_final.to_excel(outfilepath_excel, index=True)
 
 # Save all collected stats in separate csv
-outfilepath = dir_out / f'56_TABLE-X_Stages_SinaPlots_ShapMeans_{FLUX}_DATA-FeatureStatsFull.csv'
+outfilepath = dir_out / f'56_ExtendedData_TABLE-4_Stages_SinaPlots_ShapMeans_{FLUX}_DATA-FeatureStatsFull.csv'
 featurestats_df.to_csv(outfilepath, index=False, encoding='utf-8-sig')
 
 # Show table
@@ -365,7 +365,7 @@ print(table_1_final.to_string(index=True))
 
 # Save fig to file
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
-outfilepath = dir_out / f'56_FIG-X_Stages_SinaPlots_ShapMeans_{FLUX}.png'
+outfilepath = dir_out / f'56_ExtendedData_FIG-1_Stages_SinaPlots_ShapMeans_{FLUX}.png'
 fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
 
 # Show figure

@@ -120,7 +120,6 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     subset['MONTH'] = subset.index.month
     subset['YEAR'] = subset.index.year
 
-    # todo now testing with GPP
     # First, identify 4 months with highest GPP from full dataset
     gpp_avg = subset.groupby('MONTH')[varnames['gpp_var']].mean()
     gpp_top4 = gpp_avg.nlargest(4)
@@ -129,6 +128,7 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     # ta_avg = subset.groupby('MONTH')[varnames['ta_var']].mean()
     # warmest4 = ta_avg.nlargest(4)
     # warmest4 = warmest4.index.to_list()
+    print(gpp_avg.sort_values(ascending=False))
 
     # Now start to narrow down data
 

@@ -16,7 +16,7 @@ import src.plot as plot
 # Order: explained flux, x-bins, y-bins, z-colors, x in filename, y in filename, colormap for row,
 # show colormap for row (if False shows one overall colormap for all rows)
 
-# # Figure 3
+# # Figure 2
 # # SHAP values heatmaps
 # # 1: Physical drivers (atmosphere, drivers)
 # # 2: Supply limitation (soil, constraints; supply vs. demand)
@@ -34,7 +34,7 @@ import src.plot as plot
 # show_only_max_marker = False
 
 
-# Figure 4
+# Extended Data Figure 2
 # Flux heatmaps
 plotvars_rows = [
     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',

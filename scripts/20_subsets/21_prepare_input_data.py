@@ -40,8 +40,10 @@ counter = 0
 for ix, siteconfig in _datasets_df.iterrows():
     # if ix < 144:
     #     continue
-    # if siteconfig['SITE'] != "US-xUN":
+    # if siteconfig['SITE'] != "AT-Mmg":
     #     continue
+    if siteconfig['IGBP'] != "EBF":
+        continue
     counter += 1
     varnames = get_variable_names(siteconfig)  # Variable names for this site
     subsetinfo = files.create_subsets_parquet_files(
