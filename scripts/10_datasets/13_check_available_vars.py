@@ -17,13 +17,14 @@ required_vars = dict(
     RECO_VAR=['RECO_NT_VUT_50', 'RECO_NT_vUT_USTAR50', 'RECO_NT_CUT_50',
               'RECO_DT_VUT_50', 'RECO_DT_vUT_USTAR50', 'RECO_DT_CUT_50'],
     SWIN_VAR='SW_IN_F',
+    SWIN_QC_VAR='SW_IN_F_QC',
     TA_VAR='TA_F',
+    TA_QC_VAR='TA_F_QC',
     VPD_VAR='VPD_F',
+    VPD_QC_VAR='VPD_F_QC',
     PREC_VAR='P_F',
-    # SWC_VAR=['SWC_F_MDS_10', 'SWC_F_MDS_9', 'SWC_F_MDS_8', 'SWC_F_MDS_7', 'SWC_F_MDS_6',
-    #          'SWC_F_MDS_5', 'SWC_F_MDS_4', 'SWC_F_MDS_3', 'SWC_F_MDS_2', 'SWC_F_MDS_1'],  # Trying to catch deeper layers first
     SWC_VAR=['SWC_F_MDS_1', 'SWC_F_MDS_2'],
-    # RH_VAR=['RH', 'RH_F', 'RH_1_1_1'],
+    SWC_QC_VAR=['SWC_F_MDS_1_QC', 'SWC_F_MDS_2_QC'],
 )
 
 _datasets_df = datasets_df.copy()

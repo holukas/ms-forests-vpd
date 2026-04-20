@@ -8,16 +8,9 @@ import src.stats as stats
 infile = Path('../../data/outputs/10_datasets/13_datasets_info_parquet_vars.csv')
 datasets_df = pd.read_csv(infile)
 
-# # Number of IGBPs
-# # {'ENF': 72, 'DBF': 47, 'MF': 12, 'DNF': 2, 'EBF': 3, 'OSH': 1}
-# from collections import Counter
-# counts_igbps = Counter(siteinfo_df['IGBP'])
-# print(dict(counts_igbps))
-
 # Calculate basic stats
 _datasets_df = datasets_df.copy()
 for ix, siteconfig in _datasets_df.iterrows():
-
     # # TODO testing
     # if ix != 1:
     #     continue
