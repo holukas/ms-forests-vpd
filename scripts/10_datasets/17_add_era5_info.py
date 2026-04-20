@@ -6,8 +6,8 @@ import numpy as np
 infile = Path('../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv')
 datasets_df = pd.read_csv(infile)
 
-# Output folder for ERA5 data for each site
-dir_era5 = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020')
+# # Output folder for ERA5 data for each site
+# dir_era5 = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020')
 
 # Initialize new columns to store the 30-year averages
 datasets_df['ERA5_MAT_1991_2020'] = np.nan
@@ -18,6 +18,13 @@ print("Calculating 30-year MAT and MAP averages for each site...")
 # Cycle through the sites and read their corresponding ERA5 CSVs
 for index, row in datasets_df.iterrows():
     site_id = row['SITE']
+    downloaded_via = row['DOWNLOADED_VIA']
+
+    if downloaded_via == 'FLUXNET_ORG':
+        pass
+    #TODO
+
+
     site_csv = dir_era5 / f"{site_id}_ERA5_Yearly_Climate_1991-2020.csv"
 
     if site_csv.is_file():

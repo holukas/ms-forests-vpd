@@ -63,7 +63,7 @@ def basic_stats(siteinfo_df, siteconfig, ix) -> pd.DataFrame:
         siteinfo_df.loc[ix, 'GPP_AVG'] = '-MISSING-'
         siteinfo_df.loc[ix, 'GPP_N_RECORDS'] = '-MISSING-'
 
-    # GPP is completely missing for some sites
+    # RECO is completely missing for some sites
     if siteconfig['RECO_VAR'] != '-MISSING-':
         siteinfo_df.loc[ix, 'RECO_AVG'] = sitedata[varnames['reco_var']].mean()
         siteinfo_df.loc[ix, 'RECO_N_RECORDS'] = sitedata[varnames['reco_var']].dropna().count()

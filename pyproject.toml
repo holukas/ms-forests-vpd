@@ -18,6 +18,7 @@ retry-requests = "^2.0.0"
 earthengine-api = "^1.7.15"
 openpyxl = "^3.1.5"
 pyale = "^1.2.0"
+cdsapi = "^0.7.7"
 
 [tool.poetry.group.dev.dependencies]
 diive = { path = "../../21 - DIIVE/diive", develop = true }
