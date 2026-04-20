@@ -17,7 +17,7 @@ ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
 DIR_DATA_RAW_SHUTTLE: ../../data/00_raw/from-fluxnet-shuttle
 PATTERN_DIR_SHUTTLE: ['_FLUXNET_', '_v1.3_r1']
 PATTERN_FILE_HH_SHUTTLE: "*FLUXNET_FLUXMET_HH_*.csv"
-INFOFILE_SHUTTLE: ../../data/00_raw/from-fluxnet-shuttle/0-info/FORESTS_fluxnet_shuttle_snapshot_20260408T010154.csv
+INFOFILE_SHUTTLE: ../../data/00_raw/from-fluxnet-shuttle/0-info/fluxnet_shuttle_snapshot_20260420T103353_NO-EMPTY-ROWS.csv
 
 # JAPANFLUX (JapanFlux2024 dataset)
 DIR_DATA_RAW_JPF: ../../data/00_raw/japanflux

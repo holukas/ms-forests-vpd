@@ -1,6 +1,7 @@
 /.idea
 /_archive
 /X
+/data/X-OLD*
 /data/00_raw
 /data/outputs/shap_analysis/*.parquet
 /data/outputs/shap_analysis/gpp/conditional/*.parquet
@@ -16,6 +17,7 @@ data/outputs/shap_analysis/nep/conditional/3_AllSites_Aggregated_SHAPValues-cond
 data/outputs/shap_analysis/reco/conditional/1_models_xgboost_shap-conditional_RECO.txt
 data/outputs/borderless_heatmaps
 CLAUDE.md
+.claude
 
 *.csv
 *.xlsx
