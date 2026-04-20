@@ -1,6 +1,9 @@
 """
 Download ERA5-Land hourly climate data from CDS and aggregate to yearly values.
 
+This is done for sites with older data only (FLUXNET2015) because they do not
+have ERA5 data for 1991-2020 in their datasets.
+
 Workflow:
 1. Load site coordinates from configuration CSV
 2. Download ERA5-Land timeseries data for each site (2m temperature, total precipitation)
@@ -76,13 +79,14 @@ for index, row in datasets_df.iterrows():
 
     # Create site-specific subfolder
     site_dir = output_dir / site_id
-    site_dir.mkdir(parents=True, exist_ok=True)
     merged_file = site_dir / f"{site_id}_era5_1991-2020_yearly.csv"
 
     # Skip if yearly file already exists
     if merged_file.exists():
         log_message(f"Skipping {site_id} (yearly file already exists)")
         continue
+
+    site_dir.mkdir(parents=True, exist_ok=True)
 
     # Files from FLUXNET_ORG do not have ERA5 data 1991-2020
 
