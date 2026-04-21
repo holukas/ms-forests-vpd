@@ -35,9 +35,9 @@ Validation:
     - All output logged to file for audit trail
 """
 
-from pathlib import Path
 import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -46,6 +46,7 @@ import pandas as pd
 output_dir = Path('../../data/outputs/10_datasets')
 output_dir.mkdir(parents=True, exist_ok=True)
 log_file = output_dir / f"17_add_era5_info_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+
 
 class Logger:
     def __init__(self, filename):
@@ -59,6 +60,7 @@ class Logger:
 
     def flush(self):
         self.log.flush()
+
 
 sys.stdout = Logger(log_file)
 print(f"Log file: {log_file}\n")
@@ -97,7 +99,8 @@ for index, row in datasets_df.iterrows():
         # Find matching file using glob pattern
         matching_files = list(Path(dir_era5).glob(pattern_file_era5))
         if len(matching_files) == 0:
-            raise FileNotFoundError(f"No ERA5 file found for {site_id} in {dir_era5}. Expected pattern: {pattern_file_era5}")
+            raise FileNotFoundError(
+                f"No ERA5 file found for {site_id} in {dir_era5}. Expected pattern: {pattern_file_era5}")
         if len(matching_files) > 1:
             raise Exception(f"Multiple files found for {site_id}: {matching_files}")
         filepath_era5 = matching_files[0]
@@ -149,8 +152,10 @@ if len(missing_era5) > 0:
     raise Exception(f"ERA5 data is missing for {len(missing_era5)} sites. Cannot proceed.")
 else:
     print(f"\n✓ SUCCESS: All {len(datasets_df)} sites have ERA5 data (MAT and MAP)")
-    print(f"  MAT range: {datasets_df['ERA5_MAT_1991_2020'].min():.1f} to {datasets_df['ERA5_MAT_1991_2020'].max():.1f} degC")
-    print(f"  MAP range: {datasets_df['ERA5_MAP_1991_2020'].min():.1f} to {datasets_df['ERA5_MAP_1991_2020'].max():.1f} mm/year")
+    print(
+        f"  MAT range: {datasets_df['ERA5_MAT_1991_2020'].min():.1f} to {datasets_df['ERA5_MAT_1991_2020'].max():.1f} degC")
+    print(
+        f"  MAP range: {datasets_df['ERA5_MAP_1991_2020'].min():.1f} to {datasets_df['ERA5_MAP_1991_2020'].max():.1f} mm/year")
 
 # Save to file
 datasets_df = datasets_df.reset_index(drop=True)
