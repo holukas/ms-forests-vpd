@@ -125,6 +125,79 @@ def train_rf_models_and_shap(target: str, features: list,
 
 def train_xgboost_models_and_shap(target: str, features: list,
                                   siteconfig, ix, modelstxt, results_outdir: Path, conditional=False) -> dict:
+    """
+    Train XGBoost models with 5-fold cross-validation and compute out-of-sample SHAP values.
+
+    ## Logic: Out-of-Sample SHAP Values via 5-Fold CV
+
+    **Why 5-fold CV?**
+    - Standard SHAP calculation trains on 85% of data, then explains the ENTIRE dataset
+    - This means SHAP values for training data (in-sample) reflect patterns the model learned
+    - In-sample SHAP can be misleading: high values don't prove causality (model memorized)
+    - Out-of-sample SHAP ensures each data point is explained by a model that never saw it
+    - This gives unbiased feature importance: high SHAP = the feature truly predicts the target
+
+    **Per-Fold Workflow:**
+    1. KFold splits data into 5 folds (80% train, 20% test)
+    2. For each fold:
+       a) Train set (80%): further split into 68% training, 12% validation
+          - 68% trains the model
+          - 12% guides early stopping (prevents overfitting)
+       b) Test set (20%): held out completely, used for:
+          - Model evaluation (R², RMSE)
+          - SHAP calculation (out-of-sample explanations)
+    3. All 5 folds combined = full dataset coverage with unbiased explanations
+
+    **SHAP Calculation:**
+    - Conditional SHAP (default): Respects feature correlations (realistic effects)
+    - Standard SHAP: Marginal effects (what if features were independent?)
+    - Background data for standard SHAP: sampled from training set only (avoids data leakage)
+
+    **Output:**
+    - Per-fold metrics: R² and RMSE for each fold (shows generalization)
+    - Global metrics: Out-of-sample R² and RMSE across all 5 folds (overall model quality)
+    - SHAP values: One per sample, from a model that never saw that sample
+    - Predictions: Out-of-sample predictions for the entire dataset
+
+    Parameters
+    ----------
+    target : str
+        Target variable name (e.g., 'NEP_ZSCORE')
+    features : list
+        List of feature column names (e.g., ['TA_ZSCORE', 'SWIN_ZSCORE', ...])
+    siteconfig : dict
+        Row from site configuration CSV, containing 'SITE', '_FILEPATH_PARQUET_SUBSET', etc.
+    ix : int
+        Site index (for logging/progress)
+    modelstxt : Path
+        Path to text file for logging model metrics and performance
+    results_outdir : Path
+        Directory to save SHAP results (parquet + CSV)
+    conditional : bool, default=False
+        If True: Calculate conditional SHAP (respects correlations)
+        If False: Calculate standard/marginal SHAP (assumes independence)
+
+    Returns
+    -------
+    dict
+        Dictionary with CV results for aggregation:
+        {
+            'site': str (site name),
+            'target': str (target variable),
+            'fold_1_r2': float, 'fold_1_rmse': float,
+            'fold_2_r2': float, 'fold_2_rmse': float,
+            ...,
+            'fold_5_r2': float, 'fold_5_rmse': float,
+            'global_r2': float, 'global_rmse': float
+        }
+
+    Notes
+    -----
+    - Fixed hyperparameters (reg_lambda=1, reg_alpha=0.1, gamma=0.2, etc.)
+      ensure consistent model behavior across sites
+    - Early stopping on validation set prevents overfitting within each fold
+    - Output files include all features, SHAP values, predictions, and original measurements
+    """
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
