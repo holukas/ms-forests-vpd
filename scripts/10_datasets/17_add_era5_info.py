@@ -52,14 +52,22 @@ class Logger:
     def __init__(self, filename):
         self.terminal = sys.stdout
         self.log = open(filename, 'w', encoding='utf-8')
+        self.closed = False
 
     def write(self, message):
         self.terminal.write(message)
-        self.log.write(message)
-        self.log.flush()
+        if not self.closed:
+            self.log.write(message)
+            self.log.flush()
 
     def flush(self):
-        self.log.flush()
+        if not self.closed:
+            self.log.flush()
+
+    def close(self):
+        if not self.closed:
+            self.log.close()
+            self.closed = True
 
 
 sys.stdout = Logger(log_file)
@@ -172,4 +180,4 @@ print(f"Output CSV: {outfile}")
 print(f"Log file: {log_file}")
 
 # Close log file
-sys.stdout.log.close()
+sys.stdout.close()

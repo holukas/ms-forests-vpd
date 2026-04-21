@@ -1,0 +1,428 @@
+"""
+Download and process ERA5-Land climate reanalysis data for FLUXNET sites.
+
+This script downloads ERA5-Land hourly climate data from the Copernicus Climate
+Data Store (CDS) for FLUXNET sites lacking 1991-2020 ERA5 data, then processes
+and aggregates the data to derive 30-year mean annual temperature (MAT) and
+mean annual precipitation (MAP).
+
+Purpose:
+    - Acquire historical climate data for older FLUXNET sites (e.g., FLUXNET2015)
+    - Standardize temporal coverage to 1991-2020 (key analysis period)
+    - Enable cross-site climate comparisons and analysis
+
+Processing Steps:
+    1. Load site coordinates from configuration CSV
+    2. Download ERA5-Land hourly data via CDS API
+       - Variables: 2m temperature (K), total precipitation (m)
+       - Date range: 1991-01-01 to 2021-01-01
+    3. Extract ZIP archives and merge temperature + precipitation CSVs
+    4. Validate merged data (check for duplicate timestamps)
+    5. Standardize column names: t2m→TA_degC, tp→PRECIP_TOT_mm
+    6. Unit conversion: K→°C, m→mm
+    7. Timestamp adjustment: shift back 1 hour to represent START of averaging period
+    8. Filter to complete calendar years: 1991-2020
+    9. Save shifted hourly timeseries (for reference)
+    10. Aggregate to yearly values:
+        - TA_degC: annual mean temperature (°C)
+        - PRECIP_TOT_mm: annual total precipitation (mm)
+
+Usage:
+    Run directly or via 16a_run_era5_parallel.py for batch processing.
+
+    Direct usage (single site range):
+        python 16b_download_era5_mat_map.py [start_index] [end_index]
+
+    Examples:
+        python 16b_download_era5_mat_map.py 0 35    # Sites 0-34
+        python 16b_download_era5_mat_map.py 35 70   # Sites 35-69
+
+    Via parallel manager:
+        python 16a_run_era5_parallel.py              # Spawns 6 batches
+
+Output Structure per Site:
+    {SITE}/
+    ├── raw/                                  # Original downloaded CSV files
+    ├── {SITE}_era5_1991-2020_shifted.csv     # Hourly data (shifted, 1991-2020)
+    └── {SITE}_era5_1991-2020_yearly.csv      # Yearly aggregated MAT & MAP
+
+Technical Notes:
+    - ERA5 timestamps represent END of averaging period (12:00 = 11:00-12:00)
+    - Shifted back 1 hour for calendar year filtering consistency
+    - Data range: 1991-01-01 00:00 to 2020-12-31 23:00 (shifted)
+    - Resumable: skips sites with existing yearly files
+    - All operations logged to batch-specific log file
+
+Validation:
+    - Checks for duplicate timestamps after merge
+    - Validates 30 years of data per site
+    - Ensures UTC timezone consistency
+
+Dependencies:
+    - cdsapi: Copernicus Climate Data Store API client
+    - pandas: Data manipulation and I/O
+    - Python 3.7+
+"""
+
+import os
+import sys
+import zipfile
+from datetime import datetime
+from pathlib import Path
+
+import cdsapi
+import pandas as pd
+
+# Parse batch arguments
+# Usage: python script.py [start_index] [end_index]
+# Example: python script.py 0 60 (processes sites 0-59)
+if len(sys.argv) == 3:
+    batch_start = int(sys.argv[1])
+    batch_end = int(sys.argv[2])
+    print(f"Running batch: sites {batch_start} to {batch_end-1}")
+else:
+    batch_start = 0
+    batch_end = None
+    print("No batch specified. Running all sites.")
+
+# Load datasets info
+infile = Path('../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv')
+datasets_df = pd.read_csv(infile)
+
+# Filter to batch
+if batch_end is not None:
+    datasets_df = datasets_df.iloc[batch_start:batch_end].reset_index(drop=True)
+
+total_sites = len(datasets_df)
+print(f"Processing {total_sites} sites (indices {batch_start} to {batch_start + total_sites - 1})\n")
+
+dataset = "reanalysis-era5-land-timeseries"
+
+# Create output directory
+output_dir = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020/')
+output_dir.mkdir(parents=True, exist_ok=True)
+
+# Create log file with batch info
+batch_label = f"batch_{batch_start}-{batch_end if batch_end else 'end'}" if batch_end else "all"
+log_file = output_dir / f"16_download_era5_log_{batch_label}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+
+# Create overall summary log files (shared across batches)
+overall_errors_log = output_dir / "16_download_era5_ERRORS.log"
+overall_warnings_log = output_dir / "16_download_era5_WARNINGS.log"
+overall_nodata_log = output_dir / "16_download_era5_NO_DATA_SITES.log"
+
+
+def log_message(msg):
+    """Print and log message to batch log"""
+    print(msg)
+    with open(log_file, 'a', encoding='utf-8') as f:
+        f.write(msg + '\n')
+
+
+def log_error(site_id, error_msg):
+    """Log error to both batch log and overall errors log"""
+    full_msg = f"ERROR [{site_id}]: {error_msg}"
+    log_message(full_msg)
+    with open(overall_errors_log, 'a', encoding='utf-8') as f:
+        f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {full_msg}\n")
+
+
+def log_warning(site_id, warning_msg):
+    """Log warning to both batch log and overall warnings log"""
+    full_msg = f"WARNING [{site_id}]: {warning_msg}"
+    log_message(full_msg)
+    with open(overall_warnings_log, 'a', encoding='utf-8') as f:
+        f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {full_msg}\n")
+
+
+def log_no_data(site_id, reason):
+    """Log site with no/empty data to both batch log and overall no-data log"""
+    full_msg = f"NO DATA [{site_id}]: {reason}"
+    log_message(full_msg)
+    with open(overall_nodata_log, 'a', encoding='utf-8') as f:
+        f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {full_msg}\n")
+
+
+# Initialize log
+log_message(f"=== ERA5 Download Log ===")
+log_message(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+log_message(f"Output directory: {output_dir}\n")
+
+client = cdsapi.Client()
+
+for index, row in datasets_df.iterrows():
+
+    # # TODO TESTING
+    # if index > 0:
+    #     break
+    # # TODO TESTING
+
+    site_id = row['SITE']
+
+    # downloaded_via = row['DOWNLOADED_VIA']
+
+    # Create site-specific subfolder
+    site_dir = output_dir / site_id
+    merged_file = site_dir / f"{site_id}_era5_1991-2020_yearly.csv"
+
+    # Skip if yearly file already exists (with validation)
+    if merged_file.exists():
+        try:
+            existing_df = pd.read_csv(merged_file)
+
+            # Check if required columns exist
+            required_cols = ['TA_degC', 'PRECIP_TOT_mm']
+            missing_cols = [col for col in required_cols if col not in existing_df.columns]
+            if missing_cols:
+                raise ValueError(f"Missing required columns: {missing_cols}")
+
+            # Check if columns have valid data
+            if existing_df['TA_degC'].isna().all():
+                raise ValueError("TA_degC column is empty (all NaN)")
+            if existing_df['PRECIP_TOT_mm'].isna().all():
+                raise ValueError("PRECIP_TOT_mm column is empty (all NaN)")
+
+            # Check if file has expected 30 years of data
+            if len(existing_df) != 30:
+                raise ValueError(f"Expected 30 years of data, found {len(existing_df)}")
+
+            log_message(f"Skipping {site_id} (valid yearly file already exists with {len(existing_df)} records)")
+            continue
+
+        except Exception as e:
+            log_message(f"WARNING: Existing file for {site_id} is invalid ({str(e)}). Re-downloading...")
+            # Continue to re-download if validation fails
+
+    site_dir.mkdir(parents=True, exist_ok=True)
+
+    # Files from FLUXNET_ORG do not have ERA5 data 1991-2020
+
+    # if downloaded_via == 'FLUXNET_ORG':
+    lon = row['LON']
+    lat = row['LAT']
+
+    request = {
+        "variable": [
+            "2m_temperature",
+            "total_precipitation"
+        ],
+        "location": {"longitude": lon, "latitude": lat},
+        "date": ["1991-01-01/2021-01-01"],  # Timestamp is end of averaging interval
+        "data_format": "csv"
+    }
+
+    log_message(f"Downloading ERA5 data for {site_id} ({lat}, {lon})...")
+    log_message(f"Request: date range {request['date'][0]}, variables: {request['variable']}")
+    result = client.retrieve(dataset, request)
+
+    target_file = site_dir / f"{site_id}_era5_1991-2020.zip"
+    result.download(str(target_file))
+
+    # Check if ZIP file has content
+    file_size = os.path.getsize(target_file)
+    log_message(f"Downloaded ZIP file size: {file_size} bytes")
+
+    # Extract ZIP file to site subfolder
+    print(f"Extracting ZIP file for {site_id}...")
+    with zipfile.ZipFile(target_file, 'r') as zip_ref:
+        zip_ref.extractall(site_dir)
+    target_file.unlink()
+
+    # Merge the two CSV files
+    csv_files = list(site_dir.glob('*.csv'))
+    if len(csv_files) >= 2:
+        log_message(f"Merging {len(csv_files)} CSV files for {site_id}...")
+
+        # Read both files
+        dfs = [pd.read_csv(f) for f in csv_files]
+
+        # Check if CSV files have data
+        has_data = True
+        for i, df in enumerate(dfs):
+            if len(df) == 0:
+                log_no_data(site_id, f"CSV file {i+1} is empty")
+                has_data = False
+                break
+
+        if not has_data:
+            log_message(f"Skipping {site_id} (no data from ERA5)\n")
+            continue
+
+        # Merge on timestamp (first column is timestamp)
+        merged_df = dfs[0].copy()
+        for df in dfs[1:]:
+            merge_col = df.columns[0]
+            merged_df = pd.merge(merged_df, df, on=merge_col, how='outer')
+
+        # Check if merged data is empty or all NaN
+        if len(merged_df) == 0:
+            log_no_data(site_id, "Merged data is empty")
+            log_message(f"Skipping {site_id} (no merged data)\n")
+            continue
+
+        # Check for duplicate rows and remove them (keep first occurrence)
+        timestamp_col = merged_df.columns[0]
+        duplicates = merged_df[merged_df.duplicated(subset=[timestamp_col], keep=False)]
+        if len(duplicates) > 0:
+            log_warning(site_id, f"Found {len(duplicates)} duplicate timestamp rows. Removing duplicates (keeping first occurrence)...")
+            merged_df = merged_df.drop_duplicates(subset=[timestamp_col], keep='first')
+            log_message(f"After removing duplicates: {len(merged_df)} rows")
+        else:
+            log_message(f"[OK] No duplicate rows found in merged data")
+
+        # Remove duplicate lat/lon columns (keep first occurrence) and standardize names
+        cols_to_keep = []
+        lat_found = False
+        lon_found = False
+        rename_dict = {}
+
+        for col in merged_df.columns:
+            col_lower = col.lower()
+            # Match latitude/lat (including suffixed versions like latitude_x, lat_y)
+            if 'latitude' in col_lower or (col_lower.startswith('lat') and not col_lower.startswith('longitude')):
+                if not lat_found:
+                    cols_to_keep.append(col)
+                    rename_dict[col] = 'LAT'
+                    lat_found = True
+            # Match longitude/lon (including suffixed versions like longitude_x, lon_y)
+            elif 'longitude' in col_lower or col_lower.startswith('lon'):
+                if not lon_found:
+                    cols_to_keep.append(col)
+                    rename_dict[col] = 'LON'
+                    lon_found = True
+            else:
+                cols_to_keep.append(col)
+
+        merged_df = merged_df[cols_to_keep]
+        merged_df.rename(columns=rename_dict, inplace=True)
+        print(f"Removed duplicate lat/lon columns and renamed to LAT, LON")
+
+        # Convert temperature from K to C (t2m column)
+        if 't2m' in merged_df.columns:
+            merged_df['t2m'] = merged_df['t2m'] - 273.15
+            merged_df.rename(columns={'t2m': 'TA_degC'}, inplace=True)
+            print(f"Converted t2m from K to °C and renamed to TA_degC")
+
+        # Convert precipitation from m to mm (tp column)
+        if 'tp' in merged_df.columns:
+            merged_df['tp'] = merged_df['tp'] * 1000
+            merged_df.rename(columns={'tp': 'PRECIP_TOT_mm'}, inplace=True)
+            print(f"Converted tp from m to mm and renamed to PRECIP_TOT_mm")
+
+        # Parse timestamp (handle mixed formats with format='mixed')
+        timestamp_col = merged_df.columns[0]
+        merged_df[timestamp_col] = pd.to_datetime(merged_df[timestamp_col], format='mixed')
+
+        # Subtract 1 hour to shift timestamps from END to START of averaging period
+        # (makes filtering by calendar year more intuitive)
+        merged_df[timestamp_col] = merged_df[timestamp_col] - pd.Timedelta(hours=1)
+        print(f"Shifted timestamps back by 1 hour (now represent START of averaging period)")
+
+        # Filter to complete years: 1991-01-01 00:00 to 2020-12-31 23:00
+        start_time = pd.Timestamp('1991-01-01 00:00')
+        end_time = pd.Timestamp('2020-12-31 23:00')
+        merged_df_clean = merged_df[
+            (merged_df[timestamp_col] >= start_time) &
+            (merged_df[timestamp_col] <= end_time)
+            ].copy()
+        print(f"Filtered to years 1991-2020: {len(merged_df_clean)} rows")
+
+        # Check if filtered data is empty
+        if len(merged_df_clean) == 0:
+            log_no_data(site_id, "No data in 1991-2020 time range")
+            log_message(f"Skipping {site_id} (no data in target period)\n")
+            continue
+
+        # Save shifted and filtered data
+        shifted_file = site_dir / f"{site_id}_era5_1991-2020_shifted.csv"
+        merged_df_clean.to_csv(shifted_file, index=False)
+        print(f"Saved shifted file to {shifted_file}")
+
+        # Set timestamp as index for aggregation
+        merged_df_clean.set_index(timestamp_col, inplace=True)
+
+        # Build aggregation dictionary only for expected columns
+        agg_dict = {}
+        for col in merged_df_clean.columns:
+            if col in ['LAT', 'LON']:
+                agg_dict[col] = 'first'  # Keep lat/lon as-is
+            elif col == 'TA_degC':
+                agg_dict[col] = 'mean'  # Annual mean temperature
+            elif col == 'PRECIP_TOT_mm':
+                agg_dict[col] = 'sum'  # Annual total precipitation
+            # Skip any unexpected columns (from merge operations, etc.)
+
+        # Ensure required columns exist before aggregating
+        required_cols = ['TA_degC', 'PRECIP_TOT_mm']
+        missing_cols = [col for col in required_cols if col not in agg_dict]
+        if missing_cols:
+            log_error(site_id, f"Missing required columns for aggregation: {missing_cols}")
+            continue
+
+        print(f"Aggregating to yearly values...")
+        yearly_df = merged_df_clean.resample('YS').agg(agg_dict)
+        yearly_df.reset_index(inplace=True)
+
+        # Validate 30-year period (1991-2020)
+        timestamp_col = yearly_df.columns[0]
+        yearly_df['year'] = pd.to_datetime(yearly_df[timestamp_col]).dt.year
+
+        first_year = yearly_df['year'].min()
+        last_year = yearly_df['year'].max()
+        n_years = len(yearly_df)
+        years_list = sorted(yearly_df['year'].unique().tolist())
+
+        # Check if first year is 1991
+        if first_year != 1991:
+            log_error(site_id, f"First year is {first_year}, expected 1991")
+            log_message(f"Skipping {site_id} (invalid year range)\n")
+            continue
+
+        # Check if last year is 2020
+        if last_year != 2020:
+            log_error(site_id, f"Last year is {last_year}, expected 2020")
+            log_message(f"Skipping {site_id} (invalid year range)\n")
+            continue
+
+        # Check if exactly 30 years available
+        if n_years != 30:
+            log_error(site_id, f"Expected 30 years of data, found {n_years} years")
+            log_message(f"Skipping {site_id} (incomplete 30-year period)\n")
+            continue
+
+        # Check if all years are consecutive (no gaps)
+        expected_years = list(range(1991, 2021))
+        if years_list != expected_years:
+            missing_years = [y for y in expected_years if y not in years_list]
+            log_error(site_id, f"Missing years: {missing_years}")
+            log_message(f"Skipping {site_id} (missing years)\n")
+            continue
+
+        log_message(f"[OK] Yearly data validated: 1991-2020 complete ({n_years} years)")
+
+        # Remove temporary year column before saving
+        yearly_df = yearly_df.drop('year', axis=1)
+
+        # Save aggregated file
+        yearly_df.to_csv(merged_file, index=False)
+        print(f"Saved yearly aggregated file to {merged_file}")
+
+        # Organize original CSV files into a subfolder
+        raw_dir = site_dir / 'raw'
+        raw_dir.mkdir(exist_ok=True)
+        for f in csv_files:
+            target = raw_dir / f.name
+            # If file already exists in raw/ (from previous run), remove the source file
+            if target.exists():
+                f.unlink()
+            else:
+                f.rename(target)
+        print(f"Organized original CSV files in {raw_dir}")
+    else:
+        log_message(f"Found {len(csv_files)} CSV files, expected at least 2")
+
+    log_message(f"Completed {site_id}\n")
+
+# Final summary
+log_message(f"Finished: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+log_message(f"Log saved to: {log_file}")
