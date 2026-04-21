@@ -42,8 +42,8 @@ for ix, siteconfig in _datasets_df.iterrows():
     #     continue
     # if siteconfig['SITE'] != "AT-Mmg":
     #     continue
-    if siteconfig['IGBP'] != "EBF":
-        continue
+    # if siteconfig['IGBP'] != "EBF":
+    #     continue
     counter += 1
     varnames = get_variable_names(siteconfig)  # Variable names for this site
     subsetinfo = files.create_subsets_parquet_files(
@@ -64,7 +64,6 @@ for ix, siteconfig in _datasets_df.iterrows():
     subsetinfo['LAT'] = siteconfig['LAT']
     subsetinfo['LON'] = siteconfig['LON']
     subsetinfo['ELEVATION'] = siteconfig['ELEVATION']
-    subsetinfo['IGBP'] = siteconfig['IGBP']
     subsetinfo['IGBP'] = siteconfig['IGBP']
 
     newrow = pd.DataFrame.from_dict(subsetinfo, orient='index').transpose()

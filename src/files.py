@@ -109,9 +109,11 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
             varnames['le_var'], varnames['le_qc_var'],
             varnames['gpp_var'],
             varnames['reco_var'],
-            varnames['swinpot_var'], varnames['swin_var'],
-            varnames['ta_var'], varnames['vpd_var'],
-            varnames['swc_var'],
+            varnames['swinpot_var'],
+            varnames['swin_var'], varnames['swin_qc_var'],
+            varnames['ta_var'], varnames['ta_qc_var'],
+            varnames['vpd_var'], varnames['vpd_qc_var'],
+            varnames['swc_var'], varnames['swc_qc_var'],
             # varnames['rh_var']
         ]
     ].copy()
@@ -128,13 +130,17 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     # ta_avg = subset.groupby('MONTH')[varnames['ta_var']].mean()
     # warmest4 = ta_avg.nlargest(4)
     # warmest4 = warmest4.index.to_list()
-    print(gpp_avg.sort_values(ascending=False))
+    # print(gpp_avg.sort_values(ascending=False))
 
     # Now start to narrow down data
 
     # Keep directly measured NEE fluxes, no gap-filled flux data
     if varnames['nee_qc_var'] is not None:
         subset = subset.loc[subset[varnames['nee_qc_var']] == 0].copy()
+        # subset = subset.loc[subset[varnames['swin_qc_var']] == 0].copy()
+        # subset = subset.loc[subset[varnames['ta_qc_var']] == 0].copy()
+        # subset = subset.loc[subset[varnames['vpd_qc_var']] == 0].copy()
+        # subset = subset.loc[subset[varnames['swc_qc_var']] == 0].copy()
     else:
         raise KeyError(f"Required variable '{varnames['nee_qc_var']}' not found in dataset.")
 
