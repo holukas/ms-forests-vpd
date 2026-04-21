@@ -409,19 +409,26 @@ def train_xgboost_models_and_ale(target: str, features: list,
         X, y, test_size=0.15, random_state=42
     )
 
+    # XGBoost hyperparameters (consistent with train_xgboost_models_and_shap)
+    xgb_params = {
+        'objective': 'reg:squarederror',
+        'tree_method': 'hist',        # Faster histogram-based training
+        'n_estimators': 3000,
+        'max_depth': 6,
+        'learning_rate': 0.05,
+        'subsample': 0.8,             # 80% of rows per tree
+        'colsample_bytree': 0.8,      # 80% of features per tree
+        'reg_lambda': 1,              # L2 regularization
+        'reg_alpha': 0.1,             # L1 regularization
+        'gamma': 0.2,                 # Minimum loss reduction for split
+        'min_child_weight': 5,        # Prevent splitting on outliers
+        'random_state': 42,
+        'early_stopping_rounds': 100,
+        'n_jobs': -1
+    }
+
     # Train XGBoost model
-    model = xgb.XGBRegressor(
-        objective='reg:squarederror',
-        n_estimators=3000,
-        max_depth=6,
-        learning_rate=0.05,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        min_child_weight=5,
-        random_state=42,
-        early_stopping_rounds=100,
-        n_jobs=-1
-    )
+    model = xgb.XGBRegressor(**xgb_params)
 
     print("Training model with early stopping based on random validation set...")
     model.fit(X_for_training, y_for_training, eval_set=[(X_val, y_val)], verbose=False)
