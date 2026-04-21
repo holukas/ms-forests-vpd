@@ -8,8 +8,8 @@ import shap
 import xgboost as xgb
 from PyALE import ale
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split, KFold, RandomizedSearchCV
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
 
@@ -124,15 +124,12 @@ def train_rf_models_and_shap(target: str, features: list,
 
 
 def train_xgboost_models_and_shap(target: str, features: list,
-                                  siteconfig, ix, modelstxt, results_outdir: Path, conditional=False) -> None:
-    # # TODO testing
-    # if ix != 141:
-    #     return None
+                                  siteconfig, ix, modelstxt, results_outdir: Path, conditional=False) -> dict:
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
     if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
-        return None
+        return {}
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
@@ -155,127 +152,135 @@ def train_xgboost_models_and_shap(target: str, features: list,
     # )
 
     # ---------------------------------------------------------
-    # 1. REPRESENTATIVE SPLIT (Best for Explainable AI)
+    # 5-FOLD CROSS-VALIDATION for OUT-OF-SAMPLE SHAP VALUES
     # ---------------------------------------------------------
-    # Because the goal is explanation (SHAP) rather than future forecasting,
-    # a random split is used. This ensures the 15% validation set contains a
-    # representative mix of all months and climate extremes, allowing early
-    # stopping to find the true global optimum for the entire dataset.
-    X_for_training, X_val, y_for_training, y_val = train_test_split(
-        X, y, test_size=0.15, random_state=42
-    )
+    # Each data point gets SHAP values from a model that never saw it during training.
+    # This ensures unbiased feature importance explanations.
 
-    # ------------------------------
-    # XGBOOST SETTINGS
-    # ------------------------------
-    # Initialize XGBoost Regressor
-    # objective='reg:squarederror' for standard regression
-    model = xgb.XGBRegressor(
-        objective='reg:squarederror',  # For regression tasks
-        n_estimators=3000,  # Increased to allow the lower learning rate to work
-        max_depth=6,  # Depth of tree, lowered because you only have 4 features
-        learning_rate=0.05,  # Lowered for better generalization (smoother SHAP)
-        subsample=0.8,  # Subsample ratio of training instance, slightly lower to increase randomness/robustness
-        # Subsample ratio of columns when constructing each tree, randomly selects ~3 out of 4 features per tree
-        colsample_bytree=0.8,
-        min_child_weight=5,  # Prevents splitting on single outliers
-        random_state=42,
-        early_stopping_rounds=100,  # Increased patience for the lower learning rate
-        # n_jobs=0
-        n_jobs=-1
-    )  # Use all available CPU cores
+    print("Initializing 5-fold cross-validation for out-of-sample SHAP values...")
+    kfold = KFold(n_splits=5, shuffle=True, random_state=42)
 
-    # Train the model
-    print("Training model with early stopping based on random validation set...")
-    model.fit(X_for_training, y_for_training, eval_set=[(X_val, y_val)], verbose=False)
+    # Storage for CV results
+    shap_values_all = []
+    expected_values_folds = []
+    predictions_all = []
+    fold_indices = []
+    fold_metrics = []
 
-    # Generate predictions for the ENTIRE dataset
-    print("Generating predictions and calculating SHAP for the ENTIRE dataset...")
-    y_pred_full = model.predict(X)
+    # XGBoost hyperparameters (used for each fold)
+    xgb_params = {
+        'objective': 'reg:squarederror',
+        'tree_method': 'hist',  # Faster training
+        'n_estimators': 3000,
+        'max_depth': 6,
+        'learning_rate': 0.05,
+        'subsample': 0.8,
+        'colsample_bytree': 0.8,
+        # 'colsample_bynode': 0.8,  # Feature diversity
+        'reg_lambda': 1,  # L2 Regularization
+        'reg_alpha': 0.1,  # L1 Regularization
+        'gamma': 0.2,  # Conservative splitting
+        'min_child_weight': 5,
+        'random_state': 42,
+        'early_stopping_rounds': 100,
+        'n_jobs': -1
+    }
 
-    # Calculate EXPLANATORY POWER on the full dataset (matching the SHAP values)
-    r2_full = model.score(X, y)
-    rmse_full = np.sqrt(mean_squared_error(y, y_pred_full))
-    print(f"FULL DATASET (Explanatory Power) -> R2: {r2_full:.4f} / RMSE: {rmse_full:.2f}")
+    # Per-fold processing
+    for fold_idx, (train_idx, test_idx) in enumerate(kfold.split(X)):
+        print(f"\n--- FOLD {fold_idx + 1}/5 ---")
 
-    # # Evaluate true generalization on the validation set
-    # y_pred_val = model.predict(X_val)
-    # r2_val = model.score(X_val, y_val)
-    # rmse_val = np.sqrt(mean_squared_error(y_val, y_pred_val))
-    # print(f"VALIDATION DATASET -> R2: {r2_val:.4f} / RMSE: {rmse_val:.2f}")
+        # Split data
+        X_train_full = X.iloc[train_idx]
+        y_train_full = y.iloc[train_idx]
+        X_test = X.iloc[test_idx]
+        y_test = y.iloc[test_idx]
 
-    # Log the full-dataset performance
+        # Further split training set: 85% for training, 15% for validation (early stopping)
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_train_full, y_train_full, test_size=0.15, random_state=42
+        )
+
+        # Train XGBoost model
+        model = xgb.XGBRegressor(**xgb_params)
+        model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
+
+        # Predictions and metrics on test set
+        y_pred_test = model.predict(X_test)
+        r2_test = model.score(X_test, y_test)
+        rmse_test = np.sqrt(mean_squared_error(y_test, y_pred_test))
+
+        print(f"Fold {fold_idx + 1} Performance -> R2: {r2_test:.4f} / RMSE: {rmse_test:.2f}")
+        fold_metrics.append({'fold': fold_idx + 1, 'r2': r2_test, 'rmse': rmse_test})
+
+        # Calculate SHAP values ONLY for test set (out-of-sample)
+        if conditional:
+            explainer = shap.TreeExplainer(model, feature_perturbation="tree_path_dependent")
+            shap_explanation = explainer(X_test)
+            shap_vals_fold = shap_explanation.values
+            expected_val_fold = shap_explanation.base_values
+        else:
+            # Use background data from training set only
+            n_background_samples = min(300, len(X_train))
+            background_data = shap.sample(X_train, n_background_samples)
+            explainer = shap.TreeExplainer(model, data=background_data, feature_perturbation="interventional")
+            shap_explanation = explainer(X_test)
+            shap_vals_fold = shap_explanation.values
+            expected_val_fold = shap_explanation.base_values
+
+        # Store results for this fold
+        shap_values_all.append(shap_vals_fold)
+        expected_values_folds.append(expected_val_fold)
+        predictions_all.append(y_pred_test)
+        fold_indices.append(test_idx)
+
+    # Log per-fold metrics
+    print(f"\n=== CV FOLD METRICS ===")
     with open(modelstxt, 'a', encoding='utf-8') as file:
-        file.write(f"SITE: {siteconfig['SITE']} / TARGET: {target} "
-                   f"/ R2_full: {r2_full:.4f} / RMSE_full: {rmse_full:.2f} [Explanatory fit on full dataset]\n")
+        file.write(f"\nSITE: {siteconfig['SITE']} / TARGET: {target} / METHOD: 5-FOLD CV\n")
+        for metrics in fold_metrics:
+            log_line = f"  FOLD {metrics['fold']}: R2={metrics['r2']:.4f} / RMSE={metrics['rmse']:.2f}\n"
+            file.write(log_line)
+            print(log_line.strip())
 
-    # # Log true performance
-    # with open(modelstxt, 'a') as file:
-    #     file.write(f"SITE: {siteconfig['SITE']} / TARGET: {target} "
-    #                f"/ R2: {r2_val:.4f} / RMSE: {rmse_val:.2f} [Evaluation on validation set]\n")
+    # Reassemble data in original index order
+    print("\nReassembling out-of-sample predictions and SHAP values...")
 
-    # # Predict for the entire dataset
-    # print("Generating predictions and calculating SHAP for the ENTIRE dataset...")
-    # y_pred = model.predict(X)
+    # Concatenate all fold results
+    shap_values_cv = np.vstack(shap_values_all)
+    predictions_cv = np.concatenate(predictions_all)
+    all_fold_indices = np.concatenate(fold_indices)
 
-    if conditional:
-        print("Calculating CONDITIONAL SHAP values using TreeExplainer...")
-        # Conditional SHAP: Respects the correlation between features.
-        # TreeExplainer natively does this by default no background dataset
-        # is provided. (it uses feature_perturbation="tree_path_dependent").
-        # Tree_path_dependent is the default and calculates conditional SHAP
-        explainer = shap.TreeExplainer(model, feature_perturbation="tree_path_dependent")
-        shap_explanation = explainer(X)
-        shap_values = shap_explanation.values
-        expected_value = shap_explanation.base_values
+    # Sort back to original order
+    sort_idx = np.argsort(all_fold_indices)
+    shap_values_cv = shap_values_cv[sort_idx]
+    predictions_cv = predictions_cv[sort_idx]
 
-        # # Previously used code:
-        # print("Calculating conditional SHAP values using PartitionExplainer...")
-        # # Background data should represent the data the model was trained on.
-        # # Dynamically determine the number of samples for the background dataset, safeguard for short datasets
-        # n_background_samples = min(300, len(X_for_training))
-        # print(f"Using {n_background_samples} samples for SHAP background data...")
-        # background_data = shap.kmeans(X_for_training, n_background_samples).data
-        # explainer = shap.PartitionExplainer(model.predict, background_data)
-        # shap_explanation = explainer(X)  # Explain the ENTIRE dataset
-        # shap_values = shap_explanation.values
-        # # expected_value = shap_explanation.base_values[0]
-        # expected_value = shap_explanation.base_values
-    else:
-        print("Calculating STANDARD (Marginal) SHAP values using TreeExplainer...")
-        # For standard/marginal SHAP, you need a background dataset
-        n_background_samples = min(300, len(X_for_training))
-        # shap.sample is generally preferred over shap.kmeans for tree models
-        background_data = shap.sample(X_for_training, n_background_samples)
-        explainer = shap.TreeExplainer(model, data=background_data, feature_perturbation="interventional")
-        shap_explanation = explainer(X)
-        shap_values = shap_explanation.values
-        expected_value = shap_explanation.base_values
+    # Calculate global out-of-sample R² and RMSE across all folds
+    print(f"\n=== GLOBAL OUT-OF-SAMPLE METRICS ===")
+    global_r2 = r2_score(y, predictions_cv)
+    global_rmse = np.sqrt(mean_squared_error(y, predictions_cv))
+    print(f"GLOBAL Out-of-Sample R²: {global_r2:.4f}")
+    print(f"GLOBAL Out-of-Sample RMSE: {global_rmse:.2f}")
 
-        # # Previously used code:
-        # print("Calculating SHAP values using TreeExplainer ...")
-        # explainer = shap.TreeExplainer(model)
-        # # Explain the entire dataset
-        # shap_values = explainer.shap_values(X)
-        # expected_value = explainer.expected_value
+    with open(modelstxt, 'a', encoding='utf-8') as file:
+        file.write(f"GLOBAL OUT-OF-SAMPLE R2: {global_r2:.4f} / RMSE: {global_rmse:.2f}\n")
 
-    # Collect SHAP values in dataframe
-    shapcols = [f'{c}_SHAPVALS' for c in X]
-    shapdf = pd.DataFrame(data=shap_values, index=X.index, columns=shapcols)
+    # Compute expected value as mean across all folds
+    expected_value_cv = np.mean([
+        float(ev[0]) if isinstance(ev, np.ndarray) else float(ev)
+        for ev in expected_values_folds
+    ])
+
+    # Create SHAP dataframe
+    shapcols = [f'{c}_SHAPVALS' for c in X.columns]
+    shapdf = pd.DataFrame(data=shap_values_cv, index=X.index, columns=shapcols)
     shapdf.index = pd.to_datetime(shapdf.index)
     shapdf['SUM'] = shapdf.sum(axis=1)
-
-    # SAFETY CHECK
-    if isinstance(expected_value, np.ndarray) and len(expected_value) == len(X):
-        shapdf['EXPECTED'] = expected_value
-    else:
-        # If it returns a scalar or single-item array, broadcast it
-        shapdf['EXPECTED'] = float(expected_value[0]) if isinstance(expected_value,
-                                                                    (list, np.ndarray)) else expected_value
-
-    shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'].add(shapdf['SUM'])
+    shapdf['EXPECTED'] = expected_value_cv  # Single value across all data
+    shapdf['SUM+EXPECTED'] = shapdf['EXPECTED'] + shapdf['SUM']
     shapdf[target] = y.copy()
-    shapdf[f"{target}_PRED"] = y_pred_full.copy()
+    shapdf[f"{target}_PRED"] = predictions_cv
 
     # Merge SHAP values with measured
     merged = pd.concat([X, shapdf], axis=1)
@@ -285,7 +290,7 @@ def train_xgboost_models_and_shap(target: str, features: list,
     available_cols = subset.columns.tolist()
     additional_cols = [col for col in available_cols if col not in current_cols]
     for addcol in additional_cols:
-        print(f"Adding column {addcol} to SHAP dataframe.")
+        # print(f"Adding column {addcol} to SHAP dataframe.")
         merged[addcol] = subset[addcol].copy()
     merged = merged.sort_index(axis=1)
 
@@ -297,7 +302,15 @@ def train_xgboost_models_and_shap(target: str, features: list,
     print(f"Saved SHAP values to file {outfilepath}.")
     merged.to_csv(outfilepath.replace('.parquet', '.csv'))
 
-    return None
+    # Return CV results for aggregation
+    cv_result_row = {'site': siteconfig['SITE'], 'target': target}
+    for metrics in fold_metrics:
+        cv_result_row[f"fold_{metrics['fold']}_r2"] = metrics['r2']
+        cv_result_row[f"fold_{metrics['fold']}_rmse"] = metrics['rmse']
+    cv_result_row['global_r2'] = global_r2
+    cv_result_row['global_rmse'] = global_rmse
+
+    return cv_result_row
 
 
 def train_xgboost_models_and_ale(target: str, features: list,
@@ -869,4 +882,120 @@ def create_validation_summary(target: str, features: list,
     print(f"  Saved summary to {summary_file.name}")
     return None
 
-    return None
+
+def tune_xgboost_hyperparameters(target: str, features: list,
+                                 siteconfig, ix, results_outdir: Path, n_iter: int = 25) -> dict:
+    """
+    Hyperparameter tuning for XGBoost using RandomizedSearchCV with 5-fold CV.
+
+    Tunes only the core model complexity parameters (n_estimators, max_depth, learning_rate)
+    while keeping regularization and feature subsampling fixed at well-tested values.
+
+    Useful for validating or optimizing model performance.
+
+    Parameters:
+    - n_iter: Number of parameter combinations to test (default: 25)
+
+    Returns:
+    - Dictionary with best parameters and best CV score
+    """
+    print(f"\nHyperparameter Tuning for site #{ix + 1} {siteconfig['SITE']} ...")
+
+    if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
+        return {}
+
+    # Load site data
+    filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
+    subset = dv.load_parquet(filepath, sanitize_timestamp=False)
+    print(f"Records: {len(subset)}")
+
+    # Target and features
+    X = subset[features].copy()
+    y = subset[target].copy()
+
+    # Simplified parameter grid (tuning only core complexity parameters)
+    # Regularization and feature subsampling are fixed at well-tested values
+    param_dist = {
+        'n_estimators': [2000, 2500, 3000, 3500, 4000],
+        'max_depth': [4, 5, 6, 7, 8],
+        'learning_rate': [0.01, 0.03, 0.05, 0.07, 0.1],
+    }
+
+    # Base model with fixed hyperparameters (consistent with train_xgboost_models_and_shap)
+    xgb_model = xgb.XGBRegressor(
+        objective='reg:squarederror',
+        tree_method='hist',        # Faster histogram-based training
+        subsample=0.8,             # 80% of rows per tree
+        colsample_bytree=0.8,      # 80% of features per tree
+        reg_lambda=1,              # L2 regularization
+        reg_alpha=0.1,             # L1 regularization
+        gamma=0.2,                 # Minimum loss reduction for split
+        min_child_weight=5,        # Prevent splitting on outliers
+        random_state=42,
+        n_jobs=-1
+    )
+
+    # Randomized search with 5-fold CV
+    print(f"Testing {n_iter} parameter combinations with 5-fold CV...")
+    search = RandomizedSearchCV(
+        estimator=xgb_model,
+        param_distributions=param_dist,
+        n_iter=n_iter,
+        scoring='r2',
+        cv=5,
+        verbose=1,
+        n_jobs=-1,
+        random_state=42
+    )
+
+    # Fit
+    search.fit(X, y)
+
+    # Results
+    print(f"\n{'='*80}")
+    print(f"BEST PARAMETERS for {siteconfig['SITE']}:")
+    print(f"{'='*80}")
+    for param, value in search.best_params_.items():
+        print(f"  {param}: {value}")
+    print(f"\nBest CV R² Score: {search.best_score_:.4f}")
+    print(f"{'='*80}\n")
+
+    # Save results to file
+    tuning_results = {
+        'site': siteconfig['SITE'],
+        'target': target,
+        'best_params': search.best_params_,
+        'best_score': search.best_score_,
+        'n_iter': n_iter,
+        'records': len(X)
+    }
+
+    # Save to text file
+    tuning_file = Path(results_outdir) / f"{siteconfig['SITE']}_hyperparameter_tuning_{target}.txt"
+    with open(tuning_file, 'w', encoding='utf-8') as f:
+        f.write(f"Hyperparameter Tuning Results\n")
+        f.write(f"{'='*80}\n\n")
+        f.write(f"Site: {siteconfig['SITE']}\n")
+        f.write(f"Target: {target}\n")
+        f.write(f"Records: {len(X)}\n")
+        f.write(f"Parameter Combinations Tested: {n_iter}\n")
+        f.write(f"CV Method: 5-fold\n\n")
+
+        f.write(f"TUNED PARAMETERS:\n")
+        for param, value in search.best_params_.items():
+            f.write(f"  {param}: {value}\n")
+        f.write(f"\nBest CV R² Score: {search.best_score_:.4f}\n\n")
+
+        f.write(f"FIXED PARAMETERS (used in all combinations):\n")
+        f.write(f"  tree_method: hist\n")
+        f.write(f"  subsample: 0.8\n")
+        f.write(f"  colsample_bytree: 0.8\n")
+        f.write(f"  reg_lambda: 1.0  (L2 regularization)\n")
+        f.write(f"  reg_alpha: 0.1   (L1 regularization)\n")
+        f.write(f"  gamma: 0.2       (minimum loss reduction)\n")
+        f.write(f"  min_child_weight: 5\n")
+        f.write(f"{'='*80}\n")
+
+    print(f"Saved tuning results to {tuning_file}")
+
+    return tuning_results
