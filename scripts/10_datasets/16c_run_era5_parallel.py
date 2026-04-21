@@ -3,7 +3,7 @@ Parallel ERA5 batch manager for distributed climate data downloads.
 
 This script orchestrates multiple parallel downloads of ERA5 climate data
 for FLUXNET sites by dividing the full site list into batches and spawning
-separate processes (via 16b_download_era5_mat_map.py) for each batch.
+separate processes (via 16d_download_era5_mat_map.py) for each batch.
 
 Purpose:
     - Parallelize ERA5 downloads across multiple CPU cores
@@ -33,10 +33,10 @@ Configuration:
 
 Output:
     - Log files: 16_download_era5_log_batch_X-Y_*.txt
-    - Data: data/outputs/10_datasets/16_ERA5_climate_1991-2020/{SITE}/
+    - Data: data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus/{SITE}/
 
 Dependencies:
-    - 16b_download_era5_mat_map.py (downloaded for each batch)
+    - 16d_download_era5_mat_map.py (spawned for each batch)
     - cdsapi (Copernicus CDS API client)
     - pandas
 """
@@ -48,7 +48,7 @@ from pathlib import Path
 import pandas as pd
 
 # ==================== CONFIGURATION ====================
-NUM_BATCHES = 6  # Number of parallel processes (default: 6)
+NUM_BATCHES = 3  # Number of parallel processes (default: 6)
 # ========================================================
 
 # Load datasets info to get total site count
@@ -78,7 +78,7 @@ for batch_num in range(NUM_BATCHES):
     # Spawn subprocess
     cmd = [
         sys.executable,
-        "16b_download_era5_mat_map.py",
+        "16d_download_era5_mat_map.py",
         str(batch_start),
         str(batch_end)
     ]
@@ -118,9 +118,20 @@ else:
 print("=" * 80)
 
 # Check log files
-log_dir = Path('../../data/outputs/10_datasets')
-log_files = sorted(log_dir.glob('16_download_era5_log_batch_*.txt'))
-if log_files:
-    print(f"\nLog files created:")
-    for log_file in log_files:
+log_dir = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus')
+batch_logs = sorted(log_dir.glob('16_download_era5_log_batch_*.txt'))
+summary_logs = [
+    log_dir / "16_download_era5_ERRORS.log",
+    log_dir / "16_download_era5_WARNINGS.log",
+    log_dir / "16_download_era5_NO_DATA_SITES.log"
+]
+
+if batch_logs:
+    print(f"\nBatch log files created:")
+    for log_file in batch_logs:
+        print(f"  - {log_file.name}")
+
+print(f"\nSummary log files:")
+for log_file in summary_logs:
+    if log_file.exists():
         print(f"  - {log_file.name}")

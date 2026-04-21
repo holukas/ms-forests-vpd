@@ -99,7 +99,7 @@ print(f"Processing {total_sites} sites (indices {batch_start} to {batch_start + 
 dataset = "reanalysis-era5-land-timeseries"
 
 # Create output directory
-output_dir = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020/')
+output_dir = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus/')
 output_dir.mkdir(parents=True, exist_ok=True)
 
 # Create log file with batch info

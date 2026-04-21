@@ -47,7 +47,7 @@ Output:
       - 16_download_era5_ERRORS.log
       - 16_download_era5_WARNINGS.log
       - 16_download_era5_NO_DATA_SITES.log
-    - Data: ../../data/outputs/10_datasets/16_ERA5_climate_1991-2020/{SITE}/
+    - Data: ../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine/{SITE}/
 
 Dependencies:
     - 16b_download_era5_mat_map_GoogleEarthEngine.py
@@ -132,7 +132,7 @@ else:
 print("=" * 80)
 
 # Check log files
-log_dir = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020')
+log_dir = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine')
 batch_logs = sorted(log_dir.glob('16_download_era5_gee_log_*.txt'))
 if batch_logs:
     print(f"\nBatch log files created:")
