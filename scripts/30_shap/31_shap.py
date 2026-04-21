@@ -1,6 +1,135 @@
 """
-Train XGBoost model for each site and save SHAP values to file.
-Optionally tune hyperparameters instead of computing SHAP values.
+XGBoost SHAP Analysis & Hyperparameter Tuning Pipeline
+
+## Overview
+Trains XGBoost models per site and calculates out-of-sample SHAP values for feature importance.
+Alternatively, can run hyperparameter tuning mode to optimize model parameters.
+
+## Dual-Mode Design
+
+### Mode 1: SHAP Analysis (default, TUNE_HYPERPARAMETERS=False)
+**Purpose**: Calculate unbiased feature importance via SHAP values
+- Each site gets 5 models (5-fold CV)
+- Every data point gets SHAP values from a model that never trained on it
+- Per-fold performance metrics (R², RMSE) show generalization
+- Global out-of-sample metrics aggregate across all folds
+- Output: Parquet/CSV with features, SHAP values, predictions, and metrics
+
+**Workflow:**
+1. Load site configuration and data
+2. For each site:
+   - Run 5-fold cross-validation
+   - Per fold: train on 68%, use 12% for early stopping, explain 20%
+     (80% fold further split 85/15 for training vs validation)
+   - Collect per-fold metrics and SHAP values
+   - Reassemble in original order
+3. Aggregate CV metrics across all sites to CSV
+
+**Output Files:**
+- `1_models_xgboost_shap-{TYPE}_{FLUX}.txt` — Per-site fold metrics and logs
+- `{SITE}_shap-{TYPE}_{FLUX}.parquet/csv` — Full results per site
+- `2_cv_results_all_sites-{TYPE}_{FLUX}.csv` — Aggregated metrics (all sites, one row per site)
+
+### Mode 2: Hyperparameter Tuning (TUNE_HYPERPARAMETERS=True)
+**Purpose**: Find optimal n_estimators, max_depth, learning_rate per site
+- Tests {n_iter} parameter combinations per site (default: 25)
+- Uses 5-fold CV to score each combination
+- Fixed regularization (reg_lambda, reg_alpha, gamma, etc.) for consistency
+- Output: Best parameters and CV R² score per site
+
+**Workflow:**
+1. Load site configuration and data
+2. For each site:
+   - Run RandomizedSearchCV with 5-fold CV
+   - Test 25 random parameter combinations
+   - Track best parameters and best CV R²
+3. Aggregate best parameters across all sites to CSV
+
+**Output Files:**
+- `1_models_xgboost_shap-{TYPE}_{FLUX}.txt` — Tuning mode indicator
+- `{SITE}_hyperparameter_tuning_{FLUX}.txt` — Best params per site
+- `0_hyperparameter_tuning_results_{FLUX}.csv` — Aggregated best params (all sites)
+
+## Configuration Variables
+
+FLUX : str
+    Target variable to analyze (options: NEP_ZSCORE, ET_ZSCORE, GPP_ZSCORE, RECO_ZSCORE)
+    Default: NEP_ZSCORE
+
+FEATURES : list
+    Feature variables to use as predictors
+    Default: ['TA_ZSCORE', 'SWIN_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE']
+
+CONDITIONAL : bool
+    If True: Calculate conditional SHAP (respects feature correlations) — RECOMMENDED
+    If False: Calculate standard/marginal SHAP (assumes independence)
+    Default: True
+
+TUNE_HYPERPARAMETERS : bool
+    If False (default): Run SHAP analysis
+    If True: Run hyperparameter tuning instead
+    Default: False
+
+TUNE_N_ITER : int
+    Number of parameter combinations to test in tuning mode (default: 25)
+    Higher = more thorough but slower (~25 fits × 5 folds × 100+ sites = hours)
+
+## How to Use
+
+**For SHAP Analysis (default):**
+```bash
+python scripts/30_shap/31_shap.py
+```
+Generates feature importance explanations. Check output for:
+- Per-site fold metrics: data/outputs/50_shap_analysis/{FLUX}/{TYPE}/
+- Aggregated CSV with global R² per site
+
+**For Hyperparameter Tuning:**
+Edit the script:
+```python
+TUNE_HYPERPARAMETERS = True
+TUNE_N_ITER = 25  # Adjust if needed (25 = ~2-3 mins per site)
+```
+Then run:
+```bash
+python scripts/30_shap/31_shap.py
+```
+Check output for best parameters per site and aggregated results.
+
+**For Single-Site Testing:**
+Uncomment in the loop:
+```python
+if ix > 1:  # Only test first 2 sites
+    break
+if siteconfig['SITE'] != "CH-Dav":  # Only test this site
+    continue
+```
+
+## Key Design Decisions
+
+1. **Fixed Regularization Parameters**: Keep reg_lambda=1, reg_alpha=0.1, gamma=0.2, etc.
+   - Prevents overfitting consistently across sites
+   - Tuning only core capacity (n_estimators, max_depth, learning_rate)
+   - Faster, more stable results
+
+2. **5-Fold CV for SHAP**: Each data point gets out-of-sample explanations
+   - In-sample SHAP can be misleading (model may have memorized)
+   - Out-of-sample SHAP is unbiased: high value = feature truly predicts target
+
+3. **Per-Fold + Global Metrics**: Show both generalization and overall performance
+   - Per-fold: How model performs on unseen data (5 estimates)
+   - Global: Single R²/RMSE across all 5 folds combined
+
+4. **Aggregation to CSV**: Easy cross-site analysis
+   - One row per site (SHAP mode) or per site (tuning mode)
+   - Supports weighting by N_RECORDS in meta-analysis
+
+## Performance Tips
+
+- **Faster runs**: Set TUNE_HYPERPARAMETERS=True and TUNE_N_ITER=10 for quick tests
+- **Single site**: Comment out loop, test CH-Dav first
+- **Different flux**: Change FLUX to ET_ZSCORE, GPP_ZSCORE, or RECO_ZSCORE
+- **Memory**: Results are modest (~50-100 MB per site for SHAP)
 """
 
 from pathlib import Path

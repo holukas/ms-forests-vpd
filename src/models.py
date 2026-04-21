@@ -138,12 +138,14 @@ def train_xgboost_models_and_shap(target: str, features: list,
     - This gives unbiased feature importance: high SHAP = the feature truly predicts the target
 
     **Per-Fold Workflow:**
-    1. KFold splits data into 5 folds (80% train, 20% test)
+    1. KFold splits data into 5 folds:
+       - Train fold (80% of total): 4 folds combined
+       - Test fold (20% of total): 1 fold held out
     2. For each fold:
-       a) Train set (80%): further split into 68% training, 12% validation
-          - 68% trains the model
-          - 12% guides early stopping (prevents overfitting)
-       b) Test set (20%): held out completely, used for:
+       a) Train fold (80%): further split into training and validation
+          - 68% (85% of 80%): trains the model
+          - 12% (15% of 80%): guides early stopping (prevents overfitting)
+       b) Test fold (20%): held out completely, used for:
           - Model evaluation (R², RMSE)
           - SHAP calculation (out-of-sample explanations)
     3. All 5 folds combined = full dataset coverage with unbiased explanations
