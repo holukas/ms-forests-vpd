@@ -147,8 +147,8 @@ ax_world.legend(loc='lower center', bbox_to_anchor=(0.5, -0.28), ncol=5, fontsiz
 # MATHEMATICAL ALIGNMENT:
 # To make panels b and c the EXACT same height and width, their coordinate spans must be identical.
 # Both are now set to span exactly 64 degrees of Longitude and 32 degrees of Latitude.
-extent_us = [-128, -64, 22, 54]  # 64 lon span, 32 lat span
-extent_eu = [-10, 54, 36, 68]  # 64 lon span, 32 lat span
+extent_us = [-128, -64, 22, 58]  # 64 lon span, 36 lat span
+extent_eu = [-10, 54, 36, 72]  # 64 lon span, 36 lat span
 
 plot_map_region(ax_usa, extent=extent_us, title="Contiguous US", letter='b')
 plot_map_region(ax_eu, extent=extent_eu, title="Europe", letter='c')

@@ -794,6 +794,7 @@ def plot_stage_panel(ax, df, feature_col, color, columns, n_scenarios, y_limits,
     ax.set_ylim(y_limits)
     ax.axhspan(y_limits[0], 0, facecolor='#f0f0f0', alpha=0.6, zorder=0)  # Shade the negative region
     ax.axhline(0, color='black', linestyle='--', linewidth=0.6, alpha=0.6, zorder=0)
+    ax.grid(False)
 
     # Format x-axis
     ax.set_xlim(-0.5, (n_scenarios - 1) + 0.5)

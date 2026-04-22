@@ -241,7 +241,7 @@ else:
 # Legends for main figure
 legend1 = ax_all.legend(handles=scatterhandles,
                         bbox_to_anchor=(0.4, 0.86),
-                        frameon=False, ncol=2, fontsize=AX_LABELS_FONTSIZE * 0.85, labelspacing=.3,
+                        frameon=False, ncol=2, fontsize=AX_LABELS_FONTSIZE * 0.9, labelspacing=.3,
                         title="Aggregated site data by temperature regime",
                         title_fontsize=AX_LABELS_FONTSIZE * 0.85)
 # legend2 = ax_all.legend(handles=handles,

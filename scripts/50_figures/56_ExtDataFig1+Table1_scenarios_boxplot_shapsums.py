@@ -156,7 +156,7 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS_AVG, VAR_TITLES)):
 
         # Column headers
         if row == 0:
-            ax.set_title(group_name, fontsize=10, fontweight='bold', pad=8, color='black')
+            ax.set_title(group_name, fontsize=10, fontweight='bold', pad=14, color='black')
 
         # y-axis label (only for first column)
         if is_left_col:
