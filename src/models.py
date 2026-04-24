@@ -389,11 +389,11 @@ def train_xgboost_models_and_shap(target: str, features: list,
 
 
 def train_xgboost_models_and_ale(target: str, features: list,
-                                 siteconfig, ix, modelstxt, results_outdir: Path) -> None:
+                                 siteconfig, ix, modelstxt, results_outdir: Path) -> dict:
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
     if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
-        return None
+        return {}
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
@@ -586,7 +586,16 @@ def train_xgboost_models_and_ale(target: str, features: list,
     print(f"Saved ALE results to file {outfilepath}.")
     ale_df.to_csv(outfilepath.replace('.parquet', '.csv'))
 
-    return None
+    # Return metrics for aggregation
+    ale_result = {
+        'site': siteconfig['SITE'],
+        'target': target,
+        'r2_full': r2_full,
+        'rmse_full': rmse_full,
+        'n_records': len(X),
+        'n_features': len(features)
+    }
+    return ale_result
 
 
 def calculate_partial_correlations(target: str, features: list,

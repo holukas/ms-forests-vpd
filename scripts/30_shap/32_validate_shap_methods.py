@@ -93,8 +93,8 @@ for ix, siteconfig in _subsets_df.iterrows():
     # if siteconfig['SITE'] != "CH-Dav":
     #     continue
 
-    # Main: ALE Analysis
-    train_xgboost_models_and_ale(
+    # Main: ALE Analysis (returns metrics for aggregation)
+    ale_result = train_xgboost_models_and_ale(
         features=FEATURES,
         target=FLUX,
         siteconfig=siteconfig,
@@ -103,12 +103,7 @@ for ix, siteconfig in _subsets_df.iterrows():
         results_outdir=results_outdir
     )
 
-    # Collect results for aggregation
-    ale_result = {
-        'site': siteconfig['SITE'],
-        'target': FLUX,
-        'n_records': siteconfig.get('N_RECORDS', 'N/A')
-    }
+    # Collect results for aggregation (only if not empty)
     if ale_result:
         ale_results_all.append(ale_result)
 
