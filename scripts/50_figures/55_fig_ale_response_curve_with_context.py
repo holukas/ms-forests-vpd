@@ -173,42 +173,28 @@ for ix, siteconfig in subsets_df.iterrows():
     if len(site_data_clean) > 10:
         all_site_data[site] = site_data_clean
 
-print(f"Loaded {len(all_site_data)} sites (each will contribute equally)\n")
-
 # ==============================
 # STEP 2: CALCULATE ALE
 # ==============================
 
-print("Loading pre-calculated ALE curves from script 32...\n")
 ale_results_by_temp = {}
 all_site_ale_curves = []
 
 for site in all_site_data.keys():
-    # Load pre-calculated ALE curves from script 32
     ale_curve_file = dir_ale_results / f"{site}_ale_curves_{FLUX}.csv"
-
     if not ale_curve_file.exists():
-        print(f"  {site}: ALE curves file not found")
         continue
 
     try:
         ale_curves_df = pd.read_csv(ale_curve_file)
-
-        # Filter for the feature we're plotting
         feature_data = ale_curves_df[ale_curves_df['feature'] == PLOT_FEATURE]
-
         if len(feature_data) > 0:
             all_site_ale_curves.append({
                 'site': site,
                 'feature_value': feature_data['feature_value'].values,
                 'effect': feature_data['effect'].values
             })
-            print(f"  Loaded {site}")
-        else:
-            print(f"  {site}: Feature {PLOT_FEATURE} not in ALE curves")
-
-    except Exception as e:
-        print(f"  {site}: Error loading ALE curves: {e}")
+    except Exception:
         continue
 
 # Store result metadata
@@ -218,8 +204,6 @@ ale_results_by_temp[0] = {
     'n_records': sum(len(data) for data in all_site_data.values()),
     'n_sites': len(all_site_ale_curves)
 }
-
-print(f"Loaded ALE curves for {len(all_site_ale_curves)} sites (pre-calculated by script 32)\n")
 
 # ==============================
 # STEP 3: INTERPOLATE TO COMMON GRID AND AVERAGE
@@ -281,10 +265,6 @@ if len(all_site_ale_curves) > 0:
         mean_effect[insufficient_mask] = np.nan
         std_effect[insufficient_mask] = np.nan
 
-        if np.sum(insufficient_mask) > 0:
-            print(f"Masked {np.sum(insufficient_mask)}/{len(common_grid)} points with <50% coverage")
-        print(f"Aggregated {len(site_ale_poly_fitted)} sites using {agg_name}\n")
-
         for igbp in IGBPS:
             if len(igbp_ale_interpolated[igbp]) > 0:
                 igbp_poly_fitted = fit_polynomial_to_curves(igbp_ale_interpolated[igbp], common_grid)
@@ -296,7 +276,6 @@ if len(all_site_ale_curves) > 0:
                 igbp_mean[igbp_coverage < min_sites_igbp] = np.nan
 
                 ale_interpolated[igbp] = igbp_mean
-                print(f"  {igbp}: {len(igbp_poly_fitted)} sites")
     else:
         print("ERROR: Could not interpolate any curves")
         mean_effect = None
@@ -330,12 +309,8 @@ if mean_effect is not None and std_effect is not None:
         threshold_main = individual_thresholds.mean()
         threshold_std = individual_thresholds.std()
         threshold_sem = threshold_std / np.sqrt(n_curves_crossing)
-        print(f"Threshold: {threshold_main:.3f}±{threshold_sem:.3f} SEM")
-        print(f"  {n_curves_crossing}/{n_curves_total} individual curves cross zero")
-        print(f"  Range: [{individual_thresholds.min():.3f}, {individual_thresholds.max():.3f}]")
     else:
         threshold_main = threshold_sem = np.nan
-        print(f"WARNING: None of the {n_curves_total} individual curves cross zero")
 
     # ==============================
     # STEP 5: CREATE FIGURE (both modes)
@@ -373,7 +348,7 @@ if mean_effect is not None and std_effect is not None:
     else:
         print("WARNING: Threshold is NaN or no crossings found")
 
-    ax_all.axhline(0, color='k', linestyle='--', linewidth=1, alpha=0.5)
+    ax_all.axhline(0, color='k', linestyle='--', linewidth=1)
     ax_all.set_ylim(y_limits)
     ax_all.set_xlabel(xlabel, fontsize=AX_LABELS_FONTSIZE)
     ax_all.set_ylabel(ylabel, fontsize=AX_LABELS_FONTSIZE)
@@ -382,9 +357,13 @@ if mean_effect is not None and std_effect is not None:
 
     ax_all.text(0, 1.05, 'a', transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2, weight='bold')
     ax_all.text(0.05, 1.05, 'Global forests', transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
+    ax_all.text(0.4, 1.05, f'(n={len(all_site_ale_curves)})', transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
 
     plot.format(ax=ax_all, fontsize=AX_LABELS_FONTSIZE, showyticklabels=True, showxticklabels=True,
-                xtickdigits=1, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
+                xtickdigits=0, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
+
+    ax_all.spines['bottom'].set_color('black')
+    ax_all.spines['left'].set_color('black')
 
     # Set x-axis to span only the data range (first to last valid point of mean curve)
     valid_indices = np.where(~np.isnan(mean_effect))[0]
@@ -465,15 +444,23 @@ if mean_effect is not None and std_effect is not None:
                 ax.plot(common_grid, site_curve, color='gray', alpha=0.15, linewidth=0.8, zorder=1)
             ax.set_ylim(y_limits)
 
-        ax.axhline(0, color='k', linestyle='--', linewidth=1, alpha=0.5)
+        ax.axhline(0, color='k', linestyle='--', linewidth=1)
         ax.set_xlabel(xl, fontsize=AX_LABELS_FONTSIZE)
         ax.set_ylabel(yl, fontsize=AX_LABELS_FONTSIZE)
         ax.text(0, 1.1, letter, transform=ax.transAxes, size=AX_LABELS_FONTSIZE * 1.2, weight='bold')
         ax.text(0.1, 1.1, igbp, transform=ax.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
 
+        # Add n= for this IGBP
+        n_igbp = len(igbp_ale_interpolated.get(igbp, []))
+        if n_igbp > 0:
+            ax.text(0.4, 1.1, f'(n={n_igbp})', transform=ax.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
+
         plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels,
                     showxticklabels=showxticklabels,
-                    xtickdigits=1, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
+                    xtickdigits=0, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
+
+        ax.spines['bottom'].set_color('black')
+        ax.spines['left'].set_color('black')
 
         # Set x-axis to data range for subplots
         ax.set_xlim(x_min, x_max)
