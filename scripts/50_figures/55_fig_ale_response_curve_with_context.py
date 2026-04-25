@@ -1,61 +1,91 @@
 """
-ALE response curves with temperature context coloring and threshold detection.
+ALE (Accumulated Local Effects) response curves with ecosystem-specific aggregation and threshold detection.
 
-## Comparison to Script 54 (SHAP Response Curves)
+## Overview
 
-**Script 54 (Conditional SHAP):**
-- X-axis: Binned feature values (e.g., BIN_VPD_ZSCORE)
-- Y-axis: Per-sample SHAP values (feature contributions to model predictions)
-- Data structure: Pre-aggregated 2D bins (xvar × yvar), one point per bin
-- Interpretation: How much each feature contributes to NEP variation
-- Shows: Feature importance accounting for realistic feature interactions/correlations
+Generates ALE curves showing how NEP responds to changes in a single feature (e.g., VPD).
+Loads pre-calculated per-site ALE curves from script 32, aggregates them via equal weighting,
+fits 4th-order polynomials for smoothing, and detects response thresholds via zero-crossing analysis.
 
-**Script 55 (ALE):**
-- X-axis: Continuous feature range (e.g., VPD values, not binned)
-- Y-axis: Accumulated Local Effects (isolated feature effect on predictions)
-- Data structure: Continuous curves per temperature regime, overlaid
-- Interpretation: How features affect NEP predictions, isolated from correlations
-- Shows: Feature-response relationships accounting for realistic feature interactions
+## Data Pipeline
 
-## What This Script Shows
+1. **Load per-site ALE curves** from script 32 (pre-calculated, no recalculation)
+2. **Equal weighting aggregation**: Each site contributes one curve regardless of record count
+3. **Polynomial pre-fitting**: Fit 4th-order polynomial to each site's curve individually
+4. **Aggregate smoothed curves**: Average polynomial-fitted curves across sites
+5. **Calculate confidence intervals**: 95% CI or SEM from distribution of individual thresholds
+6. **Threshold detection**: Find positive-to-negative zero crossings in individual curves
+7. **Ecosystem-specific aggregation**: Separate aggregation by IGBP type (ENF, DBF, MF, EBF)
 
-ALE curves reveal how NEP responds to changes in a single feature (e.g., VPD),
-holding other variables at their observed values. Multiple colored curves show
-how this response varies across temperature regimes (cold → hot):
+## Key Features
 
-- **Parallel curves**: Feature effect is stable across temperature conditions
-- **Diverging curves**: Feature effect strengthens/weakens with temperature
-- **Crossing curves**: Feature has opposite effects under different conditions
-- **Threshold**: VPD value where NEP response switches from positive to negative
+### Aggregation Methods
+- `USE_MEDIAN=False` (default): Mean aggregation - equal weighting, traditional approach
+- `USE_MEDIAN=True`: Median aggregation - robust to outlier sites with extreme curves
 
-## Key Differences from SHAP
+### Uncertainty Quantification
+- `USE_CI=True` (default): 95% Confidence Interval for mean threshold (t-distribution based)
+- `USE_CI=False`: Standard Error of Mean (SEM) - shows precision of mean estimate
 
-1. **Resolution**: ALE shows smooth continuous effects; SHAP shows discrete bins
-2. **Calculation**: Both use conditional methods (respect correlations)
-   - SHAP: Shapley values (model-agnostic, per-sample contributions)
-   - ALE: Accumulated local effects (model-specific, feature effect on predictions)
-3. **Interpretation**: ALE is "what if you change this feature"; SHAP is "how much
-   did this contribute to the actual prediction"
-4. **Confidence**: ALE thresholds use direct zero-crossing with bootstrap CI;
-   SHAP thresholds depend on bin structure
-5. **Aggregation**: Can use mean (default) or median (USE_MEDIAN=True) for robustness to outlier sites
+### Threshold Detection
+- Finds individual zero-crossings in each site's poly-fitted curve
+- Only includes curves that actually cross zero (positive → negative transition)
+- Consensus threshold = mean of individual crossing points
+- Reports: threshold ± SEM, or threshold [CI_lower, CI_upper]
+- Includes: number of sites with crossing, total sites, range of thresholds
 
-## Structure
+### Visualization
+- **Main panel (a)**: Global curve + per-site background curves (gray, alpha=0.15)
+- **Subplots (b-e)**: Same data separated by IGBP ecosystem
+- **Threshold markers**: Open circle at zero-crossing point
+- **Threshold labels**: Show value ± uncertainty (SEM or 95% CI)
+- **Zero-crossing line**: Dashed line at y=0 for reference
+- **Axis styling**: Matches script 54 (black spines, solid lines, xtickdigits=0)
 
-- **Main plot**: All sites aggregated (black mean ± gray percentile band), overlaid
-  curves by temperature regime (blue=cold → red=hot)
-- **4 subplots**: Same data, separated by IGBP type (ENF, DBF, MF, EBF) for
-  ecosystem-specific patterns
-- **Threshold**: Direct zero-crossing point where mean ALE curve crosses zero
-- **Bootstrap CI**: 95% confidence interval via bootstrap resampling (1000 iterations)
-- **Error bands**: IQR (25th-75th percentile) showing uncertainty across sites
+## Comparison to Script 54 (SHAP)
 
-## Use Case
+**Script 54:**
+- X-axis: Binned feature values
+- Y-axis: Per-sample SHAP values (feature importance)
+- Interpretation: How much features contribute to NEP variation
 
-Compare with Script 54 to validate findings:
-- Script 54: "How important is VPD for predicting NEP?"
-- Script 55: "How does NEP respond to changes in VPD? At what VPD does it flip?"
-- Together: Strong agreement between SHAP importance and ALE threshold confidence
+**Script 55:**
+- X-axis: Continuous feature values
+- Y-axis: Isolated feature effects on predictions
+- Interpretation: How NEP responds to feature changes
+
+**Together**: Validate findings across different explanation methods
+
+## Configuration Options
+
+```python
+PLOT_FEATURE = 'VPD_ZSCORE'        # Feature to analyze
+FLUX = 'NEP_ZSCORE'                # Target variable
+FAST_TEST_MODE = False              # True: use 5 random sites for testing
+USE_MEDIAN = False                  # True: median aggregation (robust to outliers)
+USE_CI = True                       # True: show 95% CI, False: show SEM
+```
+
+## Output
+
+**Console:**
+- THRESHOLD SUMMARY table showing all results:
+  - Global threshold for all sites combined
+  - Per-IGBP thresholds with uncertainty quantification
+  - Number of sites with zero-crossings per group
+  - Header indicates which uncertainty metric is displayed
+
+**Figure:**
+- 5-panel layout (1 main + 4 IGBP subplots)
+- Threshold markers and labels on each panel
+- Consistent axis styling across all panels
+- Per-site background curves for context
+
+**Interpretation:**
+- Threshold value: Where ALE curve crosses zero (NEP switches from stimulation to suppression)
+- Uncertainty: ±SEM shows precision; 95% CI shows likely range of true threshold
+- Site count: Shows robustness of threshold estimate (more sites = more confidence)
+- IGBP subplots: Show ecosystem-specific response patterns
 """
 from pathlib import Path
 
@@ -92,10 +122,8 @@ def find_zero_crossing(curve, grid):
     valid = ~np.isnan(curve)
     if np.sum(valid) <= 1:
         return np.nan
-    # Only consider points with valid data
     curve_valid = curve[valid]
     grid_valid = grid[valid]
-    # Check if curve actually crosses zero (has positive and negative values)
     if np.all(curve_valid >= 0) or np.all(curve_valid <= 0):
         return np.nan
     sign_changes = np.diff(np.sign(curve_valid))
@@ -107,6 +135,15 @@ def find_zero_crossing(curve, grid):
     return np.nan
 
 
+def calc_ci_95(values):
+    """Calculate 95% confidence interval for mean using t-distribution."""
+    from scipy import stats
+    mean = values.mean()
+    sem = stats.sem(values)
+    ci = sem * stats.t.ppf((1 + 0.95) / 2, len(values) - 1)
+    return mean, mean - ci, mean + ci
+
+
 # ==============================
 # CONFIGURATION
 # ==============================
@@ -115,6 +152,7 @@ FLUX = 'NEP_ZSCORE'
 PLOT_FEATURE = 'VPD_ZSCORE'
 FAST_TEST_MODE = False
 USE_MEDIAN = False
+USE_CI = True  # True: 95% CI, False: SEM
 IGBPS = ['ENF', 'DBF', 'MF', 'EBF']
 AX_LABELS_FONTSIZE = 12
 
@@ -316,7 +354,7 @@ if mean_effect is not None and std_effect is not None:
     # STEP 5: CREATE FIGURE (both modes)
     # ==============================
 
-    fig, gs, ax_all, axes_sub = plot.layout_5panels((13.86, 6.67), add_colorbar_ax=False)
+    fig, gs, ax_all, axes_sub = plot.layout_5panels((13.86 * 0.9, 6.67 * 0.9), add_colorbar_ax=False)
 
     xlabel = rf'{BEAUTIFY[PLOT_FEATURE]} ($\sigma$)'
     ylabel = rf'ALE effect on daytime {BEAUTIFY[FLUX]} ($\sigma$)'
@@ -325,18 +363,26 @@ if mean_effect is not None and std_effect is not None:
     for site_curve in site_ale_interpolated_array:
         ax_all.plot(common_grid, site_curve, color='gray', alpha=0.15, linewidth=0.8, zorder=1)
 
-    # Add both thresholds: consensus (SD error bar) and mean curve polynomial crossing
+    # Add legend entries for threshold and gray curves
+    ax_all.scatter([], [], edgecolors='black', s=200, linewidth=2,
+                   marker='o', facecolors='none',
+                   label='Mean zero-crossing of individual ALE curves')
+    ax_all.plot([], [], color='gray', alpha=0.15, linewidth=0.8,
+                label=f'Individual sites')
+
+    # Add threshold marker
     if not np.isnan(threshold_main) and len(individual_thresholds) > 0:
-        threshold_sd = individual_thresholds.std()
-        threshold_sem = threshold_sd / np.sqrt(len(individual_thresholds))
-
         # Consensus threshold marker (open circle)
-        ax_all.scatter(threshold_main, 0, c='none', edgecolors='black', s=200, linewidth=2,
-                       marker='o', facecolors='none', zorder=100,
-                       label=f'Mean zero-crossing of individual ALE curves')
+        ax_all.scatter(threshold_main, 0, edgecolors='black', s=200, linewidth=2,
+                       marker='o', facecolors='none', zorder=100)
 
-        # Consensus threshold label (show SD for reference)
-        label_text = f'Threshold\nx={threshold_main:.2f}±{threshold_sem:.2f} SEM'
+        # Format label based on USE_CI flag
+        if USE_CI:
+            _, ci_lower, ci_upper = calc_ci_95(individual_thresholds)
+            label_text = f'Threshold\nx={threshold_main:.2f} [{ci_lower:.2f}, {ci_upper:.2f}]'
+        else:
+            threshold_sem = individual_thresholds.std() / np.sqrt(len(individual_thresholds))
+            label_text = f'Threshold\nx={threshold_main:.2f}±{threshold_sem:.2f} SEM'
 
         ax_all.annotate(label_text,
                         xy=(threshold_main, 0),
@@ -419,14 +465,22 @@ if mean_effect is not None and std_effect is not None:
                     'Threshold': igbp_threshold_main,
                     'SEM': igbp_sem,
                     'N_crossing': len(igbp_individual_thresholds),
-                    'N_total': len(igbp_poly_fitted)
+                    'N_total': len(igbp_poly_fitted),
+                    'individual_thresholds': igbp_individual_thresholds
                 })
 
-                ax.scatter(igbp_threshold_main, 0, c='none', edgecolors='black', s=200, linewidth=2,
+                ax.scatter(igbp_threshold_main, 0, edgecolors='black', s=200, linewidth=2,
                            marker='o', facecolors='none', zorder=100)
-                label_text = f'Threshold\nx={igbp_threshold_main:.2f}±{igbp_sem:.2f} SEM'
+
+                # Format label based on USE_CI flag
+                if USE_CI:
+                    _, ci_lower, ci_upper = calc_ci_95(igbp_individual_thresholds)
+                    label_text = f'x={igbp_threshold_main:.2f} [{ci_lower:.2f}, {ci_upper:.2f}]'
+                else:
+                    label_text = f'x={igbp_threshold_main:.2f}±{igbp_sem:.2f} SEM'
+
                 ax.annotate(label_text,
-                            xy=(igbp_threshold_main, 0), xytext=(igbp_threshold_main - 0.7, -0.5),
+                            xy=(igbp_threshold_main, 0), xytext=(igbp_threshold_main - 0.4, -0.5),
                             arrowprops=dict(arrowstyle='->', color='black', lw=2, shrinkB=10),
                             ha='center', fontsize=AX_LABELS_FONTSIZE * 0.75,
                             color='black', zorder=11)
@@ -436,7 +490,8 @@ if mean_effect is not None and std_effect is not None:
                     'Threshold': np.nan,
                     'SEM': np.nan,
                     'N_crossing': 0,
-                    'N_total': len(igbp_ale_interpolated.get(igbp, []))
+                    'N_total': len(igbp_ale_interpolated.get(igbp, [])),
+                    'individual_thresholds': np.array([])
                 })
         else:
             # Fallback: plot individual site curves only
@@ -470,25 +525,43 @@ if mean_effect is not None and std_effect is not None:
 
     # Print comprehensive threshold summary table
     print("\n" + "=" * 95)
-    print(f"THRESHOLD SUMMARY | Feature: {BEAUTIFY[PLOT_FEATURE]} | Target: {BEAUTIFY[FLUX]}")
+    print(f"THRESHOLD SUMMARY | Feature: {BEAUTIFY[PLOT_FEATURE]} | Target: {BEAUTIFY[FLUX]} | {'95% CI' if USE_CI else 'SEM'}")
     print("=" * 95)
-    print(f"{'Group':<15} {'Threshold':<15} {'SEM':<12} {'N crossing':<15} {'N total':<10}")
-    print("-" * 95)
 
-    # Global threshold
-    if n_curves_crossing > 0:
-        print(f"{'GLOBAL':<15} {threshold_main:>8.4f}       {threshold_sem:>8.4f}     "
-              f"{n_curves_crossing:>3}/{n_curves_total:<3}            {n_curves_total:>6}")
-    else:
-        print(f"{'GLOBAL':<15} {'N/A':>14} {'N/A':>11} {0:>3}/{n_curves_total:<3}            {n_curves_total:>6}")
-
-    # IGBP-specific thresholds
-    for data in igbp_threshold_data:
-        if not np.isnan(data['Threshold']):
-            print(f"{data['IGBP']:<15} {data['Threshold']:>8.4f}       {data['SEM']:>8.4f}     "
-                  f"{data['N_crossing']:>3}/{data['N_total']:<3}            {data['N_total']:>6}")
+    if USE_CI:
+        print(f"{'Group':<15} {'Threshold':<15} {'95% CI':<30} {'N crossing':<15} {'N total':<10}")
+        print("-" * 95)
+        if n_curves_crossing > 0:
+            _, ci_lower, ci_upper = calc_ci_95(individual_thresholds)
+            print(f"{'GLOBAL':<15} {threshold_main:>8.4f}       [{ci_lower:>7.4f}, {ci_upper:>7.4f}]     "
+                  f"{n_curves_crossing:>3}/{n_curves_total:<3}            {n_curves_total:>6}")
         else:
-            print(f"{data['IGBP']:<15} {'N/A':>14} {'N/A':>11} {0:>3}/{data['N_total']:<3}            {data['N_total']:>6}")
+            print(f"{'GLOBAL':<15} {'N/A':>14} {'N/A':>28} {0:>3}/{n_curves_total:<3}            {n_curves_total:>6}")
+
+        for data in igbp_threshold_data:
+            if not np.isnan(data['Threshold']):
+                # **Use per-IGBP thresholds for CI95 calculation**
+                _, ci_lower, ci_upper = calc_ci_95(data['individual_thresholds'])
+                print(f"{data['IGBP']:<15} {data['Threshold']:>8.4f}       [{ci_lower:>7.4f}, {ci_upper:>7.4f}]     "
+                      f"{data['N_crossing']:>3}/{data['N_total']:<3}            {data['N_total']:>6}")
+            else:
+                print(f"{data['IGBP']:<15} {'N/A':>14} {'N/A':>28} {0:>3}/{data['N_total']:<3}            {data['N_total']:>6}")
+    else:
+        print(f"{'Group':<15} {'Threshold':<15} {'SEM':<12} {'N crossing':<15} {'N total':<10}")
+        print("-" * 95)
+        if n_curves_crossing > 0:
+            threshold_sem = individual_thresholds.std() / np.sqrt(n_curves_crossing)
+            print(f"{'GLOBAL':<15} {threshold_main:>8.4f}       {threshold_sem:>8.4f}     "
+                  f"{n_curves_crossing:>3}/{n_curves_total:<3}            {n_curves_total:>6}")
+        else:
+            print(f"{'GLOBAL':<15} {'N/A':>14} {'N/A':>11} {0:>3}/{n_curves_total:<3}            {n_curves_total:>6}")
+
+        for data in igbp_threshold_data:
+            if not np.isnan(data['Threshold']):
+                print(f"{data['IGBP']:<15} {data['Threshold']:>8.4f}       {data['SEM']:>8.4f}     "
+                      f"{data['N_crossing']:>3}/{data['N_total']:<3}            {data['N_total']:>6}")
+            else:
+                print(f"{data['IGBP']:<15} {'N/A':>14} {'N/A':>11} {0:>3}/{data['N_total']:<3}            {data['N_total']:>6}")
 
     print("=" * 95 + "\n")
 
