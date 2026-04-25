@@ -261,8 +261,8 @@ ax_all.text(0, 1.05, letter, transform=ax_all.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
 
 # Panel title (Normal, shifted slightly to the right)
-ax_all.text(0.05, 1.05, igbp, transform=ax_all.transAxes, zorder=99,
-            size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
+ax_all.text(0.03, 1.05, f'| {igbp}', transform=ax_all.transAxes, zorder=99,
+            size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
 
 # Site count (Normal)
 ax_all.text(0.4, 1.05, f"(n={n_sites}, min. {minmax_counts[0]})", transform=ax_all.transAxes, zorder=99,
@@ -332,6 +332,9 @@ ax_all.set_ylabel(ylabel, fontsize=AX_LABELS_FONTSIZE)
 plot.format(ax=ax_all, fontsize=AX_LABELS_FONTSIZE, showyticklabels=True, showxticklabels=True,
             xtickdigits=0, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
 ax_all.axhline(0, color='k', linestyle='--', linewidth=1)
+
+ax_all.spines['bottom'].set_color('black')
+ax_all.spines['left'].set_color('black')
 
 # ---------------
 # SUBPLOTS (IGBP)
@@ -419,8 +422,8 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
             size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
 
     # Panel title (Normal, shifted slightly to the right)
-    ax.text(0.1, 1.1, igbp, transform=ax.transAxes, zorder=99,
-            size=AX_LABELS_FONTSIZE * 1.2, weight='normal', ha='left', va='top')
+    ax.text(0.06, 1.1, f'| {igbp}', transform=ax.transAxes, zorder=99,
+            size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
 
     # Site count (Normal)
     ax.text(0.4, 1.1, f"(n={n_sites_sub}, min. {minmax_counts_sub[0]})", transform=ax.transAxes, zorder=99,
@@ -444,6 +447,9 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels, showxticklabels=showxticklabels,
                 xtickdigits=0, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
     ax.axhline(0, color='k', linestyle='--', linewidth=1)
+
+    ax.spines['bottom'].set_color('black')
+    ax.spines['left'].set_color('black')
 
     # Collect coefficients in dataframe
     _threshold = f'{threshold_main:.2f} [{threshold_lower:.2f}, {threshold_upper:.2f}]'
