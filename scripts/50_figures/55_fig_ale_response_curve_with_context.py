@@ -59,23 +59,18 @@ Compare with Script 54 to validate findings:
 """
 from pathlib import Path
 
+import diive as dv
 import matplotlib.colors
-import matplotlib.patches as mpatches
-import matplotlib.path as mpath
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import diive as dv
-from PyALE import ale
 import xgboost as xgb
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d, UnivariateSpline
-from scipy.signal import savgol_filter
+from PyALE import ale
 from scipy import stats
+from scipy.interpolate import interp1d
+from sklearn.model_selection import train_test_split
 
 import src.files as files
-import src.fit as fit
 import src.plot as plot
 
 # ==============================
@@ -114,7 +109,7 @@ colors_list = [
     '#fdae61',  # Light Orange
     '#f46d43',  # Orange
     '#d73027',  # Red
-    '#a50026'   # Dark Red
+    '#a50026'  # Dark Red
 ]
 
 bin_labels = [
@@ -152,23 +147,23 @@ shap_type = 'conditional' if CONDITIONAL else 'standard'
 dir_ale_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / 'ale'
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'ale'
 
-print(f"\n{'='*80}")
+print(f"\n{'=' * 80}")
 print(f"ALE RESPONSE CURVE ANALYSIS")
 print(f"Feature: {beautify[PLOT_FEATURE]} | Target: {beautify[FLUX]}")
 print(f"Aggregation method: {'MEDIAN (robust to outliers)' if USE_MEDIAN else 'MEAN (equal weighting)'}")
-print(f"{'='*80}\n")
+print(f"{'=' * 80}\n")
 dir_out.mkdir(parents=True, exist_ok=True)
 
 # Load subsets info
 infile = Path('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv')
 subsets_df = pd.read_csv(infile)
 
-print(f"\n{'='*80}")
+print(f"\n{'=' * 80}")
 if SINGLE_CURVE_MODE:
     print(f"CALCULATING SINGLE ALE CURVE (FAST MODE)")
 else:
     print(f"CALCULATING ALE CURVES WITH TEMPERATURE CONTEXT")
-print(f"{'='*80}\n")
+print(f"{'=' * 80}\n")
 print(f"Feature to plot: {PLOT_FEATURE}")
 if not SINGLE_CURVE_MODE:
     print(f"Context variable: {CONTEXT_FEATURE}")
@@ -483,7 +478,8 @@ if SINGLE_CURVE_MODE and len(all_site_ale_curves) > 0:
         n_masked = np.sum(insufficient_mask)
         if n_masked > 0:
             print(f"Masked {n_masked}/{len(common_grid)} grid points with <50% site coverage")
-        print(f"Aggregated ALE curves from {len(site_ale_poly_fitted)} sites (poly-fitted individually → aggregated, no second fit) using {agg_name}\n")
+        print(
+            f"Aggregated ALE curves from {len(site_ale_poly_fitted)} sites (poly-fitted individually → aggregated, no second fit) using {agg_name}\n")
 
         # DIAGNOSTIC: Check for extreme extrapolation at boundaries
         print("=== ALE VALUE DIAGNOSTICS ===")
@@ -665,10 +661,10 @@ if mean_effect is not None and std_effect is not None:
         print("WARNING: No valid mean values for y-scaling")
 
     # ==============================
-    # THRESHOLD DETECTION: Consensus from individual curve zero-crossings
+    # THRESHOLD DETECTION: Consensus + Mean curve polynomial fit
     # ==============================
 
-    # Find zero-crossings in each individual poly-fitted curve
+    # Find zero-crossings in each individual poly-fitted curve (for consensus)
     individual_thresholds = []
     for site_curve in site_ale_poly_fitted:
         valid_idx = ~np.isnan(site_curve)
@@ -688,22 +684,57 @@ if mean_effect is not None and std_effect is not None:
                         individual_thresholds.append(threshold)
                         break
 
+    # Fit polynomial to the mean curve itself for its zero-crossing
+    y_fit_main = None
+    threshold_mean_curve = np.nan
+    valid_idx_mean = ~np.isnan(mean_effect)
+    if np.sum(valid_idx_mean) > 4:
+        x_valid = common_grid[valid_idx_mean]
+        y_valid = mean_effect[valid_idx_mean]
+        try:
+            poly_coeffs_mean = np.polyfit(x_valid, y_valid, 4)
+            poly_fit_mean = np.poly1d(poly_coeffs_mean)
+            y_fit_main = poly_fit_mean(common_grid)
+
+            # Find zero-crossing in mean curve polynomial
+            sign_changes_mean = np.diff(np.sign(y_fit_main))
+            crossing_indices_mean = np.where(sign_changes_mean != 0)[0]
+            if len(crossing_indices_mean) > 0:
+                for idx in crossing_indices_mean:
+                    if y_fit_main[idx] > 0 and y_fit_main[idx + 1] <= 0:
+                        x1, x2 = common_grid[idx], common_grid[idx + 1]
+                        y1, y2 = y_fit_main[idx], y_fit_main[idx + 1]
+                        threshold_mean_curve = x1 - y1 * (x2 - x1) / (y2 - y1) if (y2 - y1) != 0 else (x1 + x2) / 2
+                        break
+        except Exception:
+            pass
+
     # Calculate consensus threshold from individual crossing points
-    print(f"\n=== THRESHOLD DETECTION (Individual Curve Consensus) ===")
+    print(f"\n=== THRESHOLD DETECTION ===")
+    print(f"Method 1: Consensus of individual site crossings")
     if len(individual_thresholds) > 0:
         individual_thresholds = np.array(individual_thresholds)
         threshold_main = np.mean(individual_thresholds)
         threshold_mean = individual_thresholds.mean()
         threshold_std = individual_thresholds.std()
+        threshold_sem = threshold_std / np.sqrt(len(individual_thresholds))
 
-        print(f"Sites with positive-to-negative crossing: {len(individual_thresholds)}/{len(site_ale_poly_fitted)}")
-        print(f"Crossing points range: [{individual_thresholds.min():.3f}, {individual_thresholds.max():.3f}]")
-        print(f"Consensus threshold (mean): {threshold_main:.3f}")
-        print(f"Std dev: {threshold_std:.3f}\n")
+        print(f"  Sites with crossing: {len(individual_thresholds)}/{len(site_ale_poly_fitted)}")
+        print(f"  Range: [{individual_thresholds.min():.3f}, {individual_thresholds.max():.3f}]")
+        print(f"  Consensus threshold: {threshold_main:.3f}")
+        print(f"  SD (site variability): {threshold_std:.3f}")
+        print(f"  SEM (precision): {threshold_sem:.3f}")
     else:
-        print("ERROR: No zero-crossings found in individual curves")
+        print("  ERROR: No zero-crossings found in individual curves")
         threshold_main = np.nan
-        print()
+        threshold_std = np.nan
+
+    print(f"Method 2: Mean curve polynomial zero-crossing")
+    if not np.isnan(threshold_mean_curve):
+        print(f"  Mean curve crosses zero at: {threshold_mean_curve:.3f}")
+    else:
+        print(f"  Could not fit polynomial to mean curve")
+    print()
 
     # ==============================
     # STEP 5: CREATE FIGURE (both modes)
@@ -726,38 +757,26 @@ if mean_effect is not None and std_effect is not None:
             color = colors_list[temp_bin_idx] if temp_bin_idx < len(colors_list) else '#999999'
             ax_all.plot(common_grid, y_interp, color=color, alpha=0.5, linewidth=1.5, label=bin_labels[temp_bin_idx])
 
-    # Aggregated curve (no label - not shown in legend)
-    ax_all.plot(common_grid, mean_effect, color='black', linewidth=2.5, zorder=100)
-
-    # Show IQR band instead of CI (25th-75th percentile)
-    # This is more robust and interpretable for aggregated data
-    site_ale_array = np.array(site_ale_interpolated_array)
-    iqr_lower = np.nanpercentile(site_ale_array, 25, axis=0)
-    iqr_upper = np.nanpercentile(site_ale_array, 75, axis=0)
-    if not np.all(np.isnan(iqr_lower)):
-        ax_all.fill_between(common_grid, iqr_lower, iqr_upper,
-                            color='#263238', alpha=0.2, zorder=2)
-
-    # Add threshold marker with SD error bar (without max/min annotations)
+    # Add both thresholds: consensus (SD error bar) and mean curve polynomial crossing
     if not np.isnan(threshold_main) and len(individual_thresholds) > 0:
         threshold_sd = individual_thresholds.std()
+        threshold_sem = threshold_sd / np.sqrt(len(individual_thresholds))
 
-        # Threshold marker (open circle) at zero crossing
-        ax_all.scatter(threshold_main, 0, c='red', edgecolors='darkred', s=200, linewidth=2,
-                      marker='o', facecolors='none', zorder=100)
+        # Consensus threshold marker (open circle)
+        ax_all.scatter(threshold_main, 0, c='none', edgecolors='black', s=200, linewidth=2,
+                       marker='o', facecolors='none', zorder=100,
+                       label=f'Mean zero-crossing of individual ALE curves')
 
-        # Error bar showing ±SD of individual crossing points (x-direction uncertainty)
-        ax_all.errorbar(threshold_main, 0, xerr=threshold_sd, ecolor='darkred', elinewidth=2.5,
-                       capsize=8, fmt='none', zorder=99, alpha=0.8)
+        # Consensus threshold label (show SD for reference)
+        label_text = f'Threshold\nx={threshold_main:.2f}±{threshold_sem:.2f} SEM'
 
-        # Threshold value label with arrow
-        ax_all.annotate(f'x={threshold_main:.2f}',
-                       xy=(threshold_main, 0),
-                       xytext=(threshold_main - 0.7, -0.35),
-                       arrowprops=dict(arrowstyle='->', color='darkred', lw=2, shrinkB=10),
-                       ha='center', fontsize=AX_LABELS_FONTSIZE * 0.85,
-                       bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8, edgecolor='darkred'),
-                       color='darkred', zorder=11)
+        ax_all.annotate(label_text,
+                        xy=(threshold_main, 0),
+                        xytext=(threshold_main - 0.7, -0.5),
+                        arrowprops=dict(arrowstyle='->', color='black', lw=2, shrinkB=10),
+                        ha='center', fontsize=AX_LABELS_FONTSIZE * 0.75,
+                        color='black', zorder=11)
+
     else:
         print("WARNING: Threshold is NaN or no crossings found")
 
@@ -786,6 +805,7 @@ if mean_effect is not None and std_effect is not None:
 
     # Reduce x-axis ticks for cleaner appearance
     from matplotlib.ticker import MaxNLocator
+
     ax_all.xaxis.set_major_locator(MaxNLocator(nbins=6))
 
     # IGBP subplots (simplified: same data for all)
@@ -813,14 +833,6 @@ if mean_effect is not None and std_effect is not None:
                         ax.plot(common_grid, site_curve, color='gray', alpha=0.15, linewidth=0.8, zorder=1)
 
                 y_igbp = ale_interpolated[igbp]
-                ax.plot(common_grid, y_igbp, color='steelblue', linewidth=2, zorder=100)
-
-                # Show IQR band for IGBP
-                if igbp_site_curves is not None and not np.all(np.isnan(igbp_site_curves)):
-                    iqr_lower_igbp = np.nanpercentile(igbp_site_curves, 25, axis=0)
-                    iqr_upper_igbp = np.nanpercentile(igbp_site_curves, 75, axis=0)
-                    ax.fill_between(common_grid, iqr_lower_igbp, iqr_upper_igbp,
-                                   color='#263238', alpha=0.15, zorder=1)
 
                 # Detect threshold for this IGBP from individual curve crossings
                 igbp_individual_thresholds = []
@@ -881,41 +893,62 @@ if mean_effect is not None and std_effect is not None:
                 igbp_threshold_main = threshold_main
                 igbp_threshold_sd = threshold_std if len(individual_thresholds) > 0 else np.nan
 
-            # Plot threshold for IGBP (open circle + SD error bar)
+            # Plot threshold for IGBP (consensus + polynomial fit reference)
             if not np.isnan(igbp_threshold_main) and len(igbp_individual_thresholds) > 0:
-                # Open circle marker
+                # Open circle marker for consensus
                 ax.scatter(igbp_threshold_main, 0, c='red', edgecolors='darkred', s=120, linewidth=1.5,
-                          marker='o', facecolors='none', zorder=100)
+                           marker='o', facecolors='none', zorder=100)
 
-                # Error bar showing ±SD
+                # Calculate SD and SEM for label/reporting
                 igbp_sd = np.array(igbp_individual_thresholds).std()
-                ax.errorbar(igbp_threshold_main, 0, xerr=igbp_sd, ecolor='darkred', elinewidth=1.5,
-                           capsize=4, fmt='none', zorder=99, alpha=0.7)
 
-                # Label with arrow
-                ax.annotate(f'x={igbp_threshold_main:.2f}',
-                           xy=(igbp_threshold_main, 0),
-                           xytext=(igbp_threshold_main - 0.5, -0.25),
-                           arrowprops=dict(arrowstyle='->', color='darkred', lw=1.5, shrinkB=8),
-                           ha='center', fontsize=AX_LABELS_FONTSIZE * 0.7,
-                           bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8, edgecolor='darkred'),
-                           color='darkred', zorder=11)
+                # Fit polynomial to IGBP curve for comparison
+                if igbp in ale_interpolated:
+                    y_igbp = ale_interpolated[igbp]
+                    valid_idx_igbp = ~np.isnan(y_igbp)
+                    igbp_threshold_poly = np.nan
+                    if np.sum(valid_idx_igbp) > 4:
+                        x_valid_igbp = common_grid[valid_idx_igbp]
+                        y_valid_igbp = y_igbp[valid_idx_igbp]
+                        try:
+                            poly_coeffs_igbp = np.polyfit(x_valid_igbp, y_valid_igbp, 4)
+                            poly_fit_igbp = np.poly1d(poly_coeffs_igbp)
+                            y_fit_igbp = poly_fit_igbp(common_grid)
+
+                            # Find zero-crossing in IGBP polynomial
+                            sign_changes_igbp = np.diff(np.sign(y_fit_igbp))
+                            crossing_indices_igbp = np.where(sign_changes_igbp != 0)[0]
+                            if len(crossing_indices_igbp) > 0:
+                                for idx in crossing_indices_igbp:
+                                    if y_fit_igbp[idx] > 0 and y_fit_igbp[idx + 1] <= 0:
+                                        x1, x2 = common_grid[idx], common_grid[idx + 1]
+                                        y1, y2 = y_fit_igbp[idx], y_fit_igbp[idx + 1]
+                                        igbp_threshold_poly = x1 - y1 * (x2 - x1) / (y2 - y1) if (y2 - y1) != 0 else (
+                                                                                                                             x1 + x2) / 2
+                                        break
+                        except Exception:
+                            pass
+
+                    # Label with both thresholds if they differ
+                    label_text = f'{igbp_threshold_main:.2f}\n±{igbp_sd:.2f}'
+                    if not np.isnan(igbp_threshold_poly) and abs(igbp_threshold_poly - igbp_threshold_main) > 0.05:
+                        label_text += f'\nP:{igbp_threshold_poly:.2f}'
+                else:
+                    label_text = f'{igbp_threshold_main:.2f}\n±{igbp_sd:.2f}'
+
+                ax.annotate(label_text,
+                            xy=(igbp_threshold_main, 0),
+                            xytext=(igbp_threshold_main - 0.5, -0.3),
+                            arrowprops=dict(arrowstyle='->', color='darkred', lw=1.5, shrinkB=8),
+                            ha='center', fontsize=AX_LABELS_FONTSIZE * 0.65,
+                            bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8, edgecolor='darkred'),
+                            color='darkred', zorder=11)
         else:
             # Multi-curve mode: plot all temperature curves
             for temp_bin_idx in sorted(ale_interpolated.keys()):
                 y_interp = ale_interpolated[temp_bin_idx]
                 color = colors_list[temp_bin_idx] if temp_bin_idx < len(colors_list) else '#999999'
                 ax.plot(common_grid, y_interp, color=color, alpha=0.3, linewidth=1)
-
-            # Mean curve
-            ax.plot(common_grid, mean_effect, color='black', linewidth=2, zorder=100)
-
-            # Show IQR band for multi-curve mode
-            if not np.all(np.isnan(all_effects)):
-                iqr_lower_multi = np.nanpercentile(all_effects, 25, axis=0)
-                iqr_upper_multi = np.nanpercentile(all_effects, 75, axis=0)
-                ax.fill_between(common_grid, iqr_lower_multi, iqr_upper_multi,
-                               color='#263238', alpha=0.15, zorder=1)
 
             ax.set_ylim(y_limits)
 
@@ -925,10 +958,10 @@ if mean_effect is not None and std_effect is not None:
                 min_ix_sub = np.nanargmin(y_fit_main)
                 max_ix_sub = np.nanargmax(y_fit_main)
                 plot.show_shap_thresholds(ax=ax, x_fit=common_grid, y_fit=y_fit_main,
-                                         max_ix=max_ix_sub, min_ix=min_ix_sub,
-                                         threshold_main=threshold_main, show_annotate=True,
-                                         fontsize=AX_LABELS_FONTSIZE * 0.8, show_annotate_short=True,
-                                         colors_symbols=colors_symbols)
+                                          max_ix=max_ix_sub, min_ix=min_ix_sub,
+                                          threshold_main=threshold_main, show_annotate=True,
+                                          fontsize=AX_LABELS_FONTSIZE * 0.8, show_annotate_short=True,
+                                          colors_symbols=colors_symbols)
 
         ax.axhline(0, color='k', linestyle='--', linewidth=1, alpha=0.5)
         ax.set_xlabel(xl, fontsize=AX_LABELS_FONTSIZE)
@@ -936,7 +969,8 @@ if mean_effect is not None and std_effect is not None:
         ax.text(0, 1.1, letter, transform=ax.transAxes, size=AX_LABELS_FONTSIZE * 1.2, weight='bold')
         ax.text(0.1, 1.1, igbp, transform=ax.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
 
-        plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels, showxticklabels=showxticklabels,
+        plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels,
+                    showxticklabels=showxticklabels,
                     xtickdigits=1, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
 
         # Set x-axis to data range for subplots
