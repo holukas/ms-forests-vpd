@@ -60,347 +60,172 @@ Compare with Script 54 to validate findings:
 from pathlib import Path
 
 import diive as dv
-import matplotlib.colors
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import xgboost as xgb
-from PyALE import ale
-from scipy import stats
 from scipy.interpolate import interp1d
-from sklearn.model_selection import train_test_split
 
 import src.files as files
 import src.plot as plot
+
+
+def fit_polynomial_to_curves(curves_array, grid):
+    """Fit 4th-order polynomial to each curve, preserving NaN regions."""
+    fitted = []
+    for curve in curves_array:
+        valid = ~np.isnan(curve)
+        if np.sum(valid) > 4:
+            try:
+                x_valid, y_valid = grid[valid], curve[valid]
+                poly = np.poly1d(np.polyfit(x_valid, y_valid, 4))
+                result = poly(grid)
+                result[~valid] = np.nan
+                fitted.append(result)
+            except Exception:
+                fitted.append(curve)
+        else:
+            fitted.append(curve)
+    return fitted
+
+
+def find_zero_crossing(curve, grid):
+    """Find first positive-to-negative zero crossing via linear interpolation. Returns NaN if no crossing."""
+    valid = ~np.isnan(curve)
+    if np.sum(valid) <= 1:
+        return np.nan
+    # Only consider points with valid data
+    curve_valid = curve[valid]
+    grid_valid = grid[valid]
+    # Check if curve actually crosses zero (has positive and negative values)
+    if np.all(curve_valid >= 0) or np.all(curve_valid <= 0):
+        return np.nan
+    sign_changes = np.diff(np.sign(curve_valid))
+    for idx in np.where(sign_changes != 0)[0]:
+        if curve_valid[idx] > 0 and curve_valid[idx + 1] <= 0:
+            x1, x2 = grid_valid[idx], grid_valid[idx + 1]
+            y1, y2 = curve_valid[idx], curve_valid[idx + 1]
+            return x1 - y1 * (x2 - x1) / (y2 - y1) if (y2 - y1) != 0 else (x1 + x2) / 2
+    return np.nan
+
 
 # ==============================
 # CONFIGURATION
 # ==============================
 
 FLUX = 'NEP_ZSCORE'
-FEATURES = ['TA_ZSCORE', 'SWIN_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE']
-
-# Feature to plot ALE for
-PLOT_FEATURE = 'VPD_ZSCORE'  # Change to plot different features
-# Feature used for context coloring (temperature bins)
-CONTEXT_FEATURE = 'TA_ZSCORE'
-
-# SINGLE CURVE MODE: True = 1 overall curve (~30 sec), False = 10 temperature curves (~1-5 min)
-SINGLE_CURVE_MODE = True
-
-# Temperature bins (only used if SINGLE_CURVE_MODE = False)
-N_TEMP_BINS = 10 if not SINGLE_CURVE_MODE else 1
-CONDITIONAL = True
-
-# FAST TEST MODE: Set to True to only use 5 random sites
+PLOT_FEATURE = 'VPD_ZSCORE'
 FAST_TEST_MODE = False
-
-# Aggregation method: Mean vs Median
-USE_MEDIAN = False  # Set to True to use median instead of mean (more robust to outliers)
-
-# Color palette: blue (cold) -> red (hot)
-colors_list = [
-    '#313695',  # Dark Blue
-    '#4575b4',  # Medium Blue
-    '#74add1',  # Light Blue
-    '#abd9e9',  # Pale Blue
-    '#e0f3f8',  # Ice Blue
-    '#fee090',  # Pale Yellow
-    '#fdae61',  # Light Orange
-    '#f46d43',  # Orange
-    '#d73027',  # Red
-    '#a50026'  # Dark Red
-]
-
-bin_labels = [
-    'Extreme cold',
-    'Very cold',
-    'Cold',
-    'Cool',
-    'Neutral-cool',
-    'Neutral-warm',
-    'Warm',
-    'Hot',
-    'Very hot',
-    'Extreme heat'
-]
-
-custom_cmap = matplotlib.colors.ListedColormap(colors_list[:N_TEMP_BINS])
-igbps = ['ENF', 'DBF', 'MF', 'EBF']
-
-beautify = {
-    "NEP_ZSCORE": "NEP",
-    "ET_ZSCORE": "ET",
-    "GPP_ZSCORE": "GPP",
-    "RECO_ZSCORE": "RECO",
-    "TA_ZSCORE": "TA",
-    "VPD_ZSCORE": "VPD",
-    "SWC_ZSCORE": "SWC",
-    "SWIN_ZSCORE": "SWIN",
-}
-
+USE_MEDIAN = False
+IGBPS = ['ENF', 'DBF', 'MF', 'EBF']
 AX_LABELS_FONTSIZE = 12
 
-# Load settings
+BEAUTIFY = {
+    "NEP_ZSCORE": "NEP", "ET_ZSCORE": "ET", "GPP_ZSCORE": "GPP", "RECO_ZSCORE": "RECO",
+    "TA_ZSCORE": "TA", "VPD_ZSCORE": "VPD", "SWC_ZSCORE": "SWC", "SWIN_ZSCORE": "SWIN",
+}
+
 settings = files.read_settings_file("../../config/settings.yaml")
-shap_type = 'conditional' if CONDITIONAL else 'standard'
 dir_ale_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / 'ale'
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'ale'
 
-print(f"\n{'=' * 80}")
-print(f"ALE RESPONSE CURVE ANALYSIS")
-print(f"Feature: {beautify[PLOT_FEATURE]} | Target: {beautify[FLUX]}")
-print(f"Aggregation method: {'MEDIAN (robust to outliers)' if USE_MEDIAN else 'MEAN (equal weighting)'}")
-print(f"{'=' * 80}\n")
+agg_name = "median" if USE_MEDIAN else "mean"
+print(f"\n{'=' * 80}\nALE Response Curves | Feature: {BEAUTIFY[PLOT_FEATURE]} | Aggregation: {agg_name}\n{'=' * 80}\n")
 dir_out.mkdir(parents=True, exist_ok=True)
 
-# Load subsets info
-infile = Path('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv')
-subsets_df = pd.read_csv(infile)
-
-print(f"\n{'=' * 80}")
-if SINGLE_CURVE_MODE:
-    print(f"CALCULATING SINGLE ALE CURVE (FAST MODE)")
-else:
-    print(f"CALCULATING ALE CURVES WITH TEMPERATURE CONTEXT")
-print(f"{'=' * 80}\n")
-print(f"Feature to plot: {PLOT_FEATURE}")
-if not SINGLE_CURVE_MODE:
-    print(f"Context variable: {CONTEXT_FEATURE}")
-    print(f"Temperature bins: {N_TEMP_BINS}\n")
-else:
-    print(f"Mode: Single overall curve (no temperature binning)\n")
+subsets_df = pd.read_csv('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv')
 
 # ==============================
-# STEP 1: LOAD DATA AND BIN BY TEMPERATURE
+# STEP 1: LOAD DATA
 # ==============================
 
-if SINGLE_CURVE_MODE:
-    # SINGLE CURVE MODE: Calculate ALE per site, then average curves (equal weighting)
-    all_site_data = {}
-    site_igbp_map = {}
+all_site_data = {}
+site_igbp_map = {}
 
-    # FAST TEST MODE: limit to 5 random sites (that have data files)
-    if FAST_TEST_MODE:
-        sites_with_data = []
-        for ix, siteconfig in subsets_df.iterrows():
-            filepath = dir_ale_results / f"{siteconfig['SITE']}_ale_{FLUX}.parquet"
-            if filepath.exists():
-                sites_with_data.append(ix)
+if FAST_TEST_MODE:
+    sites_with_data = [ix for ix, row in subsets_df.iterrows()
+                       if (dir_ale_results / f"{row['SITE']}_ale_{FLUX}.parquet").exists()]
+    sample_size = min(5, len(sites_with_data))
+    if sites_with_data:
+        subsets_df = subsets_df.iloc[sites_with_data].sample(n=sample_size, random_state=42)
+        print(f"FAST TEST MODE: Using {sample_size} random sites\n")
+    else:
+        print("ERROR: No sites with data files found\n")
 
-        sample_size = min(5, len(sites_with_data))
-        if len(sites_with_data) > 0:
-            subsets_df = subsets_df.iloc[sites_with_data].sample(n=sample_size, random_state=42)
-            print(f"FAST TEST MODE: Using {sample_size} random sites (from {len(sites_with_data)} available)\n")
+for ix, siteconfig in subsets_df.iterrows():
+    site = siteconfig['SITE']
+    igbp = siteconfig['IGBP']
+    site_igbp_map[site] = igbp
+
+    filepath = dir_ale_results / f"{site}_ale_{FLUX}.parquet"
+    if not filepath.exists():
+        continue
+
+    try:
+        site_data = dv.load_parquet(filepath, sanitize_timestamp=False)
+    except Exception:
+        continue
+
+    if PLOT_FEATURE not in site_data.columns or FLUX not in site_data.columns:
+        continue
+
+    valid_idx = ~(site_data[PLOT_FEATURE].isna() | site_data[FLUX].isna())
+    site_data_clean = site_data[valid_idx].copy()
+
+    if len(site_data_clean) > 10:
+        all_site_data[site] = site_data_clean
+
+print(f"Loaded {len(all_site_data)} sites (each will contribute equally)\n")
+
+# ==============================
+# STEP 2: CALCULATE ALE
+# ==============================
+
+print("Loading pre-calculated ALE curves from script 32...\n")
+ale_results_by_temp = {}
+all_site_ale_curves = []
+
+for site in all_site_data.keys():
+    # Load pre-calculated ALE curves from script 32
+    ale_curve_file = dir_ale_results / f"{site}_ale_curves_{FLUX}.csv"
+
+    if not ale_curve_file.exists():
+        print(f"  {site}: ALE curves file not found")
+        continue
+
+    try:
+        ale_curves_df = pd.read_csv(ale_curve_file)
+
+        # Filter for the feature we're plotting
+        feature_data = ale_curves_df[ale_curves_df['feature'] == PLOT_FEATURE]
+
+        if len(feature_data) > 0:
+            all_site_ale_curves.append({
+                'site': site,
+                'feature_value': feature_data['feature_value'].values,
+                'effect': feature_data['effect'].values
+            })
+            print(f"  Loaded {site}")
         else:
-            print("ERROR: No sites with data files found")
+            print(f"  {site}: Feature {PLOT_FEATURE} not in ALE curves")
 
-    for ix, siteconfig in subsets_df.iterrows():
-        site = siteconfig['SITE']
-        igbp = siteconfig['IGBP']
-        site_igbp_map[site] = igbp
+    except Exception as e:
+        print(f"  {site}: Error loading ALE curves: {e}")
+        continue
 
-        filepath = dir_ale_results / f"{site}_ale_{FLUX}.parquet"
-        if not filepath.exists():
-            continue
+# Store result metadata
+ale_results_by_temp[0] = {
+    'feature_value': all_site_ale_curves[0]['feature_value'] if all_site_ale_curves else np.array([]),
+    'effect': np.array([]),
+    'n_records': sum(len(data) for data in all_site_data.values()),
+    'n_sites': len(all_site_ale_curves)
+}
 
-        try:
-            site_data = dv.load_parquet(filepath, sanitize_timestamp=False)
-        except Exception as e:
-            continue
-
-        if PLOT_FEATURE not in site_data.columns or FLUX not in site_data.columns:
-            continue
-
-        valid_idx = ~(site_data[PLOT_FEATURE].isna() | site_data[FLUX].isna())
-        site_data_clean = site_data[valid_idx].copy()
-
-        if len(site_data_clean) > 10:
-            all_site_data[site] = site_data_clean
-
-    print(f"Loaded {len(all_site_data)} sites (each will contribute equally)\n")
-
-else:
-    # MULTI-CURVE MODE: Bin by temperature, train 10 models
-    all_data_by_temp_bin = {i: [] for i in range(N_TEMP_BINS)}
-    site_igbp_map = {}
-
-    # FAST TEST MODE: limit to 5 random sites (that have data files)
-    if FAST_TEST_MODE:
-        sites_with_data = []
-        for ix, siteconfig in subsets_df.iterrows():
-            filepath = dir_ale_results / f"{siteconfig['SITE']}_ale_{FLUX}.parquet"
-            if filepath.exists():
-                sites_with_data.append(ix)
-
-        sample_size = min(5, len(sites_with_data))
-        if len(sites_with_data) > 0:
-            subsets_df = subsets_df.iloc[sites_with_data].sample(n=sample_size, random_state=42)
-            print(f"FAST TEST MODE: Using {sample_size} random sites (from {len(sites_with_data)} available)\n")
-        else:
-            print("ERROR: No sites with data files found")
-
-    for ix, siteconfig in subsets_df.iterrows():
-        site = siteconfig['SITE']
-        igbp = siteconfig['IGBP']
-        site_igbp_map[site] = igbp
-
-        filepath = dir_ale_results / f"{site}_ale_{FLUX}.parquet"
-
-        if not filepath.exists():
-            print(f"  {site}: File not found at {filepath}")
-            continue
-
-        print(f"  Loading {site}...")
-
-        try:
-            site_data = dv.load_parquet(filepath, sanitize_timestamp=False)
-        except Exception as e:
-            continue
-
-        if PLOT_FEATURE not in site_data.columns or CONTEXT_FEATURE not in site_data.columns or FLUX not in site_data.columns:
-            continue
-
-        valid_idx = ~(site_data[PLOT_FEATURE].isna() | site_data[CONTEXT_FEATURE].isna() | site_data[FLUX].isna())
-        site_data_clean = site_data[valid_idx].copy()
-
-        if len(site_data_clean) < 20:
-            continue
-
-        temp_bins, bin_edges = pd.cut(site_data_clean[CONTEXT_FEATURE], bins=N_TEMP_BINS, labels=False, retbins=True)
-
-        for bin_idx in range(N_TEMP_BINS):
-            mask = temp_bins == bin_idx
-            bin_data = site_data_clean[mask].copy()
-
-            if len(bin_data) > 10:
-                bin_data['site'] = site
-                bin_data['temp_bin'] = bin_idx
-                all_data_by_temp_bin[bin_idx].append(bin_data)
-
-# ==============================
-# STEP 2: CALCULATE ALE (single curve or multi-curve)
-# ==============================
-
-if SINGLE_CURVE_MODE:
-    print("Loading pre-calculated ALE curves from script 32...\n")
-    ale_results_by_temp = {}
-    all_site_ale_curves = []
-
-    for site in all_site_data.keys():
-        # Load pre-calculated ALE curves from script 32
-        ale_curve_file = dir_ale_results / f"{site}_ale_curves_{FLUX}.csv"
-
-        if not ale_curve_file.exists():
-            print(f"  {site}: ALE curves file not found")
-            continue
-
-        try:
-            ale_curves_df = pd.read_csv(ale_curve_file)
-
-            # Filter for the feature we're plotting
-            feature_data = ale_curves_df[ale_curves_df['feature'] == PLOT_FEATURE]
-
-            if len(feature_data) > 0:
-                all_site_ale_curves.append({
-                    'site': site,
-                    'feature_value': feature_data['feature_value'].values,
-                    'effect': feature_data['effect'].values
-                })
-                print(f"  Loaded {site}")
-            else:
-                print(f"  {site}: Feature {PLOT_FEATURE} not in ALE curves")
-
-        except Exception as e:
-            print(f"  {site}: Error loading ALE curves: {e}")
-            continue
-
-    # Store result metadata
-    ale_results_by_temp[0] = {
-        'feature_value': all_site_ale_curves[0]['feature_value'] if all_site_ale_curves else np.array([]),
-        'effect': np.array([]),
-        'n_records': sum(len(data) for data in all_site_data.values()),
-        'n_sites': len(all_site_ale_curves)
-    }
-
-    print(f"Loaded ALE curves for {len(all_site_ale_curves)} sites (pre-calculated by script 32)\n")
-
-else:
-    # Multi-curve mode
-    ale_results_by_temp = {}
-
-    for temp_bin_idx in range(N_TEMP_BINS):
-        if len(all_data_by_temp_bin[temp_bin_idx]) == 0:
-            continue
-
-        print(f"Processing temperature bin {temp_bin_idx}/{N_TEMP_BINS} ...")
-
-        # Concatenate all sites for this temperature bin
-        temp_bin_data = pd.concat(all_data_by_temp_bin[temp_bin_idx], ignore_index=True)
-        X = temp_bin_data[FEATURES].copy()
-        y = temp_bin_data[FLUX].copy()
-
-        if len(X) < 20:
-            continue
-
-        # Train model
-        try:
-            X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.15, random_state=42)
-
-            xgb_params = {
-                'objective': 'reg:squarederror',
-                'tree_method': 'hist',
-                'n_estimators': 500,  # FAST TEST: reduced from 2000
-                'max_depth': 6,
-                'learning_rate': 0.05,
-                'subsample': 0.8,
-                'colsample_bytree': 0.8,
-                'reg_lambda': 1,
-                'reg_alpha': 0.1,
-                'gamma': 0.2,
-                'min_child_weight': 5,
-                'random_state': 42,
-                'early_stopping_rounds': 150,  # FAST TEST: aggressive early stopping
-                'n_jobs': -1
-            }
-
-            model = xgb.XGBRegressor(**xgb_params)
-            model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
-
-            # Calculate ALE (FAST TEST: grid_size 50 for speed)
-            ale(X=X, model=model, feature=[PLOT_FEATURE], grid_size=50)
-            current_fig = plt.gcf()
-            ax_temp = plt.gca()
-            ale_values = []
-
-            for line in ax_temp.get_lines():
-                xdata = np.array(line.get_xdata())
-                ydata = np.array(line.get_ydata())
-                if len(xdata) > 0:
-                    ale_values.append({'feature_value': xdata, 'effect': ydata})
-
-            if len(ale_values) > 0:
-                ale_curve = min(ale_values, key=lambda x: len(x['feature_value']))
-                ale_results_by_temp[temp_bin_idx] = {
-                    'feature_value': ale_curve['feature_value'],
-                    'effect': ale_curve['effect'],
-                    'n_records': len(X),
-                    'n_sites': temp_bin_data['site'].nunique()
-                }
-
-            plt.close(current_fig)
-
-        except Exception as e:
-            print(f"  Error in bin {temp_bin_idx}: {e}")
-            continue
-
-print(f"Calculated ALE curves for {len(ale_results_by_temp)} temperature bins\n")
+print(f"Loaded ALE curves for {len(all_site_ale_curves)} sites (pre-calculated by script 32)\n")
 
 # ==============================
 # STEP 3: INTERPOLATE TO COMMON GRID AND AVERAGE
 # ==============================
 
-if SINGLE_CURVE_MODE and len(all_site_ale_curves) > 0:
+if len(all_site_ale_curves) > 0:
     # Single curve mode: interpolate per-site curves to common grid, then average
     all_feature_values = np.concatenate([
         curve['feature_value'] for curve in all_site_ale_curves
@@ -410,7 +235,7 @@ if SINGLE_CURVE_MODE and len(all_site_ale_curves) > 0:
     # Interpolate each site's ALE curve to common grid
     ale_interpolated = {}
     site_ale_interpolated = []
-    igbp_ale_interpolated = {igbp: [] for igbp in igbps}  # Track by IGBP
+    igbp_ale_interpolated = {igbp: [] for igbp in IGBPS}  # Track by IGBP
 
     for curve_idx, curve_data in enumerate(all_site_ale_curves):
         site = curve_data['site']
@@ -435,29 +260,10 @@ if SINGLE_CURVE_MODE and len(all_site_ale_curves) > 0:
         except Exception as e:
             continue
 
-    # Fit 4th order polynomial to each individual site curve first (smoothing step)
     if len(site_ale_interpolated) > 0:
-        site_ale_poly_fitted = []
-        for site_curve in site_ale_interpolated:
-            valid_idx = ~np.isnan(site_curve)
-            if np.sum(valid_idx) > 4:
-                x_valid = common_grid[valid_idx]
-                y_valid = site_curve[valid_idx]
-                try:
-                    poly_coeffs = np.polyfit(x_valid, y_valid, 4)
-                    poly_fit = np.poly1d(poly_coeffs)
-                    site_fitted = poly_fit(common_grid)
-                    site_fitted[~valid_idx] = np.nan
-                    site_ale_poly_fitted.append(site_fitted)
-                except Exception:
-                    site_ale_poly_fitted.append(site_curve)
-            else:
-                site_ale_poly_fitted.append(site_curve)
-
-        # Aggregate the polynomial-fitted curves (skip second polynomial fit for better shape preservation)
+        site_ale_poly_fitted = fit_polynomial_to_curves(site_ale_interpolated, common_grid)
         site_ale_interpolated_array = np.array(site_ale_poly_fitted)
         agg_func = np.nanmedian if USE_MEDIAN else np.nanmean
-        agg_name = "median" if USE_MEDIAN else "mean"
         mean_effect = agg_func(site_ale_interpolated_array, axis=0)
         ale_interpolated[0] = mean_effect
 
@@ -475,162 +281,26 @@ if SINGLE_CURVE_MODE and len(all_site_ale_curves) > 0:
         mean_effect[insufficient_mask] = np.nan
         std_effect[insufficient_mask] = np.nan
 
-        n_masked = np.sum(insufficient_mask)
-        if n_masked > 0:
-            print(f"Masked {n_masked}/{len(common_grid)} grid points with <50% site coverage")
-        print(
-            f"Aggregated ALE curves from {len(site_ale_poly_fitted)} sites (poly-fitted individually → aggregated, no second fit) using {agg_name}\n")
+        if np.sum(insufficient_mask) > 0:
+            print(f"Masked {np.sum(insufficient_mask)}/{len(common_grid)} points with <50% coverage")
+        print(f"Aggregated {len(site_ale_poly_fitted)} sites using {agg_name}\n")
 
-        # DIAGNOSTIC: Check for extreme extrapolation at boundaries
-        print("=== ALE VALUE DIAGNOSTICS ===")
-        print(f"Common grid range: [{common_grid.min():.3f}, {common_grid.max():.3f}]")
-        print(f"Mean ALE range: [{mean_effect.min():.3f}, {mean_effect.max():.3f}]")
-        print(f"Low VPD (first 3 points): {mean_effect[:3]}")
-        print(f"High VPD (last 3 points): {mean_effect[-3:]}")
-        print(f"Per-site ALE min/max:")
-        for i, curve in enumerate(site_ale_interpolated):
-            print(f"  Site {i}: [{curve.min():.3f}, {curve.max():.3f}]")
-        print("============================\n")
-
-        # Also aggregate by IGBP with polynomial fitting on individual curves first
-        for igbp in igbps:
+        for igbp in IGBPS:
             if len(igbp_ale_interpolated[igbp]) > 0:
-                # Fit 4th order polynomial to each IGBP site curve
-                igbp_poly_fitted = []
-                for igbp_curve in igbp_ale_interpolated[igbp]:
-                    valid_idx = ~np.isnan(igbp_curve)
-                    if np.sum(valid_idx) > 4:
-                        x_valid = common_grid[valid_idx]
-                        y_valid = igbp_curve[valid_idx]
-                        try:
-                            poly_coeffs = np.polyfit(x_valid, y_valid, 4)
-                            poly_fit = np.poly1d(poly_coeffs)
-                            igbp_fitted = poly_fit(common_grid)
-                            igbp_fitted[~valid_idx] = np.nan
-                            igbp_poly_fitted.append(igbp_fitted)
-                        except Exception:
-                            igbp_poly_fitted.append(igbp_curve)
-                    else:
-                        igbp_poly_fitted.append(igbp_curve)
-
-                # Aggregate the polynomial-fitted curves
+                igbp_poly_fitted = fit_polynomial_to_curves(igbp_ale_interpolated[igbp], common_grid)
                 igbp_array = np.array(igbp_poly_fitted)
                 igbp_mean = agg_func(igbp_array, axis=0)
 
-                # Apply same 50% coverage threshold
                 min_sites_igbp = len(igbp_poly_fitted) / 2
                 igbp_coverage = np.sum(~np.isnan(igbp_array), axis=0)
-                igbp_mask = igbp_coverage < min_sites_igbp
-                igbp_mean[igbp_mask] = np.nan
+                igbp_mean[igbp_coverage < min_sites_igbp] = np.nan
 
                 ale_interpolated[igbp] = igbp_mean
-                print(f"  {igbp}: {len(igbp_poly_fitted)} sites (poly-fitted)")
+                print(f"  {igbp}: {len(igbp_poly_fitted)} sites")
     else:
         print("ERROR: Could not interpolate any curves")
         mean_effect = None
         std_effect = None
-
-elif len(ale_results_by_temp) > 0:
-    # Multi-curve mode: existing logic
-    all_feature_values = np.concatenate([
-        ale_results_by_temp[idx]['feature_value']
-        for idx in ale_results_by_temp.keys()
-    ])
-    common_grid = np.linspace(all_feature_values.min(), all_feature_values.max(), 50)
-
-    ale_interpolated = {}
-    for temp_bin_idx, ale_data in ale_results_by_temp.items():
-        x_orig = ale_data['feature_value']
-        y_orig = ale_data['effect']
-
-        sort_idx = np.argsort(x_orig)
-        x_sorted = x_orig[sort_idx]
-        y_sorted = y_orig[sort_idx]
-
-        try:
-            # Only interpolate within data range; set extrapolated regions to NaN (no extrapolation)
-            f_interp = interp1d(x_sorted, y_sorted, kind='linear', bounds_error=False, fill_value=np.nan)
-            y_interp = f_interp(common_grid)
-            ale_interpolated[temp_bin_idx] = y_interp
-        except Exception as e:
-            continue
-
-    # Fit 4th order polynomial to each individual temperature bin curve first
-    ale_interpolated_poly = {}
-    for temp_bin_idx, y_interp in ale_interpolated.items():
-        valid_idx = ~np.isnan(y_interp)
-        if np.sum(valid_idx) > 4:
-            x_valid = common_grid[valid_idx]
-            y_valid = y_interp[valid_idx]
-            try:
-                poly_coeffs = np.polyfit(x_valid, y_valid, 4)
-                poly_fit = np.poly1d(poly_coeffs)
-                y_fitted = poly_fit(common_grid)
-                y_fitted[~valid_idx] = np.nan
-                ale_interpolated_poly[temp_bin_idx] = y_fitted
-            except Exception:
-                ale_interpolated_poly[temp_bin_idx] = y_interp
-        else:
-            ale_interpolated_poly[temp_bin_idx] = y_interp
-
-    # Calculate aggregated ALE across all polynomial-fitted temperature bins
-    all_effects = np.array([ale_interpolated_poly[idx] for idx in sorted(ale_interpolated_poly.keys())])
-    agg_func = np.nanmedian if USE_MEDIAN else np.nanmean
-    agg_name = "median" if USE_MEDIAN else "mean"
-    mean_effect = agg_func(all_effects, axis=0)
-
-    # Calculate prediction intervals using the method from script 54
-    # Fit polynomial to the aggregated mean curve
-    valid_idx = ~np.isnan(mean_effect)
-    if np.sum(valid_idx) > 4:
-        x_valid = common_grid[valid_idx]
-        y_valid = mean_effect[valid_idx]
-
-        # Fit 4th degree polynomial with full output for residuals
-        poly_coeffs, residuals, _, _, _ = np.polyfit(x_valid, y_valid, 4, full=True)
-        poly_fit_obj = np.poly1d(poly_coeffs)
-        y_fit_all = poly_fit_obj(common_grid)
-
-        # Calculate prediction interval bounds
-        n = len(x_valid)
-        p = 5  # degree + 1 for 4th order polynomial
-        alpha = 0.05
-
-        mse = residuals[0] / (n - p) if residuals.size > 0 else np.nan
-
-        # Vandermonde matrices
-        X_vander = np.vander(x_valid, p)
-        covariance_matrix = mse * np.linalg.inv(X_vander.T @ X_vander)
-
-        x_fit_vander = np.vander(common_grid, p)
-        se_fit = np.sqrt(np.diag(x_fit_vander @ covariance_matrix @ x_fit_vander.T))
-        se_pred = np.sqrt(se_fit ** 2 + mse)
-
-        t_value = stats.t.ppf(1 - alpha / 2, n - p)
-
-        ci_upper = y_fit_all + t_value * se_pred
-        ci_lower = y_fit_all - t_value * se_pred
-        std_effect = se_pred
-
-        # Use fitted curve as mean_effect
-        mean_effect = y_fit_all
-    else:
-        ci_lower = np.full_like(mean_effect, np.nan)
-        ci_upper = np.full_like(mean_effect, np.nan)
-        std_effect = np.full_like(mean_effect, np.nan)
-
-    # Mask regions with insufficient bin coverage (require 50% of temperature bins)
-    min_bins_required = len(ale_interpolated_poly) / 2
-    bin_coverage = np.sum(~np.isnan(all_effects), axis=0)
-    insufficient_mask = bin_coverage < min_bins_required
-
-    mean_effect[insufficient_mask] = np.nan
-    std_effect[insufficient_mask] = np.nan
-
-    n_masked = np.sum(insufficient_mask)
-    if n_masked > 0:
-        print(f"Masked {n_masked}/{len(common_grid)} grid points with <50% temperature bin coverage")
-    print(f"Applied 4th order polynomial fit to individual temperature bin curves before aggregation\n")
 
 else:
     print("ERROR: No ALE data generated")
@@ -648,93 +318,24 @@ if mean_effect is not None and std_effect is not None:
     y_min = np.nanmin(mean_effect)
     y_max = np.nanmax(mean_effect)
 
-    if not np.isnan(y_min) and not np.isnan(y_max):
-        y_margin = (y_max - y_min) * 0.20 if (y_max - y_min) > 0 else 0.5
-        y_limits = (y_min - y_margin, y_max + y_margin)
-        print(f"\n=== Y-AXIS SCALING ===")
-        print(f"Mean curve min: {y_min:.3f}")
-        print(f"Mean curve max: {y_max:.3f}")
-        print(f"Y-limits (includes masked regions): [{y_limits[0]:.3f}, {y_limits[1]:.3f}]")
-        print(f"====================\n")
-    else:
-        y_limits = (-1, 1)  # Fallback
-        print("WARNING: No valid mean values for y-scaling")
+    y_margin = (y_max - y_min) * 0.20 if (y_max - y_min) > 0 else 0.5
+    y_limits = (y_min - y_margin, y_max + y_margin) if not np.isnan(y_min) else (-1, 1)
 
-    # ==============================
-    # THRESHOLD DETECTION: Consensus + Mean curve polynomial fit
-    # ==============================
+    individual_thresholds = np.array([find_zero_crossing(c, common_grid) for c in site_ale_poly_fitted])
+    n_curves_total = len(site_ale_poly_fitted)
+    individual_thresholds = individual_thresholds[~np.isnan(individual_thresholds)]
+    n_curves_crossing = len(individual_thresholds)
 
-    # Find zero-crossings in each individual poly-fitted curve (for consensus)
-    individual_thresholds = []
-    for site_curve in site_ale_poly_fitted:
-        valid_idx = ~np.isnan(site_curve)
-        if np.sum(valid_idx) > 1:
-            # Find zero-crossing from positive to negative
-            sign_changes = np.diff(np.sign(site_curve))
-            crossing_indices = np.where(sign_changes != 0)[0]
-
-            if len(crossing_indices) > 0:
-                # Find first positive-to-negative crossing
-                for idx in crossing_indices:
-                    if site_curve[idx] > 0 and site_curve[idx + 1] <= 0:
-                        x1, x2 = common_grid[idx], common_grid[idx + 1]
-                        y1, y2 = site_curve[idx], site_curve[idx + 1]
-                        # Linear interpolation to find exact zero
-                        threshold = x1 - y1 * (x2 - x1) / (y2 - y1) if (y2 - y1) != 0 else (x1 + x2) / 2
-                        individual_thresholds.append(threshold)
-                        break
-
-    # Fit polynomial to the mean curve itself for its zero-crossing
-    y_fit_main = None
-    threshold_mean_curve = np.nan
-    valid_idx_mean = ~np.isnan(mean_effect)
-    if np.sum(valid_idx_mean) > 4:
-        x_valid = common_grid[valid_idx_mean]
-        y_valid = mean_effect[valid_idx_mean]
-        try:
-            poly_coeffs_mean = np.polyfit(x_valid, y_valid, 4)
-            poly_fit_mean = np.poly1d(poly_coeffs_mean)
-            y_fit_main = poly_fit_mean(common_grid)
-
-            # Find zero-crossing in mean curve polynomial
-            sign_changes_mean = np.diff(np.sign(y_fit_main))
-            crossing_indices_mean = np.where(sign_changes_mean != 0)[0]
-            if len(crossing_indices_mean) > 0:
-                for idx in crossing_indices_mean:
-                    if y_fit_main[idx] > 0 and y_fit_main[idx + 1] <= 0:
-                        x1, x2 = common_grid[idx], common_grid[idx + 1]
-                        y1, y2 = y_fit_main[idx], y_fit_main[idx + 1]
-                        threshold_mean_curve = x1 - y1 * (x2 - x1) / (y2 - y1) if (y2 - y1) != 0 else (x1 + x2) / 2
-                        break
-        except Exception:
-            pass
-
-    # Calculate consensus threshold from individual crossing points
-    print(f"\n=== THRESHOLD DETECTION ===")
-    print(f"Method 1: Consensus of individual site crossings")
-    if len(individual_thresholds) > 0:
-        individual_thresholds = np.array(individual_thresholds)
-        threshold_main = np.mean(individual_thresholds)
-        threshold_mean = individual_thresholds.mean()
+    if n_curves_crossing > 0:
+        threshold_main = individual_thresholds.mean()
         threshold_std = individual_thresholds.std()
-        threshold_sem = threshold_std / np.sqrt(len(individual_thresholds))
-
-        print(f"  Sites with crossing: {len(individual_thresholds)}/{len(site_ale_poly_fitted)}")
+        threshold_sem = threshold_std / np.sqrt(n_curves_crossing)
+        print(f"Threshold: {threshold_main:.3f}±{threshold_sem:.3f} SEM")
+        print(f"  {n_curves_crossing}/{n_curves_total} individual curves cross zero")
         print(f"  Range: [{individual_thresholds.min():.3f}, {individual_thresholds.max():.3f}]")
-        print(f"  Consensus threshold: {threshold_main:.3f}")
-        print(f"  SD (site variability): {threshold_std:.3f}")
-        print(f"  SEM (precision): {threshold_sem:.3f}")
     else:
-        print("  ERROR: No zero-crossings found in individual curves")
-        threshold_main = np.nan
-        threshold_std = np.nan
-
-    print(f"Method 2: Mean curve polynomial zero-crossing")
-    if not np.isnan(threshold_mean_curve):
-        print(f"  Mean curve crosses zero at: {threshold_mean_curve:.3f}")
-    else:
-        print(f"  Could not fit polynomial to mean curve")
-    print()
+        threshold_main = threshold_sem = np.nan
+        print(f"WARNING: None of the {n_curves_total} individual curves cross zero")
 
     # ==============================
     # STEP 5: CREATE FIGURE (both modes)
@@ -742,20 +343,12 @@ if mean_effect is not None and std_effect is not None:
 
     fig, gs, ax_all, axes_sub = plot.layout_5panels((13.86, 6.67), add_colorbar_ax=False)
 
-    xlabel = rf'{beautify[PLOT_FEATURE]} ($\sigma$)'
-    ylabel = rf'ALE effect on daytime {beautify[FLUX]} ($\sigma$)'
+    xlabel = rf'{BEAUTIFY[PLOT_FEATURE]} ($\sigma$)'
+    ylabel = rf'ALE effect on daytime {BEAUTIFY[FLUX]} ($\sigma$)'
 
-    # Main plot
-    if SINGLE_CURVE_MODE:
-        # Plot individual site curves in background (light gray)
-        for site_curve in site_ale_interpolated_array:
-            ax_all.plot(common_grid, site_curve, color='gray', alpha=0.15, linewidth=0.8, zorder=1)
-    else:
-        # Multiple curves: color-coded by temperature
-        for temp_bin_idx in sorted(ale_interpolated.keys()):
-            y_interp = ale_interpolated[temp_bin_idx]
-            color = colors_list[temp_bin_idx] if temp_bin_idx < len(colors_list) else '#999999'
-            ax_all.plot(common_grid, y_interp, color=color, alpha=0.5, linewidth=1.5, label=bin_labels[temp_bin_idx])
+    # Main plot: individual site curves in background (light gray)
+    for site_curve in site_ale_interpolated_array:
+        ax_all.plot(common_grid, site_curve, color='gray', alpha=0.15, linewidth=0.8, zorder=1)
 
     # Add both thresholds: consensus (SD error bar) and mean curve polynomial crossing
     if not np.isnan(threshold_main) and len(individual_thresholds) > 0:
@@ -785,10 +378,7 @@ if mean_effect is not None and std_effect is not None:
     ax_all.set_xlabel(xlabel, fontsize=AX_LABELS_FONTSIZE)
     ax_all.set_ylabel(ylabel, fontsize=AX_LABELS_FONTSIZE)
 
-    if not SINGLE_CURVE_MODE:
-        ax_all.legend(loc='best', fontsize=AX_LABELS_FONTSIZE * 0.7, ncol=2, bbox_to_anchor=(0.98, 0.97))
-    else:
-        ax_all.legend(loc='best', fontsize=AX_LABELS_FONTSIZE)
+    ax_all.legend(loc='best', fontsize=AX_LABELS_FONTSIZE)
 
     ax_all.text(0, 1.05, 'a', transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2, weight='bold')
     ax_all.text(0.05, 1.05, 'Global forests', transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
@@ -809,8 +399,10 @@ if mean_effect is not None and std_effect is not None:
     ax_all.xaxis.set_major_locator(MaxNLocator(nbins=6))
 
     # IGBP subplots (simplified: same data for all)
+    igbp_threshold_data = []  # Collect threshold data for table output
+
     configs = zip(
-        axes_sub, igbps,
+        axes_sub, IGBPS,
         [" ", " ", xlabel, xlabel],
         [" ", " ", " ", " "],
         ['b', 'c', 'd', 'e'],
@@ -819,149 +411,59 @@ if mean_effect is not None and std_effect is not None:
     )
 
     for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
-        if SINGLE_CURVE_MODE:
-            # Single curve mode: plot ecosystem-specific curve if available
-            igbp_threshold_main = np.nan
-            igbp_threshold_sd = np.nan
-
-            if igbp in ale_interpolated:
-                # Plot individual IGBP-specific site curves in background
-                igbp_site_curves = None
-                if igbp in igbp_ale_interpolated:
-                    igbp_site_curves = np.array(igbp_ale_interpolated[igbp])
-                    for site_curve in igbp_site_curves:
-                        ax.plot(common_grid, site_curve, color='gray', alpha=0.15, linewidth=0.8, zorder=1)
-
-                y_igbp = ale_interpolated[igbp]
-
-                # Detect threshold for this IGBP from individual curve crossings
-                igbp_individual_thresholds = []
-                if igbp in igbp_ale_interpolated:
-                    # Need to fit polynomials to IGBP curves as well
-                    igbp_poly_fitted = []
-                    for igbp_curve in igbp_ale_interpolated[igbp]:
-                        valid_idx = ~np.isnan(igbp_curve)
-                        if np.sum(valid_idx) > 4:
-                            x_valid = common_grid[valid_idx]
-                            y_valid = igbp_curve[valid_idx]
-                            try:
-                                poly_coeffs_igbp = np.polyfit(x_valid, y_valid, 4)
-                                poly_fit_obj_igbp = np.poly1d(poly_coeffs_igbp)
-                                igbp_fitted = poly_fit_obj_igbp(common_grid)
-                                igbp_fitted[~valid_idx] = np.nan
-                                igbp_poly_fitted.append(igbp_fitted)
-                            except Exception:
-                                igbp_poly_fitted.append(igbp_curve)
-                        else:
-                            igbp_poly_fitted.append(igbp_curve)
-
-                    # Find zero-crossings in IGBP poly-fitted curves
-                    for igbp_curve in igbp_poly_fitted:
-                        valid_idx = ~np.isnan(igbp_curve)
-                        if np.sum(valid_idx) > 1:
-                            sign_changes = np.diff(np.sign(igbp_curve))
-                            crossing_indices = np.where(sign_changes != 0)[0]
-                            if len(crossing_indices) > 0:
-                                for idx in crossing_indices:
-                                    if igbp_curve[idx] > 0 and igbp_curve[idx + 1] <= 0:
-                                        x1, x2 = common_grid[idx], common_grid[idx + 1]
-                                        y1, y2 = igbp_curve[idx], igbp_curve[idx + 1]
-                                        threshold = x1 - y1 * (x2 - x1) / (y2 - y1) if (y2 - y1) != 0 else (x1 + x2) / 2
-                                        igbp_individual_thresholds.append(threshold)
-                                        break
-
-                if len(igbp_individual_thresholds) > 0:
-                    igbp_individual_thresholds = np.array(igbp_individual_thresholds)
-                    igbp_threshold_main = igbp_individual_thresholds.mean()
-                    igbp_threshold_sd = igbp_individual_thresholds.std()
-
-                # Auto-scale subplot to its own data range
-                y_min_sub = np.nanpercentile(y_igbp, 5)
-                y_max_sub = np.nanpercentile(y_igbp, 95)
-                y_margin_sub = (y_max_sub - y_min_sub) * 0.50 if y_max_sub > y_min_sub else 1.0
-                y_lim_sub = (y_min_sub - y_margin_sub, y_max_sub + y_margin_sub)
-                ax.set_ylim(y_lim_sub)
-            else:
-                # Fallback to global curve if IGBP not available
-                # Plot all global site curves in background
-                for site_curve in site_ale_interpolated_array:
+        if igbp in ale_interpolated:
+            # Plot individual IGBP site curves in background
+            if igbp in igbp_ale_interpolated:
+                for site_curve in igbp_ale_interpolated[igbp]:
                     ax.plot(common_grid, site_curve, color='gray', alpha=0.15, linewidth=0.8, zorder=1)
 
-                y_interp = ale_interpolated[0]
-                ax.plot(common_grid, y_interp, color='steelblue', linewidth=2, zorder=100)
-                ax.set_ylim(y_limits)
-                igbp_threshold_main = threshold_main
-                igbp_threshold_sd = threshold_std if len(individual_thresholds) > 0 else np.nan
+            y_igbp = ale_interpolated[igbp]
 
-            # Plot threshold for IGBP (consensus + polynomial fit reference)
-            if not np.isnan(igbp_threshold_main) and len(igbp_individual_thresholds) > 0:
-                # Open circle marker for consensus
-                ax.scatter(igbp_threshold_main, 0, c='red', edgecolors='darkred', s=120, linewidth=1.5,
+            igbp_individual_thresholds = np.array([])
+            if igbp in igbp_ale_interpolated:
+                igbp_poly_fitted = fit_polynomial_to_curves(igbp_ale_interpolated[igbp], common_grid)
+                igbp_individual_thresholds = np.array([find_zero_crossing(c, common_grid) for c in igbp_poly_fitted])
+                igbp_individual_thresholds = igbp_individual_thresholds[~np.isnan(igbp_individual_thresholds)]
+
+            # Auto-scale to own data range
+            y_min_sub, y_max_sub = np.nanpercentile(y_igbp, [5, 95])
+            y_margin_sub = (y_max_sub - y_min_sub) * 0.5 if y_max_sub > y_min_sub else 1.0
+            ax.set_ylim(y_min_sub - y_margin_sub, y_max_sub + y_margin_sub)
+
+            # Plot threshold marker and label (same format as main plot)
+            if len(igbp_individual_thresholds) > 0:
+                igbp_threshold_main = igbp_individual_thresholds.mean()
+                igbp_sem = igbp_individual_thresholds.std() / np.sqrt(len(igbp_individual_thresholds))
+
+                igbp_threshold_data.append({
+                    'IGBP': igbp,
+                    'Threshold': igbp_threshold_main,
+                    'SEM': igbp_sem,
+                    'N_crossing': len(igbp_individual_thresholds),
+                    'N_total': len(igbp_poly_fitted)
+                })
+
+                ax.scatter(igbp_threshold_main, 0, c='none', edgecolors='black', s=200, linewidth=2,
                            marker='o', facecolors='none', zorder=100)
-
-                # Calculate SD and SEM for label/reporting
-                igbp_sd = np.array(igbp_individual_thresholds).std()
-
-                # Fit polynomial to IGBP curve for comparison
-                if igbp in ale_interpolated:
-                    y_igbp = ale_interpolated[igbp]
-                    valid_idx_igbp = ~np.isnan(y_igbp)
-                    igbp_threshold_poly = np.nan
-                    if np.sum(valid_idx_igbp) > 4:
-                        x_valid_igbp = common_grid[valid_idx_igbp]
-                        y_valid_igbp = y_igbp[valid_idx_igbp]
-                        try:
-                            poly_coeffs_igbp = np.polyfit(x_valid_igbp, y_valid_igbp, 4)
-                            poly_fit_igbp = np.poly1d(poly_coeffs_igbp)
-                            y_fit_igbp = poly_fit_igbp(common_grid)
-
-                            # Find zero-crossing in IGBP polynomial
-                            sign_changes_igbp = np.diff(np.sign(y_fit_igbp))
-                            crossing_indices_igbp = np.where(sign_changes_igbp != 0)[0]
-                            if len(crossing_indices_igbp) > 0:
-                                for idx in crossing_indices_igbp:
-                                    if y_fit_igbp[idx] > 0 and y_fit_igbp[idx + 1] <= 0:
-                                        x1, x2 = common_grid[idx], common_grid[idx + 1]
-                                        y1, y2 = y_fit_igbp[idx], y_fit_igbp[idx + 1]
-                                        igbp_threshold_poly = x1 - y1 * (x2 - x1) / (y2 - y1) if (y2 - y1) != 0 else (
-                                                                                                                             x1 + x2) / 2
-                                        break
-                        except Exception:
-                            pass
-
-                    # Label with both thresholds if they differ
-                    label_text = f'{igbp_threshold_main:.2f}\n±{igbp_sd:.2f}'
-                    if not np.isnan(igbp_threshold_poly) and abs(igbp_threshold_poly - igbp_threshold_main) > 0.05:
-                        label_text += f'\nP:{igbp_threshold_poly:.2f}'
-                else:
-                    label_text = f'{igbp_threshold_main:.2f}\n±{igbp_sd:.2f}'
-
+                label_text = f'Threshold\nx={igbp_threshold_main:.2f}±{igbp_sem:.2f} SEM'
                 ax.annotate(label_text,
-                            xy=(igbp_threshold_main, 0),
-                            xytext=(igbp_threshold_main - 0.5, -0.3),
-                            arrowprops=dict(arrowstyle='->', color='darkred', lw=1.5, shrinkB=8),
-                            ha='center', fontsize=AX_LABELS_FONTSIZE * 0.65,
-                            bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8, edgecolor='darkred'),
-                            color='darkred', zorder=11)
+                            xy=(igbp_threshold_main, 0), xytext=(igbp_threshold_main - 0.7, -0.5),
+                            arrowprops=dict(arrowstyle='->', color='black', lw=2, shrinkB=10),
+                            ha='center', fontsize=AX_LABELS_FONTSIZE * 0.75,
+                            color='black', zorder=11)
+            else:
+                igbp_threshold_data.append({
+                    'IGBP': igbp,
+                    'Threshold': np.nan,
+                    'SEM': np.nan,
+                    'N_crossing': 0,
+                    'N_total': len(igbp_ale_interpolated.get(igbp, []))
+                })
         else:
-            # Multi-curve mode: plot all temperature curves
-            for temp_bin_idx in sorted(ale_interpolated.keys()):
-                y_interp = ale_interpolated[temp_bin_idx]
-                color = colors_list[temp_bin_idx] if temp_bin_idx < len(colors_list) else '#999999'
-                ax.plot(common_grid, y_interp, color=color, alpha=0.3, linewidth=1)
-
+            # Fallback: plot individual site curves only
+            for site_curve in site_ale_interpolated_array:
+                ax.plot(common_grid, site_curve, color='gray', alpha=0.15, linewidth=0.8, zorder=1)
             ax.set_ylim(y_limits)
-
-            # Plot threshold from main panel analysis using same visualization as main (script 54 style)
-            if not np.isnan(threshold_main) and np.sum(~np.isnan(mean_effect)) > 4:
-                # Use the pre-calculated polynomial fit from earlier in the script
-                min_ix_sub = np.nanargmin(y_fit_main)
-                max_ix_sub = np.nanargmax(y_fit_main)
-                plot.show_shap_thresholds(ax=ax, x_fit=common_grid, y_fit=y_fit_main,
-                                          max_ix=max_ix_sub, min_ix=min_ix_sub,
-                                          threshold_main=threshold_main, show_annotate=True,
-                                          fontsize=AX_LABELS_FONTSIZE * 0.8, show_annotate_short=True,
-                                          colors_symbols=colors_symbols)
 
         ax.axhline(0, color='k', linestyle='--', linewidth=1, alpha=0.5)
         ax.set_xlabel(xl, fontsize=AX_LABELS_FONTSIZE)
@@ -979,6 +481,30 @@ if mean_effect is not None and std_effect is not None:
         # Reduce x-axis ticks for subplots too
         ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
 
+    # Print comprehensive threshold summary table
+    print("\n" + "=" * 95)
+    print(f"THRESHOLD SUMMARY | Feature: {BEAUTIFY[PLOT_FEATURE]} | Target: {BEAUTIFY[FLUX]}")
+    print("=" * 95)
+    print(f"{'Group':<15} {'Threshold':<15} {'SEM':<12} {'N crossing':<15} {'N total':<10}")
+    print("-" * 95)
+
+    # Global threshold
+    if n_curves_crossing > 0:
+        print(f"{'GLOBAL':<15} {threshold_main:>8.4f}       {threshold_sem:>8.4f}     "
+              f"{n_curves_crossing:>3}/{n_curves_total:<3}            {n_curves_total:>6}")
+    else:
+        print(f"{'GLOBAL':<15} {'N/A':>14} {'N/A':>11} {0:>3}/{n_curves_total:<3}            {n_curves_total:>6}")
+
+    # IGBP-specific thresholds
+    for data in igbp_threshold_data:
+        if not np.isnan(data['Threshold']):
+            print(f"{data['IGBP']:<15} {data['Threshold']:>8.4f}       {data['SEM']:>8.4f}     "
+                  f"{data['N_crossing']:>3}/{data['N_total']:<3}            {data['N_total']:>6}")
+        else:
+            print(f"{data['IGBP']:<15} {'N/A':>14} {'N/A':>11} {0:>3}/{data['N_total']:<3}            {data['N_total']:>6}")
+
+    print("=" * 95 + "\n")
+
     fig.tight_layout()
     gs.update(wspace=.1)
 
@@ -995,8 +521,8 @@ if mean_effect is not None and std_effect is not None:
         'target': FLUX,
         'method': 'Direct zero-crossing',
         'threshold': f'{threshold_main:.3f}',
-        'n_sites': len(all_site_ale_curves) if SINGLE_CURVE_MODE else len(ale_results_by_temp),
-        'mode': 'Single curve' if SINGLE_CURVE_MODE else 'Multi-curve (temperature context)'
+        'n_sites': len(all_site_ale_curves),
+        'mode': 'Single curve'
     }])
 
     threshold_path = dir_out / f'55_FIG_ALE_ResponseCurve_{PLOT_FEATURE}_{FLUX}_THRESHOLD.csv'
