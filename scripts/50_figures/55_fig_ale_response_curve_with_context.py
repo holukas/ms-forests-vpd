@@ -665,54 +665,45 @@ if mean_effect is not None and std_effect is not None:
         print("WARNING: No valid mean values for y-scaling")
 
     # ==============================
-    # THRESHOLD DETECTION: Direct zero-crossing
+    # THRESHOLD DETECTION: Consensus from individual curve zero-crossings
     # ==============================
 
-    # Find zero-crossing from mean curve (direct approach, ignoring NaN values)
-    valid_mask = ~np.isnan(mean_effect)
-    n_valid = np.sum(valid_mask)
-    pct_valid = 100.0 * n_valid / len(mean_effect) if len(mean_effect) > 0 else 0
+    # Find zero-crossings in each individual poly-fitted curve
+    individual_thresholds = []
+    for site_curve in site_ale_poly_fitted:
+        valid_idx = ~np.isnan(site_curve)
+        if np.sum(valid_idx) > 1:
+            # Find zero-crossing from positive to negative
+            sign_changes = np.diff(np.sign(site_curve))
+            crossing_indices = np.where(sign_changes != 0)[0]
 
-    print(f"\n=== THRESHOLD DETECTION ===")
-    print(f"Mean effect shape: {mean_effect.shape}")
-    print(f"Valid grid points: {n_valid}/{len(mean_effect)} ({pct_valid:.1f}%)")
-    print(f"Mean effect range: [{np.nanmin(mean_effect):.3f}, {np.nanmax(mean_effect):.3f}]")
-    print(f"Grid range: [{common_grid.min():.3f}, {common_grid.max():.3f}]")
+            if len(crossing_indices) > 0:
+                # Find first positive-to-negative crossing
+                for idx in crossing_indices:
+                    if site_curve[idx] > 0 and site_curve[idx + 1] <= 0:
+                        x1, x2 = common_grid[idx], common_grid[idx + 1]
+                        y1, y2 = site_curve[idx], site_curve[idx + 1]
+                        # Linear interpolation to find exact zero
+                        threshold = x1 - y1 * (x2 - x1) / (y2 - y1) if (y2 - y1) != 0 else (x1 + x2) / 2
+                        individual_thresholds.append(threshold)
+                        break
 
-    if n_valid > 0:
-        # Find actual zero-crossing: where curve changes sign (positive to negative)
-        sign_changes = np.diff(np.sign(mean_effect))
-        crossing_indices = np.where(sign_changes != 0)[0]
+    # Calculate consensus threshold from individual crossing points
+    print(f"\n=== THRESHOLD DETECTION (Individual Curve Consensus) ===")
+    if len(individual_thresholds) > 0:
+        individual_thresholds = np.array(individual_thresholds)
+        threshold_main = np.mean(individual_thresholds)
+        threshold_mean = individual_thresholds.mean()
+        threshold_std = individual_thresholds.std()
 
-        if len(crossing_indices) > 0:
-            # Use the first (leftmost) crossing from positive to negative
-            for idx in crossing_indices:
-                if mean_effect[idx] > 0 and mean_effect[idx + 1] <= 0:
-                    # Found crossing from positive to negative - interpolate
-                    x1, x2 = common_grid[idx], common_grid[idx + 1]
-                    y1, y2 = mean_effect[idx], mean_effect[idx + 1]
-                    # Linear interpolation to find exact zero
-                    threshold_main = x1 - y1 * (x2 - x1) / (y2 - y1) if (y2 - y1) != 0 else (x1 + x2) / 2
-                    print(f"Zero-crossing found at {beautify[PLOT_FEATURE]} = {threshold_main:.3f}")
-                    break
-            else:
-                # No positive-to-negative crossing, use closest to zero as fallback
-                zero_idx = np.nanargmin(np.abs(mean_effect))
-                threshold_main = common_grid[zero_idx]
-                print(f"No sign change found. Using closest-to-zero at {threshold_main:.3f}")
-        else:
-            # No sign changes, use closest to zero
-            zero_idx = np.nanargmin(np.abs(mean_effect))
-            threshold_main = common_grid[zero_idx]
-            print(f"No sign changes. Using closest-to-zero at {threshold_main:.3f}")
+        print(f"Sites with positive-to-negative crossing: {len(individual_thresholds)}/{len(site_ale_poly_fitted)}")
+        print(f"Crossing points range: [{individual_thresholds.min():.3f}, {individual_thresholds.max():.3f}]")
+        print(f"Consensus threshold (mean): {threshold_main:.3f}")
+        print(f"Std dev: {threshold_std:.3f}\n")
     else:
-        print("ERROR: No valid values in mean_effect for threshold detection")
+        print("ERROR: No zero-crossings found in individual curves")
         threshold_main = np.nan
-
-    if not np.isnan(threshold_main):
-        print(f"Threshold value: {threshold_main:.3f}\n")
-    else:
-        print(f"Threshold: INVALID (NaN)\n")
+        print()
 
     # ==============================
     # STEP 5: CREATE FIGURE (both modes)
@@ -746,15 +737,15 @@ if mean_effect is not None and std_effect is not None:
 
     # Threshold zones with colored background (like in script 54)
     if not np.isnan(threshold_main):
-        # Threshold marker at zero crossing
-        ax_all.scatter(threshold_main, 0, c='none', edgecolors='black', s=200, linewidth=2,
-                      zorder=100)
+        # Threshold marker at consensus zero crossing
+        ax_all.scatter(threshold_main, 0, c='red', edgecolors='darkred', s=200, linewidth=2,
+                      zorder=100, label=f'Consensus threshold: {threshold_main:.2f}')
 
         # Threshold value annotation
         y_pos = y_limits[1] * 0.9
         ax_all.text(threshold_main, y_pos, f'{threshold_main:.2f}',
                     ha='center', fontsize=AX_LABELS_FONTSIZE * 0.9,
-                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.8), zorder=11)
+                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='red'), zorder=11)
     else:
         print("WARNING: Threshold is NaN - not plotting threshold marker")
 
