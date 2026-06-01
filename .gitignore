@@ -16,6 +16,7 @@ data/outputs/shap_analysis/nep/conditional/2_PerSite_Aggregated_SHAPValues-condi
 data/outputs/shap_analysis/nep/conditional/3_AllSites_Aggregated_SHAPValues-conditional_NEP.csv
 data/outputs/shap_analysis/reco/conditional/1_models_xgboost_shap-conditional_RECO.txt
 data/outputs/borderless_heatmaps
+.claude/
 
 *.csv
 *.xlsx
