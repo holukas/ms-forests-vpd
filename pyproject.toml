@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ms-co2-penalty"
+name = "ms-forests-vpd"
 version = "0.1.0"
 description = ""
 authors = ["Lukas Hörtnagl <lukas.hoertnagl@usys.ethz.ch>"]
