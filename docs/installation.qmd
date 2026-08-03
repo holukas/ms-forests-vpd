@@ -86,16 +86,33 @@ pipeline reads the aggregated result. See [Data](data.qmd) for the credentials.
 uv sync --group dev
 ```
 
-Adds JupyterLab and pytest.
+Adds JupyterLab, pytest, Quarto and ghp-import. The `quarto-cli` package ships the
+Quarto binary, so no separate system install is needed.
 
 ## Building these docs
 
 The documentation is a [Quarto](https://quarto.org/) website under `docs/`. Notebooks
-and code blocks are not executed at render time, so no data folder is required:
+and code blocks are not executed at render time, so no data folder is required.
+
+Live preview with reload on save:
 
 ```bash
-quarto render docs
+uv run python preview_docs.py
 ```
 
-Output lands in `docs/_site/`. The published version is built by GitHub Actions on
-every push to `main`.
+Build once into `docs/_site/`:
+
+```bash
+uv run python preview_docs.py --render
+```
+
+`--port` and `--no-browser` are passed through to Quarto. The script uses the Quarto
+binary from the environment and falls back to one on `PATH`.
+
+The published version is built by GitHub Actions on every push to `main`, which needs
+Pages enabled on the repository. To push a build by hand instead:
+
+```bash
+uv run python preview_docs.py --render
+uv run ghp-import -n -p -f docs/_site
+```

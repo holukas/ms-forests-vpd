@@ -11,7 +11,15 @@ type.
 - Target: `NEP_ZSCORE`, half-hourly, daytime, four months of highest GPP per site
 - Features: `TA_ZSCORE`, `SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`
 
-Full documentation: <https://holukas.github.io/ms-forests-vpd/>
+Full documentation is a Quarto site under [`docs/`](docs/). Preview it locally with:
+
+```bash
+uv sync --group dev
+uv run python preview_docs.py
+```
+
+Once the repository is public it is published at
+<https://holukas.github.io/ms-forests-vpd/>.
 
 ## Requirements
 
@@ -64,9 +72,8 @@ export MS_FORESTS_VPD_DATA=/data/ms-forests-vpd-data  # macOS / Linux
 ```
 
 or by adding `DATA_ROOT` to `config/settings.local.yaml`. The folder is expected to
-contain `data/00_raw/` and `data/outputs/`. See
-[the data page](https://holukas.github.io/ms-forests-vpd/data.html) for the layout and
-for where the FLUXNET source datasets come from.
+contain `data/00_raw/` and `data/outputs/`. See [`docs/data.qmd`](docs/data.qmd) for the
+layout and for where the FLUXNET source datasets come from.
 
 ## Running
 
