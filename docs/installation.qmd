@@ -96,23 +96,31 @@ and code blocks are not executed at render time, so no data folder is required.
 
 Live preview with reload on save:
 
-```bash
-uv run python preview_docs.py
+```powershell
+.\preview_docs.ps1
 ```
 
 Build once into `docs/_site/`:
 
-```bash
-uv run python preview_docs.py --render
+```powershell
+.\preview_docs.ps1 -Render
 ```
 
-`--port` and `--no-browser` are passed through to Quarto. The script uses the Quarto
-binary from the environment and falls back to one on `PATH`.
+`-Port` and `-NoBrowser` are passed through to Quarto. The script uses the Quarto binary
+from `.venv` and falls back to one on `PATH`. `Get-Help .\preview_docs.ps1 -Examples`
+shows the usage.
+
+Outside Windows, call Quarto directly:
+
+```bash
+uv run quarto preview docs
+uv run quarto render docs
+```
 
 The published version is built by GitHub Actions on every push to `main`, which needs
 Pages enabled on the repository. To push a build by hand instead:
 
-```bash
-uv run python preview_docs.py --render
+```powershell
+.\preview_docs.ps1 -Render
 uv run ghp-import -n -p -f docs/_site
 ```

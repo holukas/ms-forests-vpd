@@ -13,10 +13,12 @@ type.
 
 Full documentation is a Quarto site under [`docs/`](docs/). Preview it locally with:
 
-```bash
+```powershell
 uv sync --group dev
-uv run python preview_docs.py
+.\preview_docs.ps1
 ```
+
+Outside Windows, `uv run quarto preview docs`.
 
 Once the repository is public it is published at
 <https://holukas.github.io/ms-forests-vpd/>.
