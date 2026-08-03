@@ -33,6 +33,14 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv downloads Python 3.12 itself if the system does not have it, so no separate Python
 install is needed.
 
+::: {.callout-important title="Pre-publication state"}
+`diive` 0.91.0 is not on PyPI yet, so `pyproject.toml` currently resolves it from a
+local checkout next to this repository (`../../diive`) through a `[tool.uv.sources]`
+block. On any other machine `uv sync` will fail until that release is published, the
+block is removed and `uv.lock` is regenerated. The version pin itself,
+`diive==0.91.0`, is already final.
+:::
+
 ## Running scripts
 
 Scripts import from `src/`, which `uv sync` installs into the environment in editable

@@ -48,5 +48,13 @@ dev = [
     "ghp-import>=2.1.0,<3.0",
 ]
 
+# TEMPORARY, remove before publication.
+# diive 0.91.0 is not on PyPI yet, so it is resolved from a local checkout.
+# Once it is published: delete this block, run `uv lock`, commit the lockfile,
+# and confirm `uv sync` works in a clean clone. The dependency itself already
+# reads `diive==0.91.0` and does not change.
+[tool.uv.sources]
+diive = { path = "../../diive", editable = true }
+
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
