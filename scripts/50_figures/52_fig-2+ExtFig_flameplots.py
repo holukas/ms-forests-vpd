@@ -10,6 +10,7 @@ from matplotlib import ticker
 
 import src.files as files
 import src.plot as plot
+from src.paths import load_settings
 
 # --- SETTINGS ---
 # Each inner list represents one row
@@ -111,7 +112,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
 
     # Paths
     shap_type = 'conditional' if CONDITIONAL else 'standard'
-    settings = files.read_settings_file("../../config/settings.yaml")
+    settings = load_settings()
     dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 
     # todo check Pre-calculate for scaling z-values (colors)
@@ -147,11 +148,12 @@ for row_idx, plotvars in enumerate(plotvars_rows):
                 x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
 
         # Flameplot (heatmap)
-        hm = dv.heatmapxyz(
-            ax=ax, x=df_to_plot.iloc[:, 0], y=df_to_plot.iloc[:, 1], z=df_to_plot.iloc[:, 2],
+        hm = dv.plotting.HeatmapXYZ(
+            x=df_to_plot.iloc[:, 0], y=df_to_plot.iloc[:, 1], z=df_to_plot.iloc[:, 2])
+        hm.plot(
+            ax=ax, format_style=plot.heatmap_style(show_grid=False),
             cmap=cmap, vmin=-absmax, vmax=absmax, color_bad=facecolor,
-            show_colormap=False, show_grid=False)
-        hm.plot()
+            show_colormap=False)
 
         # Headers for the very top row only
         if row_idx == 0:

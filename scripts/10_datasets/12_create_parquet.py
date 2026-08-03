@@ -4,12 +4,13 @@ import numpy as np
 import pandas as pd
 
 import src.files as files
+from src.paths import data_path, load_settings
 
 # Load settings
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 
 # Load datasets info
-infile = Path('../../data/outputs/10_datasets/11_datasets_info.csv')
+infile = data_path("data/outputs/10_datasets/11_datasets_info.csv")
 datasets_df = pd.read_csv(infile)
 datasets_df = datasets_df.fillna(np.nan)
 
@@ -39,6 +40,6 @@ for ix, datasetinfo in _datasets_df.iterrows():
 datasets_df = datasets_df.reset_index(drop=True)
 # datasets_df = datasets_df.fillna("n.a.")
 datasets_df = datasets_df.sort_values(by=['SITE'], inplace=False)
-outfile = Path('../../data/outputs/10_datasets/12_datasets_info_parquet.csv')
+outfile = data_path("data/outputs/10_datasets/12_datasets_info_parquet.csv")
 print(f"\n{'-' * 80}\nSaving info about {len(datasets_df)} datasets to file {outfile}.\n{'-' * 80}")
 datasets_df.to_csv(outfile, index=False)

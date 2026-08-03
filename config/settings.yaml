@@ -1,51 +1,55 @@
-# Dirs
+# Folder holding the FLUXNET source files and all analysis outputs.
+# Not part of this repository (~185 GB). Override per machine with the
+# MS_FORESTS_VPD_DATA environment variable or config/settings.local.yaml.
+DATA_ROOT: F:/Sync/luhk_work/dev-data/manuscripts-data/ms-forests-vpd-data
 
-#DIR_DATA: ../data
-DIR_DATA_PROC_PARQUET: ../../data/outputs/10_datasets/12_parquet_merged
-DIR_DATA_PROC_PARQUET_PLOTS: ../../data/outputs/10_datasets/12_parquet_merged_plots
-DIR_DATA_PROC_SUBSETS: ../../data/outputs/20_subsets/21_subsets_parquet
-DIR_DATA_PROC_SUBSETS_PLOTS: ../../data/outputs/20_subsets/21_subsets_parquet_plots
-#DIR_DATA_OUT: ../data/outputs
-DIR_DATA_OUT_SHAP_ANALYSIS: ../../data/outputs/30_shap
-DIR_DATA_OUT_SHAP_ANALYSIS_AGG: ../../data/outputs/40_aggregation
-DIR_PLOTS_OUT: ../../data/outputs/50_plots
+# All paths below are relative to DATA_ROOT and resolved by src/paths.py.
 
-# Files
+# Processed data
+DIR_DATA_PROC_PARQUET: data/outputs/10_datasets/12_parquet_merged
+DIR_DATA_PROC_PARQUET_PLOTS: data/outputs/10_datasets/12_parquet_merged_plots
+DIR_DATA_PROC_SUBSETS: data/outputs/20_subsets/21_subsets_parquet
+DIR_DATA_PROC_SUBSETS_PLOTS: data/outputs/20_subsets/21_subsets_parquet_plots
+
+# Results
+DIR_DATA_OUT_SHAP_ANALYSIS: data/outputs/30_shap
+DIR_DATA_OUT_SHAP_ANALYSIS_AGG: data/outputs/40_aggregation
+DIR_PLOTS_OUT: data/outputs/50_plots
+
+# Ecosystem types included in the analysis
 ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']
 
-# VARIOUS SOURCES (from fluxnet-shuttle)
-DIR_DATA_RAW_SHUTTLE: ../../data/00_raw/from-fluxnet-shuttle
+# Raw data sources
+# Each entry: search folder, folder/file name patterns, site metadata file.
+
+# FLUXNET-SHUTTLE
+DIR_DATA_RAW_SHUTTLE: data/00_raw/from-fluxnet-shuttle
 PATTERN_DIR_SHUTTLE: ['_FLUXNET_', '_v1.3_r1']
 PATTERN_FILE_HH_SHUTTLE: "*FLUXNET_FLUXMET_HH_*.csv"
-INFOFILE_SHUTTLE: ../../data/00_raw/from-fluxnet-shuttle/0-info/fluxnet_shuttle_snapshot_20260420T103353_NO-EMPTY-ROWS.csv
+INFOFILE_SHUTTLE: data/00_raw/from-fluxnet-shuttle/0-info/fluxnet_shuttle_snapshot_20260420T103353_NO-EMPTY-ROWS.csv
 
-# JAPANFLUX (JapanFlux2024 dataset)
-DIR_DATA_RAW_JPF: ../../data/00_raw/japanflux
+# JapanFlux2024
+DIR_DATA_RAW_JPF: data/00_raw/japanflux
 PATTERN_DIR_JPF: ['JPF_']
 PATTERN_FILE_HH_JPF: FLX_*_JapanFLUX2024_ALLVARS_HH_*.csv
-INFOFILE_JPF: ../../data/00_raw/japanflux/0-info/JapanFlux2024_SiteList_20250910.csv
+INFOFILE_JPF: data/00_raw/japanflux/0-info/JapanFlux2024_SiteList_20250910.csv
 
-## ICOS (from Carbon Portal) (all sites now part of fluxnet-shuttle)
-#DIR_DATA_RAW_ICOS: ../../data/00_raw/icos
-#PATTERN_DIR_ICOS: ['ICOS_', '_ARCHIVE_L2']
-#PATTERN_FILE_HH_ICOS: ICOSETC_*_FLUXNET_HH_L2.csv
-
-# FLUXNET (from Carbon Portal)
-DIR_DATA_RAW_FXN_CP: ../../data/00_raw/fluxnet_from_carbonportal
+# FLUXNET2015 (ICOS Carbon Portal)
+DIR_DATA_RAW_FXN_CP: data/00_raw/fluxnet_from_carbonportal
 PATTERN_DIR_FXN_CP: ['FLX_', 'FLUXNET2015_FULLSET_']
 PATTERN_FILE_HH_FXN_CP: FLX_*_FLUXNET2015_FULLSET_HH_*.csv
-INFOFILE_FXN_CP: ../../data/00_raw/fluxnet_from_carbonportal/0-info/FLUXNET_SitesList_20240404.csv
-#INFOFILE_FXN_CP: ../../data/00_raw/fluxnet_from_carbonportal/0-info/FLUXNET_SitesList_20260126_requiredCols.csv
+INFOFILE_FXN_CP: data/00_raw/fluxnet_from_carbonportal/0-info/FLUXNET_SitesList_20240404.csv
 
-# FLUXNET (from fluxnet.org)
-DIR_DATA_RAW_FXN_ORG: ../../data/00_raw/fluxnet_from_fluxnetorg
+# FLUXNET2015 (fluxnet.org)
+DIR_DATA_RAW_FXN_ORG: data/00_raw/fluxnet_from_fluxnetorg
 PATTERN_DIR_FXN_ORG: ['FLX_', 'FLUXNET2015_FULLSET_']
 PATTERN_FILE_HH_FXN_ORG: FLX_*_FLUXNET2015_FULLSET_HH_*.csv
-INFOFILE_FXN_ORG: ../../data/00_raw/fluxnet_from_fluxnetorg/0-info/FLX_AA-Flx_BIF_HH_20200501.csv
+INFOFILE_FXN_ORG: data/00_raw/fluxnet_from_fluxnetorg/0-info/FLX_AA-Flx_BIF_HH_20200501.csv
 
-# AMERIFLUX
-DIR_DATA_RAW_AMF: ../../data/00_raw/ameriflux
+# AmeriFlux
+DIR_DATA_RAW_AMF: data/00_raw/ameriflux
 PATTERN_DIR_AMF: ['AMF_', 'FLUXNET_FULLSET_']
 PATTERN_FILE_HH_AMF: AMF_*_FLUXNET_FULLSET_HH_*.csv
-INFOFILE_AMF: ../../data/00_raw/ameriflux/0-info/AMF_AA-Flx_FLUXNET-BIF_CCBY4_20250804.csv
+INFOFILE_AMF: data/00_raw/ameriflux/0-info/AMF_AA-Flx_FLUXNET-BIF_CCBY4_20250804.csv
 
+# ICOS sites are now all part of FLUXNET-SHUTTLE and read from there.

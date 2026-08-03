@@ -2,9 +2,10 @@ from pathlib import Path
 
 import pandas as pd
 from diive.core.io.files import load_parquet
+from src.paths import data_path
 
 # Load datasets info
-infile = Path('../../data/outputs/10_datasets/12_datasets_info_parquet.csv')
+infile = data_path("data/outputs/10_datasets/12_datasets_info_parquet.csv")
 datasets_df = pd.read_csv(infile)
 
 required_vars = dict(
@@ -66,6 +67,6 @@ for ix, site in _datasets_df.iterrows():
 # Save to file
 datasets_df = datasets_df.reset_index(drop=True)
 datasets_df = datasets_df.sort_values(by=['SITE'], inplace=False)
-outfile = Path('../../data/outputs/10_datasets/13_datasets_info_parquet_vars.csv')
+outfile = data_path("data/outputs/10_datasets/13_datasets_info_parquet_vars.csv")
 print(f"\n{'-' * 80}\nSaving info about {len(datasets_df)} datasets to file {outfile}.\n{'-' * 80}")
 datasets_df.to_csv(outfile, index=False)

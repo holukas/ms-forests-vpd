@@ -1,0 +1,54 @@
+project:
+  type: website
+  output-dir: _site
+
+# Pages are written by hand and describe code that needs the full 185 GB data
+# folder to run. Nothing here is executed at render time.
+execute:
+  enabled: false
+  freeze: true
+
+website:
+  title: "ms-forests-vpd"
+  description: "Code documentation for the forest VPD / soil moisture SHAP analysis"
+  repo-url: https://github.com/holukas/ms-forests-vpd
+  repo-actions: [source, issue]
+  page-navigation: true
+  navbar:
+    left:
+      - href: index.qmd
+        text: Overview
+      - href: installation.qmd
+        text: Installation
+      - href: data.qmd
+        text: Data
+      - href: pipeline.qmd
+        text: Pipeline
+      - href: methods.qmd
+        text: Methods
+      - href: figures.qmd
+        text: Figures
+    right:
+      - icon: github
+        href: https://github.com/holukas/ms-forests-vpd
+  sidebar:
+    style: docked
+    contents:
+      - index.qmd
+      - installation.qmd
+      - data.qmd
+      - pipeline.qmd
+      - methods.qmd
+      - figures.qmd
+  page-footer:
+    left: "Lukas Hörtnagl, ETH Zurich"
+    right: "GPL-3.0"
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    code-copy: true
+    code-overflow: wrap
+    link-external-newwindow: true

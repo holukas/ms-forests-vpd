@@ -29,6 +29,7 @@ import pandas as pd
 
 import src.files as files
 from src.models import train_xgboost_models_and_ale
+from src.paths import data_path, load_settings
 # Optional validation methods (commented out - uncomment to enable):
 # from src.models import calculate_partial_correlations, calculate_path_analysis, create_validation_summary
 
@@ -53,10 +54,10 @@ FEATURES = ['TA_ZSCORE', 'SWIN_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE']
 
 
 # Load settings
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 
 # Load subsets info
-infile = Path('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv')
+infile = data_path("data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv")
 subsets_df = pd.read_csv(infile)
 
 # Create output directory

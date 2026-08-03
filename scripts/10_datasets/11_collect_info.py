@@ -4,9 +4,10 @@ import pandas as pd
 
 import src.files as files
 import src.sites as sites
+from src.paths import data_path, load_settings
 
 # Settings
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 ecosystems = settings['ECOSYSTEMS']
 
 # MULTIPLE NETWORKS (via fluxnet-shuttle)
@@ -84,6 +85,6 @@ priority = {"SHUTTLE-CLI": 1, "ICOS": 2, "AMERIFLUX": 2, "JAPANFLUX-URL": 2, "FL
 datasets_df['PRIORITY'] = datasets_df['DOWNLOADED_VIA'].map(priority)
 
 # Save to file
-outfile = Path('../../data/outputs/10_datasets/11_datasets_info.csv')
+outfile = data_path("data/outputs/10_datasets/11_datasets_info.csv")
 print(f"\n{'-' * 80}\nSaving info about {len(datasets_df)} datasets to file {outfile}.\n{'-' * 80}")
 datasets_df.to_csv(outfile, index=False)

@@ -17,16 +17,17 @@ import pandas as pd
 
 import src.files as files
 from src.common import get_variable_names
+from src.paths import data_path, load_settings
 
 # Load datasets info
-infile = Path('../../data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv')
+infile = data_path("data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv")
 datasets_df = pd.read_csv(infile)
 
 # Load settings
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 
 # Logger
-OUTDIR = Path('../../data/outputs/20_subsets/')
+OUTDIR = data_path("data/outputs/20_subsets/")
 outfile = OUTDIR / '21_warnings.log'
 logging.basicConfig(
     filename=outfile,

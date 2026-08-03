@@ -13,6 +13,7 @@ import pandas as pd
 import src.files as files
 import src.fit as fit
 import src.plot as plot
+from src.paths import load_settings
 
 # Settings & variables
 
@@ -121,7 +122,7 @@ colors_symbols = ['black', 'black', 'black']
 # ------------------------------
 
 # Load settings
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 
@@ -137,7 +138,7 @@ dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
 
 # Paths & Settings
 shap_type = 'conditional' if CONDITIONAL else 'standard'
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 df_coeffs = pd.DataFrame(columns=['IGBP', 'a', 'b', 'c', 'd', 'e', 'R2', 'Threshold'])  # Collect coefficients
 

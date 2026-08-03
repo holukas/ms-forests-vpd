@@ -10,6 +10,7 @@ from matplotlib.patches import Patch
 import src.files as files
 import src.plot as plot
 import src.stages as stages
+from src.paths import load_settings
 
 # ==========================================
 # SETTINGS
@@ -55,7 +56,7 @@ BLUE = '#0072B2'
 AX_LABELS_FONTSIZE = 12
 
 # Paths
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 shap_type = 'conditional'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 filepath = Path(results_outdir) / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet"

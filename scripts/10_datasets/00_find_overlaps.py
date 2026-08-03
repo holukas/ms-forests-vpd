@@ -11,14 +11,15 @@ from pathlib import Path
 import pandas as pd
 import shutil
 from datetime import datetime
+from src.paths import data_path
 
 # ===== SETTINGS =====
 DELETE_OVERLAPPING_FOLDERS = True  # Set to False to skip deletion
 # ====================
 
 # Define directories
-ameriflux_dir = Path('../../data/00_raw/ameriflux')
-shuttle_dir = Path('../../data/00_raw/from-fluxnet-shuttle')
+ameriflux_dir = data_path("data/00_raw/ameriflux")
+shuttle_dir = data_path("data/00_raw/from-fluxnet-shuttle")
 
 # Folders to exclude (metadata/info folders)
 EXCLUDE_PATTERNS = {'0-info', '1-extended_info', '1-zips', '.cache'}
@@ -90,7 +91,7 @@ else:
     print(f"  ... and {len(only_in_shuttle) - 10} more")
 
 # Save results to CSV
-output_dir = Path('../../data/outputs/10_datasets')
+output_dir = data_path("data/outputs/10_datasets")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 # Create summary dataframe

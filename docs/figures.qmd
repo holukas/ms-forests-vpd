@@ -1,0 +1,53 @@
+---
+title: "Figures"
+---
+
+Figure scripts read the aggregated results under `<DATA_ROOT>/data/outputs/` and write
+to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
+
+| Script | Produces | Reads |
+|--------|----------|-------|
+| `51_fig-1_worldmap_mat_map_era5.py` | Figure 1, site map with ERA5 climate normals | `10_datasets/17_..._era5.csv` |
+| `52_fig-2+ExtFig_flameplots.py` | Figure 2 and the matching Extended Data figures, binned SHAP heatmaps | `40_aggregation/` |
+| `53_fig-3_sankeyplot_shapvalues_8stages.py` | Figure 3, SHAP flow across the stress stages | `40_aggregation/` |
+| `54_fig-4_vpd_response_curve_shap_agg.py` | Figure 4, VPD response curve from SHAP with threshold | `40_aggregation/` |
+| `55_fig_ale_response_curve_with_context.py` | ALE response curves with consensus threshold | `30_shap/<flux>/ale/` |
+| `56_ExtDataFig1+Table1_scenarios_boxplot_shapsums.py` | Extended Data Figure 1 and Table 1 | `40_aggregation/` |
+
+## Figure 4: which values are averaged
+
+`54_fig-4_vpd_response_curve_shap_agg.py` sets `aggfunc = 'mean'`. That is what the SHAP
+values are aggregated with, matching the manuscript.
+
+The script also sets `median` for two columns, which is easy to misread as median
+aggregation of the results:
+
+```python
+# Bins always use 'median', b/c using 'mean' results in floating point errors
+xagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
+yagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
+xcol, ycol, zcol = (f"{xvar}", xagg), (f"{yvar}", yagg), (f"{zvar}", aggfunc)
+```
+
+`xagg` and `yagg` apply to the bin coordinate columns only. Every record in a bin
+carries the same bin edge, so mean and median return the same number, and the median is
+used because averaging identical floats reintroduces rounding noise in the labels. The
+SHAP values themselves, `zcol`, use `aggfunc`.
+
+## Script 55: configuration
+
+The ALE response curve script is the most configurable of the six. Options at the top of
+the file:
+
+| Setting | Default | Effect |
+|---------|---------|--------|
+| `PLOT_FEATURE` | `VPD_ZSCORE` | Feature on the x axis |
+| `FLUX` | `NEP_ZSCORE` | Target |
+| `USE_MEDIAN` | `False` | Mean aggregation across sites; `True` switches to median |
+| `USE_CI` | `True` | 95 % percentile band; `False` shows the standard error |
+| `FAST_TEST_MODE` | `False` | Runs on five random sites, useful before a full pass |
+
+Output is one panel with all site curves in grey behind the aggregated curve and its
+percentile band, a marker at the consensus zero crossing, and four panels splitting the
+same data by IGBP type (ENF, DBF, MF, EBF). Per-site PNGs and a CSV with the threshold
+statistics are written alongside.

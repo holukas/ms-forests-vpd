@@ -73,7 +73,7 @@ def aggregate_shap_values_for_site(site, igbp, filepath, xvar, yvar, aggfunc, ix
     biny_col = f"BIN_{yvar}"
 
     for cix, c in enumerate(available_cols):
-        agg = dv.ga(x=shapvals_df[xvar], y=shapvals_df[yvar], z=shapvals_df[c], **ga_settings)
+        agg = dv.analysis.GridAggregator(x=shapvals_df[xvar], y=shapvals_df[yvar], z=shapvals_df[c], **ga_settings)
         res = agg.df_agg_long.copy()
 
         # Ensure bin columns are rounded to avoid merge mismatches

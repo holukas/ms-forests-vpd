@@ -1,0 +1,101 @@
+---
+title: "Installation"
+---
+
+## Requirements
+
+- Python 3.12 (pinned in `.python-version` and enforced by `pyproject.toml`)
+- [uv](https://docs.astral.sh/uv/) for dependency management
+- Roughly 4 GB of free disk space for the environment
+- Git, if you clone rather than download a zip
+
+The analysis itself needs considerably more disk space for the data, see [Data](data.qmd).
+
+## Install
+
+```bash
+git clone https://github.com/holukas/ms-forests-vpd.git
+cd ms-forests-vpd
+uv sync
+```
+
+`uv sync` reads `uv.lock` and creates `.venv` with the exact package versions used for
+the manuscript. If uv is not on your machine yet:
+
+```bash
+# Windows PowerShell
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+uv downloads Python 3.12 itself if the system does not have it, so no separate Python
+install is needed.
+
+## Running scripts
+
+Scripts import from `src/`, which `uv sync` installs into the environment in editable
+mode. Paths are resolved from the repository root, not from the working directory, so
+scripts can be started from anywhere:
+
+```bash
+uv run python scripts/30_shap/31_shap.py
+```
+
+## Packages
+
+Direct dependencies, declared in `pyproject.toml`:
+
+| Package | Version | Used for |
+|---------|---------|----------|
+| `diive` | 0.91.0 | Parquet I/O, FLUXNET file reading, grid aggregation, heatmaps, ET from LE |
+| `pandas` | >=3.0, <4.0 | Data handling |
+| `numpy` | >=2.2.4, <2.5 | Numerics |
+| `scipy` | >=1.15, <2.0 | Z-scores, nearest-neighbour search, statistics |
+| `matplotlib` | >=3.10, <4.0 | All figures |
+| `scikit-learn` | >=1.6.1, <2.0 | Cross-validation, metrics, hyperparameter search |
+| `xgboost` | >=3.0, <4.0 | Gradient-boosted regression models |
+| `shap` | >=0.50, <1.0 | SHAP values via `TreeExplainer` |
+| `pyale` | >=1.2, <2.0 | Accumulated Local Effects curves |
+| `geopandas` | >=1.1.1, <2.0 | Site map |
+| `pyyaml` | >=6.0.2, <7.0 | Reading `config/settings.yaml` |
+| `openpyxl` | >=3.1.5, <4.0 | Writing the Extended Data table |
+
+The numpy upper bound comes from numba, which shap pulls in and which does not yet
+support numpy 2.5. Without the bound the resolver picks a numba release that fails to
+build on Python 3.12.
+
+Transitive versions are pinned in `uv.lock`.
+
+### Optional: ERA5 downloads
+
+Scripts `16a` to `16d` re-download ERA5 climate normals and need extra packages plus
+personal credentials:
+
+```bash
+uv sync --extra era5
+```
+
+This is only needed to rebuild the ERA5 climate normals from scratch. The rest of the
+pipeline reads the aggregated result. See [Data](data.qmd) for the credentials.
+
+### Optional: development tools
+
+```bash
+uv sync --group dev
+```
+
+Adds JupyterLab and pytest.
+
+## Building these docs
+
+The documentation is a [Quarto](https://quarto.org/) website under `docs/`. Notebooks
+and code blocks are not executed at render time, so no data folder is required:
+
+```bash
+quarto render docs
+```
+
+Output lands in `docs/_site/`. The published version is built by GitHub Actions on
+every push to `main`.

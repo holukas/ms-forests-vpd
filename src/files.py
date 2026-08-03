@@ -247,7 +247,7 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     subset = subset.rename(columns=rename_dict, inplace=False)
 
     # Calculate ET from LE and TA
-    subset['ET'] = dv.et_from_le(le=subset['LE'], ta=subset['TA'])
+    subset['ET'] = dv.variables.et_from_le(le=subset['LE'], ta=subset['TA'])
 
     # Convert NEE to NEP
     subset['NEP'] = subset['NEE'].multiply(-1)
@@ -334,7 +334,7 @@ def load_siteinfo(settings: dict) -> pd.DataFrame:
 
 
 def readfile(filetype, filepath_icos, data_nrows):
-    data = dv.readfiletype(filetype=filetype, filepath=filepath_icos, data_nrows=data_nrows)
+    data = dv.ReadFileType(filetype=filetype, filepath=filepath_icos, data_nrows=data_nrows)
     df, _ = data.get_filedata()
     return df
 
@@ -547,8 +547,8 @@ def save_subset_heatmap_plot(df: pd.DataFrame, outpath: str, outname: str, site:
         ax = axes[ix]
         vmin = df[v].quantile(0.02)
         vmax = df[v].quantile(0.98)
-        dv.heatmapdatetime(ax=ax, series=df[v], cb_digits_after_comma=1,
-                           vmin=vmin, vmax=vmax, cb_extend='both').plot()
+        dv.plotting.HeatmapDateTime(series=df[v]).plot(
+            ax=ax, cb_digits_after_comma=1, vmin=vmin, vmax=vmax, cb_extend='both')
         ax.set_title(f"{v}", fontsize=20)
 
         if ix > 0:
@@ -579,8 +579,8 @@ def save_heatmap_plot(df: pd.DataFrame, outpath: str, outname: str, site: str,
     plotkwargs = dict(cb_digits_after_comma=0, vmin=-20, vmax=20)
     if isinstance(df, pd.DataFrame):
         if not df.empty:
-            dv.heatmapdatetime(ax=ax, series=flux, zlabel=f"{flux.name}", **plotkwargs).plot()
-            dv.heatmapdatetime(ax=ax2, series=flux_qc, zlabel=f"{flux_qc.name}", **plotkwargs).plot()
+            dv.plotting.HeatmapDateTime(series=flux).plot(ax=ax, zlabel=f"{flux.name}", **plotkwargs)
+            dv.plotting.HeatmapDateTime(series=flux_qc).plot(ax=ax2, zlabel=f"{flux_qc.name}", **plotkwargs)
 
     # Titles
     ax.set_title(f"{site} ({igbp})\n{sourcetxt}\nmerged data (gap-filled)")

@@ -38,15 +38,16 @@ from pathlib import Path
 
 import cdsapi
 import pandas as pd
+from src.paths import data_path
 
 # Load datasets info
-infile = Path('../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv')
+infile = data_path("data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv")
 datasets_df = pd.read_csv(infile)
 
 dataset = "reanalysis-era5-land-timeseries"
 
 # Create output directory
-output_dir = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020/')
+output_dir = data_path("data/outputs/10_datasets/16_ERA5_climate_1991-2020/")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 # Create log file
@@ -233,7 +234,7 @@ log_message(f"Log saved to: {log_file}")
 # # Save to file
 # datasets_df = datasets_df.reset_index(drop=True)
 # datasets_df = datasets_df.sort_values(by=['SITE'], inplace=False)
-# outfile = Path('../../data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv')
+# outfile = data_path("data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv")
 #
 # print(f"\n{'-' * 80}\nSaving info about {len(datasets_df)} datasets to file {outfile}.\n{'-' * 80}")
 # datasets_df.to_csv(outfile, index=False)

@@ -1,0 +1,102 @@
+---
+title: "Data"
+---
+
+Source files and analysis outputs are about 185 GB and are kept outside the
+repository. The code reaches them through a single setting, `DATA_ROOT`.
+
+## Pointing the code at a data folder
+
+Resolution order, first match wins:
+
+1. environment variable `MS_FORESTS_VPD_DATA`
+2. key `DATA_ROOT` in `config/settings.local.yaml`, which is not under version control
+3. key `DATA_ROOT` in `config/settings.yaml`, the default committed value
+
+Setting the environment variable is the least intrusive option:
+
+```bash
+# Windows PowerShell
+$env:MS_FORESTS_VPD_DATA = "D:/ms-forests-vpd-data"
+
+# macOS / Linux
+export MS_FORESTS_VPD_DATA=/data/ms-forests-vpd-data
+```
+
+Or create `config/settings.local.yaml`:
+
+```yaml
+DATA_ROOT: D:/ms-forests-vpd-data
+```
+
+Everything else in `config/settings.yaml` is a path relative to `DATA_ROOT` and is
+resolved by `src/paths.py`. If the folder cannot be found, `src.paths` raises on import
+with a message naming the environment variable.
+
+## Folder layout
+
+```
+<DATA_ROOT>/
+└── data/
+    ├── 00_raw/
+    │   ├── ameriflux/
+    │   ├── fluxnet_from_carbonportal/
+    │   ├── fluxnet_from_fluxnetorg/
+    │   ├── from-fluxnet-shuttle/
+    │   └── japanflux/
+    └── outputs/
+        ├── 10_datasets/
+        ├── 20_subsets/
+        ├── 30_shap/
+        ├── 40_aggregation/
+        └── 50_plots/
+```
+
+Each `00_raw/<source>/` folder holds the unpacked site archives of that source plus a
+`0-info/` subfolder with the site metadata file. Folder and file name patterns per
+source are in `config/settings.yaml`.
+
+The Natural Earth country outlines used by Figure 1 are small enough to ship with the
+code and live in the repository under `data/worldmap/`.
+
+## Source datasets
+
+Half-hourly FLUXNET-formatted files from five sources. Where a site appears in more
+than one source, the higher-priority dataset wins and the others are used to extend the
+record backwards (see `src/files.py::create_parquet_files`).
+
+| Source | Access |
+|--------|--------|
+| FLUXNET-SHUTTLE | <https://fluxnet.org/> |
+| FLUXNET2015 (ICOS Carbon Portal) | <https://www.icos-cp.eu/> |
+| FLUXNET2015 (fluxnet.org) | <https://fluxnet.org/data/fluxnet2015-dataset/> |
+| AmeriFlux FLUXNET | <https://ameriflux.lbl.gov/> |
+| JapanFlux2024 | <https://www.japanflux.org/> |
+
+All five require registration and carry their own data policies, so the raw files
+cannot be redistributed here.
+
+## Which outputs are needed for which step
+
+Most steps read the output of the previous one. Two shortcuts are worth knowing:
+
+- Everything from `30_shap` onwards runs from `outputs/20_subsets/`, which holds one
+  small parquet file per site. Rebuilding those from raw is only necessary if the site
+  selection or the filtering changes.
+- The figure scripts read `outputs/40_aggregation/` and `outputs/30_shap/` and do not
+  retrain any model.
+
+## ERA5 credentials
+
+Only needed for scripts `16a` to `16d`.
+
+**Google Earth Engine** (`16a`, `16b`): a Google account registered for Earth Engine and
+a cloud project. Authenticate once with `earthengine authenticate`. Earth Engine applies
+rate limits, so start with two to four parallel batches.
+
+**Copernicus Climate Data Store** (`16c`, `16d`): a CDS account and an API key in
+`~/.cdsapirc`. Requests are queued server-side and can take hours. Some sites come back
+empty or all-zero, which script `17` detects and rejects.
+
+Both are optional. `17_add_era5_info.py` merges whatever is present and falls back
+between sources, see [Methods](methods.qmd#era5-climate-normals).

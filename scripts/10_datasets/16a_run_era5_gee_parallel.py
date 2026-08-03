@@ -47,7 +47,7 @@ Output:
       - 16_download_era5_ERRORS.log
       - 16_download_era5_WARNINGS.log
       - 16_download_era5_NO_DATA_SITES.log
-    - Data: ../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine/{SITE}/
+    - Data: <DATA_ROOT>/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine/{SITE}/
 
 Dependencies:
     - 16b_download_era5_mat_map_GoogleEarthEngine.py
@@ -60,13 +60,14 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+from src.paths import data_path
 
 # ==================== CONFIGURATION ====================
 NUM_BATCHES = 4  # Number of parallel processes (default: 4, GEE-friendly)
 # ========================================================
 
 # Load datasets info to get total site count
-infile = Path('../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv')
+infile = data_path("data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv")
 datasets_df = pd.read_csv(infile)
 total_sites = len(datasets_df)
 
@@ -132,7 +133,7 @@ else:
 print("=" * 80)
 
 # Check log files
-log_dir = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine')
+log_dir = data_path("data/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine")
 batch_logs = sorted(log_dir.glob('16_download_era5_gee_log_*.txt'))
 if batch_logs:
     print(f"\nBatch log files created:")

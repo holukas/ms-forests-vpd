@@ -4,13 +4,14 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from src.paths import data_path, repo_path
 
 AX_LABELS_FONTSIZE = 15
 
 # ---------------------------------------------------------
 # 1. DATA PREPARATION
 # ---------------------------------------------------------
-infile = Path('../../data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv')
+infile = data_path("data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv")
 datasets_df = pd.read_csv(infile)
 
 datasets_df = datasets_df.loc[datasets_df['SWC_AVG'] != '-MISSING-'].copy()
@@ -27,7 +28,7 @@ n_sites_total = len(datasets_df)
 valid_df = datasets_df.dropna(subset=['ERA5_MAT_1991_2020', 'ERA5_MAP_1991_2020']).copy()
 n_sites_climate = len(valid_df)
 
-shapefile_path = str(Path(r"../../data/worldmap/ne_10m_admin_0_countries.shp"))
+shapefile_path = str(repo_path("data/worldmap/ne_10m_admin_0_countries.shp"))
 world = gpd.read_file(shapefile_path)
 
 gdf = gpd.GeoDataFrame(
@@ -196,7 +197,7 @@ ax_climate.text(0.06, 1.02, f'Bioclimatic distribution (n={n_sites_climate})', t
 # ---------------------------------------------------------
 # 7. SAVE AND SHOW
 # ---------------------------------------------------------
-out_plot = Path('../../data/outputs/50_plots/NEP_ZSCORE/conditional/51_FIG-1_18_WorldMap_MAT_MAP_ERA5.png')
+out_plot = data_path("data/outputs/50_plots/NEP_ZSCORE/conditional/51_FIG-1_18_WorldMap_MAT_MAP_ERA5.png")
 out_plot.parent.mkdir(parents=True, exist_ok=True)
 
 plt.savefig(out_plot, dpi=300, bbox_inches='tight', facecolor='white')

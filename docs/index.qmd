@@ -1,0 +1,42 @@
+---
+title: "Overview"
+---
+
+Code for the analysis of vapour pressure deficit (VPD) and soil water content (SWC)
+effects on daytime net ecosystem productivity (NEP) at forest eddy covariance sites.
+
+One XGBoost model is trained per site. The fitted models are then interpreted with
+SHAP values (per-sample contributions, calculated out-of-sample through 5-fold
+cross-validation) and with ALE curves (isolated feature effects). Site-level results
+are aggregated with equal weight per site, both overall and by IGBP forest type.
+
+- Target: `NEP_ZSCORE`, half-hourly, daytime, four months of highest GPP per site
+- Features: `TA_ZSCORE`, `SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`
+- All variables are z-scored within site, so sites with different absolute ranges
+  can be compared
+
+## What is in the repository
+
+| Path | Contents |
+|------|----------|
+| `scripts/10_datasets/` | Find and merge source datasets, check variable coverage, add ERA5 climate normals |
+| `scripts/20_subsets/` | Build the per-site analysis subset and calculate z-scores |
+| `scripts/30_shap/` | Train XGBoost models, calculate SHAP values and ALE curves |
+| `scripts/40_aggregation/` | Aggregate SHAP values per site, across sites, by IGBP, by stress stage |
+| `scripts/50_figures/` | Manuscript figures and tables |
+| `src/` | Shared code: models, aggregation, plotting, statistics, file handling, paths |
+| `config/` | `settings.yaml` and FLUXNET site metadata |
+| `data/worldmap/` | Natural Earth country outlines used by the map figure |
+
+Source data and analysis outputs are **not** in the repository. See [Data](data.qmd).
+
+## Where to start
+
+Start with [Installation](installation.qmd), then point the code at a data folder as
+described in [Data](data.qmd). [Pipeline](pipeline.qmd) lists the scripts in the order
+they run and what each one writes. [Figures](figures.qmd) maps manuscript figures to
+the scripts that produce them.
+
+## Licence
+
+GPL-3.0-or-later. See `LICENSE` in the repository root.

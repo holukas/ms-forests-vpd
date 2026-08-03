@@ -14,6 +14,22 @@ from scipy.stats import gaussian_kde
 from src.common import findpoi
 
 
+def heatmap_style(**overrides) -> dv.plotting.FormatStyle:
+    """
+    diive's built-in heatmap chrome, with room for per-plot changes.
+
+    Passing a `format_style` to a diive heatmap replaces its default style
+    entirely, so the defaults are restated here and `overrides` are merged on
+    top. Without this the flameplots would come back with grid lines and thin
+    grey spines.
+    """
+    style = dv.plotting.FormatStyle(
+        show_grid=False, show_legend=False, show_zeroline=False,
+        chrome_color='black', spine_linewidth=2,
+        ticks_direction='out', ticks_length=4, ticks_width=2)
+    return style.merged(**overrides) if overrides else style
+
+
 def create_colormap(fig, ax, cmap, label, absmax, labelsize):
     norm = mpl.colors.Normalize(vmin=-absmax, vmax=absmax)
     sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -829,16 +845,21 @@ def flameplot(df: pd.DataFrame, fig, ax: plt.axis, vmin: float = None, vmax: flo
               xlabel: str = None, ylabel: str = None, zlabel: str = None, title: str = None, cmap: str = "RdYlBu_r",
               cb_digits_after_comma: int = 1, show_grid: bool = False, cb_extend: str = 'both'):
     # Heatmap
-    hm = dv.heatmapxyz(
-        ax=ax,
-        title=title,
+    # diive >= 0.91 splits this in two: data and labels go to the constructor,
+    # everything about the rendering goes to plot(). Chrome that used to be a
+    # plain keyword (title, show_grid) now travels in a FormatStyle.
+    hm = dv.plotting.HeatmapXYZ(
         x=df.iloc[:, 0],
         y=df.iloc[:, 1],
         z=df.iloc[:, 2],
-        cb_digits_after_comma=cb_digits_after_comma,
         xlabel=xlabel,
         ylabel=ylabel,
         zlabel=zlabel,
+    )
+    hm.plot(
+        ax=ax,
+        format_style=heatmap_style(title=title, show_grid=show_grid),
+        cb_digits_after_comma=cb_digits_after_comma,
         # show_values_n_dec_places=1,
         # show_values=True,
         # show_values_fontsize=4,
@@ -848,9 +869,7 @@ def flameplot(df: pd.DataFrame, fig, ax: plt.axis, vmin: float = None, vmax: flo
         vmin=vmin,
         vmax=vmax,
         show_colormap=show_colormap,
-        show_grid=show_grid,
         cb_extend=cb_extend
     )
-    hm.plot()
 
     return hm.p  # Return the pcolormesh object

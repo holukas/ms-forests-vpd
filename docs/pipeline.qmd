@@ -1,0 +1,99 @@
+---
+title: "Pipeline"
+---
+
+Scripts are numbered in the order they run. Each one writes to
+`<DATA_ROOT>/data/outputs/` and reads what the previous step wrote. Run them from the
+repository root:
+
+```bash
+uv run python scripts/20_subsets/21_prepare_input_data.py
+```
+
+Most steps take minutes. The two model scripts take hours over the full site list.
+
+## 10_datasets: assemble the site collection
+
+| Script | What it does | Writes |
+|--------|--------------|--------|
+| `00_find_overlaps.py` | Lists sites present in both AmeriFlux and FLUXNET-SHUTTLE | `10_datasets/` |
+| `11_collect_info.py` | Scans all five raw sources, one row per dataset found | `11_datasets_info.csv` |
+| `12_create_parquet.py` | Merges the datasets of a site into one parquet file, resolving frequency and overlapping years by source priority | `12_parquet_merged/`, `12_datasets_info_parquet.csv` |
+| `13_check_available_vars.py` | Records which of NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC exist per site and under which column name | `13_datasets_info_parquet_vars.csv` |
+| `13b_check_available_vars_SWC.py` | Same for the soil moisture depth variants | `13b_variables_coverage_summary.csv` |
+| `14_collect_basic_stats.py` | Record counts, date ranges, min/max/mean per variable | `14_datasets_info_parquet_vars_stats.csv` |
+| `15_remove_sites.py` | Applies the inclusion criteria and drops the rest | `15_datasets_info_parquet_vars_stats_usedsites.csv` |
+| `16a` + `16b` | ERA5 1991-2020 normals from Google Earth Engine, run in parallel batches | `16_ERA5_climate_1991-2020_GoogleEarthEngine/` |
+| `16c` + `16d` | Same from the Copernicus CDS API | `16_ERA5_climate_1991-2020_Copernicus/` |
+| `16_download_era5_mat_map.py` | CDS download for the older FLUXNET2015 sites, which carry no 1991-2020 ERA5 in their own files | `16_ERA5_climate_1991-2020/` |
+| `17_add_era5_info.py` | Picks one ERA5 source per site and adds MAT and MAP | `17_datasets_info_parquet_vars_stats_usedsites_era5.csv` |
+
+The `16*` scripts need credentials and can be skipped if the ERA5 output folders are
+already populated. Script `17` writes a timestamped log with the full decision trail
+for every site.
+
+## 20_subsets: build the model input
+
+`21_prepare_input_data.py` turns each merged site parquet into the subset the models
+see. Per site:
+
+1. keep the four months with the highest mean GPP
+2. keep measured NEE only, quality flag 0, no gap-filled fluxes
+3. keep daytime records, `SW_IN_POT > 20`
+4. balance the record so every one of the four months contributes the same number of
+   years, dropping the oldest years where needed
+5. drop records with any missing predictor
+6. derive ET from LE and TA, and NEP as `-NEE`
+7. z-score every variable within the site and keep both the measured and the z-scored
+   columns
+
+Writes one parquet per site to `20_subsets/21_subsets_parquet/`, a heatmap per site,
+and the summary table `21_SUBSETS_parquet_vars_stats_subsets.csv`.
+
+::: {.callout-note}
+One site, CD-Ygb, has VPD in the wrong units in the source files. The correction is
+applied in this script.
+:::
+
+## 30_shap: fit models and explain them
+
+`31_shap.py` trains the models and calculates SHAP values. It has two modes, switched
+at the top of the file:
+
+```python
+TUNE_HYPERPARAMETERS = False   # SHAP analysis (default)
+TUNE_HYPERPARAMETERS = True    # hyperparameter search instead
+TUNE_N_ITER = 25               # combinations tested per site in tuning mode
+```
+
+In SHAP mode each site gets 5-fold cross-validation. Within each fold the 80 % training
+part is split again into 68 % for fitting and 12 % for early stopping, and the held-out
+20 % is explained. Every observation therefore receives SHAP values from a model that
+never saw it. Per-fold R² and RMSE go to the log, and the folds are reassembled in the
+original index order.
+
+Writes per-site parquet and CSV with features, SHAP values and predictions, plus one
+aggregated CSV holding the fold metrics for all sites.
+
+`32_validate_shap_methods.py` fits one model per site on an 85/15 split and calculates
+ALE curves on 100 grid points per feature. ALE is a second read on the same fitted
+models: it shows the isolated effect of a feature on the prediction, where SHAP
+attributes each individual prediction. Writes `{SITE}_ale_curves_{TARGET}.csv` per site,
+which is what the aggregation and figure scripts consume.
+
+## 40_aggregation: combine site results
+
+| Script | What it does |
+|--------|--------------|
+| `41_binagg_per_site.py` | Bins each site's SHAP values on a two-variable grid, using fixed custom bin edges so all sites share one grid |
+| `42_binagg_across_sites.py` | Averages the binned grids across all sites, one vote per site |
+| `43_binagg_across_igbp.py` | Same, separately per IGBP forest type |
+| `44_agg_per_scenario.py` | Averages SHAP values within the nine stress stages, per site and then across sites |
+
+Equal weighting throughout: a site with 20 years of data counts the same as a site with
+three. Bins that fewer than half of the sites reach are dropped from the aggregated
+grids.
+
+## 50_figures
+
+See [Figures](figures.qmd).

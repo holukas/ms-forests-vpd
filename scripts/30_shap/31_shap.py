@@ -138,6 +138,7 @@ import pandas as pd
 
 import src.files as files
 from src.models import train_xgboost_models_and_shap, tune_xgboost_hyperparameters
+from src.paths import data_path, load_settings
 
 # ------------------------------
 # Variables
@@ -162,11 +163,11 @@ TUNE_N_ITER = 25  # Number of parameter combinations to test (default: 25)
 
 
 # Load settings
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 
 # Load subsets info
-infile = Path('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv')
+infile = data_path("data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv")
 subsets_df = pd.read_csv(infile)
 
 # Create output directory

@@ -46,13 +46,14 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+from src.paths import data_path
 
 # ==================== CONFIGURATION ====================
 NUM_BATCHES = 3  # Number of parallel processes (default: 6)
 # ========================================================
 
 # Load datasets info to get total site count
-infile = Path('../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv')
+infile = data_path("data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv")
 datasets_df = pd.read_csv(infile)
 total_sites = len(datasets_df)
 
@@ -118,7 +119,7 @@ else:
 print("=" * 80)
 
 # Check log files
-log_dir = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus')
+log_dir = data_path("data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus")
 batch_logs = sorted(log_dir.glob('16_download_era5_log_batch_*.txt'))
 summary_logs = [
     log_dir / "16_download_era5_ERRORS.log",

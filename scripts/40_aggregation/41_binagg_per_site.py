@@ -8,6 +8,7 @@ import pandas as pd
 
 import src.files as files
 from src.aggregation import aggregate_shap_values_for_site
+from src.paths import data_path, load_settings
 
 # ------------------------------
 # Variables
@@ -41,12 +42,12 @@ xvar = VARS[0]
 yvar = VARS[1]
 
 # Load settings
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 
 # Load subsets info
-infile = Path('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv')
+infile = data_path("data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv")
 subsets_df = pd.read_csv(infile)
 
 # Create output directory

@@ -84,9 +84,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from src.paths import data_path
 
 # Setup logging
-output_dir = Path('../../data/outputs/10_datasets')
+output_dir = data_path("data/outputs/10_datasets")
 output_dir.mkdir(parents=True, exist_ok=True)
 log_file = output_dir / f"17_add_era5_info_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 
@@ -121,11 +122,11 @@ print(f"\nLog file: {log_file}\n")
 
 # Display data source locations
 print("DATA SOURCES:")
-print(f"  Input Site Info: ../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv")
-print(f"  GEE ERA5 Data: ../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine/{{SITE}}/")
-print(f"  Copernicus ERA5 Data: ../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus/{{SITE}}/")
+print(f"  Input Site Info: <DATA_ROOT>/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv")
+print(f"  GEE ERA5 Data: <DATA_ROOT>/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine/{{SITE}}/")
+print(f"  Copernicus ERA5 Data: <DATA_ROOT>/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus/{{SITE}}/")
 print(f"  FLUXNET Embedded ERA5: In FLUXNET download files (SHUTTLE-CLI, AMERIFLUX)")
-print(f"  Output: ../../data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv")
+print(f"  Output: <DATA_ROOT>/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv")
 
 print("\n" + "=" * 100)
 print("PROCESSING LOGIC:")
@@ -148,11 +149,11 @@ print("  - Audit trail shows why each source was selected")
 print("=" * 100 + "\n")
 
 # Load datasets info
-infile = Path('../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv')
+infile = data_path("data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv")
 datasets_df = pd.read_csv(infile)
 
 # # Output folder for ERA5 data for each site
-# dir_era5 = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020')
+# dir_era5 = data_path("data/outputs/10_datasets/16_ERA5_climate_1991-2020")
 
 # Initialize new columns to store the 30-year averages
 datasets_df['ERA5_MAT_1991_2020'] = np.nan
@@ -847,7 +848,7 @@ if len(all_three_source_temp_comparisons) > 0:
 # Save to file
 datasets_df = datasets_df.reset_index(drop=True)
 datasets_df = datasets_df.sort_values(by=['SITE'], inplace=False)
-outfile = Path('../../data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv')
+outfile = data_path("data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv")
 
 print(f"\n{'-' * 80}\nSaving info about {len(datasets_df)} datasets to file {outfile}.\n{'-' * 80}")
 datasets_df.to_csv(outfile, index=False)

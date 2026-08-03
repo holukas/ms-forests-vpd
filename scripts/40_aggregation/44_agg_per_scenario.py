@@ -5,6 +5,7 @@ import pandas as pd
 
 import src.files as files
 import src.stages as s
+from src.paths import data_path, load_settings
 
 # ------------------------------
 # Variables
@@ -18,7 +19,7 @@ FLUX = 'NEP_ZSCORE'
 CONDITIONAL = True  # SHAP
 
 # Load settings
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 
@@ -29,7 +30,7 @@ dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 dir_out.mkdir(parents=True, exist_ok=True)
 
 # Load subsets info
-infile = Path('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv')
+infile = data_path("data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv")
 subsets_df = pd.read_csv(infile)
 
 shapvals_sites_agg_long_df = None

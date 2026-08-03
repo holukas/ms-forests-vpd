@@ -1,28 +1,47 @@
-[tool.poetry]
-name = "ms-forests-vpd"
-version = "0.1.0"
-description = ""
-authors = ["Lukas Hörtnagl <lukas.hoertnagl@usys.ethz.ch>"]
-readme = "README.md"
-
-[tool.poetry.dependencies]
-python = ">=3.11,<3.12"
-jupyterlab = ">=4.2.4"
-pyyaml = "^6.0.2"
-geopandas = "^1.1.1"
-geodatasets = "^2024.8.0"
-scikit-posthocs = "^0.11.4"
-openmeteo-requests = "^1.7.5"
-requests-cache = "^1.3.0"
-retry-requests = "^2.0.0"
-earthengine-api = "^1.7.15"
-openpyxl = "^3.1.5"
-pyale = "^1.2.0"
-cdsapi = "^0.7.7"
-
-[tool.poetry.group.dev.dependencies]
-diive = { path = "../../21 - DIIVE/diive", develop = true }
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ms-forests-vpd"
+version = "1.0.0"
+description = "VPD and soil moisture controls on daytime forest NEP: XGBoost models with SHAP and ALE interpretation across FLUXNET sites"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "GPL-3.0-or-later" }
+authors = [{ name = "Lukas Hörtnagl", email = "lukas.hoertnagl@usys.ethz.ch" }]
+
+dependencies = [
+    "diive==0.91.0",
+    "pandas>=3.0.0,<4.0.0",
+    # Upper bound follows numba (pulled in by shap), which supports numpy<2.5.
+    # Without it the resolver keeps numpy at 2.5 and falls back to numba 0.53,
+    # which does not build on Python 3.12.
+    "numpy>=2.2.4,<2.5",
+    "scipy>=1.15.0,<2.0.0",
+    "matplotlib>=3.10.0,<4.0.0",
+    "scikit-learn>=1.6.1,<2.0.0",
+    "xgboost>=3.0.0,<4.0.0",
+    "shap>=0.50.0,<1.0.0",
+    "pyale>=1.2.0,<2.0.0",
+    "geopandas>=1.1.1,<2.0.0",
+    "pyyaml>=6.0.2,<7.0.0",
+    "openpyxl>=3.1.5,<4.0.0",
+]
+
+[project.optional-dependencies]
+# Only needed to re-download ERA5 climate normals (scripts 16*).
+# Both services require personal credentials, see docs/data.qmd.
+era5 = [
+    "earthengine-api>=1.7.15,<2.0.0",
+    "cdsapi>=0.7.7,<1.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "jupyterlab>=4.2.4",
+    "pytest>=8.3.3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]

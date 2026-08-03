@@ -1,56 +1,109 @@
-# MS Forests VPD Analysis
+# ms-forests-vpd
 
-Machine learning analysis of CO₂ penalty impacts on net ecosystem productivity (NEP)
-across forest flux sites, with a focus on the vapor pressure deficit (VPD) response.
+Code for the analysis of vapour pressure deficit (VPD) and soil water content (SWC)
+effects on daytime net ecosystem productivity (NEP) at forest eddy covariance sites.
 
-XGBoost models are trained per FLUXNET site and interpreted with two complementary
-methods — **SHAP** (out-of-sample, per-sample feature contributions) and **ALE**
-(isolated feature effects) — then aggregated across sites and ecosystem types to
-identify VPD response thresholds.
+One XGBoost model is trained per site. The fitted models are interpreted with SHAP
+values, calculated out-of-sample through 5-fold cross-validation, and with ALE curves.
+Site results are aggregated with equal weight per site, overall and per IGBP forest
+type.
 
-- **Target:** `NEP_ZSCORE` (also ET, GPP, RECO available)
-- **Features:** `TA_ZSCORE`, `SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`
+- Target: `NEP_ZSCORE`, half-hourly, daytime, four months of highest GPP per site
+- Features: `TA_ZSCORE`, `SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`
+
+Full documentation: <https://holukas.github.io/ms-forests-vpd/>
+
+## Requirements
+
+- **Python 3.12**, pinned in `.python-version` and enforced by `pyproject.toml`
+- [uv](https://docs.astral.sh/uv/) for dependency management
+
+Direct dependencies, with exact transitive versions in `uv.lock`:
+
+| Package | Version |
+|---------|---------|
+| `diive` | 0.91.0 |
+| `pandas` | >=3.0, <4.0 |
+| `numpy` | >=2.2.4, <2.5 |
+| `scipy` | >=1.15, <2.0 |
+| `matplotlib` | >=3.10, <4.0 |
+| `scikit-learn` | >=1.6.1, <2.0 |
+| `xgboost` | >=3.0, <4.0 |
+| `shap` | >=0.50, <1.0 |
+| `pyale` | >=1.2, <2.0 |
+| `geopandas` | >=1.1.1, <2.0 |
+| `pyyaml` | >=6.0.2, <7.0 |
+| `openpyxl` | >=3.1.5, <4.0 |
+
+Optional extras: `era5` for the ERA5 download scripts, dev group for JupyterLab and
+pytest.
+
+## Install
+
+```bash
+git clone https://github.com/holukas/ms-forests-vpd.git
+cd ms-forests-vpd
+uv sync
+```
+
+uv downloads Python 3.12 itself if the system does not have it. To install uv:
+
+```bash
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"   # Windows
+curl -LsSf https://astral.sh/uv/install.sh | sh              # macOS / Linux
+```
+
+## Data
+
+Source files and analysis outputs are about 185 GB and are not part of this repository.
+Point the code at a data folder with an environment variable:
+
+```bash
+$env:MS_FORESTS_VPD_DATA = "D:/ms-forests-vpd-data"   # Windows PowerShell
+export MS_FORESTS_VPD_DATA=/data/ms-forests-vpd-data  # macOS / Linux
+```
+
+or by adding `DATA_ROOT` to `config/settings.local.yaml`. The folder is expected to
+contain `data/00_raw/` and `data/outputs/`. See
+[the data page](https://holukas.github.io/ms-forests-vpd/data.html) for the layout and
+for where the FLUXNET source datasets come from.
+
+## Running
+
+Paths resolve from the repository root, so scripts can be started from anywhere:
+
+```bash
+# per-site subsets and z-scores
+uv run python scripts/20_subsets/21_prepare_input_data.py
+
+# XGBoost models and out-of-sample SHAP values (5-fold CV)
+uv run python scripts/30_shap/31_shap.py
+
+# ALE curves on the same models
+uv run python scripts/30_shap/32_validate_shap_methods.py
+
+# aggregate across sites, then draw a figure
+uv run python scripts/40_aggregation/42_binagg_across_sites.py
+uv run python scripts/50_figures/54_fig-4_vpd_response_curve_shap_agg.py
+```
+
+Scripts are numbered in run order within each folder. The two model scripts take hours
+over the full site list; everything else is minutes.
 
 ## Repository layout
 
 | Path | Contents |
 |------|----------|
-| `scripts/10_datasets/` | Dataset assembly and ERA5 climate (MAT/MAP) aggregation |
-| `scripts/20_subsets/`  | Ecological-condition subsets |
-| `scripts/30_shap/`     | SHAP calculation (5-fold CV) and ALE validation |
-| `scripts/40_aggregation/` | Cross-site SHAP/ALE aggregation (overall, by IGBP, by scenario) |
-| `scripts/50_figures/`  | Manuscript figures (response curves, thresholds) |
-| `src/`                 | Shared library (models, plotting, stats, I/O, sites) |
-| `config/`              | FLUXNET site lists and `settings.yaml` |
-| `data/`                | Inputs and generated outputs |
+| `scripts/10_datasets/` | Source dataset assembly, variable coverage, ERA5 climate normals |
+| `scripts/20_subsets/` | Per-site analysis subsets and z-scores |
+| `scripts/30_shap/` | Model fitting, SHAP values, ALE curves |
+| `scripts/40_aggregation/` | Aggregation per site, across sites, by IGBP, by stress stage |
+| `scripts/50_figures/` | Manuscript figures and tables |
+| `src/` | Shared code: models, aggregation, plotting, statistics, I/O, paths |
+| `config/` | `settings.yaml` and FLUXNET site metadata |
+| `data/worldmap/` | Natural Earth country outlines for the site map |
+| `docs/` | Quarto documentation sources |
 
-See [`CLAUDE.md`](CLAUDE.md) for detailed script documentation, the ERA5 source-selection
-logic, and XGBoost hyperparameters.
+## Licence
 
-## Setup
-
-Dependencies are managed with [Poetry](https://python-poetry.org/) (Python 3.11):
-
-```bash
-poetry install
-```
-
-## Usage
-
-```bash
-# SHAP analysis — out-of-sample via 5-fold CV
-python scripts/30_shap/31_shap.py
-
-# ALE validation — single 85/15 split, feature effect curves
-python scripts/30_shap/32_validate_shap_methods.py
-
-# ERA5 30-year (1991–2020) MAT/MAP aggregation
-python scripts/10_datasets/17_add_era5_info.py
-
-# VPD ALE response curves with consensus thresholds
-python scripts/50_figures/55_fig_ale_response_curve_with_context.py
-```
-
-## License
-
-GNU General Public License v3.0 — see [`LICENSE`](LICENSE).
+GNU General Public License v3.0 or later, see [`LICENSE`](LICENSE).

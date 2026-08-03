@@ -20,12 +20,12 @@ Workflow:
     * Comprehensive logging: batch log, errors log, warnings log, no-data log.
 
 Inputs:
-    - Target sites: ../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv
+    - Target sites: <DATA_ROOT>/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv
       (Requires 'SITE', 'LAT', and 'LON' columns)
 
 Outputs:
     - Individual CSV files containing 'Year', 'MAT_degC', and 'PRECIP_TOT_mm'.
-    - Saved to: ../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine/
+    - Saved to: <DATA_ROOT>/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine/
     - Log files: ERRORS.log, WARNINGS.log, NO_DATA_SITES.log
 
 Dependencies:
@@ -40,6 +40,7 @@ from pathlib import Path
 
 import ee
 import pandas as pd
+from src.paths import data_path
 
 # Parse batch arguments
 # Usage: python script.py [start_index] [end_index]
@@ -68,7 +69,7 @@ except Exception as e:
     ee.Initialize(project=GEE_PROJECT_ID)
 
 # Load datasets info
-infile = Path('../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv')
+infile = data_path("data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv")
 datasets_df = pd.read_csv(infile)
 
 # Filter to batch
@@ -79,7 +80,7 @@ total_sites = len(datasets_df)
 print(f"Processing {total_sites} sites (indices {batch_start} to {batch_start + total_sites - 1})\n")
 
 # Output folder for ERA5 data for each site
-dirout_era5 = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine')
+dirout_era5 = data_path("data/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine")
 dirout_era5.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
 
 # Create overall summary log files (shared across runs)

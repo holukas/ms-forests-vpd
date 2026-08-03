@@ -4,6 +4,7 @@ import diive as dv
 
 import src.files as files
 from src.aggregation import aggregate_shap_values_across_sites
+from src.paths import load_settings
 
 # ------------------------------
 # Variables
@@ -40,7 +41,7 @@ binx = f"BIN_{xvar}"
 biny = f"BIN_{yvar}"
 
 # Load settings
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 

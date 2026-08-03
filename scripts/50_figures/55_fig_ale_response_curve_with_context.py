@@ -96,6 +96,7 @@ from scipy.interpolate import interp1d
 
 import src.files as files
 import src.plot as plot
+from src.paths import data_path, load_settings
 
 
 def fit_polynomial_to_curves(curves_array, grid):
@@ -161,7 +162,7 @@ BEAUTIFY = {
     "TA_ZSCORE": "TA", "VPD_ZSCORE": "VPD", "SWC_ZSCORE": "SWC", "SWIN_ZSCORE": "SWIN",
 }
 
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 dir_ale_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / 'ale'
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'ale'
 
@@ -169,7 +170,7 @@ agg_name = "median" if USE_MEDIAN else "mean"
 print(f"\n{'=' * 80}\nALE Response Curves | Feature: {BEAUTIFY[PLOT_FEATURE]} | Aggregation: {agg_name}\n{'=' * 80}\n")
 dir_out.mkdir(parents=True, exist_ok=True)
 
-subsets_df = pd.read_csv('../../data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv')
+subsets_df = pd.read_csv(str(data_path("data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv")))
 
 # ==============================
 # STEP 1: LOAD DATA

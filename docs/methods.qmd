@@ -1,0 +1,134 @@
+---
+title: "Methods"
+---
+
+Implementation notes for the parts of the analysis that are easy to misread from the
+code alone. The manuscript methods section is the authoritative description.
+
+## Model
+
+One XGBoost regressor per site, target `NEP_ZSCORE`, predictors `TA_ZSCORE`,
+`SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`. Settings live in `src/models.py`.
+
+Fixed across SHAP, ALE and tuning:
+
+```python
+tree_method='hist'
+subsample=0.8
+colsample_bytree=0.8
+reg_lambda=1.0
+reg_alpha=0.1
+gamma=0.2
+min_child_weight=5
+early_stopping_rounds=100
+```
+
+Searched during tuning:
+
+```python
+n_estimators  = [2000, 2500, 3000, 3500, 4000]
+max_depth     = [4, 5, 6, 7, 8]
+learning_rate = [0.01, 0.03, 0.05, 0.07, 0.1]
+```
+
+The grid is 125 combinations; with 5-fold cross-validation that is 625 fits per site,
+which is why tuning is a separate mode rather than part of every run. The
+regularisation parameters are held fixed so tuned and untuned runs stay comparable.
+
+## SHAP
+
+`TreeExplainer` with `feature_perturbation="tree_path_dependent"`. TA and VPD are
+strongly dependent, and breaking that dependence would ask the model about combinations
+of temperature and humidity that never occur. The tree-path-dependent variant keeps the
+observed joint distribution.
+
+What this gives is a conditional attribution: how the fitted model distributes its
+prediction among correlated predictors. It is not a separation of physiological causes.
+
+SHAP values are out-of-sample. Each fold explains only the 20 % that its model never
+trained on.
+
+## ALE
+
+`PyALE.ale`, 100 grid points per feature, one model per site fitted on 85 % of the
+records with 15 % held back for early stopping, then applied to all records of that site.
+
+ALE and SHAP interrogate the same fitted models on the same observations, so agreement
+between them says the reading is robust to the interpretation method. It is not
+independent validation of the underlying physiology.
+
+## Stress stages
+
+Nine subsets of the half-hourly records, defined on z-scores in `src/stages.py`. The
+cut-offs are standard-normal equivalents: 0.319 bounds the middle 25 %, 0.714 the next
+band, and 1.282 the upper or lower 10 %.
+
+| Stage | Condition |
+|-------|-----------|
+| 0 | all data, unrestricted |
+| 1 | normal: TA, VPD and SWC all within the middle 25 % |
+| 2 | warm, soil moisture normal, no extreme VPD |
+| 3 | warm and dry soil, no extreme VPD |
+| 4 | hot, drier soil, no extreme VPD |
+| 5 | hot, very dry soil, no extreme VPD |
+| 6 | extremely hot, very dry soil, no extreme VPD |
+| 7 | extremely hot, extremely dry soil, no extreme VPD |
+| 8 | compound extreme: extremely hot, extremely dry soil and extremely dry air |
+
+Stages 2 to 7 cap VPD at the 90th percentile so they do not overlap with the compound
+extreme in stage 8.
+
+::: {.callout-note}
+The stages are not a balanced factorial design. VPD varies within stages where soil
+moisture is held near baseline, and there is no mirrored stage where soil moisture
+varies while VPD is held near baseline.
+:::
+
+## Aggregation across sites
+
+Every site contributes one curve or one binned grid, regardless of how many records it
+has. Aggregated bins are kept only where at least half of the sites have data, which
+controls how sparsely a bin is covered across the network.
+
+Site-level means are combined with the law of total variance in `src/stages.py`, so the
+reported spread carries both the within-site variance and the variance between site
+means. Bars in the stage figures use the standard error of the site means.
+
+## Threshold detection
+
+Two independent routes to the VPD value where the effect on NEP turns negative.
+
+From SHAP (script `54`): bin the aggregated SHAP values against VPD, fit a fourth-order
+polynomial, take the zero crossing.
+
+From ALE (script `55`): fit a fourth-order polynomial to each site's ALE curve first,
+then average the fitted curves. The threshold is the mean of the zero crossings of the
+individual site curves, not the crossing of the averaged curve. Reported alongside it
+are the number of sites that cross, the range and the standard deviation. Confidence
+bands are the 2.5 to 97.5 percentiles of the individual fitted curves rather than a
+symmetric interval around the mean.
+
+Smoothing before averaging keeps the shape of individual curves from cancelling out.
+Both values are zero crossings of a model attribution, not measured physiological
+breakpoints.
+
+## ERA5 climate normals {#era5-climate-normals}
+
+`17_add_era5_info.py` produces one 30-year (1991-2020) mean annual temperature and
+precipitation per site from three possible sources: the ERA5 fields embedded in the
+FLUXNET files, the Copernicus CDS API, and Google Earth Engine. Temperature and
+precipitation always come from the same source for a given site, and the choice is
+driven by precipitation.
+
+Below 2000 mm per year, FLUXNET wins if it is available. Above that the value is
+checked against the other two:
+
+- Copernicus within 300 mm of FLUXNET: keep FLUXNET
+- Copernicus higher than FLUXNET: keep FLUXNET
+- Copernicus lower and further than 300 mm away: use Copernicus
+- Copernicus exactly zero: reject it as a failed download, then compare Earth Engine
+  against FLUXNET and take the lower of the two
+
+Sites without FLUXNET ERA5 fall back to Copernicus if non-zero, otherwise Earth Engine.
+Every decision, with the values behind it, is written to a timestamped log next to the
+output.

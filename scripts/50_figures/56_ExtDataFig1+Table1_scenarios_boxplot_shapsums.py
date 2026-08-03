@@ -9,6 +9,7 @@ import pandas as pd
 import src.files as files
 import src.plot as plot
 import src.stages as stages
+from src.paths import load_settings
 
 # ==========================================
 # SETTINGS
@@ -58,7 +59,7 @@ plt.rcParams.update({
 })
 
 # Paths
-settings = files.read_settings_file("../../config/settings.yaml")
+settings = load_settings()
 shap_type = 'conditional'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 filepath = Path(results_outdir) / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet"
@@ -161,7 +162,7 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS_AVG, VAR_TITLES)):
         # y-axis label (only for first column)
         if is_left_col:
             var_title = var_title.replace(" ", r"\ ")
-            label_text = r"$\mathbf{" + var_title + "}$" + " ($\sigma$)"
+            label_text = r"$\mathbf{" + var_title + "}$" + r" ($\sigma$)"
             ax.set_ylabel(label_text, fontsize=9, color="black", labelpad=4)
 
         # Panel letters: (a), (b), ...

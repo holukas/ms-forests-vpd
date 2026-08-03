@@ -72,6 +72,7 @@ from pathlib import Path
 
 import cdsapi
 import pandas as pd
+from src.paths import data_path
 
 # Parse batch arguments
 # Usage: python script.py [start_index] [end_index]
@@ -86,7 +87,7 @@ else:
     print("No batch specified. Running all sites.")
 
 # Load datasets info
-infile = Path('../../data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv')
+infile = data_path("data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv")
 datasets_df = pd.read_csv(infile)
 
 # Filter to batch
@@ -99,7 +100,7 @@ print(f"Processing {total_sites} sites (indices {batch_start} to {batch_start + 
 dataset = "reanalysis-era5-land-timeseries"
 
 # Create output directory
-output_dir = Path('../../data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus/')
+output_dir = data_path("data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus/")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 # Create log file with batch info
