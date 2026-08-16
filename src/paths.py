@@ -18,7 +18,7 @@ Scripts can be run from anywhere, e.g. from the repository root:
 """
 
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import yaml
 
@@ -67,6 +67,32 @@ def data_path(*parts: str) -> Path:
 def repo_path(*parts: str) -> Path:
     """Path inside this repository, for files small enough to ship with the code."""
     return REPO_ROOT.joinpath(*parts)
+
+
+def resolve_stored_path(stored) -> Path:
+    """
+    Resolve a file path that was persisted in one of the dataset info CSVs.
+
+    The path columns in those files (``_FILEPATH``, ``_FILEPATH_PARQUET``,
+    ``_FILEPATH_PARQUET_SUBSET``) were written before the scripts moved to
+    `data_path()`, so they hold values such as
+    ``..\\..\\data\\outputs\\10_datasets\\12_parquet_merged\\AR-SLu_MF_FLX_2009-2011.parquet``.
+    Those only resolve when the working directory happens to be the script's own
+    folder, which is the cwd assumption the rest of the code no longer makes.
+
+    Drop the leading parent parts and re-anchor the remainder on `DATA_ROOT`.
+    Values that are already absolute are returned unchanged, so the function
+    stays correct once the CSVs are regenerated.
+
+    Parsing goes through `PureWindowsPath` because the stored values use
+    backslashes; it accepts forward slashes too, so this works whichever
+    platform wrote the file.
+    """
+    path = PureWindowsPath(str(stored))
+    if path.is_absolute():
+        return Path(path)
+    parts = [part for part in path.parts if part not in ("..", ".")]
+    return DATA_ROOT.joinpath(*parts)
 
 
 def load_settings() -> dict:

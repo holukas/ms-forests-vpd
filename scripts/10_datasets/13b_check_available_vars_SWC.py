@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 from diive.core.io.files import load_parquet
-from src.paths import data_path
+from src.paths import data_path, resolve_stored_path
 
 # Load datasets info
 infile = data_path("data/outputs/10_datasets/12_datasets_info_parquet.csv")
@@ -52,7 +52,7 @@ for ix, site in _datasets_df.iterrows():
     # --- TODO testing
 
     print(f"\nLoading data for site #{ix + 1} {site['SITE']} ...")
-    filepath = site['_FILEPATH_PARQUET']
+    filepath = resolve_stored_path(site['_FILEPATH_PARQUET'])
     sitedata = load_parquet(filepath)
     available_vars = sitedata.columns
 

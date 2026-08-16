@@ -2,6 +2,7 @@ import pandas as pd
 from diive.core.io.files import load_parquet
 
 from src.common import get_variable_names
+from src.paths import resolve_stored_path
 
 
 def basic_stats(siteinfo_df, siteconfig, ix) -> pd.DataFrame:
@@ -16,7 +17,7 @@ def basic_stats(siteinfo_df, siteconfig, ix) -> pd.DataFrame:
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
 
-    filepath = siteconfig['_FILEPATH_PARQUET']
+    filepath = resolve_stored_path(siteconfig['_FILEPATH_PARQUET'])
     sitedata = load_parquet(filepath)
 
     # Collect info
