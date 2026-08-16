@@ -3,6 +3,29 @@ import pandas as pd
 from scipy.spatial import cKDTree
 
 
+def peak_season_months(sitedata, gpp_col: str, n_months: int = 4) -> list:
+    """Find the calendar months with the highest mean GPP at a site.
+
+    This is the peak-season definition used throughout the analysis. It is applied
+    to the full record, before any quality-control or daytime filtering, so the
+    season does not move when those filters change.
+
+    An earlier version picked the warmest months by mean air temperature instead.
+    Some comments and file names elsewhere still say "warmest" for that reason;
+    the selection has been GPP-based since the subsets were built.
+
+    Args:
+        sitedata: Site data with a DatetimeIndex.
+        gpp_col: Name of the GPP column.
+        n_months: How many months to keep.
+
+    Returns:
+        Month numbers (1 to 12), highest mean GPP first.
+    """
+    monthly_mean = sitedata.groupby(sitedata.index.month)[gpp_col].mean()
+    return monthly_mean.nlargest(n_months).index.to_list()
+
+
 def findpoi(df, k: int = 9, agg: str = 'mean', what: str = 'max'):
     """Find point of interest (POI) in a DataFrame grid.
 

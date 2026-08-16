@@ -10,6 +10,8 @@ import yaml
 from diive.core.times.times import insert_timestamp
 from scipy.stats import zscore
 
+from src.common import peak_season_months
+
 
 def load_data(suffix, shap_type, dir_res, flux, aggfunc, subsetcols: list,
               x_in_filename: str, y_in_filename: str, count_vals_col: tuple[str, str] = False, site_filter=None):
@@ -64,13 +66,13 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     seasonally-filtered, and year-balanced subset for subsequent analysis.
 
     The function performs a sequence of steps: loads data, selects required variables,
-    filters for QC-flag 0 (measured data) and daytime records, identifies the 4 warmest months,
-    balances the data across available years for these months, calculates derived
-    variables (ET, NEP), converts all measured variables to Z-scores, saves the
-    final subset to a Parquet file, generates a heatmap visualization, and returns
-    comprehensive summary statistics.
+    filters for QC-flag 0 (measured data) and daytime records, identifies the 4 months with
+    the highest mean GPP, balances the data across available years for these months,
+    calculates derived variables (ET, NEP), converts all measured variables to Z-scores,
+    saves the final subset to a Parquet file, generates a heatmap visualization, and
+    returns comprehensive summary statistics.
 
-    The core filtering step ensures that all 4 warmest months included in the subset
+    The core filtering step ensures that all 4 peak-GPP months included in the subset
     have the *exact same number of available years* of data, using the latest years
     available to achieve this balance, which prevents monthly bias in long-term statistics.
 
@@ -122,15 +124,8 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     subset['MONTH'] = subset.index.month
     subset['YEAR'] = subset.index.year
 
-    # First, identify 4 months with highest GPP from full dataset
-    gpp_avg = subset.groupby('MONTH')[varnames['gpp_var']].mean()
-    gpp_top4 = gpp_avg.nlargest(4)
-    gpp_top4 = gpp_top4.index.to_list()
-    # # First, identify 4 warmest months from full dataset
-    # ta_avg = subset.groupby('MONTH')[varnames['ta_var']].mean()
-    # warmest4 = ta_avg.nlargest(4)
-    # warmest4 = warmest4.index.to_list()
-    # print(gpp_avg.sort_values(ascending=False))
+    # First, identify the 4 months with highest GPP, from the full dataset
+    gpp_top4 = peak_season_months(subset, gpp_col=varnames['gpp_var'])
 
     # Now start to narrow down data
 
@@ -155,11 +150,11 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     # Keep daytime records
     subset = subset.loc[subset[varnames['swinpot_var']] > 20].copy()
 
-    # Keep 4 warmest months
+    # Keep the 4 peak-GPP months
     # Keep as much data as is needed to have the same number of available years
-    # for each of the 4 warmest months, to avoid monthly bias.
+    # for each of the 4 peak-GPP months, to avoid monthly bias.
 
-    # Filter to only the 4 warmest months (after QC/daytime filters)
+    # Filter to only the 4 peak-GPP months (after QC/daytime filters)
     gpp_top4_df = subset.loc[subset['MONTH'].isin(gpp_top4)].copy()
 
     # Count the number of unique years available for each of the 4 months
@@ -222,7 +217,7 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
 
     # Keep records where all vars available
     # It is possible that we lose the complete dataset here,
-    # e.g. when SWC is available for some months but not for the warmest 4.
+    # e.g. when SWC is available for some months but not for the peak-GPP 4.
     subset_stats = subset.describe()
     subset = subset.dropna()
     if subset.empty:
