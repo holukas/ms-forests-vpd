@@ -161,6 +161,21 @@ datasets_df.to_csv(outfile, index=False)
 # This is the table needed to decide which sites can carry a deeper soil moisture
 # layer, and it keeps the site names that the aggregate summary throws away.
 per_site_df = pd.DataFrame(per_site_rows)
+
+# What a site would lose by swapping the shallowest soil moisture layer for a deeper
+# one. 1.0 means the deeper layer has data wherever layer 1 does, during the season.
+# This is the number that decides whether a site can appear in both the shallow and
+# the deep run, which the paired comparison needs.
+is_swc_layer = per_site_df['VARIABLE_NAME'].str.fullmatch(r'SWC_F_MDS_\d')
+layer1_peak = (per_site_df.loc[per_site_df['VARIABLE_NAME'] == 'SWC_F_MDS_1']
+               .drop_duplicates('SITE')
+               .set_index('SITE')['N_VALID_PEAK'])
+reference = per_site_df.loc[is_swc_layer, 'SITE'].map(layer1_peak)
+per_site_df['PEAK_VS_SWC1'] = float('nan')
+per_site_df.loc[is_swc_layer, 'PEAK_VS_SWC1'] = (
+        per_site_df.loc[is_swc_layer, 'N_VALID_PEAK'] / reference.where(reference > 0)
+)
+
 per_site_outfile = data_path("data/outputs/10_datasets/13b_variables_per_site.csv")
 per_site_df.to_csv(per_site_outfile, index=False)
 print(f"\nPer-site variable table saved to: {per_site_outfile}")
@@ -208,7 +223,8 @@ for scan_type in SCAN_VARIABLES:
             & (per_site_df['USED_SITE'])
             & (per_site_df['N_VALID'] > 0)
             ]
-        avg_nonnull_peak = peak_rows['PCT_NONNULL_PEAK'].mean()
+        # Median, because coverage percentages are skewed by a few near-empty sites
+        median_nonnull_peak = peak_rows['PCT_NONNULL_PEAK'].median()
 
         summary_data.append({
             'VARIABLE_TYPE': scan_type,
@@ -220,7 +236,7 @@ for scan_type in SCAN_VARIABLES:
             'SITES_WITH_DATA_USED': count_used,
             'TOTAL_SITES_USED': n_used_scanned,
             'COVERAGE_PERCENT_USED': f"{pct_coverage_used:.1f}%",
-            'AVG_NONNULL_PEAK_PERCENT_USED': f"{avg_nonnull_peak:.1f}%",
+            'MEDIAN_NONNULL_PEAK_PERCENT_USED': f"{median_nonnull_peak:.1f}%",
         })
         all_summaries.append(summary_data[-1])
 
@@ -228,12 +244,12 @@ for scan_type in SCAN_VARIABLES:
 
     # Print summary table
     print(f"{'Variable':<30} {'Sites':<10} {'Coverage':<12} {'Avg Non-Null %':<15} "
-          f"{'Used sites':<12} {'Used cov.':<12} {'Peak non-null %':<15}")
+          f"{'Used sites':<12} {'Used cov.':<12} {'Peak non-null %':<16}")
     print("-" * 120)
     for _, row in summary_df.iterrows():
         print(f"{row['VARIABLE_NAME']:<30} {row['SITES_WITH_DATA']:<10} {row['COVERAGE_PERCENT']:<12} "
               f"{row['AVG_NONNULL_PERCENT']:<15} {row['SITES_WITH_DATA_USED']:<12} "
-              f"{row['COVERAGE_PERCENT_USED']:<12} {row['AVG_NONNULL_PEAK_PERCENT_USED']:<15}")
+              f"{row['COVERAGE_PERCENT_USED']:<12} {row['MEDIAN_NONNULL_PEAK_PERCENT_USED']:<16}")
 
 print(f"\n{'=' * 100}")
 
@@ -280,12 +296,16 @@ swc_layers = per_site_df.loc[
 if swc_layers.empty:
     print("No SWC_F_MDS layers found for used sites.\n")
 else:
-    print(f"{'Layer':<16} {'Sites':<8} {'of used':<10} {'Median peak non-null %':<24}")
-    print("-" * 100)
+    print(f"{'Layer':<16} {'Sites':<8} {'of used':<10} {'Median peak non-null %':<24} "
+          f"{'Median vs SWC_1':<16} {'Sites >=0.9':<12}")
+    print("-" * 110)
     for layer, group in swc_layers.groupby('VARIABLE_NAME'):
         n = group['SITE'].nunique()
         pct = (n / n_used_scanned * 100) if n_used_scanned else float('nan')
-        print(f"{layer:<16} {n:<8} {pct:>6.1f}%    {group['PCT_NONNULL_PEAK'].median():>10.1f}")
+        ratio = group['PEAK_VS_SWC1']
+        n_swappable = int((ratio >= 0.9).sum())
+        print(f"{layer:<16} {n:<8} {pct:>6.1f}%    {group['PCT_NONNULL_PEAK'].median():>10.1f}"
+              f"              {ratio.median():>8.2f}         {n_swappable:<12}")
 
     # How many used sites have a deeper layer available at all
     per_site_layers = swc_layers.groupby('SITE')['VARIABLE_NAME'].apply(set)
