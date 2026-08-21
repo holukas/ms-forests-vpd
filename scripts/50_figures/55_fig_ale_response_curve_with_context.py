@@ -199,7 +199,7 @@ for ix, siteconfig in subsets_df.iterrows():
         continue
 
     try:
-        site_data = dv.load_parquet(filepath, sanitize_timestamp=False)
+        site_data = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     except Exception:
         continue
 

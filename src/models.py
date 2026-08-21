@@ -23,7 +23,7 @@ def train_rf_models_and_shap(target: str, features: list,
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
-    subset = dv.load_parquet(filepath, sanitize_timestamp=False)
+    subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     print(f"Records: {len(subset)}")
 
     # Target and features
@@ -208,7 +208,7 @@ def train_xgboost_models_and_shap(target: str, features: list,
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
-    subset = dv.load_parquet(filepath, sanitize_timestamp=False)
+    subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     # subset = subset.head(100)  # todo deactivate, for testing only
     print(f"Records: {len(subset)}")
 
@@ -397,7 +397,7 @@ def train_xgboost_models_and_ale(target: str, features: list,
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
-    subset = dv.load_parquet(filepath, sanitize_timestamp=False)
+    subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     print(f"Records: {len(subset)}")
 
     # Target and features
@@ -614,7 +614,7 @@ def calculate_partial_correlations(target: str, features: list,
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
-    subset = dv.load_parquet(filepath, sanitize_timestamp=False)
+    subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     print(f"Records: {len(subset)}")
 
     # Target and features
@@ -705,7 +705,7 @@ def calculate_path_analysis(target: str, features: list,
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
-    subset = dv.load_parquet(filepath, sanitize_timestamp=False)
+    subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     print(f"Records: {len(subset)}")
 
     # Target and features
@@ -997,7 +997,7 @@ def tune_xgboost_hyperparameters(target: str, features: list,
 
     # Load site data
     filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
-    subset = dv.load_parquet(filepath, sanitize_timestamp=False)
+    subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     print(f"Records: {len(subset)}")
 
     # Target and features
