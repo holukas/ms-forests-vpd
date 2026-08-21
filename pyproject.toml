@@ -21,7 +21,15 @@ dependencies = [
     "scipy>=1.15.0,<2.0.0",
     "matplotlib>=3.10.0,<4.0.0",
     "scikit-learn>=1.6.1,<2.0.0",
-    "xgboost>=3.0.0,<4.0.0",
+    # Pinned, not a range. The submitted results were produced with xgboost
+    # 3.0.5 in April 2026. Rerunning the same data and the same seeds under
+    # 3.3.0 gives different models: predictions correlate at 0.995, mean
+    # |SHAP| for VPD rises at every site tested and the VPD/SWC ratio rises
+    # by 6 to 21 %. Data and seeds are identical, two runs in one environment
+    # are bit-identical, so the version is the only difference left.
+    # Do not relax this without rerunning the whole campaign and updating
+    # every number in the manuscript.
+    "xgboost==3.0.5",
     "shap>=0.50.0,<1.0.0",
     "pyale>=1.2.0,<2.0.0",
     "geopandas>=1.1.1,<2.0.0",
