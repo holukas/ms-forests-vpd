@@ -74,6 +74,20 @@ TUNE_N_ITER : int
     Number of parameter combinations to test in tuning mode (default: 25)
     Higher = more thorough but slower (~25 fits × 5 folds × 100+ sites = hours)
 
+VARIANT : str
+    Run variant. Empty reads the baseline subsets and writes the baseline
+    results, which are the ones behind the submitted figures. Any other value
+    reads 20_subsets/<VARIANT>/ and writes 30_shap/<FLUX>/<TYPE>/<VARIANT>/.
+    Stage 21 must have run with the same value.
+    Default: ''
+
+SITES, MAX_SITES : list, int
+    Limit the run to a few sites for a timing test. SITES names them and wins
+    if it is not empty, MAX_SITES takes the first n rows, 0 means all sites.
+    Each site prints how long it took and the end of the run prints the total
+    and what it means for the full site list.
+    Default: [], 0
+
 ## How to Use
 
 **For SHAP Analysis (default):**
@@ -96,13 +110,11 @@ python scripts/30_shap/31_shap.py
 ```
 Check output for best parameters per site and aggregated results.
 
-**For Single-Site Testing:**
-Uncomment in the loop:
+**For a Short Test Run:**
+Set at the top of the script:
 ```python
-if ix > 1:  # Only test first 2 sites
-    break
-if siteconfig['SITE'] != "CH-Dav":  # Only test this site
-    continue
+SITES = ['CH-Dav']  # these sites only
+MAX_SITES = 2       # or the first n sites, if SITES is empty
 ```
 
 ## Key Design Decisions
@@ -127,18 +139,19 @@ if siteconfig['SITE'] != "CH-Dav":  # Only test this site
 ## Performance Tips
 
 - **Faster runs**: Set TUNE_HYPERPARAMETERS=True and TUNE_N_ITER=10 for quick tests
-- **Single site**: Comment out loop, test CH-Dav first
+- **Single site**: SITES = ['CH-Dav']
 - **Different flux**: Change FLUX to ET_ZSCORE, GPP_ZSCORE, or RECO_ZSCORE
 - **Memory**: Results are modest (~50-100 MB per site for SHAP)
 """
 
+import time
 from pathlib import Path
 
 import pandas as pd
 
 import src.files as files
 from src.models import train_xgboost_models_and_shap, tune_xgboost_hyperparameters
-from src.paths import data_path, load_settings
+from src.paths import load_settings
 
 # ------------------------------
 # Variables
@@ -153,6 +166,21 @@ CONDITIONAL = True  # Use conditional SHAP instead of standard SHAP
 TUNE_HYPERPARAMETERS = False  # Set to True to run hyperparameter tuning
 TUNE_N_ITER = 25  # Number of parameter combinations to test (default: 25)
 
+# Run variant. An empty string reads the baseline subsets and overwrites the
+# submitted results. Any other value adds a folder level on both sides, so the
+# subsets come from 20_subsets/<VARIANT>/ and the results go to
+# 30_shap/<FLUX>/<shap_type>/<VARIANT>/. Stage 21 must have run with the same
+# value, otherwise there are no subsets to read.
+VARIANT = ""
+
+# Which sites to run. SITES wins if it is not empty, otherwise MAX_SITES takes
+# the first n rows of the subsets file and 0 means all of them. Both are meant
+# for timing a short run before starting the full campaign. For a timing run,
+# name sites of different sizes in SITES: run time follows the number of
+# records, and the first n rows are simply the first n site names.
+SITES = []
+MAX_SITES = 0
+
 # ------------------------------
 # Calculate SHAP values for:
 # [x] NEP_ZSCORE
@@ -166,12 +194,13 @@ TUNE_N_ITER = 25  # Number of parameter combinations to test (default: 25)
 settings = load_settings()
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 
-# Load subsets info
-infile = data_path("data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv")
+# Load subsets info, from the same variant the results are written to
+infile = (Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
+          / "21_SUBSETS_parquet_vars_stats_subsets.csv")
 subsets_df = pd.read_csv(infile)
 
 # Create output directory
-results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
+results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type / VARIANT
 # parents=True: Creates any necessary parent directories that don't exist.
 # exist_ok=True: Prevents an error if the directory already exists.
 results_outdir.mkdir(parents=True, exist_ok=True)
@@ -187,7 +216,15 @@ with open(modelstxt, 'w') as file:
     file.write(f"Conditional SHAP: {CONDITIONAL}\n")
 
 _subsets_df = subsets_df.copy()
+if SITES:
+    _subsets_df = _subsets_df[_subsets_df['SITE'].isin(SITES)]
+    missing = sorted(set(SITES) - set(_subsets_df['SITE']))
+    if missing:
+        raise ValueError(f"Not in {infile.name}: {missing}")
+elif MAX_SITES:
+    _subsets_df = _subsets_df.head(MAX_SITES)
 cv_results_all = []
+site_seconds = []
 
 # Add mode indicator to header
 if TUNE_HYPERPARAMETERS:
@@ -201,11 +238,12 @@ else:
     print(f"SHAP ANALYSIS MODE - 5-Fold Cross-Validation")
     print(f"{'=' * 80}\n")
 
+print(f"Subsets:  {infile}")
+print(f"Results:  {results_outdir}")
+print(f"Sites:    {len(_subsets_df)} of {len(subsets_df)}")
+
 for ix, siteconfig in _subsets_df.iterrows():
-    # if ix > 1:
-    #     break
-    # if siteconfig['SITE'] != "CH-Dav":
-    #     continue
+    site_started = time.perf_counter()
 
     if TUNE_HYPERPARAMETERS:
         # Run hyperparameter tuning
@@ -231,6 +269,20 @@ for ix, siteconfig in _subsets_df.iterrows():
         )
         if cv_result:  # Only add if result is not empty
             cv_results_all.append(cv_result)
+
+    site_seconds.append(time.perf_counter() - site_started)
+    print(f"[{len(site_seconds)}/{len(_subsets_df)}] {siteconfig['SITE']} "
+          f"took {site_seconds[-1] / 60:.1f} min")
+
+# Timing, so a short run says what the full campaign costs
+if site_seconds:
+    total_min = sum(site_seconds) / 60
+    mean_min = total_min / len(site_seconds)
+    print("")
+    print(f"{len(site_seconds)} site(s) in {total_min:.1f} min, "
+          f"{mean_min:.1f} min per site on average")
+    print(f"At that rate {len(subsets_df)} sites take "
+          f"{mean_min * len(subsets_df) / 60:.1f} h")
 
 # Save aggregated results to CSV
 if cv_results_all:
