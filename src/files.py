@@ -60,7 +60,8 @@ def load_data(suffix, shap_type, dir_res, flux, aggfunc, subsetcols: list,
 
 
 def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, ix: int, varnames, site: str,
-                                 igbp: str, origin: str, variant: str = "", logging=logging) -> dict:
+                                 igbp: str, origin: str, variant: str = "", showplot: bool = True,
+                                 logging=logging) -> dict:
     """
     Processes the full flux data for a specific site to create a quality-controlled,
     seasonally-filtered, and year-balanced subset for subsequent analysis.
@@ -90,6 +91,9 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
         origin (str): The source of the data (e.g., 'FLUXNET', 'OZFLUX'). Used for plot title/metadata.
         variant (str): Name of the run variant. An empty string writes to the baseline
                        paths. Any other value adds a folder level, e.g. 'multilayer'.
+        showplot (bool): Show the heatmap plot on screen. The plot file is written
+                         either way. Must be False in a worker process, where no
+                         window can open.
 
     Returns:
         dict: A dictionary containing comprehensive metadata and summary statistics for the
@@ -281,7 +285,7 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     end = subset.index[-1].year
     outname = f"{site}_{igbp}_{origin}_SUBSET_{start}-{end}"
     save_subset_heatmap_plot(df=subset, outname=outname, site=site, igbp=igbp, sourcetxt=origin,
-                             showplot=True, fluxvars=['SWIN', 'TA', 'VPD', 'SWC', 'NEP', 'ET', 'GPP', 'RECO'],
+                             showplot=showplot, fluxvars=['SWIN', 'TA', 'VPD', 'SWC', 'NEP', 'ET', 'GPP', 'RECO'],
                              outpath=plots_dir)
 
     # Calculate stats for subset
