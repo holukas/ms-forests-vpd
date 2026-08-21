@@ -34,11 +34,13 @@ from src.paths import data_path, load_settings, resolve_stored_path
 # submitted subsets. Any other value adds a folder level, e.g. "multilayer".
 VARIANT = ""
 
-# How many sites to process at the same time. Each worker loads one full site
-# parquet file, and the largest is about 0.5 GB on disk and several GB in memory.
-# Four workers fit in 32 GB. Memory is the limit here, not the number of cores.
+# How many sites to process at the same time. Memory is the limit here, not the
+# number of cores. A site parquet file is compressed on disk and three to five
+# times larger in memory, and diive copies the whole frame once while it checks
+# the timestamps. The largest sites need about 3 GB per worker. Three workers
+# failed nothing on 32 GB. Four ran out of memory on US-Ho1.
 # With N_WORKERS = 1 the sites run one after the other and the plots are shown.
-N_WORKERS = 4
+N_WORKERS = 3
 
 
 class WarningCollector:
@@ -63,33 +65,43 @@ def init_worker():
 
 
 def process_site(task: tuple) -> tuple:
-    """Build the subset for one site and return its info and its warnings."""
+    """Build the subset for one site.
+
+    Returns the site info, the collected warnings, and the site ID if the site
+    failed. A site that raises must not stop the other 200, so the error is
+    caught here and reported at the end of the run.
+    """
     ix, siteconfig, settings, showplot = task
+    site = str(siteconfig['SITE'])
     collected = WarningCollector()
 
-    varnames = get_variable_names(siteconfig)  # Variable names for this site
-    subsetinfo = files.create_subsets_parquet_files(
-        site=str(siteconfig['SITE']),
-        igbp=siteconfig['IGBP'],
-        origin=siteconfig['ORIGIN'],
-        ix=int(ix),
-        settings=settings,
-        variant=VARIANT,
-        showplot=showplot,
-        filepath_parquet_fullset=str(resolve_stored_path(siteconfig['_FILEPATH_PARQUET'])),
-        varnames=varnames,
-        logging=collected
-    )
+    try:
+        varnames = get_variable_names(siteconfig)  # Variable names for this site
+        subsetinfo = files.create_subsets_parquet_files(
+            site=site,
+            igbp=siteconfig['IGBP'],
+            origin=siteconfig['ORIGIN'],
+            ix=int(ix),
+            settings=settings,
+            variant=VARIANT,
+            showplot=showplot,
+            filepath_parquet_fullset=str(resolve_stored_path(siteconfig['_FILEPATH_PARQUET'])),
+            varnames=varnames,
+            logging=collected
+        )
+    except Exception as error:
+        collected.warning(f"{site} FAILED with {type(error).__name__}: {error}")
+        return None, collected.messages, site
 
     # Some sites can come up empty if e.g. SWC is missing during 4 warmest months
     if not subsetinfo:
-        return None, collected.messages
+        return None, collected.messages, None
 
     subsetinfo['LAT'] = siteconfig['LAT']
     subsetinfo['LON'] = siteconfig['LON']
     subsetinfo['ELEVATION'] = siteconfig['ELEVATION']
     subsetinfo['IGBP'] = siteconfig['IGBP']
-    return subsetinfo, collected.messages
+    return subsetinfo, collected.messages, None
 
 
 def main():
@@ -127,17 +139,22 @@ def main():
     print(f"\n{'-' * 80}\nProcessing {len(tasks)} sites with {N_WORKERS} worker(s).\n{'-' * 80}")
 
     if N_WORKERS > 1:
-        # chunksize=1 because the sites differ a lot in size
-        with Pool(processes=N_WORKERS, initializer=init_worker) as pool:
+        # chunksize=1 because the sites differ a lot in size.
+        # maxtasksperchild=1 starts a fresh worker for every site. Without it a
+        # worker keeps the memory of the largest site it has seen so far.
+        with Pool(processes=N_WORKERS, initializer=init_worker, maxtasksperchild=1) as pool:
             results = pool.map(process_site, tasks, chunksize=1)
     else:
         results = [process_site(task) for task in tasks]
 
     # Write the warnings in site order, then collect the subset info
     rows = []
-    for subsetinfo, messages in results:
+    failed = []
+    for subsetinfo, messages, failed_site in results:
         for message in messages:
             logging.warning(message)
+        if failed_site:
+            failed.append(failed_site)
         if subsetinfo:
             rows.append(pd.DataFrame.from_dict(subsetinfo, orient='index').transpose())
 
@@ -147,6 +164,12 @@ def main():
     outfile = outdir / '21_SUBSETS_parquet_vars_stats_subsets.csv'
     print(f"\n{'-' * 80}\nSaving info about {len(subsetinfo_df)} subsets to file {outfile.resolve()}.\n{'-' * 80}")
     subsetinfo_df.to_csv(outfile, index=False)
+
+    if failed:
+        print(f"\n{'!' * 80}")
+        print(f"{len(failed)} site(s) failed and are missing from the info CSV: {', '.join(failed)}")
+        print(f"See {outdir / '21_warnings.log'} for the reason. Rerun before you use this output.")
+        print(f"{'!' * 80}")
 
 
 if __name__ == '__main__':
