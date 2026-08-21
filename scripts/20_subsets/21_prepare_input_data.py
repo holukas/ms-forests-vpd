@@ -1,6 +1,13 @@
 """
 Prepare input data for XGBoost models.
 
+Writes one subset parquet file and one heatmap plot per site, plus an info CSV and
+a warnings log for the run. Everything goes under data/outputs/20_subsets/<VARIANT>/.
+
+VARIANT is empty by default, so the output goes straight to 20_subsets/. That folder
+holds the subsets for the submitted figures. Set a name before you rerun with other
+settings, or you overwrite them.
+
 Note:
     One of the sites (CD-Ygb) had VPD in the wrong units. It seems that this site
     was the only site that recorded VPD in Pa instead of hPa. I found this issue
@@ -17,7 +24,11 @@ import pandas as pd
 
 import src.files as files
 from src.common import get_variable_names
-from src.paths import data_path, load_settings
+from src.paths import data_path, load_settings, resolve_stored_path
+
+# Run variant. An empty string writes to the baseline paths and overwrites the
+# submitted subsets. Any other value adds a folder level, e.g. "multilayer".
+VARIANT = ""
 
 # Load datasets info
 infile = data_path("data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv")
@@ -27,7 +38,8 @@ datasets_df = pd.read_csv(infile)
 settings = load_settings()
 
 # Logger
-OUTDIR = data_path("data/outputs/20_subsets/")
+OUTDIR = Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
+OUTDIR.mkdir(parents=True, exist_ok=True)
 outfile = OUTDIR / '21_warnings.log'
 logging.basicConfig(
     filename=outfile,
@@ -53,7 +65,8 @@ for ix, siteconfig in _datasets_df.iterrows():
         origin=siteconfig['ORIGIN'],
         ix=int(ix),
         settings=settings,
-        filepath_parquet_fullset=str(siteconfig['_FILEPATH_PARQUET']),
+        variant=VARIANT,
+        filepath_parquet_fullset=str(resolve_stored_path(siteconfig['_FILEPATH_PARQUET'])),
         varnames=varnames,
         logging=logging
     )

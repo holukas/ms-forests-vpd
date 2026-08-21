@@ -60,7 +60,7 @@ def load_data(suffix, shap_type, dir_res, flux, aggfunc, subsetcols: list,
 
 
 def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, ix: int, varnames, site: str,
-                                 igbp: str, origin: str, logging=logging) -> dict:
+                                 igbp: str, origin: str, variant: str = "", logging=logging) -> dict:
     """
     Processes the full flux data for a specific site to create a quality-controlled,
     seasonally-filtered, and year-balanced subset for subsequent analysis.
@@ -78,7 +78,7 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
 
     Args:
         settings (dict): A dictionary containing global settings, including output directory paths
-                         (e.g., 'DIR_DATA_PROC_SUBSETS', 'DIR_DATA_PROC_SUBSETS_PLOTS').
+                         (e.g., 'DIR_DATA_PROC_SUBSETS_BASE').
         filepath_parquet_fullset (str): The file path to the complete, raw site dataset (Parquet format).
         ix (int): The index of the current site being processed (used for console logging).
         varnames (dict): A mapping dictionary where keys are generic variable types (e.g., 'nee_var',
@@ -88,6 +88,8 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
                     in naming the output file.
         igbp (str): The IGBP classification code for the site (e.g., 'ENF'). Used for plot title/metadata.
         origin (str): The source of the data (e.g., 'FLUXNET', 'OZFLUX'). Used for plot title/metadata.
+        variant (str): Name of the run variant. An empty string writes to the baseline
+                       paths. Any other value adds a folder level, e.g. 'multilayer'.
 
     Returns:
         dict: A dictionary containing comprehensive metadata and summary statistics for the
@@ -260,11 +262,18 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
 
     print(f"Records: {len(subset)}")
 
+    # Output folders for this run variant. pathlib drops an empty part, so an empty
+    # variant gives the baseline paths and no file moves.
+    subsets_dir = Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / variant / '21_subsets_parquet'
+    plots_dir = Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / variant / '21_subsets_parquet_plots'
+    subsets_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir.mkdir(parents=True, exist_ok=True)
+
     # Save subset data with z-scores to parquet file
     outfilepath = dv.save_parquet(
         filename=f"{site}_subset_GPPhighest4_qc0_daytime",
         data=subset,
-        outpath=Path(settings['DIR_DATA_PROC_SUBSETS']))
+        outpath=subsets_dir)
     print(f"Saved subset data (measured and z-scores) for {site} to file {outfilepath}.")
 
     # Save heatmap plot
@@ -273,7 +282,7 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     outname = f"{site}_{igbp}_{origin}_SUBSET_{start}-{end}"
     save_subset_heatmap_plot(df=subset, outname=outname, site=site, igbp=igbp, sourcetxt=origin,
                              showplot=True, fluxvars=['SWIN', 'TA', 'VPD', 'SWC', 'NEP', 'ET', 'GPP', 'RECO'],
-                             outpath=settings['DIR_DATA_PROC_SUBSETS_PLOTS'])
+                             outpath=plots_dir)
 
     # Calculate stats for subset
     date_first = subset.index[0]

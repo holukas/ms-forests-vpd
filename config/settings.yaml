@@ -8,8 +8,9 @@ DATA_ROOT: F:/Sync/luhk_work/dev-data/manuscripts-data/ms-forests-vpd-data
 # Processed data
 DIR_DATA_PROC_PARQUET: data/outputs/10_datasets/12_parquet_merged
 DIR_DATA_PROC_PARQUET_PLOTS: data/outputs/10_datasets/12_parquet_merged_plots
-DIR_DATA_PROC_SUBSETS: data/outputs/20_subsets/21_subsets_parquet
-DIR_DATA_PROC_SUBSETS_PLOTS: data/outputs/20_subsets/21_subsets_parquet_plots
+# Stage 20 writes to <base>/<variant>/21_subsets_parquet and to
+# <base>/<variant>/21_subsets_parquet_plots. An empty variant gives the baseline paths.
+DIR_DATA_PROC_SUBSETS_BASE: data/outputs/20_subsets
 
 # Results
 DIR_DATA_OUT_SHAP_ANALYSIS: data/outputs/30_shap
