@@ -63,7 +63,7 @@ Direct dependencies, declared in `pyproject.toml`:
 | `scipy` | >=1.15, <2.0 | Z-scores, nearest-neighbour search, statistics |
 | `matplotlib` | >=3.10, <4.0 | All figures |
 | `scikit-learn` | >=1.6.1, <2.0 | Cross-validation, metrics, hyperparameter search |
-| `xgboost` | >=3.0, <4.0 | Gradient-boosted regression models |
+| `xgboost` | **==3.0.5** | Gradient-boosted regression models, pinned, see below |
 | `shap` | >=0.50, <1.0 | SHAP values via `TreeExplainer` |
 | `pyale` | >=1.2, <2.0 | Accumulated Local Effects curves |
 | `geopandas` | >=1.1.1, <2.0 | Site map |
@@ -75,6 +75,41 @@ support numpy 2.5. Without the bound the resolver picks a numba release that fai
 build on Python 3.12.
 
 Transitive versions are pinned in `uv.lock`.
+
+## Reproducing the published numbers
+
+`xgboost` is pinned to one exact version, not a range. The version changes the fitted
+models.
+
+The published results come from 3.0.5. Rerun the same data with the same seeds under
+3.3.0 and the trees come out different. On the sites tested, predictions correlate at
+0.995, mean absolute SHAP for VPD is higher at every site, and the VPD over soil
+moisture ratio is 6 to 21 per cent higher. Accuracy is the same either way: the mean
+difference in out-of-sample R2 is zero to four decimal places, and which version scores
+higher varies from site to site.
+
+This comes from the order of floating point additions. The `hist` tree method sums
+gradients into histogram bins in parallel, and 3.2 changed how that work is divided
+between threads, including making the histogram block size depend on the CPU cache. Bin
+sums then differ in their last bits. Where two candidate splits are nearly tied, the
+choice can flip, and the subtree below that node grows differently. Early stopping
+compounds it.
+
+Thread count has the same effect. Holding xgboost at 3.0.5 and varying `n_jobs` on one
+site, the stopping iteration ranged from 478 at 24 threads to 1021 at a single thread,
+and the site-level VPD over soil moisture ratio from 1.53 to 1.69. The models here were
+fitted with `n_jobs=-1` on a machine with 24 threads.
+
+The pin alone therefore does not guarantee a match. At the same version and thread count
+the results reproduce bit for bit, checked across all 208 sites. Elsewhere, expect
+differences of roughly the size given above.
+
+All those figures are per-site. Averaging over 208 sites should reduce them, though by
+how much has not been measured, so read them as an upper bound rather than as an error
+bar on a published aggregate.
+
+`shap` and `scikit-learn` versions make no difference. 0.52.0 and 1.9.0 reproduce the
+0.48.0 and 1.6.1 numbers exactly, so it is tree building that matters, not the explainer.
 
 ### Optional: ERA5 downloads
 
