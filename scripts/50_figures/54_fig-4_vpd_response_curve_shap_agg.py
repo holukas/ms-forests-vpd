@@ -30,6 +30,11 @@ FLUX = plotvars[0]
 # folder and writes the figures next to it, so a sensitivity run cannot overwrite a
 # published figure. The aggregation must have run with the same value.
 VARIANT = ""
+# Site subset. An empty string reads the aggregation over every site.
+# "deeper-only" reads the run restricted to the 128 sites whose soil water comes
+# from below layer 1, and writes the figures next to it. The value has to match
+# the one the aggregation ran with.
+SITE_SUBSET = ""
 xvar, yvar, zvar = plotvars[1], plotvars[2], plotvars[3]
 x_in_filename, y_in_filename = plotvars[4], plotvars[5]
 
@@ -130,9 +135,9 @@ colors_symbols = ['black', 'black', 'black']
 # Load settings
 settings = load_settings()
 shap_type = 'conditional' if CONDITIONAL else 'standard'
-results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
+results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 
-dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 dir_out.mkdir(parents=True, exist_ok=True)
 
 # # Load SHAP values aggregated across all sites
@@ -146,7 +151,7 @@ dir_out.mkdir(parents=True, exist_ok=True)
 # Paths & Settings
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 settings = load_settings()
-dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
+dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 df_coeffs = pd.DataFrame(columns=['IGBP', 'a', 'b', 'c', 'd', 'e', 'R2', 'Threshold'])  # Collect coefficients
 
 # FIGURE LAYOUT (5 panels)

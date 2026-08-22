@@ -42,6 +42,11 @@ from src.paths import load_settings
 # folder and writes the figures next to it, so a sensitivity run cannot overwrite a
 # published figure. The aggregation must have run with the same value.
 VARIANT = ""
+# Site subset. An empty string reads the aggregation over every site.
+# "deeper-only" reads the run restricted to the 128 sites whose soil water comes
+# from below layer 1, and writes the figures next to it. The value has to match
+# the one the aggregation ran with.
+SITE_SUBSET = ""
 
 plotvars_rows = [
     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',
@@ -119,7 +124,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
     # Paths
     shap_type = 'conditional' if CONDITIONAL else 'standard'
     settings = load_settings()
-    dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
+    dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 
     # todo check Pre-calculate for scaling z-values (colors)
     allsites_df, allsites_subset_df, minmax_counts, n_sites = files.load_data(
@@ -235,7 +240,7 @@ gs.update(wspace=0.1, hspace=0.3)
 # Save fig
 FLUX = plotvars[0]
 
-dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 dir_out.mkdir(parents=True, exist_ok=True)
 outfilepath = dir_out / f'52_FIG-{figure_info[0]}_FlamePlots{figure_info[1]}_{FLUX}.png'
 print(f"Saved to {outfilepath}")

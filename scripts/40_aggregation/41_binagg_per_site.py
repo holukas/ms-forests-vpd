@@ -8,6 +8,7 @@ import pandas as pd
 
 import src.files as files
 from src.aggregation import aggregate_shap_values_for_site
+from src.common import deeper_swc_sites
 from src.paths import load_settings
 
 # ------------------------------
@@ -27,6 +28,12 @@ CONDITIONAL = True  # SHAP
 # to the matching variant folder. The earlier stages must have run with the same
 # value, otherwise there is nothing to read.
 VARIANT = ""
+# Site subset. An empty string keeps every site. "deeper-only" keeps the 128
+# sites whose soil water comes from below layer 1, which is the set needed to
+# compare shallow against deep without the sites that cannot move. It adds a
+# folder level to the output, so a subset run never overwrites the full one.
+# Run it against both VARIANT values to get the two matched arms.
+SITE_SUBSET = ""
 
 # Aggregation combos: xvar / yvar. Every pair listed here is processed in one run,
 # which keeps a variant complete: the figures need all five.
@@ -67,8 +74,17 @@ for VARS in VAR_PAIRS:
               / "21_SUBSETS_parquet_vars_stats_subsets.csv")
     subsets_df = pd.read_csv(infile)
 
+    if SITE_SUBSET == "deeper-only":
+        keep = deeper_swc_sites()
+        before = len(subsets_df)
+        subsets_df = subsets_df[subsets_df['SITE'].isin(keep)].reset_index(drop=True)
+        print(f"Site subset: {len(subsets_df)} of {before} sites use a layer below SWC_F_MDS_1")
+    elif SITE_SUBSET:
+        raise ValueError(f"SITE_SUBSET must be '' or 'deeper-only', not {SITE_SUBSET!r}")
+
+
     # Create output directory
-    dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
+    dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
     # parents=True: Creates any necessary parent directories that don't exist.
     # exist_ok=True: Prevents an error if the directory already exists.
     dir_out.mkdir(parents=True, exist_ok=True)

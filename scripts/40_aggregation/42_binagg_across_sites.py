@@ -38,6 +38,10 @@ CONDITIONAL = True  # SHAP
 # to the matching variant folder. The earlier stages must have run with the same
 # value, otherwise there is nothing to read.
 VARIANT = ""
+# Site subset. An empty string keeps every site. "deeper-only" reads what 41
+# wrote for the 128 sites whose soil water comes from below layer 1, and writes
+# next to it. The value has to match the one 41 ran with.
+SITE_SUBSET = ""
 
 # Aggregation combos: xvar / yvar. Every pair listed here is processed in one run,
 # which keeps a variant complete: the figures need all five.
@@ -74,10 +78,10 @@ for VARS in VAR_PAIRS:
     # Load settings
     settings = load_settings()
     shap_type = 'conditional' if CONDITIONAL else 'standard'
-    dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
+    dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 
     # Create output directory
-    dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
+    dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
     # parents=True: Creates any necessary parent directories that don't exist.
     # exist_ok=True: Prevents an error if the directory already exists.
     dir_out.mkdir(parents=True, exist_ok=True)
