@@ -21,18 +21,28 @@ Note:
 
 """
 import logging
+import re
 from multiprocessing import Pool
 from pathlib import Path
 
 import pandas as pd
 
 import src.files as files
-from src.common import get_variable_names
+from src.common import deepest_swc_per_site, get_variable_names
 from src.paths import data_path, load_settings, resolve_stored_path
 
 # Run variant. An empty string writes to the baseline paths and overwrites the
 # submitted subsets. Any other value adds a folder level, e.g. "multilayer".
 VARIANT = ""
+
+# Which soil water layer to use. "shallow" keeps SWC_F_MDS_1, which is what the
+# submitted analysis used. "deepest" swaps in the deepest layer per site that
+# still holds at least 90 % of layer 1's records in the peak months, which is
+# the sensitivity run reviewers 2 and 3 and the editor asked for. 127 of 208
+# sites move, the rest have no deeper layer or only gappy ones and stay on
+# layer 1. Set VARIANT as well when using "deepest", or the deep subsets
+# overwrite the submitted ones.
+SWC_LAYER = "shallow"
 
 # How many sites to process at the same time. Memory is the limit here, not the
 # number of cores. A site parquet file is compressed on disk and three to five
@@ -71,12 +81,15 @@ def process_site(task: tuple) -> tuple:
     failed. A site that raises must not stop the other 200, so the error is
     caught here and reported at the end of the run.
     """
-    ix, siteconfig, settings, showplot = task
+    ix, siteconfig, settings, showplot, deep_swc = task
     site = str(siteconfig['SITE'])
     collected = WarningCollector()
 
     try:
         varnames = get_variable_names(siteconfig)  # Variable names for this site
+        if site in deep_swc:
+            varnames['swc_var'] = deep_swc[site]['swc_var']
+            varnames['swc_qc_var'] = deep_swc[site]['swc_qc_var']
         subsetinfo = files.create_subsets_parquet_files(
             site=site,
             igbp=siteconfig['IGBP'],
@@ -97,6 +110,11 @@ def process_site(task: tuple) -> tuple:
     if not subsetinfo:
         return None, collected.messages, None
 
+    # Which soil water layer went in. Without it a deep run cannot be paired
+    # against the shallow one, and the layer per site cannot be reported.
+    subsetinfo['SWC_VAR'] = varnames['swc_var']
+    layer = re.search(r'_(\d+)$', varnames['swc_var'])
+    subsetinfo['SWC_LAYER'] = int(layer.group(1)) if layer else -9999
     subsetinfo['LAT'] = siteconfig['LAT']
     subsetinfo['LON'] = siteconfig['LON']
     subsetinfo['ELEVATION'] = siteconfig['ELEVATION']
@@ -126,6 +144,14 @@ def main():
     # Plots can only be shown when everything runs in this process
     showplot = N_WORKERS == 1
 
+    if SWC_LAYER == "deepest":
+        deep_swc = deepest_swc_per_site()
+        print(f"Soil water: deepest usable layer, {len(deep_swc)} site(s) move off layer 1")
+    elif SWC_LAYER == "shallow":
+        deep_swc = {}
+    else:
+        raise ValueError(f"SWC_LAYER must be 'shallow' or 'deepest', not {SWC_LAYER!r}")
+
     tasks = []
     for ix, siteconfig in datasets_df.iterrows():
         # if ix < 144:
@@ -134,7 +160,7 @@ def main():
         #     continue
         # if siteconfig['IGBP'] != "EBF":
         #     continue
-        tasks.append((ix, siteconfig, settings, showplot))
+        tasks.append((ix, siteconfig, settings, showplot, deep_swc))
 
     print(f"\n{'-' * 80}\nProcessing {len(tasks)} sites with {N_WORKERS} worker(s).\n{'-' * 80}")
 

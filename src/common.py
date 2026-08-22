@@ -100,6 +100,63 @@ def findpoi(df, k: int = 9, agg: str = 'mean', what: str = 'max'):
     return location, value
 
 
+DEEPEST_SWC_MIN_PEAK_RATIO = 0.90
+
+
+def deepest_swc_per_site(min_peak_ratio: float = DEEPEST_SWC_MIN_PEAK_RATIO) -> dict:
+    """
+    Pick the deepest usable soil water layer for every site.
+
+    Reviewers 2 and 3 and the editor all ask whether the results depend on
+    soil moisture being measured near the surface. `SWC_F_MDS_1` is the
+    shallowest layer and is what the submitted analysis used, so the
+    sensitivity run needs the deepest layer instead.
+
+    Deepest alone is not enough. A deeper layer is often gappier, and a gappier
+    driver means the subset keeps fewer records, so a difference in the results
+    could come from the change in sample rather than from the change in depth.
+    The layer therefore has to keep at least `min_peak_ratio` of layer 1's
+    records within the four peak months. The deepest layer that clears that bar
+    wins, and a site where none of them does stays on layer 1.
+
+    Depths in cm are not recoverable, only 3 sites carry `GRP_SWC` metadata in
+    the AmeriFlux BIF, so this is "the deepest available layer", never "the
+    root zone at X cm".
+
+    Coverage comes from `13b_variables_per_site.csv`, written by
+    `13b_check_available_vars_SWC.py`, so nothing in the 13 to 17 chain needs
+    rerunning.
+
+    Args:
+        min_peak_ratio: Records the deeper layer must keep within the peak
+            months, as a fraction of what layer 1 has.
+
+    Returns:
+        dict: Site to `{'swc_var': name, 'swc_qc_var': name, 'layer': int}` for
+        every site that moves off layer 1. Sites that stay are not included.
+    """
+    from src.paths import data_path
+
+    filepath = data_path("data/outputs/10_datasets/13b_variables_per_site.csv")
+    df = pd.read_csv(filepath)
+
+    is_layer = df['VARIABLE_NAME'].str.match(r'SWC_F_MDS_\d+$', na=False)
+    layers = df[df['USED_SITE'] & is_layer].copy()
+    layers['LAYER'] = layers['VARIABLE_NAME'].str.extract(r'_(\d+)$').astype(int)
+
+    chosen = {}
+    for site, site_layers in layers.groupby('SITE'):
+        deeper = site_layers[(site_layers['LAYER'] > 1)
+                             & (site_layers['PEAK_VS_SWC1'] >= min_peak_ratio)]
+        if deeper.empty:
+            continue
+        best = deeper.loc[deeper['LAYER'].idxmax()]
+        chosen[str(site)] = {'swc_var': str(best['VARIABLE_NAME']),
+                             'swc_qc_var': f"{best['VARIABLE_NAME']}_QC",
+                             'layer': int(best['LAYER'])}
+    return chosen
+
+
 def get_variable_names(siteconfig: pd.Series):
     """
     Get variable names for this site.
