@@ -137,7 +137,7 @@ which is what the aggregation and figure scripts consume.
 
 | Script | What it does |
 |--------|--------------|
-| `41_binagg_per_site.py` | Bins each site's SHAP values on a two-variable grid, using fixed custom bin edges so all sites share one grid. One variable pair per run, set in `VARS` |
+| `41_binagg_per_site.py` | Bins each site's SHAP values on a two-variable grid, using fixed custom bin edges so all sites share one grid |
 | `42_binagg_across_sites.py` | Averages the binned grids across all sites, one vote per site |
 | `43_binagg_across_igbp.py` | Same, separately per IGBP forest type |
 | `44_agg_per_scenario.py` | Averages SHAP values within the nine stress stages, per site and then across sites |
@@ -146,11 +146,35 @@ Equal weighting throughout: a site with 20 years of data counts the same as a si
 three. Bins that fewer than half of the sites reach are dropped from the aggregated
 grids.
 
-Scripts 41 to 43 handle one variable pair per run, so covering the five pairs behind the
-figures means running each of them five times with `VARS` changed. Script 44 takes no
-pair and runs once. Order matters: 41 first, then 42 and 43, which read what 41 wrote.
-Script 44 reads the SHAP output directly and can run at any point after 31.
+Scripts 41 to 43 loop over `VAR_PAIRS`, the five x/y combinations the figures need:
+
+| x | y |
+|---|---|
+| TA | VPD |
+| SWC | VPD |
+| TA | SWC |
+| ET | VPD |
+| ET | SWC |
+
+One run of each script covers all five. Script 44 takes no pair and runs once.
+
+Order matters: 41 first, then 42 and 43, which read what 41 wrote. Those two can run at
+the same time as each other, since they write different files. Script 44 reads the SHAP
+output directly and can run at any point after 31. Timings on 208 sites: 41 takes about
+40 minutes because it reads every site file once per pair, 42 is a minute, 43 about ten,
+44 a minute.
 
 ## 50_figures
 
-See [Figures](figures.qmd).
+Each figure script reads the aggregation output and writes to
+`50_plots/<FLUX>/<type>/<VARIANT>/`, so a variant cannot overwrite a published figure.
+
+Script 51 (the site map) has no variant and needs none, since the site list does not
+depend on which soil water layer was used. Script 55 reads the ALE output, so script 32
+has to have run with the same variant first.
+
+Script 52 draws both Figure 2 and Extended Data Figure 2 and picks between them by which
+of two blocks near the top is commented out. Running it twice, once per block, gives
+both.
+
+See [Figures](figures.qmd) for what each one shows.
