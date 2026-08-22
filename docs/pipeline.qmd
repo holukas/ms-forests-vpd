@@ -29,6 +29,26 @@ level on both sides, so a variant reads `20_subsets/<VARIANT>/` and writes
 that read baseline subsets and wrote variant results would finish without an error and
 produce numbers that mean nothing.
 
+Scripts 41 to 44 and the figure scripts take a second switch alongside it:
+
+```python
+SITE_SUBSET = ""              # every site
+SITE_SUBSET = "deeper-only"   # the 128 sites whose soil water is below layer 1
+```
+
+It adds another folder level, so the four combinations land in four places and none of
+them overwrites another:
+
+| VARIANT | SITE_SUBSET | what it holds |
+|---|---|---|
+| empty | empty | the submitted analysis, 208 sites, shallow soil water |
+| `deep-sm` | empty | 128 sites deep and 80 shallow, since sites without a usable deeper layer stay on layer 1 |
+| empty | `deeper-only` | the shallow arm of the matched comparison, 128 sites |
+| `deep-sm` | `deeper-only` | the deep arm, the same 128 sites |
+
+The last two are the pair that isolates depth. Same sites, same records, only the sensor
+differs. See [Methods](methods.qmd#soil-water-depth).
+
 Set the same value in every stage of a variant run. A stage whose predecessor has not
 run with that variant fails on a missing file rather than falling back to the baseline.
 

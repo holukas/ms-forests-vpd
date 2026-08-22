@@ -91,8 +91,32 @@ Depths in centimetres cannot be recovered. Only three sites carry `GRP_SWC` dept
 metadata in the AmeriFlux BIF, so this is the deepest available layer, never the root
 zone at a stated depth.
 
-What the comparison showed: soil water gains importance and VPD loses some, but the
-ordering does not change. Across all 208 sites the stage 8 ratio of VPD to soil water
+### What a deep run contains
+
+A deep run keeps all 208 sites. The 128 that have a usable deeper layer move to it, and
+the other 80 stay on layer 1, because dropping them would change the site set as well as
+the depth. So a deep-run figure shows the deepest available layer per site, not deep soil
+water everywhere, and roughly two fifths of the sites contribute exactly what they
+contribute to the shallow run. Their SHAP values come back bit-identical.
+
+That damps the difference between the two runs. To see the effect of depth on its own,
+scripts 41 to 44 and the figure scripts take a second switch:
+
+```python
+SITE_SUBSET = ""              # every site
+SITE_SUBSET = "deeper-only"   # the 128 sites below layer 1
+```
+
+Run it against both variants and the result is a matched pair: the same 128 sites, the
+same records, differing only in sensor depth. Output goes to its own folder, so the
+mixed run and the submitted run stay where they are.
+
+The 128 are the 127 sites the depth rule moves, plus CA-Obs, which already used layer 2
+in the submitted analysis because layer 1 was missing there.
+
+### What the comparison showed
+
+Soil water gains importance and VPD loses some, but the ordering does not change. Across all 208 sites the stage 8 ratio of VPD to soil water
 attribution goes from 5.03 to 4.86. Restricted to the 128 sites that actually moved, it
 goes from 4.22 to 4.00. Site-level importance shifts more where the layer swap goes
 deeper, from no change at layer 2 to roughly a quarter of the ratio at layers 7 to 9.
