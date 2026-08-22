@@ -159,7 +159,26 @@ FLUX = 'NEP_ZSCORE'
 # FLUX = 'ET_ZSCORE'
 # FLUX = 'GPP_ZSCORE'
 # FLUX = 'RECO_ZSCORE'
-FEATURES = ['TA_ZSCORE', 'SWIN_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE']
+# Predictor set. Reviewer 2 asked whether TA and VPD can be told apart, given how
+# strongly they covary, and wanted runs with one of them dropped.
+#
+#   full     the submitted set, all four drivers
+#   no_vpd   TA kept, VPD dropped
+#   no_ta    VPD kept, TA dropped
+#
+# A third variant, TA plus an alternative humidity variable, is not reachable. No
+# site in the analysis carries RH, and any humidity variable that could be derived
+# here is an exact function of TA and VPD, so it would add nothing that separates
+# them. Say so rather than substituting something that looks independent.
+#
+# Set VARIANT as well, or the results overwrite the submitted ones.
+FEATURE_SETS = {
+    'full': ['TA_ZSCORE', 'SWIN_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE'],
+    'no_vpd': ['TA_ZSCORE', 'SWIN_ZSCORE', 'SWC_ZSCORE'],
+    'no_ta': ['VPD_ZSCORE', 'SWIN_ZSCORE', 'SWC_ZSCORE'],
+}
+FEATURE_SET = 'full'
+FEATURES = FEATURE_SETS[FEATURE_SET]
 CONDITIONAL = True  # Use conditional SHAP instead of standard SHAP
 
 # Tuning mode: Set to True to tune hyperparameters instead of computing SHAP
@@ -225,6 +244,7 @@ with open(modelstxt, 'w') as file:
     file.write(f"Features: {FEATURES}\n")
     file.write(f"Conditional SHAP: {CONDITIONAL}\n")
     file.write(f"CV strategy: {CV_STRATEGY}\n")
+    file.write(f"Feature set: {FEATURE_SET}\n")
 
 _subsets_df = subsets_df.copy()
 if SITES:
@@ -253,6 +273,7 @@ print(f"Subsets:  {infile}")
 print(f"Results:  {results_outdir}")
 print(f"Sites:    {len(_subsets_df)} of {len(subsets_df)}")
 print(f"CV:       {CV_STRATEGY}")
+print(f"Features: {FEATURE_SET} {FEATURES}")
 
 for ix, siteconfig in _subsets_df.iterrows():
     site_started = time.perf_counter()
