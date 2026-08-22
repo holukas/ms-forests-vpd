@@ -39,12 +39,15 @@ CONDITIONAL = True  # SHAP
 # value, otherwise there is nothing to read.
 VARIANT = ""
 
-# Aggregation combos: xvar / yvar
-# VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
-# VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
-# VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
-# VARS = ['ET_ZSCORE', 'VPD_ZSCORE']
-VARS = ['ET_ZSCORE', 'SWC_ZSCORE']
+# Aggregation combos: xvar / yvar. Every pair listed here is processed in one run,
+# which keeps a variant complete: the figures need all five.
+VAR_PAIRS = [
+    ['TA_ZSCORE', 'VPD_ZSCORE'],
+    ['SWC_ZSCORE', 'VPD_ZSCORE'],
+    ['TA_ZSCORE', 'SWC_ZSCORE'],
+    ['ET_ZSCORE', 'VPD_ZSCORE'],
+    ['ET_ZSCORE', 'SWC_ZSCORE'],
+]
 
 aggfunc = 'mean'
 # aggfunc = 'median'
@@ -57,62 +60,68 @@ aggfunc = 'mean'
 # RECO: [ ]TA/VPD [ ]SWC/VPD [ ]TA/SWC [ ] ET/VPD [ ] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
 # ------------------------------
 
-xvar = VARS[0]
-yvar = VARS[1]
-binx = f"BIN_{xvar}"
-biny = f"BIN_{yvar}"
+for VARS in VAR_PAIRS:
+    print('')
+    print('=' * 70)
+    print(f'{VARS[0]} x {VARS[1]}')
+    print('=' * 70)
 
-# Load settings
-settings = load_settings()
-shap_type = 'conditional' if CONDITIONAL else 'standard'
-dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
+    xvar = VARS[0]
+    yvar = VARS[1]
+    binx = f"BIN_{xvar}"
+    biny = f"BIN_{yvar}"
 
-# Create output directory
-dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
-# parents=True: Creates any necessary parent directories that don't exist.
-# exist_ok=True: Prevents an error if the directory already exists.
-dir_out.mkdir(parents=True, exist_ok=True)
+    # Load settings
+    settings = load_settings()
+    shap_type = 'conditional' if CONDITIONAL else 'standard'
+    dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
 
-# Load SHAP values aggregated per site
-filepath = Path(
-    dir_prev_results) / f"41_SHAPVALUES-{shap_type}_{aggfunc}AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"
-shapvals_sites_agg_long_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
-shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.loc[shapvals_sites_agg_long_df['IGBP'] != 'DNF']
+    # Create output directory
+    dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
+    # parents=True: Creates any necessary parent directories that don't exist.
+    # exist_ok=True: Prevents an error if the directory already exists.
+    dir_out.mkdir(parents=True, exist_ok=True)
 
-# Total number of sites
-n_sites = len(shapvals_sites_agg_long_df['SITE'].unique())
-print(f"Number of sites: {n_sites}")
+    # Load SHAP values aggregated per site
+    filepath = Path(
+        dir_prev_results) / f"41_SHAPVALUES-{shap_type}_{aggfunc}AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}.parquet"
+    shapvals_sites_agg_long_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
+    shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.loc[shapvals_sites_agg_long_df['IGBP'] != 'DNF']
 
-# Keep required columns only
-targets = ('_SHAPVALS', 'BIN_', '_ZSCORE')
-keepcols = [c for c in shapvals_sites_agg_long_df.columns if
-            any(str(c).startswith(t) or str(c).endswith(t) for t in targets)]
-shapvals_sites_agg_long_df = shapvals_sites_agg_long_df[keepcols].copy()
+    # Total number of sites
+    n_sites = len(shapvals_sites_agg_long_df['SITE'].unique())
+    print(f"Number of sites: {n_sites}")
 
-# Remove all rows where all records are NaN,
-# binx and biny columns are ignored for this check
-cols_to_ignore = [binx, biny]
-cols_to_check = [col for col in shapvals_sites_agg_long_df.columns if col not in cols_to_ignore]
+    # Keep required columns only
+    targets = ('_SHAPVALS', 'BIN_', '_ZSCORE')
+    keepcols = [c for c in shapvals_sites_agg_long_df.columns if
+                any(str(c).startswith(t) or str(c).endswith(t) for t in targets)]
+    shapvals_sites_agg_long_df = shapvals_sites_agg_long_df[keepcols].copy()
 
-# Filter out rows where all values in the selected columns are NaN
-shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.loc[
-    ~shapvals_sites_agg_long_df[cols_to_check].isna().all(axis=1)].copy()
+    # Remove all rows where all records are NaN,
+    # binx and biny columns are ignored for this check
+    cols_to_ignore = [binx, biny]
+    cols_to_check = [col for col in shapvals_sites_agg_long_df.columns if col not in cols_to_ignore]
 
-# Aggregate SHAP values across all sites
-shapvals_sites_grouped_agg_df = aggregate_shap_values_across_sites(
-    df=shapvals_sites_agg_long_df, binx=binx, biny=biny
-)
+    # Filter out rows where all values in the selected columns are NaN
+    shapvals_sites_agg_long_df = shapvals_sites_agg_long_df.loc[
+        ~shapvals_sites_agg_long_df[cols_to_check].isna().all(axis=1)].copy()
 
-# Add total number of sites aggregated
-# Added here in this extra step, b/c the counts per bin only
-# give the number of sites in the respective bin, not the
-# overall number of sites that were aggregated.
-shapvals_sites_grouped_agg_df['N_SITES'] = n_sites
+    # Aggregate SHAP values across all sites
+    shapvals_sites_grouped_agg_df = aggregate_shap_values_across_sites(
+        df=shapvals_sites_agg_long_df, binx=binx, biny=biny
+    )
 
-# Save to Parquet
-# 41_SHAPVALUES-conditional_AggregatedPerSite_BIN-TA_ZSCORE+BIN-VPD_ZSCORE+NEP_ZSCORE
-outfilepath = dv.save_parquet(
-    filename=f"42_SHAPVALUES-{shap_type}_{aggfunc}AggregatedAcrossSites_BIN-{xvar}+BIN-{yvar}+{FLUX}",
-    data=shapvals_sites_grouped_agg_df,
-    outpath=dir_out)
-shapvals_sites_grouped_agg_df.to_csv(outfilepath.replace('.parquet', '.csv'))
+    # Add total number of sites aggregated
+    # Added here in this extra step, b/c the counts per bin only
+    # give the number of sites in the respective bin, not the
+    # overall number of sites that were aggregated.
+    shapvals_sites_grouped_agg_df['N_SITES'] = n_sites
+
+    # Save to Parquet
+    # 41_SHAPVALUES-conditional_AggregatedPerSite_BIN-TA_ZSCORE+BIN-VPD_ZSCORE+NEP_ZSCORE
+    outfilepath = dv.save_parquet(
+        filename=f"42_SHAPVALUES-{shap_type}_{aggfunc}AggregatedAcrossSites_BIN-{xvar}+BIN-{yvar}+{FLUX}",
+        data=shapvals_sites_grouped_agg_df,
+        outpath=dir_out)
+    shapvals_sites_grouped_agg_df.to_csv(outfilepath.replace('.parquet', '.csv'))

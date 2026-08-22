@@ -28,12 +28,15 @@ CONDITIONAL = True  # SHAP
 # value, otherwise there is nothing to read.
 VARIANT = ""
 
-# Aggregation combos: xvar / yvar
-# VARS = ['TA_ZSCORE', 'VPD_ZSCORE']
-# VARS = ['SWC_ZSCORE', 'VPD_ZSCORE']
-# VARS = ['TA_ZSCORE', 'SWC_ZSCORE']
-# VARS = ['ET_ZSCORE', 'VPD_ZSCORE']
-VARS = ['ET_ZSCORE', 'SWC_ZSCORE']
+# Aggregation combos: xvar / yvar. Every pair listed here is processed in one run,
+# which keeps a variant complete: the figures need all five.
+VAR_PAIRS = [
+    ['TA_ZSCORE', 'VPD_ZSCORE'],
+    ['SWC_ZSCORE', 'VPD_ZSCORE'],
+    ['TA_ZSCORE', 'SWC_ZSCORE'],
+    ['ET_ZSCORE', 'VPD_ZSCORE'],
+    ['ET_ZSCORE', 'SWC_ZSCORE'],
+]
 
 aggfunc = 'mean'
 
@@ -45,79 +48,85 @@ aggfunc = 'mean'
 # RECO: [ ]TA/VPD [ ]SWC/VPD [ ]TA/SWC [ ] ET/VPD [ ] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
 # ------------------------------
 
-xvar = VARS[0]
-yvar = VARS[1]
+for VARS in VAR_PAIRS:
+    print('')
+    print('=' * 70)
+    print(f'{VARS[0]} x {VARS[1]}')
+    print('=' * 70)
 
-# Load settings
-settings = load_settings()
-shap_type = 'conditional' if CONDITIONAL else 'standard'
-dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type / VARIANT
+    xvar = VARS[0]
+    yvar = VARS[1]
 
-# Load subsets info
-infile = (Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
-          / "21_SUBSETS_parquet_vars_stats_subsets.csv")
-subsets_df = pd.read_csv(infile)
+    # Load settings
+    settings = load_settings()
+    shap_type = 'conditional' if CONDITIONAL else 'standard'
+    dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type / VARIANT
 
-# Create output directory
-dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
-# parents=True: Creates any necessary parent directories that don't exist.
-# exist_ok=True: Prevents an error if the directory already exists.
-dir_out.mkdir(parents=True, exist_ok=True)
+    # Load subsets info
+    infile = (Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
+              / "21_SUBSETS_parquet_vars_stats_subsets.csv")
+    subsets_df = pd.read_csv(infile)
 
-# Aggregate SHAP values for each site and collect in dataframe
-shapvals_sites_agg_long_df = None
-for ix, siteconfig in subsets_df.iterrows():
+    # Create output directory
+    dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
+    # parents=True: Creates any necessary parent directories that don't exist.
+    # exist_ok=True: Prevents an error if the directory already exists.
+    dir_out.mkdir(parents=True, exist_ok=True)
 
-    # # TODO testing ----
-    # if ix > 5:
-    #     break
-    # # TODO testing ----
+    # Aggregate SHAP values for each site and collect in dataframe
+    shapvals_sites_agg_long_df = None
+    for ix, siteconfig in subsets_df.iterrows():
 
-    # if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
-    #     # Skip files that do not have a parquet subset, b/c of missing SWC
-    #     continue
+        # # TODO testing ----
+        # if ix > 5:
+        #     break
+        # # TODO testing ----
 
-    site = siteconfig['SITE']
-    igbp = siteconfig['IGBP']
-    filename = f"{site}_shap-{shap_type}_{FLUX}.parquet"
-    filepath = dir_prev_results / filename
+        # if siteconfig['_FILEPATH_PARQUET_SUBSET'] == '-MISSING-':
+        #     # Skip files that do not have a parquet subset, b/c of missing SWC
+        #     continue
 
-    site_results = aggregate_shap_values_for_site(
-        site=site, igbp=igbp, filepath=filepath, ix=ix,
-        xvar=xvar, yvar=yvar, aggfunc=aggfunc, binsize=0.1
-    )
-    if ix == 0:
-        shapvals_sites_agg_long_df = site_results.copy()
-    else:
-        shapvals_sites_agg_long_df = pd.concat([shapvals_sites_agg_long_df, site_results], axis=0)
+        site = siteconfig['SITE']
+        igbp = siteconfig['IGBP']
+        filename = f"{site}_shap-{shap_type}_{FLUX}.parquet"
+        filepath = dir_prev_results / filename
 
-    # # ---todo testing
-    # biny = f"BIN_VPD_F"
-    # binx = f"BIN_TA_F"
-    # z = f"VPD_F_SHAPVALS"
-    # if ix == 0:
-    #     dummydf = shapvals_sites_agg_long_df.copy()
-    # else:
-    #     dummydf = pd.concat([dummydf, shapvals_sites_agg_long_df], axis=0)
-    # dummydf2 = aggregate_shap_values_across_all_sites(df=dummydf, binx=binx, biny=biny, z=z)
-    # hm = dv.heatmapxyz(
-    #     title=f"All sites + {siteconfig['SITE']}",
-    #     x=dummydf2[binx], y=dummydf2[biny], z=dummydf2[z],
-    #     cb_digits_after_comma=1, xlabel=f'{binx} (z-score)', ylabel=f'{biny} (z-score)',
-    #     zlabel=f'{aggfunc} {z} (z-score)',
-    #     # show_values_n_dec_places=1,
-    #     # show_values=True,
-    #     # show_values_fontsize=4,
-    #     figdpi=300,
-    #     # vmin=-3,
-    #     # vmax=3
-    # )
-    # hm.show()
-    # # ---todo testing
+        site_results = aggregate_shap_values_for_site(
+            site=site, igbp=igbp, filepath=filepath, ix=ix,
+            xvar=xvar, yvar=yvar, aggfunc=aggfunc, binsize=0.1
+        )
+        if ix == 0:
+            shapvals_sites_agg_long_df = site_results.copy()
+        else:
+            shapvals_sites_agg_long_df = pd.concat([shapvals_sites_agg_long_df, site_results], axis=0)
+
+        # # ---todo testing
+        # biny = f"BIN_VPD_F"
+        # binx = f"BIN_TA_F"
+        # z = f"VPD_F_SHAPVALS"
+        # if ix == 0:
+        #     dummydf = shapvals_sites_agg_long_df.copy()
+        # else:
+        #     dummydf = pd.concat([dummydf, shapvals_sites_agg_long_df], axis=0)
+        # dummydf2 = aggregate_shap_values_across_all_sites(df=dummydf, binx=binx, biny=biny, z=z)
+        # hm = dv.heatmapxyz(
+        #     title=f"All sites + {siteconfig['SITE']}",
+        #     x=dummydf2[binx], y=dummydf2[biny], z=dummydf2[z],
+        #     cb_digits_after_comma=1, xlabel=f'{binx} (z-score)', ylabel=f'{biny} (z-score)',
+        #     zlabel=f'{aggfunc} {z} (z-score)',
+        #     # show_values_n_dec_places=1,
+        #     # show_values=True,
+        #     # show_values_fontsize=4,
+        #     figdpi=300,
+        #     # vmin=-3,
+        #     # vmax=3
+        # )
+        # hm.show()
+        # # ---todo testing
 
 
-outfilepath = dv.save_parquet(
-    filename=f"41_SHAPVALUES-{shap_type}_{aggfunc}AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}",
-    data=shapvals_sites_agg_long_df,
-    outpath=dir_out)
-shapvals_sites_agg_long_df.to_csv(outfilepath.replace('.parquet', '.csv'))
+    outfilepath = dv.save_parquet(
+        filename=f"41_SHAPVALUES-{shap_type}_{aggfunc}AggregatedPerSite_BIN-{xvar}+BIN-{yvar}+{FLUX}",
+        data=shapvals_sites_agg_long_df,
+        outpath=dir_out)
+    shapvals_sites_agg_long_df.to_csv(outfilepath.replace('.parquet', '.csv'))
