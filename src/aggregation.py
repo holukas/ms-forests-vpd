@@ -50,7 +50,9 @@ def aggregate_shap_values_for_site(site, igbp, filepath, xvar, yvar, aggfunc, ix
     shapvals_agg_df = pd.DataFrame()
 
     print(f"\nLoading data for site #{ix + 1} {site} ...")
-    shapvals_df = dv.load_parquet(filepath)
+    # Read as written, see the note in 44_agg_per_scenario.py. The inserted rows
+    # are all NaN and get dropped again during binning, so this only saves work.
+    shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
 
     # Round custom bins for exactly one digit after the comma
     custom_x_bins = list(np.arange(-8, 10, binsize))

@@ -67,7 +67,10 @@ for ix, siteconfig in subsets_df.iterrows():
     filename = f"{site}_shap-{shap_type}_{FLUX}.parquet"
     filepath = dir_prev_results / filename
     print(f"\nLoading data for site #{ix + 1} {site} ({filepath})")
-    shapvals_df = dv.load_parquet(filepath)
+    # Read as written. The subset is sparse by design, four months, daytime,
+    # QC 0, so sanitizing would regularize the index and insert empty rows,
+    # which inflates N_VALUES roughly tenfold.
+    shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     # keepcols = [c for c in shapvals_df.columns if "_SHAPVALS" in c]
 
     scenarios = [s.stage_0, s.stage_1, s.stage_2, s.stage_3,
