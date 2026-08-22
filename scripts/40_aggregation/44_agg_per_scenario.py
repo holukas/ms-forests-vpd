@@ -5,7 +5,7 @@ import pandas as pd
 
 import src.files as files
 import src.stages as s
-from src.paths import data_path, load_settings
+from src.paths import load_settings
 
 # ------------------------------
 # Variables
@@ -18,19 +18,27 @@ FLUX = 'NEP_ZSCORE'
 # FLUX = 'RECO_ZSCORE'
 CONDITIONAL = True  # SHAP
 
+# Run variant. An empty string reads the baseline results and overwrites the
+# submitted aggregation. Any other value adds a folder level on both sides, so
+# the inputs come from <stage>/<FLUX>/<shap_type>/<VARIANT>/ and the outputs go
+# to the matching variant folder. The earlier stages must have run with the same
+# value, otherwise there is nothing to read.
+VARIANT = ""
+
 # Load settings
 settings = load_settings()
 shap_type = 'conditional' if CONDITIONAL else 'standard'
-dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
+dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type / VARIANT
 
 # Create output directory
-dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
 # parents=True: Creates any necessary parent directories that don't exist.
 # exist_ok=True: Prevents an error if the directory already exists.
 dir_out.mkdir(parents=True, exist_ok=True)
 
 # Load subsets info
-infile = data_path("data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv")
+infile = (Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
+          / "21_SUBSETS_parquet_vars_stats_subsets.csv")
 subsets_df = pd.read_csv(infile)
 
 shapvals_sites_agg_long_df = None
