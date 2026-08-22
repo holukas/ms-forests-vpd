@@ -137,7 +137,7 @@ print("  - Default: Use FLUXNET if available")
 print("  - Special validation for high-precipitation sites (>2000 mm/year):")
 print("    * Compare FLUXNET against Copernicus/CDS and GEE")
 print("    * Select source based on data agreement and quality")
-print("  - Fallback: Copernicus (non-zero) → GEE")
+print("  - Fallback: Copernicus (non-zero) then GEE")
 print("\nSTEP 2: Temperature Source Selection (Unified)")
 print("  - Use the SAME source selected for precipitation")
 print("  - Extract temperature (MAT) from selected source")
@@ -690,7 +690,7 @@ print("\nNOTE: Temperature uses the same data source as precipitation for each s
 print("The source was determined by analyzing precipitation (MAP) with the following logic:")
 print("  - Primary: FLUXNET (if available)")
 print("  - Validation: For high-precipitation sites (>2000 mm/year), compare against Copernicus & GEE")
-print("  - Fallback: Copernicus (if non-zero) → GEE")
+print("  - Fallback: Copernicus (if non-zero) then GEE")
 print("This unified approach ensures consistency between temperature and precipitation data.\n")
 
 if len(temp_comparisons) > 0:
