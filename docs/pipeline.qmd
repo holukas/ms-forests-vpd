@@ -141,9 +141,10 @@ TUNE_HYPERPARAMETERS = True    # hyperparameter search instead
 TUNE_N_ITER = 25               # combinations tested per site in tuning mode
 ```
 
-`CV_STRATEGY` picks the cross-validation scheme, `random` for the shuffled 5-fold split
-behind the published results or `blocked` for leave-one-year-out. See
-[Methods](methods.qmd) for what changes between them.
+Two switches change what the models see. `CV_STRATEGY` picks the cross-validation
+scheme, `random` for the shuffled 5-fold split behind the published results or `blocked`
+for leave-one-year-out. `FEATURE_SET` picks the drivers, `full`, `no_vpd` or `no_ta`. See
+[Methods](methods.qmd) for what changes under each.
 
 In SHAP mode each site gets 5-fold cross-validation. Within each fold the 80 % training
 part is split again into 68 % for fitting and 12 % for early stopping, and the held-out
@@ -172,6 +173,7 @@ which is what the aggregation and figure scripts consume.
 | `42_binagg_across_sites.py` | Averages the binned grids across all sites, one vote per site |
 | `43_binagg_across_igbp.py` | Same, separately per IGBP forest type |
 | `44_agg_per_scenario.py` | Averages SHAP values within the nine stress stages, per site and then across sites |
+| `45_stage_distributions.py` | Driver medians and quartiles inside each stage, globally and per forest type, in standardized and measured units |
 
 Equal weighting throughout: a site with 20 years of data counts the same as a site with
 three. Bins that fewer than half of the sites reach are dropped from the aggregated
@@ -213,6 +215,7 @@ Three scripts here produce tables rather than manuscript figures:
 | `59_biome_threshold_significance.py` | One threshold per site, then Kruskal-Wallis and Holm-corrected pairwise tests between forest types |
 | `60_threshold_method_sensitivity.py` | Re-estimates the threshold under 23 estimator choices, from polynomial degree to bin width |
 | `61_threshold_definitions.py` | Separates the peak, the steepest decline and the zero crossing, and flags points on the range edge |
+| `62_threshold_vs_site_vpd_range.py` | Splits sites by their own maximum VPD and checks whether the threshold tracks it |
 
 Script 52 draws both Figure 2 and Extended Data Figure 2 and picks between them by which
 of two blocks near the top is commented out. Running it twice, once per block, gives
