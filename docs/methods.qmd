@@ -217,6 +217,32 @@ in sigma is a different absolute VPD at every site. Script `58` converts it:
 The biome range is the span of the four biome means. It is not a confidence interval,
 and the biome intervals overlap heavily, EBF [1.00, 1.43] against DBF [1.21, 1.43].
 
+### How much does the estimator matter?
+
+The threshold is a zero crossing of a fitted curve, so the fit is not a detail. Script
+`60` re-estimates it from the same data under 23 choices: polynomial degrees 2 to 6,
+LOWESS at five bandwidths, smoothing splines over two orders of magnitude, four bin
+widths and five fitting ranges.
+
+All 23 fall between 0.155 and 0.247 sigma, which is 1.23 to 1.29 kPa, and the published
+fourth-order polynomial sits at the median. For comparison, the biome differences span
+1.22 to 1.32 kPa and the reported fit interval spans 1.16 to 1.36 kPa. The estimator
+matters less than either.
+
+Bin width barely registers, 0.008 sigma across a fivefold change. LOWESS runs
+systematically lowest, 0.155 to 0.174, so the non-polynomial estimate sits slightly below
+the polynomial rather than centred on it.
+
+### Three points, not one
+
+Script `61` separates quantities that a single "threshold" conflates. Across all sites
+the VPD effect peaks at 0.47 kPa, crosses zero at 1.26 kPa and falls fastest at 1.50 kPa.
+Only the zero crossing is the published threshold.
+
+The script also flags any point landing within 2 % of the edge of the observed range. The
+minimum does so in every group, because the fitted curve is still falling where the data
+stop, so the effect does not bottom out within the observed VPD range.
+
 ### Do the biomes differ?
 
 The intervals on Figure 4 come from the polynomial's prediction band on the aggregated
