@@ -99,6 +99,13 @@ see. Per site:
 7. z-score every variable within the site and keep both the measured and the z-scored
    columns
 
+`22_data_flow.py` counts how many records each filtering step removes, per site, and
+writes `22_data_flow.csv`. It walks the same filters in the same order as `21` and then
+checks its final count against `N_RECORDS` from `21` for every site, refusing to write
+the table on any mismatch. Over the 209 sites that enter stage 21, 7.1 % of delivered
+half-hourly records reach the models, and the largest single loss is the QC filter, 26.8
+million records, because the analysis uses measured NEE only.
+
 Writes one parquet per site to `20_subsets/<VARIANT>/21_subsets_parquet/`, a heatmap
 per site, and the summary table `21_SUBSETS_parquet_vars_stats_subsets.csv`. The
 summary records `SWC_VAR` and `SWC_LAYER`, so a later comparison can tell which soil
@@ -133,6 +140,10 @@ TUNE_HYPERPARAMETERS = False   # SHAP analysis (default)
 TUNE_HYPERPARAMETERS = True    # hyperparameter search instead
 TUNE_N_ITER = 25               # combinations tested per site in tuning mode
 ```
+
+`CV_STRATEGY` picks the cross-validation scheme, `random` for the shuffled 5-fold split
+behind the published results or `blocked` for leave-one-year-out. See
+[Methods](methods.qmd) for what changes between them.
 
 In SHAP mode each site gets 5-fold cross-validation. Within each fold the 80 % training
 part is split again into 68 % for fitting and 12 % for early stopping, and the held-out
@@ -192,6 +203,14 @@ Each figure script reads the aggregation output and writes to
 Script 51 (the site map) has no variant and needs none, since the site list does not
 depend on which soil water layer was used. Script 55 reads the ALE output, so script 32
 has to have run with the same variant first.
+
+Three scripts here produce tables rather than manuscript figures:
+
+| Script | What it does |
+|--------|--------------|
+| `57_fig_data_flow_sankey.py` | Draws `22_data_flow.csv` as a Sankey, one ribbon narrowing at each filtering step |
+| `58_threshold_zscore_to_kpa.py` | Converts the threshold from sigma to kPa per site, then averages, and reproduces the published values |
+| `59_biome_threshold_significance.py` | One threshold per site, then Kruskal-Wallis and Holm-corrected pairwise tests between forest types |
 
 Script 52 draws both Figure 2 and Extended Data Figure 2 and picks between them by which
 of two blocks near the top is commented out. Running it twice, once per block, gives

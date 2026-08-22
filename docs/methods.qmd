@@ -23,6 +23,27 @@ min_child_weight=5
 early_stopping_rounds=100
 ```
 
+### Cross-validation
+
+Two strategies, set by `CV_STRATEGY` in script `31`.
+
+`random`, the default and the one behind the published results, is a shuffled 5-fold
+split of the complete rows. It matches the task: a gap is predicted from driver values at
+its own timestamp, and gaps sit between observed records.
+
+`blocked` leaves one calendar year out at a time. Neighbouring half-hours are correlated,
+so a shuffled split can put a record and its neighbour on opposite sides and flatter the
+score. A year-wise split removes that. Sites with a single year are skipped.
+
+Measured over 206 sites: mean out-of-sample R2 falls from 0.622 to 0.510 and RMSE rises
+from 0.606 to 0.691, with a lower score at every site. The attribution barely moves. At
+the compound-extreme stage the VPD contribution is -0.4286 under random and -0.4287 under
+blocked, while the soil water contribution weakens from -0.0852 to -0.0638.
+
+Read them as answers to different questions. The random split says how well the model
+fills gaps inside the observed period, the blocked split says whether it transfers to an
+unseen year.
+
 Searched during tuning:
 
 ```python
@@ -178,6 +199,38 @@ symmetric interval around the mean.
 Smoothing before averaging keeps the shape of individual curves from cancelling out.
 Both values are zero crossings of a model attribution, not measured physiological
 breakpoints.
+
+### From sigma to kPa
+
+Each site standardizes VPD against its own mean and standard deviation, so a threshold
+in sigma is a different absolute VPD at every site. Script `58` converts it:
+
+1. per site, `VPD_abs = site mean VPD + z * site SD`, both in hPa over the records the
+   models saw, then divided by 10 for kPa
+2. sites averaged with equal weight, the same one vote per site used elsewhere, and the
+   biome value is the mean over that biome's sites
+3. the interval bounds come from putting the sigma interval through the same conversion,
+   not from a separate calculation
+4. CD-Ygb is excluded, because it records VPD in Pa where every other site uses hPa.
+   Including it moves the global threshold from 1.26 to 2.19 kPa
+
+The biome range is the span of the four biome means. It is not a confidence interval,
+and the biome intervals overlap heavily, EBF [1.00, 1.43] against DBF [1.21, 1.43].
+
+### Do the biomes differ?
+
+The intervals on Figure 4 come from the polynomial's prediction band on the aggregated
+curve, so they describe how well the curve is pinned down, not how much sites differ.
+Script `59` answers the other question by fitting one threshold per site and comparing
+the distributions.
+
+Kruskal-Wallis gives H = 12.17, p = 0.0068, so the four biomes are not one distribution.
+Of the six pairs, only ENF against DBF and DBF against MF survive a Holm correction.
+Every comparison involving EBF is indistinguishable.
+
+Worth more than the tests: the range of biome medians is 0.189 sigma while the widest
+within-biome IQR is 0.523 sigma. Sites within a biome differ nearly three times more than
+the biomes differ from each other.
 
 ## ERA5 climate normals {#era5-climate-normals}
 
