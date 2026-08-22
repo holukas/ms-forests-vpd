@@ -10,23 +10,55 @@ repository root:
 uv run python scripts/20_subsets/21_prepare_input_data.py
 ```
 
-Most steps take minutes. The two model scripts take hours over the full site list.
+Most steps take minutes. The two model scripts are the slow ones, but not by as much
+as the numbers in older notes suggest: `31_shap.py` takes about 20 minutes for all 208
+sites on a 24-thread machine.
+
+## Run variants
+
+Every stage from 21 onwards carries a `VARIANT` constant at the top of the script:
+
+```python
+VARIANT = ""          # the paths behind the submitted results
+VARIANT = "deep-sm"   # a sensitivity run, in its own folder
+```
+
+An empty string reads and writes the baseline paths. Any other value inserts a folder
+level on both sides, so a variant reads `20_subsets/<VARIANT>/` and writes
+`30_shap/<FLUX>/<type>/<VARIANT>/`. Input and output move together on purpose: a run
+that read baseline subsets and wrote variant results would finish without an error and
+produce numbers that mean nothing.
+
+Set the same value in every stage of a variant run. A stage whose predecessor has not
+run with that variant fails on a missing file rather than falling back to the baseline.
+
+`31_shap.py` and `32_validate_shap_methods.py` also take `SITES` and `MAX_SITES`, which
+limit a run to a few sites for timing. `SITES` names them and wins if it is not empty,
+`MAX_SITES` takes the first n rows, and 0 means all sites. Both scripts report how long
+each site took and what that implies for the full list.
 
 ## 10_datasets: assemble the site collection
 
 | Script | What it does | Writes |
 |--------|--------------|--------|
-| `00_find_overlaps.py` | Lists sites present in both AmeriFlux and FLUXNET-SHUTTLE | `10_datasets/` |
+| `00_find_overlaps.py` | Lists sites present in both AmeriFlux and FLUXNET-SHUTTLE. **Deletes source folders, see the warning below** | `10_datasets/` |
 | `11_collect_info.py` | Scans all five raw sources, one row per dataset found | `11_datasets_info.csv` |
 | `12_create_parquet.py` | Merges the datasets of a site into one parquet file, resolving frequency and overlapping years by source priority | `12_parquet_merged/`, `12_datasets_info_parquet.csv` |
 | `13_check_available_vars.py` | Records which of NEE, LE, GPP, RECO, TA, VPD, SWIN, SWC exist per site and under which column name | `13_datasets_info_parquet_vars.csv` |
-| `13b_check_available_vars_SWC.py` | Same for the soil moisture depth variants | `13b_variables_coverage_summary.csv` |
+| `13b_check_available_vars_SWC.py` | Same for the soil moisture depth variants, plus one row per site and variable with peak-month coverage and a ratio against layer 1 | `13b_variables_coverage_summary.csv`, `13b_variables_per_site.csv` |
 | `14_collect_basic_stats.py` | Record counts, date ranges, min/max/mean per variable | `14_datasets_info_parquet_vars_stats.csv` |
 | `15_remove_sites.py` | Applies the inclusion criteria and drops the rest | `15_datasets_info_parquet_vars_stats_usedsites.csv` |
 | `16a` + `16b` | ERA5 1991-2020 normals from Google Earth Engine, run in parallel batches | `16_ERA5_climate_1991-2020_GoogleEarthEngine/` |
 | `16c` + `16d` | Same from the Copernicus CDS API | `16_ERA5_climate_1991-2020_Copernicus/` |
 | `16_download_era5_mat_map.py` | CDS download for the older FLUXNET2015 sites, which carry no 1991-2020 ERA5 in their own files | `16_ERA5_climate_1991-2020/` |
 | `17_add_era5_info.py` | Picks one ERA5 source per site and adds MAT and MAP | `17_datasets_info_parquet_vars_stats_usedsites_era5.csv` |
+
+::: {.callout-warning title="00_find_overlaps.py deletes data"}
+`DELETE_OVERLAPPING_FOLDERS = True` is the committed default, and the script removes
+AmeriFlux source folders for sites that also exist in FLUXNET-SHUTTLE. The site
+collection in `11_collect_info.py` onwards already reflects that decision, so there is
+no reason to run it again.
+:::
 
 The `16*` scripts need credentials and can be skipped if the ERA5 output folders are
 already populated. Script `17` writes a timestamped log with the full decision trail
@@ -47,8 +79,24 @@ see. Per site:
 7. z-score every variable within the site and keep both the measured and the z-scored
    columns
 
-Writes one parquet per site to `20_subsets/21_subsets_parquet/`, a heatmap per site,
-and the summary table `21_SUBSETS_parquet_vars_stats_subsets.csv`.
+Writes one parquet per site to `20_subsets/<VARIANT>/21_subsets_parquet/`, a heatmap
+per site, and the summary table `21_SUBSETS_parquet_vars_stats_subsets.csv`. The
+summary records `SWC_VAR` and `SWC_LAYER`, so a later comparison can tell which soil
+water layer went into which site.
+
+Sites run in parallel, `N_WORKERS = 3` by default. Memory sets that limit, not cores:
+the largest sites need about 3 GB per worker. With `N_WORKERS = 1` the sites run one
+after the other and the plots are shown on screen.
+
+The soil water layer is chosen here:
+
+```python
+SWC_LAYER = "shallow"   # SWC_F_MDS_1, as in the submitted analysis
+SWC_LAYER = "deepest"   # deepest usable layer per site
+```
+
+See [Methods](methods.qmd#soil-water-depth) for the selection rule and what the deep
+run showed.
 
 ::: {.callout-note}
 One site, CD-Ygb, has VPD in the wrong units in the source files. The correction is
@@ -75,6 +123,10 @@ original index order.
 Writes per-site parquet and CSV with features, SHAP values and predictions, plus one
 aggregated CSV holding the fold metrics for all sites.
 
+Sites left on the same input produce bit-identical output between runs, which makes a
+useful check when only some sites change: rerun with a variant, and every unchanged
+site should come back identical.
+
 `32_validate_shap_methods.py` fits one model per site on an 85/15 split and calculates
 ALE curves on 100 grid points per feature. ALE is a second read on the same fitted
 models: it shows the isolated effect of a feature on the prediction, where SHAP
@@ -85,7 +137,7 @@ which is what the aggregation and figure scripts consume.
 
 | Script | What it does |
 |--------|--------------|
-| `41_binagg_per_site.py` | Bins each site's SHAP values on a two-variable grid, using fixed custom bin edges so all sites share one grid |
+| `41_binagg_per_site.py` | Bins each site's SHAP values on a two-variable grid, using fixed custom bin edges so all sites share one grid. One variable pair per run, set in `VARS` |
 | `42_binagg_across_sites.py` | Averages the binned grids across all sites, one vote per site |
 | `43_binagg_across_igbp.py` | Same, separately per IGBP forest type |
 | `44_agg_per_scenario.py` | Averages SHAP values within the nine stress stages, per site and then across sites |
@@ -93,6 +145,11 @@ which is what the aggregation and figure scripts consume.
 Equal weighting throughout: a site with 20 years of data counts the same as a site with
 three. Bins that fewer than half of the sites reach are dropped from the aggregated
 grids.
+
+Scripts 41 to 43 handle one variable pair per run, so covering the five pairs behind the
+figures means running each of them five times with `VARS` changed. Script 44 takes no
+pair and runs once. Order matters: 41 first, then 42 and 43, which read what 41 wrote.
+Script 44 reads the SHAP output directly and can run at any point after 31.
 
 ## 50_figures
 

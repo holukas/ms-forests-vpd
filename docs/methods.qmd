@@ -51,11 +51,54 @@ trained on.
 ## ALE
 
 `PyALE.ale`, 100 grid points per feature, one model per site fitted on 85 % of the
-records with 15 % held back for early stopping, then applied to all records of that site.
+records with 15 % held back for early stopping, then applied to all records of that
+site. Note this is a separate fit from the cross-validated models behind the SHAP
+values, so the two are not the same trees.
 
 ALE and SHAP interrogate the same fitted models on the same observations, so agreement
 between them says the reading is robust to the interpretation method. It is not
 independent validation of the underlying physiology.
+
+## Soil water depth {#soil-water-depth}
+
+The submitted analysis uses `SWC_F_MDS_1`, the shallowest gap-filled soil water layer,
+because it is the one nearly every site records. Shallow soil dries faster than the soil
+trees actually draw from, which raises the question of whether atmospheric demand only
+looks dominant because the soil water proxy is too shallow.
+
+`21_prepare_input_data.py` can therefore run on the deepest layer instead:
+
+```python
+SWC_LAYER = "shallow"   # SWC_F_MDS_1
+SWC_LAYER = "deepest"   # deepest usable layer per site
+```
+
+The rule is in `src/common.py::deepest_swc_per_site()`. For each site, take the deepest
+layer that still holds at least 90 % of layer 1's records within the four peak months.
+If no deeper layer clears that bar, the site keeps layer 1.
+
+The coverage floor is doing real work. Deeper sensors are often gappier, and a gappier
+predictor means fewer complete records, so a site could differ between the two runs
+because its sample shrank rather than because its soil water came from further down.
+Without the floor, 18 sites would have run on a much sparser layer. With it, no site
+keeps less than 90.6 % of its shallow records, and the median is 100 %.
+
+Under that rule 128 of 208 sites move to a deeper layer, spread across layers 2 to 9.
+The remaining 80 have no deeper layer, or only layers too sparse to use, and their
+results are unchanged by construction.
+
+Depths in centimetres cannot be recovered. Only three sites carry `GRP_SWC` depth
+metadata in the AmeriFlux BIF, so this is the deepest available layer, never the root
+zone at a stated depth.
+
+What the comparison showed: soil water gains importance and VPD loses some, but the
+ordering does not change. Across all 208 sites the stage 8 ratio of VPD to soil water
+attribution goes from 5.03 to 4.86. Restricted to the 128 sites that actually moved, it
+goes from 4.22 to 4.00. Site-level importance shifts more where the layer swap goes
+deeper, from no change at layer 2 to roughly a quarter of the ratio at layers 7 to 9.
+
+Evergreen broadleaf sites are the weak spot: only 10 of 30 have a usable deeper layer,
+and those are the arid and seasonally dry forests where the question bites hardest.
 
 ## Stress stages
 
