@@ -66,6 +66,11 @@ for ix, siteconfig in subsets_df.iterrows():
 
     filename = f"{site}_shap-{shap_type}_{FLUX}.parquet"
     filepath = dir_prev_results / filename
+    if not filepath.is_file():
+        # A variant can legitimately hold fewer sites than the subsets list, for
+        # example blocked CV skips sites with a single year.
+        print(f"  No results for {site}, skipping.")
+        continue
     print(f"\nLoading data for site #{ix + 1} {site} ({filepath})")
     # Read as written. The subset is sparse by design, four months, daytime,
     # QC 0, so sanitizing would regularize the index and insert empty rows,

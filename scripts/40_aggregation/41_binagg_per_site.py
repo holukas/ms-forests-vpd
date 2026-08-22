@@ -106,6 +106,11 @@ for VARS in VAR_PAIRS:
         igbp = siteconfig['IGBP']
         filename = f"{site}_shap-{shap_type}_{FLUX}.parquet"
         filepath = dir_prev_results / filename
+        if not filepath.is_file():
+            # A variant can legitimately hold fewer sites than the subsets list, for
+            # example blocked CV skips sites with a single year.
+            print(f"  No results for {site}, skipping.")
+            continue
 
         site_results = aggregate_shap_values_for_site(
             site=site, igbp=igbp, filepath=filepath, ix=ix,
