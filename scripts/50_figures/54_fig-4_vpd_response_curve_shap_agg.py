@@ -24,6 +24,12 @@ from src.paths import load_settings
 plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
 
 FLUX = plotvars[0]
+
+# Run variant. An empty string reads the results behind the submitted figures and
+# writes to the baseline plot folder. Any other value reads the matching variant
+# folder and writes the figures next to it, so a sensitivity run cannot overwrite a
+# published figure. The aggregation must have run with the same value.
+VARIANT = ""
 xvar, yvar, zvar = plotvars[1], plotvars[2], plotvars[3]
 x_in_filename, y_in_filename = plotvars[4], plotvars[5]
 
@@ -124,9 +130,10 @@ colors_symbols = ['black', 'black', 'black']
 # Load settings
 settings = load_settings()
 shap_type = 'conditional' if CONDITIONAL else 'standard'
-results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
 
-dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT
+dir_out.mkdir(parents=True, exist_ok=True)
 
 # # Load SHAP values aggregated across all sites
 # filepath = Path(
@@ -139,7 +146,7 @@ dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
 # Paths & Settings
 shap_type = 'conditional' if CONDITIONAL else 'standard'
 settings = load_settings()
-dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
 df_coeffs = pd.DataFrame(columns=['IGBP', 'a', 'b', 'c', 'd', 'e', 'R2', 'Threshold'])  # Collect coefficients
 
 # FIGURE LAYOUT (5 panels)

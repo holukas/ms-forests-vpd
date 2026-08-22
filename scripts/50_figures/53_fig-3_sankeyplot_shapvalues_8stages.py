@@ -16,6 +16,12 @@ from src.paths import load_settings
 # SETTINGS
 # ==========================================
 FLUX = 'NEP_ZSCORE'
+
+# Run variant. An empty string reads the results behind the submitted figures and
+# writes to the baseline plot folder. Any other value reads the matching variant
+# folder and writes the figures next to it, so a sensitivity run cannot overwrite a
+# published figure. The aggregation must have run with the same value.
+VARIANT = ""
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 STAGE_ORDER = [1, 2, 3, 4, 5, 6, 7, 8]
 STAGE_LABELS = [f"Stage {sl}" for sl in STAGE_ORDER]
@@ -58,7 +64,7 @@ AX_LABELS_FONTSIZE = 12
 # Paths
 settings = load_settings()
 shap_type = 'conditional'
-results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
 filepath = Path(results_outdir) / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet"
 
 # ==========================================
@@ -181,7 +187,8 @@ first_ax.legend(handles=legend_elements, loc='lower left', ncol=3,
 plt.subplots_adjust(left=0.035, right=0.975, top=0.95, bottom=0.02)
 
 # Save fig
-dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT
+dir_out.mkdir(parents=True, exist_ok=True)
 outfilepath = dir_out / f'53_FIG-3_SankeyPlotStages_{FLUX}.png'
 print(f"Saved to {outfilepath}")
 plt.savefig(outfilepath, bbox_inches='tight', dpi=300)

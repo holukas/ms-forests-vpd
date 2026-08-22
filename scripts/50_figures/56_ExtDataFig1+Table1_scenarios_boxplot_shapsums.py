@@ -15,6 +15,12 @@ from src.paths import load_settings
 # SETTINGS
 # ==========================================
 FLUX = 'NEP_ZSCORE'
+
+# Run variant. An empty string reads the results behind the submitted figures and
+# writes to the baseline plot folder. Any other value reads the matching variant
+# folder and writes the figures next to it, so a sensitivity run cannot overwrite a
+# published figure. The aggregation must have run with the same value.
+VARIANT = ""
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 COLUMN_ORDER = ['All sites'] + IGBP_CLASSES
 STAGE_ORDER = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -61,7 +67,7 @@ plt.rcParams.update({
 # Paths
 settings = load_settings()
 shap_type = 'conditional'
-results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
 filepath = Path(results_outdir) / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet"
 
 # Load data
@@ -350,7 +356,8 @@ table_1_final = pd.DataFrame(final_rows)
 table_1_final.set_index('index', inplace=True)
 
 # Save
-dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT
+dir_out.mkdir(parents=True, exist_ok=True)
 outfilepath_excel = dir_out / f'56_ExtendedData_TABLE-4_Stages_SinaPlots_ShapMeans_{FLUX}.xlsx'
 table_1_final.to_excel(outfilepath_excel, index=True)
 
@@ -365,7 +372,8 @@ print(f"Table saved to: {outfilepath_excel}")
 print(table_1_final.to_string(index=True))
 
 # Save fig to file
-dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT
+dir_out.mkdir(parents=True, exist_ok=True)
 outfilepath = dir_out / f'56_ExtendedData_FIG-1_Stages_SinaPlots_ShapMeans_{FLUX}.png'
 fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
 

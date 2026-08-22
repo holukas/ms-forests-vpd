@@ -61,6 +61,7 @@ fits 4th-order polynomials for smoothing, and detects response thresholds via ze
 ```python
 PLOT_FEATURE = 'VPD_ZSCORE'        # Feature to analyze
 FLUX = 'NEP_ZSCORE'                # Target variable
+
 FAST_TEST_MODE = False              # True: use 5 random sites for testing
 USE_MEDIAN = False                  # True: median aggregation (robust to outliers)
 USE_CI = True                       # True: show 95% CI, False: show SEM
@@ -150,6 +151,12 @@ def calc_ci_95(values):
 # ==============================
 
 FLUX = 'NEP_ZSCORE'
+
+# Run variant. An empty string reads the results behind the submitted figures and
+# writes to the baseline plot folder. Any other value reads the matching variant
+# folder and writes the figures next to it, so a sensitivity run cannot overwrite a
+# published figure. The aggregation must have run with the same value.
+VARIANT = ""
 PLOT_FEATURE = 'VPD_ZSCORE'
 FAST_TEST_MODE = False
 USE_MEDIAN = False
@@ -163,8 +170,8 @@ BEAUTIFY = {
 }
 
 settings = load_settings()
-dir_ale_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / 'ale'
-dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'ale'
+dir_ale_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / 'ale' / VARIANT
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'ale' / VARIANT
 
 agg_name = "median" if USE_MEDIAN else "mean"
 print(f"\n{'=' * 80}\nALE Response Curves | Feature: {BEAUTIFY[PLOT_FEATURE]} | Aggregation: {agg_name}\n{'=' * 80}\n")
