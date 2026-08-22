@@ -181,6 +181,16 @@ VARIANT = ""
 SITES = []
 MAX_SITES = 0
 
+# Cross-validation strategy. "random" is the submitted setting, a shuffled 5-fold
+# split of the complete rows. "blocked" leaves one calendar year out at a time,
+# which Reviewer 2 asked for: neighbouring half-hours are correlated, so a
+# shuffled split can put a record and its neighbour on opposite sides and flatter
+# the score. Expect lower scores under "blocked". The drop is the size of the
+# leakage, not a fault. Sites with a single year are skipped, since a year-wise
+# split needs at least two. Set VARIANT as well, or the results overwrite the
+# submitted ones.
+CV_STRATEGY = "random"
+
 # ------------------------------
 # Calculate SHAP values for:
 # [x] NEP_ZSCORE
@@ -214,6 +224,7 @@ with open(modelstxt, 'w') as file:
     file.write(f"Target: {FLUX}\n")
     file.write(f"Features: {FEATURES}\n")
     file.write(f"Conditional SHAP: {CONDITIONAL}\n")
+    file.write(f"CV strategy: {CV_STRATEGY}\n")
 
 _subsets_df = subsets_df.copy()
 if SITES:
@@ -241,6 +252,7 @@ else:
 print(f"Subsets:  {infile}")
 print(f"Results:  {results_outdir}")
 print(f"Sites:    {len(_subsets_df)} of {len(subsets_df)}")
+print(f"CV:       {CV_STRATEGY}")
 
 for ix, siteconfig in _subsets_df.iterrows():
     site_started = time.perf_counter()
@@ -265,7 +277,8 @@ for ix, siteconfig in _subsets_df.iterrows():
             siteconfig=siteconfig,
             ix=ix, modelstxt=modelstxt,
             conditional=CONDITIONAL,
-            results_outdir=results_outdir
+            results_outdir=results_outdir,
+            cv_strategy=CV_STRATEGY
         )
         if cv_result:  # Only add if result is not empty
             cv_results_all.append(cv_result)

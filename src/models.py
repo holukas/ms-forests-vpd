@@ -9,7 +9,7 @@ import xgboost as xgb
 from PyALE import ale
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import train_test_split, KFold, RandomizedSearchCV
+from sklearn.model_selection import train_test_split, KFold, LeaveOneGroupOut, RandomizedSearchCV
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
 
@@ -124,7 +124,8 @@ def train_rf_models_and_shap(target: str, features: list,
 
 
 def train_xgboost_models_and_shap(target: str, features: list,
-                                  siteconfig, ix, modelstxt, results_outdir: Path, conditional=False) -> dict:
+                                  siteconfig, ix, modelstxt, results_outdir: Path, conditional=False,
+                                  cv_strategy: str = 'random') -> dict:
     """
     Train XGBoost models with 5-fold cross-validation and compute out-of-sample SHAP values.
 
@@ -232,8 +233,33 @@ def train_xgboost_models_and_shap(target: str, features: list,
     # Each data point gets SHAP values from a model that never saw it during training.
     # This ensures unbiased feature importance explanations.
 
-    print("Initializing 5-fold cross-validation for out-of-sample SHAP values...")
-    kfold = KFold(n_splits=5, shuffle=True, random_state=42)
+    # Cross-validation strategy.
+    #
+    # 'random' is the submitted setting: a shuffled 5-fold split of the complete
+    # rows. It matches the task, since a gap is predicted from driver values at its
+    # own timestamp and gaps sit between observed records.
+    #
+    # 'blocked' leaves one calendar year out at a time, which Reviewer 2 asked for.
+    # Neighbouring half-hours are correlated, so a shuffled split can put a record
+    # and its neighbour on opposite sides of the split and flatter the score. A
+    # year-wise split removes that and answers a different question, whether the
+    # model carries to a period it never saw. Expect lower scores, and treat the
+    # drop as the size of the leakage rather than as a fault.
+    if cv_strategy == 'blocked':
+        groups = X.index.year
+        n_years = len(np.unique(groups))
+        if n_years < 2:
+            print(f"  Only {n_years} year available, blocked CV needs at least 2. Skipping site.")
+            return dict()
+        splitter = LeaveOneGroupOut()
+        splits = list(splitter.split(X, y, groups=groups))
+        print(f"Initializing leave-one-year-out cross-validation over {n_years} years "
+              f"for out-of-sample SHAP values...")
+    elif cv_strategy == 'random':
+        splits = list(KFold(n_splits=5, shuffle=True, random_state=42).split(X))
+        print("Initializing 5-fold cross-validation for out-of-sample SHAP values...")
+    else:
+        raise ValueError(f"cv_strategy must be 'random' or 'blocked', not {cv_strategy!r}")
 
     # Storage for CV results
     shap_values_all = []
@@ -262,8 +288,8 @@ def train_xgboost_models_and_shap(target: str, features: list,
     }
 
     # Per-fold processing
-    for fold_idx, (train_idx, test_idx) in enumerate(kfold.split(X)):
-        print(f"\n--- FOLD {fold_idx + 1}/5 ---")
+    for fold_idx, (train_idx, test_idx) in enumerate(splits):
+        print(f"\n--- FOLD {fold_idx + 1}/{len(splits)} ---")
 
         # Split data
         X_train_full = X.iloc[train_idx]
