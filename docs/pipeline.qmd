@@ -216,6 +216,8 @@ Three scripts here produce tables rather than manuscript figures:
 | `60_threshold_method_sensitivity.py` | Re-estimates the threshold under 23 estimator choices, from polynomial degree to bin width |
 | `61_threshold_definitions.py` | Separates the peak, the steepest decline and the zero crossing, and flags points on the range edge |
 | `62_threshold_vs_site_vpd_range.py` | Splits sites by their own maximum VPD and checks whether the threshold tracks it |
+| `63_leave_region_out.py` | Recomputes the threshold and the stage 8 attribution with Europe, North America or both removed |
+| `64_short_record_sensitivity.py` | Recomputes them while requiring progressively longer retained records |
 
 Script 52 draws both Figure 2 and Extended Data Figure 2 and picks between them by which
 of two blocks near the top is commented out. Running it twice, once per block, gives
