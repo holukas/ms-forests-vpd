@@ -155,8 +155,8 @@ from src.paths import load_settings
 
 # ------------------------------
 # Variables
-FLUX = 'NEP_ZSCORE'
-# FLUX = 'ET_ZSCORE'
+# FLUX = 'NEP_ZSCORE'
+FLUX = 'ET_ZSCORE'
 # FLUX = 'GPP_ZSCORE'
 # FLUX = 'RECO_ZSCORE'
 # Predictor set. Reviewer 2 asked whether TA and VPD can be told apart, given how
@@ -212,8 +212,8 @@ CV_STRATEGY = "random"
 
 # ------------------------------
 # Calculate SHAP values for:
-# [x] NEP_ZSCORE
-# [ ] ET_ZSCORE
+# [ ] NEP_ZSCORE
+# [x] ET_ZSCORE
 # [ ] GPP_ZSCORE
 # [ ] RECO_ZSCORE
 # ------------------------------
