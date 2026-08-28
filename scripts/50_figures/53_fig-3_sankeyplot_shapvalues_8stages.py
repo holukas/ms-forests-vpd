@@ -12,6 +12,11 @@ import src.plot as plot
 import src.stages as stages
 from src.paths import load_settings
 
+# Open the figure in a window after saving. False by default so a script can run
+# unattended: matplotlib picks the interactive TkAgg backend here, and plt.show()
+# then blocks until the window is closed by hand.
+SHOW_PLOT = False
+
 # ==========================================
 # SETTINGS
 # ==========================================
@@ -33,6 +38,11 @@ STAGE_LABELS = [f"Stage {sl}" for sl in STAGE_ORDER]
 
 # Variables
 VARS = ['SWIN_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'VPD_ZSCORE']
+
+# Short name of the flux, used in the y-axis label so a figure says which flux it shows.
+BEAUTIFY = {'NEP_ZSCORE': 'NEP', 'GPP_ZSCORE': 'GPP',
+            'RECO_ZSCORE': 'RECO', 'ET_ZSCORE': 'ET'}
+FLUX_LABEL = BEAUTIFY[FLUX]
 
 VAR_LABELS = {
     'VPD_ZSCORE': 'VPD effect',
@@ -172,7 +182,7 @@ for pix, p in enumerate(panels_data):
         plot.add_gradient_arrow(ax=ax, vertices=vertices_down, color_main=color_limzone, direction='down')  # Slate Blue
 
         # Y-axis label for the entire figure
-        ax.text(-2.2, 0, r'Effect on daytime NEP ($\sigma$)', va='center', ha='center',
+        ax.text(-2.2, 0, rf'Effect on daytime {FLUX_LABEL} ($\sigma$)', va='center', ha='center',
                 rotation='vertical', fontsize=AX_LABELS_FONTSIZE + 2, fontweight='bold')
 
 # Legend
@@ -201,4 +211,6 @@ plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
 # Save panels data
 stage_stats.to_csv(dir_out / f"53_FIG-3_SankeyPlotStages_{FLUX}_DATA.csv", index=False)
 
-plt.show()
+if SHOW_PLOT:
+
+    plt.show()

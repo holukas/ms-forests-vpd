@@ -11,6 +11,11 @@ import src.plot as plot
 import src.stages as stages
 from src.paths import load_settings
 
+# Open the figure in a window after saving. False by default so a script can run
+# unattended: matplotlib picks the interactive TkAgg backend here, and plt.show()
+# then blocks until the window is closed by hand.
+SHOW_PLOT = False
+
 # ==========================================
 # SETTINGS
 # ==========================================
@@ -37,6 +42,11 @@ VARS = ['VPD_ZSCORE', 'TA_ZSCORE', 'SWC_ZSCORE', 'SWIN_ZSCORE']
 
 VAR_TITLES = ['VPD effect', 'TA effect',
               'SM effect', 'SW effect']
+
+# Short name of the flux, used in the y-axis labels so a figure says which flux it shows.
+BEAUTIFY = {'NEP_ZSCORE': 'NEP', 'GPP_ZSCORE': 'GPP',
+            'RECO_ZSCORE': 'RECO', 'ET_ZSCORE': 'ET'}
+FLUX_LABEL = BEAUTIFY[FLUX]
 
 SHAP_SUFFIX_AVG = '_SHAPVALS_OVR_AVG'
 SHAP_COLS_AVG = [v + SHAP_SUFFIX_AVG for v in VARS]
@@ -172,8 +182,9 @@ for row, (feature_col, var_title) in enumerate(zip(SHAP_COLS_AVG, VAR_TITLES)):
 
         # y-axis label (only for first column)
         if is_left_col:
-            var_title = var_title.replace(" ", r"\ ")
-            label_text = r"$\mathbf{" + var_title + "}$" + r" ($\sigma$)"
+            bold_title = var_title.replace(" ", r"\ ")
+            label_text = (r"$\mathbf{" + bold_title + "}$"
+                          + rf" on {FLUX_LABEL} ($\sigma$)")
             ax.set_ylabel(label_text, fontsize=9, color="black", labelpad=4)
 
         # Panel letters: (a), (b), ...
@@ -383,4 +394,5 @@ outfilepath = dir_out / f'56_ExtendedData_FIG-1_Stages_SinaPlots_ShapMeans_{FLUX
 fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
 
 # Show figure
-plt.show()
+if SHOW_PLOT:
+    plt.show()
