@@ -38,7 +38,7 @@ VARIANT = ""
 # Which soil water layer to use. "shallow" keeps SWC_F_MDS_1, which is what the
 # submitted analysis used. "deepest" swaps in the deepest layer per site that
 # still holds at least 90 % of layer 1's records in the peak months, which is
-# the sensitivity run reviewers 2 and 3 and the editor asked for. 127 of 208
+# the sensitivity run reviewers 2 and 3 and the editor asked for. 128 of 208
 # sites move, the rest have no deeper layer or only gappy ones and stay on
 # layer 1. Set VARIANT as well when using "deepest", or the deep subsets
 # overwrite the submitted ones.
