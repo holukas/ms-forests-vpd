@@ -141,6 +141,20 @@ TUNE_HYPERPARAMETERS = True    # hyperparameter search instead
 TUNE_N_ITER = 25               # combinations tested per site in tuning mode
 ```
 
+`FLUX` picks the target. The published analysis is `NEP_ZSCORE`. The same pipeline
+runs for the other three fluxes, which support the decomposition arguments rather
+than the headline result:
+
+```python
+FLUX = 'NEP_ZSCORE'    # the published target
+FLUX = 'GPP_ZSCORE'    # gross primary productivity
+FLUX = 'RECO_ZSCORE'   # ecosystem respiration
+FLUX = 'ET_ZSCORE'     # evapotranspiration
+```
+
+`FLUX` is already a path level, so a second target writes to its own folder and no
+variant is needed. GPP and RECO are partitioning products, not measurements, so read
+[Methods](methods.qmd#flux-targets) before using them.
 Two switches change what the models see. `CV_STRATEGY` picks the cross-validation
 scheme, `random` for the shuffled 5-fold split behind the published results or `blocked`
 for leave-one-year-out. `FEATURE_SET` picks the drivers, `full`, `no_vpd` or `no_ta`. See

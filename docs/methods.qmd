@@ -10,6 +10,33 @@ code alone. The manuscript methods section is the authoritative description.
 One XGBoost regressor per site, target `NEP_ZSCORE`, predictors `TA_ZSCORE`,
 `SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`. Settings live in `src/models.py`.
 
+## Flux targets
+
+The published analysis explains `NEP_ZSCORE`. The same models and the same settings
+also run for three other targets, which support the decomposition arguments in the
+revision rather than the headline result. All four use the full 208 sites.
+
+| Target | Source variable | What it is |
+|---|---|---|
+| `NEP_ZSCORE` | `NEE_VUT_50`, sign flipped | Measured, quality flag 0 only |
+| `GPP_ZSCORE` | `GPP_NT_VUT_50` | Partitioning product |
+| `RECO_ZSCORE` | `RECO_NT_VUT_50` | Partitioning product |
+| `ET_ZSCORE` | derived from `LE_F_MDS` | Includes gap-filled values |
+
+Two caveats matter when reading GPP or RECO results.
+
+`RECO_NT_VUT_50` comes from a temperature response fitted to night-time NEE and
+extrapolated into the day, and GPP is that RECO minus NEE. Both are therefore model
+products, and part of any temperature signal in their attribution belongs to the
+partitioning model rather than to the ecosystem. The effect is not uniform: RECO fits
+worse than NEP on average (mean global R2 0.579 against 0.622) but spans a much wider
+range, 0.111 to 0.980, with 27 sites below 0.40 and 2 above 0.90. So the partitioning
+shows through at a few sites, not everywhere. Use the decomposition to say which
+component drives a change in NEP, not to quantify the temperature sensitivity of RECO.
+
+`ET_ZSCORE` is derived from latent heat flux. The quality filter on `LE` is disabled
+in `src/files.py`, because the FLUXNET flag marks every LE record as gap-filled, so ET
+is not the quality-flag-0 product that NEP is.
 Fixed across SHAP, ALE and tuning:
 
 ```python
