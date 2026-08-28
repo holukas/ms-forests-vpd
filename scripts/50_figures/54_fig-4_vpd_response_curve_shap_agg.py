@@ -15,6 +15,11 @@ import src.fit as fit
 import src.plot as plot
 from src.paths import load_settings
 
+# Open the figure in a window after saving. False by default so a script can run
+# unattended: matplotlib picks the interactive TkAgg backend here, and plt.show()
+# then blocks until the window is closed by hand.
+SHOW_PLOT = False
+
 # Settings & variables
 
 # Main Fig. 3
@@ -24,6 +29,18 @@ from src.paths import load_settings
 plotvars = ['NEP_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE']
 
 FLUX = plotvars[0]
+
+# Wording for the two zones above and below the zero line. A positive SHAP value means
+# more of the flux, which is more carbon uptake for NEP and GPP but more respiration for
+# RECO and more water loss for ET. Only the first two can be called stimulation without
+# saying something wrong, so the other two get neutral wording.
+ZONE_LABELS = {
+    'NEP_ZSCORE': ("Stimulation", "Suppression"),
+    'GPP_ZSCORE': ("Stimulation", "Suppression"),
+    'RECO_ZSCORE': ("Increase", "Decrease"),
+    'ET_ZSCORE': ("Increase", "Decrease"),
+}
+LABEL_POS, LABEL_NEG = ZONE_LABELS[FLUX]
 
 # Run variant. An empty string reads the results behind the submitted figures and
 # writes to the baseline plot folder. Any other value reads the matching variant
@@ -315,7 +332,8 @@ if show_shap_thresholds:
     plot.show_shap_thresholds(ax=ax_all, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix,
                               threshold_main=threshold_main, show_annotate=True,
                               fontsize=AX_LABELS_FONTSIZE, show_annotate_short=False,
-                              colors_symbols=colors_symbols)
+                              colors_symbols=colors_symbols,
+                              label_pos=LABEL_POS, label_neg=LABEL_NEG)
 
 # # todo Add arrow to highlight one of the IQR/SEM data points
 # select_x = 1.7
@@ -454,7 +472,8 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
             ax=ax, x_fit=x_fit, y_fit=y_fit, max_ix=max_ix, min_ix=min_ix,
             threshold_main=threshold_main,
             show_annotate=True, fontsize=AX_LABELS_FONTSIZE, show_annotate_short=True,
-            colors_symbols=colors_symbols)
+            colors_symbols=colors_symbols,
+            label_pos=LABEL_POS, label_neg=LABEL_NEG)
 
     # Format subplot
     plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels, showxticklabels=showxticklabels,
@@ -479,8 +498,8 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
 
 fig.tight_layout()
 gs.update(wspace=.1)
-fig.show()
-
+if SHOW_PLOT:
+    fig.show()
 # Save coefficients to file
 _outfilepath = dir_out / f'54_FIG-4_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_DATA_COEFFICIENTS.csv'
 df_coeffs.to_csv(_outfilepath, index=False)

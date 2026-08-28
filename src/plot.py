@@ -368,7 +368,15 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
 
 
 def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_annotate, show_annotate_short,
-                         fontsize, colors_symbols):
+                         fontsize, colors_symbols, label_pos: str = "Stimulation",
+                         label_neg: str = "Suppression"):
+    """Draw the zero crossing, the extremes and the two zone labels.
+
+    label_pos and label_neg name the zones above and below zero. The defaults suit a
+    carbon uptake flux, where a positive SHAP value means more uptake. For RECO a
+    positive value means more respiration, and for ET more water loss, so the caller
+    passes neutral wording such as "Increase" and "Decrease" instead.
+    """
     color_limzone = '#d6604d'
     color_facilzone = '#4393c3'
 
@@ -464,13 +472,13 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_
 
     # mid_point_x = threshold_x + (x_fit.max() - threshold_x) / 1.05
     if show_annotate and not show_annotate_short:
-        ax.text(x_fit[min_ix] - 0.15, -0.05, "Suppression",
+        ax.text(x_fit[min_ix] - 0.15, -0.05, label_neg,
                 color=color_limzone, alpha=1, ha='right', va='top',
                 fontsize=fontsize * 1.2, style='italic', weight='bold')
         # ax.text(x_fit[min_ix] - 0.1, -0.1, "reduced uptake\nincreased release",
         #         color=color_limzone, alpha=1, ha='right', va='top',
         #         fontsize=fontsize * 1.2, style='italic', weight='normal')
-        ax.text(threshold_main - 0.15, y_top_axis * 0.92, "Stimulation",
+        ax.text(threshold_main - 0.15, y_top_axis * 0.92, label_pos,
                 color=color_facilzone, alpha=1, ha='right', va='top',
                 fontsize=fontsize * 1.2, weight='bold', style='italic', zorder=1)
         # ax.text(x_fit[idx] - 0.1, y_top_axis * 0.85, "increased uptake\nreduced release",
@@ -508,7 +516,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_
         _fontsize = fontsize * 0.9 if show_annotate_short else fontsize
 
         if not show_annotate_short:
-            ann_txt = f'Max. stimulation\nx={x_fit[max_ix]:.2f}'
+            ann_txt = f'Max. {label_pos.lower()}\nx={x_fit[max_ix]:.2f}'
             offx = 0.1
             offy = 0.06
         else:
@@ -538,7 +546,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_
                     fontsize=_fontsize, color=color, ha='center', va='center', zorder=100)
 
         if not show_annotate_short:
-            ann_txt = f'Max. suppression\nx={x_fit[min_ix]:.2f}'
+            ann_txt = f'Max. {label_neg.lower()}\nx={x_fit[min_ix]:.2f}'
             offx = 1
             offy = 0.05
         else:
