@@ -12,6 +12,11 @@ import src.files as files
 import src.plot as plot
 from src.paths import load_settings
 
+# Open the figure in a window after saving. False by default so a script can run
+# unattended: matplotlib picks the interactive TkAgg backend here, and plt.show()
+# then blocks until the window is closed by hand.
+SHOW_PLOT = False
+
 # --- SETTINGS ---
 # Each inner list represents one row
 # Order: explained flux, x-bins, y-bins, z-colors, x in filename, y in filename, colormap for row,
@@ -246,4 +251,6 @@ outfilepath = dir_out / f'52_FIG-{figure_info[0]}_FlamePlots{figure_info[1]}_{FL
 print(f"Saved to {outfilepath}")
 plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
 
-plt.show()
+if SHOW_PLOT:
+
+    plt.show()

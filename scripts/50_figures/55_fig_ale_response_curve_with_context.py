@@ -99,6 +99,11 @@ import src.files as files
 import src.plot as plot
 from src.paths import data_path, load_settings
 
+# Open the figure in a window after saving. False by default so a script can run
+# unattended: matplotlib picks the interactive TkAgg backend here, and plt.show()
+# then blocks until the window is closed by hand.
+SHOW_PLOT = False
+
 
 def fit_polynomial_to_curves(curves_array, grid):
     """Fit 4th-order polynomial to each curve, preserving NaN regions."""
@@ -576,8 +581,9 @@ if mean_effect is not None and std_effect is not None:
     fig.tight_layout()
     gs.update(wspace=.1)
 
-    fig.show()
+    if SHOW_PLOT:
 
+        fig.show()
     # # Save figure
     # outfilepath = dir_out / f'55_FIG_ALE_ResponseCurve_{PLOT_FEATURE}_Threshold_{FLUX}.png'
     # fig.savefig(outfilepath, dpi=300, bbox_inches='tight')

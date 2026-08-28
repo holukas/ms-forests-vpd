@@ -6,6 +6,11 @@ import numpy as np
 import pandas as pd
 from src.paths import data_path, repo_path
 
+# Open the figure in a window after saving. False by default so a script can run
+# unattended: matplotlib picks the interactive TkAgg backend here, and plt.show()
+# then blocks until the window is closed by hand.
+SHOW_PLOT = False
+
 AX_LABELS_FONTSIZE = 15
 
 # ---------------------------------------------------------
@@ -202,4 +207,5 @@ out_plot.parent.mkdir(parents=True, exist_ok=True)
 
 plt.savefig(out_plot, dpi=300, bbox_inches='tight', facecolor='white')
 print(f"Plot saved successfully to {out_plot}")
-plt.show()
+if SHOW_PLOT:
+    plt.show()
