@@ -87,6 +87,14 @@ rows.append(('Matched 128 sites, layer 1',
 rows.append(('Matched 128 sites, deepest layer',
              to_kpa_matched([threshold_z('deep-sm', 'deeper-only')])))
 
+# Temporally blocked cross-validation, leave one calendar year out. Sites with a single
+# year cannot be split that way and are skipped, so this run has its own site set.
+bcv_dir = (Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type / 'blocked-cv')
+bcv_sites = [f.name.split('_shap-')[0]
+             for f in bcv_dir.glob(f'*_shap-{shap_type}_{FLUX}.parquet')]
+rows.append((f'Blocked cross-validation ({len(bcv_sites)} sites)',
+             converter(bcv_sites)([threshold_z('blocked-cv')])))
+
 # Estimator choice: polynomial degree, lowess span, spline smoothing, bin width, fit range
 method = pd.read_csv(folder / '60_Threshold_MethodSensitivity.csv')
 rows.append((f'Threshold estimator ({len(method)} variants)', to_kpa(method['threshold_z'])))
