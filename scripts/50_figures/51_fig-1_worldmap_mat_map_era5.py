@@ -2,6 +2,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 import pandas as pd
 from src.paths import data_path, repo_path
@@ -29,6 +30,14 @@ datasets_df = datasets_df.loc[datasets_df['IGBP'] != 'DNF'].copy()
 datasets_df = datasets_df.loc[datasets_df['SITE'] != 'US-xBN'].copy()
 
 n_sites_total = len(datasets_df)
+
+# Sites and record length per forest type, taken from the subsets that entered the models
+# so the counts match the analysis rather than the raw site collection.
+subsets_df = pd.read_csv(data_path("data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv"))
+counts = subsets_df.groupby('IGBP').agg(n_sites=('SITE', 'size'), n_years=('N_YEARS', 'sum'))
+n_sites_counted = counts['n_sites'].sum()
+n_years_counted = counts['n_years'].sum()
+IGBP_ORDER = ['ENF', 'DBF', 'EBF', 'MF']
 
 valid_df = datasets_df.dropna(subset=['ERA5_MAT_1991_2020', 'ERA5_MAP_1991_2020']).copy()
 n_sites_climate = len(valid_df)
@@ -81,19 +90,42 @@ valid_df['Isolation_Score'] = dist_matrix.min(axis=1)
 # ---------------------------------------------------------
 # 3. SET UP GRIDSPEC LAYOUT
 # ---------------------------------------------------------
-fig = plt.figure(figsize=(21 * 0.9, 10 * 0.9), constrained_layout=True)
-# Added fig.add_gridspec to fix the UserWarning
-gs = fig.add_gridspec(2, 3, width_ratios=[1, 1, 1.25], height_ratios=[1.6, 1])
+# The map keeps its geographic aspect ratio, so its height follows from the panel width
+# and the figure height has to match, otherwise the map floats in white space. The legend
+# gets its own row rather than being pushed below the axis with a negative offset, and the
+# climate panel spans both rows so it keeps the full height.
+fig = plt.figure(figsize=(17, 6.0), constrained_layout=True)
+gs = fig.add_gridspec(1, 2, width_ratios=[1.75, 1])
 
-ax_world = fig.add_subplot(gs[0, :2])
-ax_usa = fig.add_subplot(gs[1, 0])
-ax_eu = fig.add_subplot(gs[1, 1])
-ax_climate = fig.add_subplot(gs[:, 2])
+ax_world = fig.add_subplot(gs[0, 0])
+ax_climate = fig.add_subplot(gs[0, 1])
+
+# The map holds a geographic aspect ratio, so it is shrunk inside its cell. Anchoring both
+# panels to the top of their cell puts the two axes tops, and with them the two panel
+# letters, on the same line.
+ax_world.set_anchor('N')
+ax_climate.set_anchor('N')
 
 
 # ---------------------------------------------------------
 # 4. HELPER FUNCTION TO PLOT MAPS & ADD PANEL LETTERS
 # ---------------------------------------------------------
+def panel_label(ax, letter, title, gap_points=7, title_gap_points=16):
+    """Put the panel letter and its title above the top left corner of the axes.
+
+    Offsets are in points, so every panel gets the same gap whatever its height.
+    """
+    ax.annotate(letter, xy=(0, 1), xycoords='axes fraction',
+                xytext=(0, gap_points), textcoords='offset points',
+                fontsize=AX_LABELS_FONTSIZE * 1.2, fontweight='bold',
+                va='bottom', ha='left', color='#000000', annotation_clip=False)
+    ax.annotate(title, xy=(0, 1), xycoords='axes fraction',
+                xytext=(title_gap_points, gap_points), textcoords='offset points',
+                fontsize=AX_LABELS_FONTSIZE * 1.2,
+                va='bottom', ha='left', color='#555555', annotation_clip=False)
+
+
+
 def plot_map_region(ax, extent=None, title="", letter="", is_main_map=False):
     world.plot(ax=ax, color=LAND_COL, edgecolor=BORDER_COL, linewidth=0.6)
 
@@ -128,15 +160,10 @@ def plot_map_region(ax, extent=None, title="", letter="", is_main_map=False):
         ax.set_xlim(extent[0], extent[1])
         ax.set_ylim(extent[2], extent[3])
 
-    # Adjust title/letter height to sit comfortably above the new ticks/borders
-    # Set a smaller relative offset for the wide main map so the physical gap matches
-    title_x_offset = 0.025 if is_main_map else 0.06
-
-    # Adjust title/letter height to sit comfortably above the new ticks/borders
-    ax.text(0.0, 1.05, letter, transform=ax.transAxes, fontsize=AX_LABELS_FONTSIZE * 1.2, fontweight='bold',
-            va='bottom', ha='left', color='#000000')
-    ax.text(title_x_offset, 1.05, title, transform=ax.transAxes, fontsize=AX_LABELS_FONTSIZE * 1.2,
-            va='bottom', ha='left', color='#555555')
+    # Panel letter and title, placed a fixed number of points above the axes rather than a
+    # fraction of its height. The two panels have different heights, so a fraction would put
+    # the letters at different heights on the page.
+    panel_label(ax, letter, title)
 
 
 # ---------------------------------------------------------
@@ -146,18 +173,23 @@ def plot_map_region(ax, extent=None, title="", letter="", is_main_map=False):
 plot_map_region(ax_world, extent=[-180, 180, -60, 85], title=f'Global forest sites in this study (n={n_sites_total})',
                 letter='a', is_main_map=True)
 
-# Because we added an x-axis label, the legend needs to be pushed slightly further down
-ax_world.legend(loc='lower center', bbox_to_anchor=(0.5, -0.28), ncol=5, fontsize=AX_LABELS_FONTSIZE, frameon=False,
-                columnspacing=1.5)
-
-# MATHEMATICAL ALIGNMENT:
-# To make panels b and c the EXACT same height and width, their coordinate spans must be identical.
-# Both are now set to span exactly 64 degrees of Longitude and 32 degrees of Latitude.
-extent_us = [-128, -64, 22, 58]  # 64 lon span, 36 lat span
-extent_eu = [-10, 54, 36, 72]  # 64 lon span, 36 lat span
-
-plot_map_region(ax_usa, extent=extent_us, title="Contiguous US", letter='b')
-plot_map_region(ax_eu, extent=extent_eu, title="Europe", letter='c')
+# Legend under the map. Short labels only: the site-year counts and the percentages go in
+# the figure caption instead, which is where they were asked for.
+# Explicit handles, so the legend order is by size and does not follow the drawing order.
+legend_handles = [
+    Line2D([], [], linestyle='none', marker=igbp_markers[igbp]['marker'],
+           markerfacecolor=igbp_markers[igbp]['color'],
+           markeredgecolor=igbp_markers[igbp]['edgecolor'], markeredgewidth=0.8,
+           markersize=11,
+           label=f"{igbp} (n={counts.loc[igbp, 'n_sites']})")
+    for igbp in IGBP_ORDER
+]
+# Anchored to the map rather than given its own row. The map is aspect-locked, so its cell
+# is taller than the map itself, and the leftover height should sit under the legend as an
+# ordinary margin rather than as a hole between the map and the legend.
+ax_world.legend(handles=legend_handles, loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=4,
+                fontsize=AX_LABELS_FONTSIZE, frameon=False, columnspacing=2.5,
+                handletextpad=0.6)
 
 # ---------------------------------------------------------
 # 6. PLOTTING THE CLIMATE SPACE (Right Panel)
@@ -194,10 +226,7 @@ ax_climate.set_facecolor('white')
 
 # Fixed the transform argument to ax_climate.transAxes
 # Fixed the transform argument to ax_climate.transAxes AND standardized the y-height to 1.05
-ax_climate.text(0.0, 1.02, 'd', transform=ax_climate.transAxes, fontsize=AX_LABELS_FONTSIZE * 1.2, fontweight='bold',
-                va='bottom', ha='left', color='#000000')
-ax_climate.text(0.06, 1.02, f'Bioclimatic distribution (n={n_sites_climate})', transform=ax_climate.transAxes,
-                fontsize=AX_LABELS_FONTSIZE * 1.2, va='bottom', ha='left', color='#555555')
+panel_label(ax_climate, 'b', f'Bioclimatic distribution (n={n_sites_climate})')
 
 # ---------------------------------------------------------
 # 7. SAVE AND SHOW
