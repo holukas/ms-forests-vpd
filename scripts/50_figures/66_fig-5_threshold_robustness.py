@@ -42,6 +42,11 @@ CONDITIONAL = True
 VARIANT = ""
 SITE_SUBSET = ""
 
+# Recompute the thresholds and the bootstrap, or reuse what the last run wrote. The
+# bootstrap refits the curve 2000 times for each of twelve rows and takes about three
+# minutes, while the layout takes seconds, so a layout change should not pay for the
+# statistics again. Set to True after changing anything that affects the numbers.
+RECOMPUTE = False
 N_BOOT = 2000
 POLY_DEGREE = 4          # the published choice
 MOVER = 0.06             # kPa, beyond this a row reads as a real shift
@@ -150,60 +155,76 @@ def threshold_with_ci(piv, seed=0):
     return float(point), float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n
 
 
-rows = []  # (group, label, value, lo, hi, n_sites, note)
+outfile = folder / f'66_PLANNED-FIG-5_ThresholdRobustness_{FLUX}.png'
+cache = Path(str(outfile).replace('.png', '_DATA.csv'))
+cached = (not RECOMPUTE) and cache.exists()
 
-# Reference: the published run, same estimator.
-base = site_curves()
-published, pub_lo, pub_hi, n_base = threshold_with_ci(base)
+if cached:
+    print(f'reusing {cache.name}, set RECOMPUTE = True to redo the numbers')
+    stored = pd.read_csv(cache)
+    ref = stored.loc[stored['test'] == 'PUBLISHED REFERENCE'].iloc[0]
+    published, pub_lo, pub_hi = ref['threshold_kpa'], ref['lower'], ref['upper']
+    n_base = int(ref['n_sites'])
+    rows = [tuple(r) for r in stored.loc[stored['test'] != 'PUBLISHED REFERENCE']
+            [['group', 'test', 'threshold_kpa', 'lower', 'upper', 'n_sites', 'note']]
+            .itertuples(index=False, name=None)]
+    rows = [(g, t, v, lo, hi, int(n), (None if pd.isna(note) else note))
+            for g, t, v, lo, hi, n, note in rows]
+else:
+    rows = []  # (group, label, value, lo, hi, n_sites, note)
 
-# --- soil water depth -------------------------------------------------------
-for label, sub in [('Deepest available layer, all sites', ('deep-sm',)),
-                   ('Matched sites, layer 1', ('', 'deeper-only')),
-                   ('Matched sites, deepest layer', ('deep-sm', 'deeper-only'))]:
-    piv = site_curves(*[p for p in sub if p])
-    rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=1), None))
+    # Reference: the published run, same estimator.
+    base = site_curves()
+    published, pub_lo, pub_hi, n_base = threshold_with_ci(base)
 
-# --- model fitting ----------------------------------------------------------
-piv = site_curves('blocked-cv')
-rows.append(('Model fitting', 'Blocked cross-validation',
-             *threshold_with_ci(piv, seed=2), None))
+    # --- soil water depth -------------------------------------------------------
+    for label, sub in [('Deepest available layer, all sites', ('deep-sm',)),
+                       ('Matched sites, layer 1', ('', 'deeper-only')),
+                       ('Matched sites, deepest layer', ('deep-sm', 'deeper-only'))]:
+        piv = site_curves(*[p for p in sub if p])
+        rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=1), None))
 
-# The estimator row varies the fit, not the sites, so it carries the spread across the 23
-# settings rather than a bootstrap.
-method = pd.read_csv(folder / '60_Threshold_MethodSensitivity.csv')
-est = np.array([to_kpa(z, base.index) for z in method['threshold_z']])
-rows.append(('Model fitting', f'Threshold estimator, {len(method)} settings',
-             float(np.median(est)), float(est.min()), float(est.max()), n_base,
-             'spread across settings'))
+    # --- model fitting ----------------------------------------------------------
+    piv = site_curves('blocked-cv')
+    rows.append(('Model fitting', 'Blocked cross-validation',
+                 *threshold_with_ci(piv, seed=2), None))
 
-# --- site set ---------------------------------------------------------------
-REGIONS = {
-    'Europe': ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR',
-               'IE', 'IT', 'NL', 'PL', 'PT', 'RU', 'SE', 'SJ', 'SK', 'UK'],
-    'North America': ['US', 'CA', 'MX', 'PR', 'CR', 'GL'],
-}
-LOOKUP = {code: region for region, codes in REGIONS.items() for code in codes}
-region_of = pd.Series(base.index.str.split('-').str[0].map(LOOKUP), index=base.index)
-for drop, label in [(['Europe'], 'Europe removed'),
-                    (['North America'], 'North America removed'),
-                    (['Europe', 'North America'], 'Europe and North America removed')]:
-    keep = base.loc[~region_of.isin(drop)]
-    rows.append(('Site set', label, *threshold_with_ci(keep, seed=len(drop) + 10), None))
+    # The estimator row varies the fit, not the sites, so it carries the spread across the 23
+    # settings rather than a bootstrap.
+    method = pd.read_csv(folder / '60_Threshold_MethodSensitivity.csv')
+    est = np.array([to_kpa(z, base.index) for z in method['threshold_z']])
+    rows.append(('Model fitting', f'Threshold estimator, {len(method)} settings',
+                 float(np.median(est)), float(est.min()), float(est.max()), n_base,
+                 'spread across settings'))
 
-years = subsets['N_YEARS']
-for min_years in (3, 5, 10):
-    keep = base.loc[base.index.isin(years[years >= min_years].index)]
-    rows.append(('Site set', f'Records of at least {min_years} years',
-                 *threshold_with_ci(keep, seed=min_years + 20), None))
+    # --- site set ---------------------------------------------------------------
+    REGIONS = {
+        'Europe': ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR',
+                   'IE', 'IT', 'NL', 'PL', 'PT', 'RU', 'SE', 'SJ', 'SK', 'UK'],
+        'North America': ['US', 'CA', 'MX', 'PR', 'CR', 'GL'],
+    }
+    LOOKUP = {code: region for region, codes in REGIONS.items() for code in codes}
+    region_of = pd.Series(base.index.str.split('-').str[0].map(LOOKUP), index=base.index)
+    for drop, label in [(['Europe'], 'Europe removed'),
+                        (['North America'], 'North America removed'),
+                        (['Europe', 'North America'], 'Europe and North America removed')]:
+        keep = base.loc[~region_of.isin(drop)]
+        rows.append(('Site set', label, *threshold_with_ci(keep, seed=len(drop) + 10), None))
 
-# --- site climate -----------------------------------------------------------
-# A split rather than a resample, so it shows the range across the four quartiles.
-strata = pd.read_csv(folder / '62_Threshold_vs_SiteVPDRange.csv')
-rows.append(('Site climate', 'Sites split by own VPD range, quartiles',
-             float(strata['median_threshold_kpa'].median()),
-             float(strata['median_threshold_kpa'].min()),
-             float(strata['median_threshold_kpa'].max()),
-             int(strata['n'].sum()), 'range across quartiles'))
+    years = subsets['N_YEARS']
+    for min_years in (3, 5, 10):
+        keep = base.loc[base.index.isin(years[years >= min_years].index)]
+        rows.append(('Site set', f'Records of at least {min_years} years',
+                     *threshold_with_ci(keep, seed=min_years + 20), None))
+
+    # --- site climate -----------------------------------------------------------
+    # A split rather than a resample, so it shows the range across the four quartiles.
+    strata = pd.read_csv(folder / '62_Threshold_vs_SiteVPDRange.csv')
+    rows.append(('Site climate', 'Sites split by own VPD range, quartiles',
+                 float(strata['median_threshold_kpa'].median()),
+                 float(strata['median_threshold_kpa'].min()),
+                 float(strata['median_threshold_kpa'].max()),
+                 int(strata['n'].sum()), 'range across quartiles'))
 
 # ---------------------------------------------------------------------------
 # Layout
@@ -282,13 +303,17 @@ fig.text(0.025, 0.03,
 fig.text(0.025, 0.955, 'PLANNED main Fig. 5, not yet adopted',
          fontsize=AX_LABELS_FONTSIZE * 0.8, color=COLOR_REF, fontweight='bold', ha='left')
 
-outfile = folder / f'66_PLANNED-FIG-5_ThresholdRobustness_{FLUX}.png'
 fig.savefig(outfile, dpi=300, facecolor='white')
 
-out = pd.DataFrame(rows, columns=['group', 'test', 'threshold_kpa', 'lower', 'upper',
-                                  'n_sites', 'note'])
+# The reference goes into the cache as its own row, so a reused run does not have to
+# recompute it either.
+out = pd.DataFrame(rows + [('', 'PUBLISHED REFERENCE', published, pub_lo, pub_hi,
+                            n_base, None)],
+                   columns=['group', 'test', 'threshold_kpa', 'lower', 'upper',
+                            'n_sites', 'note'])
 out['shift_kpa'] = out['threshold_kpa'] - published
-out.to_csv(str(outfile).replace('.png', '_DATA.csv'), index=False)
+if not cached:
+    out.to_csv(cache, index=False)
 print(out.round(3).to_string(index=False))
 print(f"\npublished reference: {published:.3f} [{pub_lo:.3f}, {pub_hi:.3f}] kPa, "
       f"{n_base} sites")
