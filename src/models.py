@@ -73,8 +73,10 @@ def train_rf_models_and_shap(target: str, features: list,
         shap_values = shap_explanation.values
         expected_value = shap_explanation.base_values
     else:
-        # For standard/marginal SHAP, you need a background dataset
-        print("Calculating STANDARD (Marginal) SHAP values using TreeExplainer...")
+        # Interventional SHAP breaks the correlations between features by sampling a
+        # background set, so a feature gets credit only for its own contribution and not
+        # for what it says about correlated features.
+        print("Calculating INTERVENTIONAL (marginal) SHAP values using TreeExplainer...")
         n_background_samples = min(300, len(X))
         background_data = shap.sample(X, n_background_samples)
         explainer = shap.TreeExplainer(model, data=background_data, feature_perturbation="interventional")

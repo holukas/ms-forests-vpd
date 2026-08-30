@@ -179,7 +179,7 @@ FEATURE_SETS = {
 }
 FEATURE_SET = 'full'
 FEATURES = FEATURE_SETS[FEATURE_SET]
-CONDITIONAL = True  # Use conditional SHAP instead of standard SHAP
+CONDITIONAL = True  # False runs interventional SHAP, which breaks feature correlations
 
 # Tuning mode: Set to True to tune hyperparameters instead of computing SHAP
 TUNE_HYPERPARAMETERS = False  # Set to True to run hyperparameter tuning
