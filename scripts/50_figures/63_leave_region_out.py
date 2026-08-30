@@ -21,7 +21,13 @@ from src.paths import load_settings
 VARIANT = ""
 SITE_SUBSET = ""
 FLUX = 'NEP_ZSCORE'
-PA_UNIT_SITES = ['CD-Ygb']          # records VPD in Pa, see script 58
+# CD-Ygb records VPD in Pa where every other site uses hPa, see script 58. The factor is
+# exactly 100: dividing gives a site mean of 18.10 hPa and a standard deviation of
+# 6.56 hPa, both inside the 4.5 to 31.8 hPa range spanned by the other sites. The
+# per-site z-scores are unaffected by the unit, so only the mapping to kPa changes and
+# the site is converted rather than dropped, which keeps all 208 sites.
+PA_UNIT_SITES = ['CD-Ygb']
+PA_TO_HPA = 100
 
 REGIONS = {
     'Europe': ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR',
@@ -45,13 +51,14 @@ def main():
     stages = pd.read_parquet(agg / f"44_SHAPVALUES-conditional_AggregatedAcrossScenarios_{FLUX}.parquet")
     thresholds = pd.read_csv(plots / "59_SiteThresholds.csv")
 
+    sites.loc[sites['SITE'].isin(PA_UNIT_SITES), ['VPD_Z0', 'VPD_SD']] /= PA_TO_HPA
+
     sites['region'] = sites['SITE'].str.split('-').str[0].map(LOOKUP)
     if sites['region'].isna().any():
         missing = sorted(sites.loc[sites['region'].isna(), 'SITE'].str.split('-').str[0].unique())
         raise SystemExit(f"Unmapped country codes: {missing}. Add them to REGIONS.")
 
-    d = (thresholds.merge(sites[['SITE', 'region', 'VPD_Z0', 'VPD_SD']], on='SITE')
-         .query("VPD_Z0 < 200"))
+    d = thresholds.merge(sites[['SITE', 'region', 'VPD_Z0', 'VPD_SD']], on='SITE')
     d['threshold_kpa'] = (d['VPD_Z0'] + d['threshold_z'] * d['VPD_SD']) / 10
 
     st8 = stages[stages['SCENARIO'] == 8].merge(sites[['SITE', 'region']], on='SITE')

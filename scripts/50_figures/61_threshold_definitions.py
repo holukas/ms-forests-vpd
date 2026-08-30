@@ -26,7 +26,13 @@ SITE_SUBSET = ""
 FLUX = 'NEP_ZSCORE'
 DEGREE = 4
 BIOMES = ['ENF', 'DBF', 'EBF', 'MF']
-PA_UNIT_SITES = ['CD-Ygb']          # records VPD in Pa, see script 58
+# CD-Ygb records VPD in Pa where every other site uses hPa. The factor is exactly 100:
+# dividing gives a site mean of 18.10 hPa and a standard deviation of 6.56 hPa, both inside
+# the 4.5 to 31.8 hPa range spanned by the other sites. The per-site z-scores are unaffected
+# by the unit, so only this mapping back to kPa changes and the site is converted rather
+# than dropped.
+PA_UNIT_SITES = ['CD-Ygb']
+PA_TO_HPA = 100
 
 BASE = ("54_FIG-4_ResponseCurve_ShapMeans_NEP_ZSCORE_BIN_VPD_ZSCORE+"
         "VPD_ZSCORE_SHAPVALS+TA_ZSCORE")
@@ -65,7 +71,7 @@ def main():
     d = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
     sites = pd.read_csv(Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
                         / "21_SUBSETS_parquet_vars_stats_subsets.csv")
-    sites = sites[~sites['SITE'].isin(PA_UNIT_SITES)]
+    sites.loc[sites['SITE'].isin(PA_UNIT_SITES), ['VPD_Z0', 'VPD_SD']] /= PA_TO_HPA
 
     def to_kpa(z, group):
         sub = sites if group == 'ALL SITES' else sites[sites['IGBP'] == group]

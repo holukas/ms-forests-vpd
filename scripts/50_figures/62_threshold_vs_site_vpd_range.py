@@ -33,7 +33,14 @@ VARIANT = ""
 SITE_SUBSET = ""
 FLUX = 'NEP_ZSCORE'
 REVIEWER_CUTOFF_KPA = 1.25
-PA_UNIT_SITES = ['CD-Ygb']          # records VPD in Pa, see script 58
+
+# CD-Ygb records VPD in Pa where every other site uses hPa. Other scripts drop it for that
+# reason. It is converted here instead, which keeps all 208 sites: dividing by 100 gives a
+# mean of 18.1 hPa, a standard deviation of 6.6 hPa and a maximum of 39.3 hPa, all inside
+# the range the other sites span. The z-scores are per site and therefore unaffected by the
+# unit, so the conversion only touches the absolute VPD columns.
+PA_UNIT_SITES = ['CD-Ygb']
+PA_UNIT_COLS = ['VPD_Z0', 'VPD_SD', 'VPD_MAX']
 
 
 def main():
@@ -44,7 +51,8 @@ def main():
     thresholds = pd.read_csv(plots / "59_SiteThresholds.csv")
 
     d = thresholds.merge(sites[['SITE', 'VPD_Z0', 'VPD_SD', 'VPD_MAX']], on='SITE')
-    d = d[~d['SITE'].isin(PA_UNIT_SITES)].copy()
+    d = d.copy()
+    d.loc[d['SITE'].isin(PA_UNIT_SITES), PA_UNIT_COLS] /= 100
     d['vpd_max_kpa'] = d['VPD_MAX'] / 10
     d['threshold_kpa'] = (d['VPD_Z0'] + d['threshold_z'] * d['VPD_SD']) / 10
 

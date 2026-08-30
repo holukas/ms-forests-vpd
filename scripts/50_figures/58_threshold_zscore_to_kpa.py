@@ -32,11 +32,13 @@ SITE_SUBSET = ""
 FLUX = 'NEP_ZSCORE'
 
 # CD-Ygb records VPD in Pa where every other site uses hPa, which is documented in
-# 21_prepare_input_data.py. Its site mean of 1810 would otherwise pull the global
-# threshold from 1.26 to 2.19 kPa. Excluded rather than rescaled, because the
-# z-scores it contributes elsewhere are unaffected by the unit and only this
-# absolute conversion breaks.
+# 21_prepare_input_data.py. The factor is exactly 100: dividing gives a site mean of
+# 18.10 hPa and a standard deviation of 6.56 hPa, both inside the 4.5 to 31.8 hPa
+# range spanned by the other sites. The per-site z-scores are unaffected by the unit,
+# so only this mapping back to kPa changes and the site is converted rather than
+# dropped.
 PA_UNIT_SITES = ['CD-Ygb']
+PA_TO_HPA = 100
 
 COEFF_FILE = ("54_FIG-4_ResponseCurve_ShapMeans_NEP_ZSCORE_BIN_VPD_ZSCORE+"
               "VPD_ZSCORE_SHAPVALS+TA_ZSCORE_DATA_COEFFICIENTS.csv")
@@ -58,10 +60,11 @@ def main():
     settings = load_settings()
     sites = pd.read_csv(Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
                         / "21_SUBSETS_parquet_vars_stats_subsets.csv")
-    dropped = sites[sites['SITE'].isin(PA_UNIT_SITES)]
-    sites = sites[~sites['SITE'].isin(PA_UNIT_SITES)]
-    for _, row in dropped.iterrows():
-        print(f"Excluded {row['SITE']}, VPD recorded in Pa (site mean {row['VPD_Z0']:.0f})")
+    converted = sites['SITE'].isin(PA_UNIT_SITES)
+    sites.loc[converted, ['VPD_Z0', 'VPD_SD']] /= PA_TO_HPA
+    for _, row in sites[converted].iterrows():
+        print(f"Converted {row['SITE']} from Pa to hPa "
+              f"(site mean {row['VPD_Z0']:.2f}, sd {row['VPD_SD']:.2f})")
 
     coeffs = pd.read_csv(Path(settings['DIR_PLOTS_OUT']) / FLUX / 'conditional'
                          / VARIANT / SITE_SUBSET / COEFF_FILE)
