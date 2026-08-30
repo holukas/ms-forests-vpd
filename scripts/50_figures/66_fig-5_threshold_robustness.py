@@ -1,17 +1,31 @@
 """
 PLANNED MAIN FIGURE 5, not yet adopted.
 
-Every robustness test of the VPD threshold on one axis. The published estimate is the
-reference line; each row shows what the threshold becomes when one methodological choice
-is changed. Nothing is recomputed here, the script only reads what scripts 58 and 60 to
-64 already wrote.
+Every robustness test of the VPD threshold on one axis, with a confidence interval on each,
+plotted as the shift from the published value.
 
-Rows are grouped by what the test varies, so eight rows read as four questions: does the
-soil water layer matter, does the model fitting matter, does the site set matter, does the
-site climate matter. The answer is the same in every group.
+**The estimator is the published one.** The threshold is the highest zero crossing of a
+fourth-order polynomial fitted to the VPD SHAP values averaged across sites, which is what
+Figure 4 shows and what the abstract reports. An earlier version of this figure used the
+median of per-site thresholds instead. That is a different quantity, it sat 0.07 kPa lower,
+and it silently drops any site whose own curve never crosses zero, so a robustness figure
+built on it would be testing an estimator the reader never sees.
 
-The figure is labelled as planned in its file name, so it cannot be mistaken for an adopted
-display item. Decide later whether it goes in the manuscript.
+**The interval is a bootstrap over sites.** Each replicate resamples sites with
+replacement, re-averages their binned curves, refits the polynomial and takes the crossing.
+That answers how much the threshold depends on which sites happen to be in the network,
+which is the question a robustness figure is asked, and it uses the same estimator as the
+point value. It is not the prediction band of the fitted curve: that band describes how well
+a polynomial fits one aggregated curve and says nothing about site-to-site agreement, the
+point A13 makes.
+
+**Two rows are different.** The estimator row varies how the curve is fitted rather than
+which sites are included, and the VPD quartile row is a split rather than a resample, so
+neither takes a site bootstrap. They show the spread across their own settings, are drawn
+with a diamond, and the caption has to say so.
+
+Reads the per-site binned curves written by stage 41, plus what scripts 60 and 62 wrote.
+Nothing is refitted from the models.
 """
 from pathlib import Path
 
@@ -19,7 +33,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src import common
 from src.paths import data_path, load_settings
 
 SHOW_PLOT = False
@@ -29,160 +42,256 @@ CONDITIONAL = True
 VARIANT = ""
 SITE_SUBSET = ""
 
+N_BOOT = 2000
+POLY_DEGREE = 4          # the published choice
+MOVER = 0.06             # kPa, beyond this a row reads as a real shift
 AX_LABELS_FONTSIZE = 12
 COLOR_POINT = '#0072B2'
+COLOR_MOVER = '#b2182b'
 COLOR_REF = '#D55E00'
 
 shap_type = 'conditional' if CONDITIONAL else 'interventional'
 settings = load_settings()
 folder = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
+agg_base = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
 
-# Sigma to kPa. The conversion is a per-site mean plus z times a per-site standard
-# deviation, averaged over sites, so it is linear in z. It also depends on which sites are
-# in the run, so a 128-site variant must not be converted with the 208-site mapping.
-# CD-Ygb is excluded because it records VPD in Pa where every other site uses hPa.
+CURVE_FILE = (f'41_SHAPVALUES-{shap_type}_meanAggregatedPerSite'
+              f'_BIN-TA_ZSCORE+BIN-VPD_ZSCORE+{FLUX}.parquet')
+
+# Sigma to kPa. Per-site mean and standard deviation, averaged over the sites in the run,
+# so the mapping follows the site set.
+#
+# CD-Ygb records VPD in Pa where every other site uses hPa. Other scripts drop it for that
+# reason. It is converted here instead, which keeps all 208 sites: dividing by 100 gives a
+# mean of 18.1 hPa and a standard deviation of 6.6 hPa, both inside the range the other
+# sites span, 4.5 to 31.8 hPa. The z-scores are per site and therefore unaffected by the
+# unit, so the conversion only touches the mapping back to kPa.
+PA_UNIT_SITES = ['CD-Ygb']
 subsets = pd.read_csv(data_path('data/outputs/20_subsets/'
                                 '21_SUBSETS_parquet_vars_stats_subsets.csv'))
-subsets = subsets.loc[subsets['SITE'] != 'CD-Ygb']
+is_pa = subsets['SITE'].isin(PA_UNIT_SITES)
+subsets.loc[is_pa, ['VPD_Z0', 'VPD_SD']] /= 100
+subsets = subsets.set_index('SITE')
 
 
-def converter(sites=None):
-    """Return a function turning sigma into kPa for one site set."""
-    use = subsets if sites is None else subsets.loc[subsets['SITE'].isin(sites)]
-    a_, b_ = use['VPD_Z0'].mean() / 10, use['VPD_SD'].mean() / 10  # hPa to kPa
-    return lambda z: a_ + b_ * np.asarray(z, dtype=float)
+def site_curves(*subfolders):
+    """Per-site VPD SHAP for every TA by VPD cell, as a site by cell matrix.
+
+    Figure 4 fits the polynomial to the two-dimensional grid of TA and VPD bins, not to a
+    curve collapsed over TA, and it keeps only cells held by at least half the sites
+    (`src/files.py::load_data`). Both matter: collapsing over TA and keeping every sparse
+    edge cell moves the crossing by more than 0.2 kPa, so the reference would not
+    reproduce the published value.
+    """
+    path = agg_base.joinpath(*subfolders) / CURVE_FILE
+    d = pd.read_parquet(path, columns=['SITE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE',
+                                       'VPD_ZSCORE_SHAPVALS']).dropna()
+    d = d.loc[d['SITE'].isin(subsets.index)]
+    piv = (d.groupby(['SITE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE'])['VPD_ZSCORE_SHAPVALS']
+           .mean().unstack(['BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE']).sort_index())
+    return piv
 
 
-to_kpa = converter()
-
-# Published estimate, taken as written rather than reconverted.
-conv = pd.read_csv(folder / '58_Threshold_zscore_to_kPa.csv').set_index('group').loc['ALL SITES']
-
-published, pub_lo, pub_hi = conv['kPa'], conv['kPa_lower'], conv['kPa_upper']
-
-rows = []  # (group, label, values in kPa)
-
-COEFF_NAME = (f'54_FIG-4_ResponseCurve_ShapMeans_{FLUX}_BIN_VPD_ZSCORE'
-              f'+VPD_ZSCORE_SHAPVALS+TA_ZSCORE_DATA_COEFFICIENTS.csv')
-
-
-def threshold_z(*subfolders):
-    """All-sites threshold in sigma from a run's Figure 4 coefficient file."""
-    path = folder.joinpath(*subfolders) / COEFF_NAME
-    coeff = pd.read_csv(path)
-    return float(coeff.loc[coeff['IGBP'] == 'ALL SITES', 'Threshold'].iloc[0].split('[')[0])
+def crossing(x, y):
+    """Highest zero crossing of the fitted polynomial, or nan."""
+    ok = np.isfinite(y)
+    if ok.sum() <= POLY_DEGREE + 1:
+        return np.nan
+    coef = np.polyfit(x[ok], y[ok], POLY_DEGREE)
+    fine = np.linspace(x[ok].min(), x[ok].max(), 2000)
+    vals = np.polyval(coef, fine)
+    sign_change = np.where(np.diff(np.sign(vals)))[0]
+    if len(sign_change) == 0:
+        return np.nan
+    roots = [fine[i] - vals[i] * (fine[i + 1] - fine[i]) / (vals[i + 1] - vals[i])
+             for i in sign_change]
+    return max(roots)
 
 
-# Deepest available soil water layer. This run is a mixture: all 208 sites stay in, but
-# only 128 have a usable layer below the first, so 80 are still on layer 1.
-rows.append(('Soil water depth', 'Deepest available layer, all sites',
-             to_kpa([threshold_z('deep-sm')])))
+def to_kpa(z, sites):
+    """Sigma to kPa for one site set."""
+    use = subsets.loc[subsets.index.isin(sites)]
+    return (use['VPD_Z0'].mean() + z * use['VPD_SD'].mean()) / 10
 
-# The matched pair isolates depth from site composition: the same 128 sites, once on
-# layer 1 and once on their deepest layer. These are 128-site runs, so they belong next to
-# each other and not next to the published 208-site value.
-to_kpa_matched = converter(common.deepest_swc_per_site().keys())
-rows.append(('Soil water depth', 'Matched sites, layer 1',
-             to_kpa_matched([threshold_z('deeper-only')])))
-rows.append(('Soil water depth', 'Matched sites, deepest layer',
-             to_kpa_matched([threshold_z('deep-sm', 'deeper-only')])))
 
-# Temporally blocked cross-validation, leave one calendar year out. Sites with a single
-# year cannot be split that way and are skipped, so this run has its own site set.
-bcv_dir = (Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type / 'blocked-cv')
-bcv_sites = [f.name.split('_shap-')[0]
-             for f in bcv_dir.glob(f'*_shap-{shap_type}_{FLUX}.parquet')]
+def aggregate(M, x, min_sites):
+    """Median across sites per cell, keeping only cells held by enough sites.
+
+    Median, not mean. Script 42 writes several aggregations per bin and Figure 4 reads the
+    median column, so a mean here reproduces 1.252 kPa instead of the published 1.260.
+    """
+    counts = np.isfinite(M).sum(axis=0)
+    keep = counts >= min_sites
+    if keep.sum() <= POLY_DEGREE + 1:
+        return np.array([]), np.array([])
+    with np.errstate(invalid='ignore'):
+        y = np.nanmedian(M[:, keep], axis=0)
+    return x[keep], y
+
+
+def threshold_with_ci(piv, seed=0):
+    """Crossing of the aggregated curve, with a bootstrap over sites, both in kPa."""
+    x = piv.columns.get_level_values('BIN_VPD_ZSCORE').to_numpy(dtype=float)
+    M = piv.to_numpy(dtype=float)
+    sites = piv.index
+    n = len(M)
+    min_sites = np.ceil(n / 2)
+
+    xk, yk = aggregate(M, x, min_sites)
+    point = to_kpa(crossing(xk, yk), sites)
+
+    rng = np.random.default_rng(seed)
+    boot = np.empty(N_BOOT)
+    for i in range(N_BOOT):
+        xk, yk = aggregate(M[rng.integers(0, n, n)], x, min_sites)
+        boot[i] = crossing(xk, yk) if len(xk) else np.nan
+    boot = boot[np.isfinite(boot)]
+    lo, hi = np.percentile(boot, [2.5, 97.5])
+    return float(point), float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n
+
+
+rows = []  # (group, label, value, lo, hi, n_sites, note)
+
+# Reference: the published run, same estimator.
+base = site_curves()
+published, pub_lo, pub_hi, n_base = threshold_with_ci(base)
+
+# --- soil water depth -------------------------------------------------------
+for label, sub in [('Deepest available layer, all sites', ('deep-sm',)),
+                   ('Matched sites, layer 1', ('', 'deeper-only')),
+                   ('Matched sites, deepest layer', ('deep-sm', 'deeper-only'))]:
+    piv = site_curves(*[p for p in sub if p])
+    rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=1), None))
+
+# --- model fitting ----------------------------------------------------------
+piv = site_curves('blocked-cv')
 rows.append(('Model fitting', 'Blocked cross-validation',
-             converter(bcv_sites)([threshold_z('blocked-cv')])))
+             *threshold_with_ci(piv, seed=2), None))
 
-# Estimator choice: polynomial degree, lowess span, spline smoothing, bin width, fit range
+# The estimator row varies the fit, not the sites, so it carries the spread across the 23
+# settings rather than a bootstrap.
 method = pd.read_csv(folder / '60_Threshold_MethodSensitivity.csv')
-rows.append(('Model fitting', f'Threshold estimator, {len(method)} variants',
-             to_kpa(method['threshold_z'])))
+est = np.array([to_kpa(z, base.index) for z in method['threshold_z']])
+rows.append(('Model fitting', f'Threshold estimator, {len(method)} settings',
+             float(np.median(est)), float(est.min()), float(est.max()), n_base,
+             'spread across settings'))
 
-# Whole regions removed
-region = pd.read_csv(folder / '63_LeaveRegionOut.csv')
-region = region.loc[region['set'] != 'all sites']
-rows.append(('Site set', 'Europe or North America removed',
-             region['threshold_kpa'].values))
+# --- site set ---------------------------------------------------------------
+REGIONS = {
+    'Europe': ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR',
+               'IE', 'IT', 'NL', 'PL', 'PT', 'RU', 'SE', 'SJ', 'SK', 'UK'],
+    'North America': ['US', 'CA', 'MX', 'PR', 'CR', 'GL'],
+}
+LOOKUP = {code: region for region, codes in REGIONS.items() for code in codes}
+region_of = pd.Series(base.index.str.split('-').str[0].map(LOOKUP), index=base.index)
+for drop, label in [(['Europe'], 'Europe removed'),
+                    (['North America'], 'North America removed'),
+                    (['Europe', 'North America'], 'Europe and North America removed')]:
+    keep = base.loc[~region_of.isin(drop)]
+    rows.append(('Site set', label, *threshold_with_ci(keep, seed=len(drop) + 10), None))
 
-# Progressively longer minimum record
-record = pd.read_csv(folder / '64_ShortRecordSensitivity.csv')
-rows.append(('Site set', f"Minimum record length, {record['min_years'].min()} to "
-                         f"{record['min_years'].max()} years",
-             record['threshold_kpa'].values))
+years = subsets['N_YEARS']
+for min_years in (3, 5, 10):
+    keep = base.loc[base.index.isin(years[years >= min_years].index)]
+    rows.append(('Site set', f'Records of at least {min_years} years',
+                 *threshold_with_ci(keep, seed=min_years + 20), None))
 
-# Sites split by their own VPD range
+# --- site climate -----------------------------------------------------------
+# A split rather than a resample, so it shows the range across the four quartiles.
 strata = pd.read_csv(folder / '62_Threshold_vs_SiteVPDRange.csv')
-rows.append(('Site climate', 'Sites split by their own VPD range, quartiles',
-             strata['median_threshold_kpa'].values))
+rows.append(('Site climate', 'Sites split by own VPD range, quartiles',
+             float(strata['median_threshold_kpa'].median()),
+             float(strata['median_threshold_kpa'].min()),
+             float(strata['median_threshold_kpa'].max()),
+             int(strata['n'].sum()), 'range across quartiles'))
 
-# Rows bottom to top, with a gap between groups so the four questions separate.
+# ---------------------------------------------------------------------------
+# Layout
+# ---------------------------------------------------------------------------
+# Plotted as the shift from the published threshold. Every test lands near 1.26 kPa, so on
+# an absolute axis the points crowd into a narrow band and the reader has to work out that
+# this is agreement. Centring on the published value makes zero mean something and lets the
+# few tests that do move stand out.
+
+LABEL_X, VALUE_X = -0.46, 1.02
+
 ordered = list(reversed(rows))
 ypos, group_rows, y = [], {}, 0.0
 prev_group = None
-for group, label, vals in ordered:
+for group, *_ in ordered:
     if prev_group is not None and group != prev_group:
-        y += 0.9  # gap between groups
+        y += 1.15
     ypos.append(y)
     group_rows.setdefault(group, []).append(y)
     prev_group = group
     y += 1.0
 
-fig, ax = plt.subplots(figsize=(8.2, 5.4), dpi=150)
+fig, ax = plt.subplots(figsize=(11, 6.6), dpi=150)
+fig.subplots_adjust(left=0.34, right=0.87, top=0.87, bottom=0.17)
+trans = ax.get_yaxis_transform()
 
-ax.axvspan(pub_lo, pub_hi, color=COLOR_REF, alpha=0.12, zorder=0)
-ax.axvline(published, color=COLOR_REF, lw=1.6, zorder=1)
+ax.axvspan(pub_lo - published, pub_hi - published, color=COLOR_REF, alpha=0.10,
+           zorder=0, linewidth=0)
+ax.axvline(0, color=COLOR_REF, lw=1.4, zorder=2)
 
-rng = np.random.default_rng(0)
-for (group, label, vals), y in zip(ordered, ypos):
-    vals = np.asarray(vals, dtype=float)
-    jitter = rng.normal(0, 0.06, len(vals)) if len(vals) > 3 else np.zeros(len(vals))
-    ax.plot([vals.min(), vals.max()], [y, y], color=COLOR_POINT, lw=1.3, alpha=0.45,
-            zorder=2, solid_capstyle='round')
-    ax.scatter(vals, y + jitter, s=26, color=COLOR_POINT, alpha=0.7, linewidths=0,
-               zorder=3)
+for (group, label, mid, lo, hi, n, note), y in zip(ordered, ypos):
+    shift = mid - published
+    colour = COLOR_MOVER if abs(shift) >= MOVER else COLOR_POINT
+    ax.plot([0, 1], [y, y], transform=trans, color='#F2F2F2', lw=0.8, zorder=0)
+    ax.plot([lo - published, hi - published], [y, y], color=colour, lw=3.2,
+            alpha=0.32 if note else 0.55, zorder=3, solid_capstyle='round')
+    ax.scatter([shift], [y], s=44, color=colour, zorder=4,
+               marker='D' if note else 'o', linewidths=0)
+    ax.text(LABEL_X, y, label, transform=trans, ha='left', va='center',
+            fontsize=AX_LABELS_FONTSIZE * 0.92, color='#1a1a1a')
+    ax.text(LABEL_X, y - 0.34, f'{n} sites' + (f'   {note}' if note else ''),
+            transform=trans, ha='left', va='center',
+            fontsize=AX_LABELS_FONTSIZE * 0.66, color='#9a9a9a')
+    ax.text(VALUE_X, y, f'{shift:+.2f}', transform=trans, ha='left', va='center',
+            fontsize=AX_LABELS_FONTSIZE * 0.85,
+            color=colour if abs(shift) >= MOVER else '#666666',
+            fontweight='bold' if abs(shift) >= MOVER else 'normal')
 
-ax.set_yticks(ypos)
-ax.set_yticklabels([label for _, label, _ in ordered], fontsize=AX_LABELS_FONTSIZE * 0.92)
-ax.set_ylim(min(ypos) - 0.8, max(ypos) + 1.0)
-ax.set_xlim(0.96, 1.45)
-ax.set_xlabel('VPD threshold (kPa)', fontsize=AX_LABELS_FONTSIZE)
-ax.tick_params(axis='x', labelsize=AX_LABELS_FONTSIZE)
-ax.tick_params(axis='y', length=0)
+for group, ys in group_rows.items():
+    top = max(ys) + 0.62
+    ax.text(LABEL_X, top, group.upper(), transform=trans, ha='left', va='center',
+            fontsize=AX_LABELS_FONTSIZE * 0.7, color='#9a9a9a', fontweight='bold')
+    ax.plot([LABEL_X, 1.0], [top - 0.28, top - 0.28], transform=trans, color='#E2E2E2',
+            lw=0.9, zorder=0, clip_on=False)
+
+ax.set_yticks([])
+ax.set_ylim(min(ypos) - 1.0, max(ypos) + 1.1)
+ax.set_xlabel('Shift from the published threshold (kPa)', fontsize=AX_LABELS_FONTSIZE)
+ax.tick_params(axis='x', labelsize=AX_LABELS_FONTSIZE, colors='#555555', length=4)
 for sp in ('top', 'right', 'left'):
     ax.spines[sp].set_visible(False)
-ax.grid(axis='x', color='#EEEEEE', zorder=0)
+ax.spines['bottom'].set_color('#CCCCCC')
 
-# The reference label sits above the plot area, clear of the topmost row.
-ax.annotate(f'published, {published:.2f} kPa', xy=(published, 1.0),
-            xycoords=('data', 'axes fraction'), xytext=(4, 4),
-            textcoords='offset points', color=COLOR_REF, ha='left', va='bottom',
-            fontsize=AX_LABELS_FONTSIZE * 0.85, fontweight='bold')
+ax.text(0, 1.01, f' published {published:.2f} kPa', transform=ax.get_xaxis_transform(),
+        ha='left', va='bottom', color=COLOR_REF, fontweight='bold',
+        fontsize=AX_LABELS_FONTSIZE * 0.9, clip_on=False)
+ax.text(VALUE_X, max(ypos) + 0.62, 'shift, kPa', transform=trans, ha='left', va='center',
+        color='#9a9a9a', fontsize=AX_LABELS_FONTSIZE * 0.7, fontweight='bold')
 
-# Group headers, above the first row of each group, at the left edge of the label column.
-for group, ys in group_rows.items():
-    ax.annotate(group, xy=(0, max(ys) + 0.55), xycoords=('axes fraction', 'data'),
-                xytext=(-8, 0), textcoords='offset points', ha='right', va='center',
-                fontsize=AX_LABELS_FONTSIZE * 0.78, color='#777777', fontweight='bold')
+fig.text(0.025, 0.03,
+         f'Zero crossing of the fitted curve, published value {published:.2f} kPa '
+         f'[{pub_lo:.2f}, {pub_hi:.2f}]. Bars are a bootstrap over sites, {N_BOOT} '
+         f'replicates.' + chr(10) + f'Red marks a shift of at least {MOVER:.2f} kPa. '
+         'Diamonds mark the two rows whose spread is across settings rather than sites.',
+         fontsize=AX_LABELS_FONTSIZE * 0.72, color='#666666', ha='left', linespacing=1.5)
+fig.text(0.025, 0.955, 'PLANNED main Fig. 5, not yet adopted',
+         fontsize=AX_LABELS_FONTSIZE * 0.8, color=COLOR_REF, fontweight='bold', ha='left')
 
-# The measured range in its own column to the right, aligned rather than trailing the
-# points, so the numbers can be read down the column.
-for (group, label, vals), y in zip(ordered, ypos):
-    vals = np.asarray(vals, dtype=float)
-    txt = (f'{vals.min():.2f}' if len(vals) == 1
-           else f'{vals.min():.2f} to {vals.max():.2f}')
-    ax.annotate(txt, xy=(1.0, y), xycoords=('axes fraction', 'data'), xytext=(8, 0),
-                textcoords='offset points', ha='left', va='center',
-                fontsize=AX_LABELS_FONTSIZE * 0.82, color='#444444')
-
-fig.tight_layout()
 outfile = folder / f'66_PLANNED-FIG-5_ThresholdRobustness_{FLUX}.png'
-fig.savefig(outfile, dpi=300, facecolor='white', bbox_inches='tight')
+fig.savefig(outfile, dpi=300, facecolor='white')
 
-out_data = pd.DataFrame([(group, label, v) for group, label, vals in rows for v in vals],
-                        columns=['group', 'test', 'threshold_kpa'])
-out_data.to_csv(str(outfile).replace('.png', '_DATA.csv'), index=False)
+out = pd.DataFrame(rows, columns=['group', 'test', 'threshold_kpa', 'lower', 'upper',
+                                  'n_sites', 'note'])
+out['shift_kpa'] = out['threshold_kpa'] - published
+out.to_csv(str(outfile).replace('.png', '_DATA.csv'), index=False)
+print(out.round(3).to_string(index=False))
+print(f"\npublished reference: {published:.3f} [{pub_lo:.3f}, {pub_hi:.3f}] kPa, "
+      f"{n_base} sites")
 print(f"Saved to {outfile}")
 if SHOW_PLOT:
     plt.show()
