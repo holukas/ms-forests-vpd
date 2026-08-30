@@ -224,3 +224,84 @@ def stage_8(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 
     df = df.loc[combined_mask].copy()
     condition = "hot and 2 driest"
     return df, 3, 3, 3, condition
+
+
+# ---------------------------------------------------------------------------
+# Mirrored stage sequence
+# ---------------------------------------------------------------------------
+# The published sequence lets temperature rise and soil water fall step by step
+# while holding VPD below the extreme cut-off, and only adds extreme VPD at the
+# last stage. Reviewer 2 objected that any driver held back to the finale will
+# look dramatic when it finally arrives, so the sequence may favour VPD.
+#
+# These stages swap the two roles. VPD escalates through the sequence and soil
+# water is kept off its extreme until the last stage, where extreme dryness is
+# added. Everything else, including the temperature ladder and the cut-offs, is
+# unchanged, so the two sequences differ only in which driver comes last.
+#
+# Read them against the originals: mirror_2 is stage_2 with VPD and SWC swapped,
+# and so on. A comparison of the two final stages answers the objection.
+
+
+def mirror_1(df, a: float = 0.31863936):
+    """Normal conditions. Identical to stage_1, the sequences share a start."""
+    return stage_1(df, a=a)
+
+
+def mirror_2(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    """Warmer conditions, VPD normal, NO extremely dry soil"""
+    mask_ta = (df['TA_ZSCORE'] > a) & (df['TA_ZSCORE'] <= b)
+    mask_vpd = (df['VPD_ZSCORE'] >= -a) & (df['VPD_ZSCORE'] <= a)
+    mask_swc = df['SWC_ZSCORE'] >= -c  # Prevents overlap with compound extremes
+    df = df.loc[mask_ta & mask_vpd & mask_swc].copy()
+    return df, 1, 0, -1, "warm, VPD normal"
+
+
+def mirror_3(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    """Warmer conditions, higher VPD, NO extremely dry soil"""
+    mask_ta = (df['TA_ZSCORE'] > a) & (df['TA_ZSCORE'] <= b)
+    mask_vpd = (df['VPD_ZSCORE'] > a) & (df['VPD_ZSCORE'] <= b)
+    mask_swc = df['SWC_ZSCORE'] >= -c
+    df = df.loc[mask_ta & mask_vpd & mask_swc].copy()
+    return df, 1, 1, -1, "warm and higher VPD"
+
+
+def mirror_4(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    """Hot conditions, higher VPD, NO extremely dry soil"""
+    mask_ta = (df['TA_ZSCORE'] > b) & (df['TA_ZSCORE'] <= c)
+    mask_vpd = (df['VPD_ZSCORE'] > a) & (df['VPD_ZSCORE'] <= b)
+    mask_swc = df['SWC_ZSCORE'] >= -c
+    df = df.loc[mask_ta & mask_vpd & mask_swc].copy()
+    return df, 2, 1, -1, "hot and higher VPD"
+
+
+def mirror_5(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    """Hot conditions, high VPD, NO extremely dry soil"""
+    mask_ta = (df['TA_ZSCORE'] > b) & (df['TA_ZSCORE'] <= c)
+    mask_vpd = (df['VPD_ZSCORE'] > b) & (df['VPD_ZSCORE'] <= c)
+    mask_swc = df['SWC_ZSCORE'] >= -c
+    df = df.loc[mask_ta & mask_vpd & mask_swc].copy()
+    return df, 2, 2, -1, "hot and high VPD"
+
+
+def mirror_6(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    """Extremely hot conditions, high VPD, NO extremely dry soil"""
+    mask_ta = df['TA_ZSCORE'] > c
+    mask_vpd = (df['VPD_ZSCORE'] > b) & (df['VPD_ZSCORE'] <= c)
+    mask_swc = df['SWC_ZSCORE'] >= -c
+    df = df.loc[mask_ta & mask_vpd & mask_swc].copy()
+    return df, 3, 2, -1, "hottest and high VPD"
+
+
+def mirror_7(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    """Extremely hot conditions, extreme VPD, NO extremely dry soil"""
+    mask_ta = df['TA_ZSCORE'] > c
+    mask_vpd = df['VPD_ZSCORE'] > c
+    mask_swc = df['SWC_ZSCORE'] >= -c
+    df = df.loc[mask_ta & mask_vpd & mask_swc].copy()
+    return df, 3, 3, -1, "hottest and extreme VPD"
+
+
+def mirror_8(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    """Compound extreme. Same records as stage_8, reached in the opposite order."""
+    return stage_8(df, a=a, b=b, c=c)

@@ -34,11 +34,29 @@ SITE_SUBSET = ""
 
 # Load settings
 settings = load_settings()
+# Which stage sequence to apply. "published" lets temperature rise and soil water fall
+# while holding VPD below its extreme, and adds extreme VPD last. "mirrored" swaps the two
+# roles, escalating VPD and adding extreme soil dryness last, which is the symmetric
+# control Reviewer 2 asked for. The mirrored run writes to its own folder, so it cannot
+# overwrite the published stage output.
+STAGE_SEQUENCE = "published"
+
 shap_type = 'conditional' if CONDITIONAL else 'interventional'
 dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type / VARIANT
 
 # Create output directory
-dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
+if STAGE_SEQUENCE == "published":
+    SCENARIOS = [s.stage_0, s.stage_1, s.stage_2, s.stage_3,
+                 s.stage_4, s.stage_5, s.stage_6, s.stage_7, s.stage_8]
+elif STAGE_SEQUENCE == "mirrored":
+    SCENARIOS = [s.stage_0, s.mirror_1, s.mirror_2, s.mirror_3,
+                 s.mirror_4, s.mirror_5, s.mirror_6, s.mirror_7, s.mirror_8]
+else:
+    raise ValueError(f"STAGE_SEQUENCE must be 'published' or 'mirrored', "
+                     f"not {STAGE_SEQUENCE!r}")
+
+dir_out = (Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
+           / SITE_SUBSET / ("" if STAGE_SEQUENCE == "published" else "mirrored-stages"))
 # parents=True: Creates any necessary parent directories that don't exist.
 # exist_ok=True: Prevents an error if the directory already exists.
 dir_out.mkdir(parents=True, exist_ok=True)
@@ -78,8 +96,7 @@ for ix, siteconfig in subsets_df.iterrows():
     shapvals_df = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     # keepcols = [c for c in shapvals_df.columns if "_SHAPVALS" in c]
 
-    scenarios = [s.stage_0, s.stage_1, s.stage_2, s.stage_3,
-                 s.stage_4, s.stage_5, s.stage_6, s.stage_7, s.stage_8]
+    scenarios = SCENARIOS
 
     for i, scen in enumerate(scenarios):
         subset, ta_class, vpd_class, swc_class, condition = scen(shapvals_df)
