@@ -590,14 +590,34 @@ if mean_effect is not None and std_effect is not None:
     # print(f"Saved figure to: {outfilepath}\n")
 
     # Save threshold results
-    df_threshold = pd.DataFrame([{
+    # All sites, then one row per forest type. The per-type thresholds were already
+    # computed for the subplot labels but were not written out, so they could not be
+    # compared with the SHAP or the measured thresholds.
+    rows = [{
         'feature': PLOT_FEATURE,
         'target': FLUX,
         'method': 'Direct zero-crossing',
+        'group': 'ALL SITES',
         'threshold': f'{threshold_main:.3f}',
+        'ci_lower': '',
+        'ci_upper': '',
         'n_sites': len(all_site_ale_curves),
         'mode': 'Single curve'
-    }])
+    }]
+    for entry in igbp_threshold_data:
+        _, ci_lo, ci_hi = calc_ci_95(entry['individual_thresholds'])
+        rows.append({
+            'feature': PLOT_FEATURE,
+            'target': FLUX,
+            'method': 'Per-site zero-crossings, mean',
+            'group': entry['IGBP'],
+            'threshold': f"{entry['Threshold']:.3f}",
+            'ci_lower': f'{ci_lo:.3f}',
+            'ci_upper': f'{ci_hi:.3f}',
+            'n_sites': entry['N_crossing'],
+            'mode': 'Per-site curves'
+        })
+    df_threshold = pd.DataFrame(rows)
 
     threshold_path = dir_out / f'55_FIG_ALE_ResponseCurve_{PLOT_FEATURE}_{FLUX}_THRESHOLD.csv'
     df_threshold.to_csv(threshold_path, index=False)
