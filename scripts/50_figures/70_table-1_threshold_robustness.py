@@ -6,7 +6,7 @@ between tests are small, at most 0.083 kPa on a threshold of 1.26, and any figur
 either magnifies the differences by zooming the axis or hides them by not zooming. A table
 states the numbers exactly and leaves nothing to be read off a scale.
 
-Reads what `66_fig-5_threshold_robustness.py` cached, so the numbers cannot drift from the
+Reads what `66_suppfig_threshold_robustness.py` cached, so the numbers cannot drift from the
 figure. Run that first, or with RECOMPUTE = True if the inputs changed.
 
 No shift column. Rounded to two decimals four of the shifts read as +0.00 or -0.00, and
@@ -32,10 +32,10 @@ shap_type = 'conditional' if CONDITIONAL else 'interventional'
 settings = load_settings()
 folder = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 
-source = folder / f'66_PLANNED-FIG-5_ThresholdRobustness_{FLUX}_DATA.csv'
+source = folder / f'66_PLANNED-SUPPFIG_ThresholdRobustness_{FLUX}_DATA.csv'
 if not source.is_file():
     raise FileNotFoundError(f"No cached numbers at {source}. Run "
-                            f"66_fig-5_threshold_robustness.py first.")
+                            f"66_suppfig_threshold_robustness.py first.")
 
 d = pd.read_csv(source)
 ref = d.loc[d['test'] == 'PUBLISHED REFERENCE'].iloc[0]

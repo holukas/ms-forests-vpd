@@ -1,8 +1,15 @@
 """
-PLANNED MAIN FIGURE 5, not yet adopted.
+PLANNED SUPPLEMENTARY FIGURE, not yet adopted.
 
 Every robustness test of the VPD threshold on one axis, with a confidence interval on each,
 plotted as the shift from the published value.
+
+**The main text uses the table, not this figure.** Decided 31 August 2026. The
+differences between tests are at most 0.08 kPa on a threshold of 1.26, so a figure either
+magnifies them by zooming the axis or hides them by not zooming. Table 1, written by
+`70_table-1_threshold_robustness.py` from this script's cache, carries the numbers in the
+main text. This figure stays as the supplementary view for readers who want the shape of
+the result rather than the values.
 
 **The estimator is the published one.** The threshold is the highest zero crossing of a
 fourth-order polynomial fitted to the VPD SHAP values averaged across sites, which is what
@@ -166,7 +173,7 @@ def threshold_with_ci(piv, seed=0):
     return float(point), float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n
 
 
-outfile = folder / f'66_PLANNED-FIG-5_ThresholdRobustness_{FLUX}.png'
+outfile = folder / f'66_PLANNED-SUPPFIG_ThresholdRobustness_{FLUX}.png'
 cache = Path(str(outfile).replace('.png', '_DATA.csv'))
 cached = (not RECOMPUTE) and cache.exists()
 
@@ -302,7 +309,7 @@ fig.text(0.025, 0.03,
          f'replicates.' + chr(10) + f'Red marks a shift of at least {MOVER:.2f} kPa. '
          'The diamond marks the row whose spread is across settings rather than sites.',
          fontsize=AX_LABELS_FONTSIZE * 0.72, color='#666666', ha='left', linespacing=1.5)
-fig.text(0.025, 0.955, 'PLANNED main Fig. 5, not yet adopted',
+fig.text(0.025, 0.955, 'PLANNED supplementary figure, not yet adopted',
          fontsize=AX_LABELS_FONTSIZE * 0.8, color=COLOR_REF, fontweight='bold', ha='left')
 
 fig.savefig(outfile, dpi=300, facecolor='white')
