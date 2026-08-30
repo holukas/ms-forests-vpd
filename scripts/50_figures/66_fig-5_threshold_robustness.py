@@ -19,10 +19,21 @@ point value. It is not the prediction band of the fitted curve: that band descri
 a polynomial fits one aggregated curve and says nothing about site-to-site agreement, the
 point A13 makes.
 
-**Two rows are different.** The estimator row varies how the curve is fitted rather than
-which sites are included, and the VPD quartile row is a split rather than a resample, so
-neither takes a site bootstrap. They show the spread across their own settings, are drawn
-with a diamond, and the caption has to say so.
+**One row is different.** The estimator row varies how the curve is fitted rather than
+which sites are included, so a site bootstrap does not apply to it. It shows the spread
+across the 23 settings instead, is drawn with a diamond, and the caption has to say so.
+
+**Why the VPD quartile split is not here.** It used to be the last row. It does not belong:
+the other rows ask whether the number survives a different analytical choice, while that
+one asks whether the threshold varies with site climate, and the answer is yes. Its range,
+1.00 to 1.41 kPa, was the widest bar in the figure, so a reader scanning for robustness saw
+the largest apparent instability where there was actually signal. Most of that signal is
+also mechanical: the threshold is estimated in sigma and converted per site, and drier sites
+have a larger mean and spread, so a constant sigma threshold already yields a higher kPa
+value in the drier quartiles. Holding sigma at 0.20 for every quartile gives a spread of
+0.74 kPa, wider than the 0.57 observed. In sigma the pattern runs the other way, 0.25, 0.29,
+0.16, 0.04, falling with dryness. It belongs in its own supplementary analysis with that
+caveat stated, `62_threshold_vs_site_vpd_range.py`.
 
 Reads the per-site binned curves written by stage 41, plus what scripts 60 and 62 wrote.
 Nothing is refitted from the models.
@@ -217,15 +228,6 @@ else:
         rows.append(('Site set', f'Records of at least {min_years} years',
                      *threshold_with_ci(keep, seed=min_years + 20), None))
 
-    # --- site climate -----------------------------------------------------------
-    # A split rather than a resample, so it shows the range across the four quartiles.
-    strata = pd.read_csv(folder / '62_Threshold_vs_SiteVPDRange.csv')
-    rows.append(('Site climate', 'Sites split by own VPD range, quartiles',
-                 float(strata['median_threshold_kpa'].median()),
-                 float(strata['median_threshold_kpa'].min()),
-                 float(strata['median_threshold_kpa'].max()),
-                 int(strata['n'].sum()), 'range across quartiles'))
-
 # ---------------------------------------------------------------------------
 # Layout
 # ---------------------------------------------------------------------------
@@ -298,7 +300,7 @@ fig.text(0.025, 0.03,
          f'Zero crossing of the fitted curve, published value {published:.2f} kPa '
          f'[{pub_lo:.2f}, {pub_hi:.2f}]. Bars are a bootstrap over sites, {N_BOOT} '
          f'replicates.' + chr(10) + f'Red marks a shift of at least {MOVER:.2f} kPa. '
-         'Diamonds mark the two rows whose spread is across settings rather than sites.',
+         'The diamond marks the row whose spread is across settings rather than sites.',
          fontsize=AX_LABELS_FONTSIZE * 0.72, color='#666666', ha='left', linespacing=1.5)
 fig.text(0.025, 0.955, 'PLANNED main Fig. 5, not yet adopted',
          fontsize=AX_LABELS_FONTSIZE * 0.8, color=COLOR_REF, fontweight='bold', ha='left')
