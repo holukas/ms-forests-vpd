@@ -50,6 +50,13 @@ N_VPD_BINS = 2
 # Draw the slope panel. Off leaves the boomerang on its own.
 SHOW_SLOPE_PANEL = False
 
+# Recompute the binning and the bootstrap, or reuse what the last run wrote. The bootstrap
+# rebuilds the binning 200 times per panel and takes minutes, while the layout takes
+# seconds, so a layout change should not pay for the statistics again. Set to True after
+# changing anything that affects the numbers: the class counts, the fit range, the
+# bootstrap, or the input data.
+RECOMPUTE = False
+
 XVAR, YVAR, ZVAR = 'VPD_ZSCORE', 'NEP_ZSCORE', 'TA_ZSCORE'
 AGG = 'median'
 AX_LABELS_FONTSIZE = 12
@@ -198,11 +205,25 @@ def measured_threshold(data, rng_seed=42, n_boot=N_BOOT):
     return point, lo, hi, len(boot)
 
 
+outfile = outdir / (f'67_PLANNED-SUPPFIG_Boomerang_Measured_{YVAR}_vs_{XVAR}'
+                    f'_by{N_TA_CLASSES}x{ZVAR}_perBiome.png')
+cache_binned = Path(str(outfile).replace('.png', '_DATA.csv'))
+cache_thresholds = Path(str(outfile).replace('.png', '_THRESHOLDS.csv'))
+cached = (not RECOMPUTE) and cache_binned.exists() and cache_thresholds.exists()
+
 all_results, all_slopes = {}, {}
-for title, igbp in PANELS:
-    subset = df if igbp is None else df.loc[df['IGBP'] == igbp]
-    print(f"binning {title}: {len(subset):,} records")
-    all_results[title] = binned_for(subset)
+if cached:
+    print(f"reusing {cache_binned.name}, set RECOMPUTE = True to redo the numbers")
+    stored = pd.read_csv(cache_binned)
+    for title, _ in PANELS:
+        all_results[title] = stored.loc[stored['panel'] == title].drop(columns='panel')
+    thresholds = pd.read_csv(cache_thresholds).set_index('panel')
+else:
+    for title, igbp in PANELS:
+        subset = df if igbp is None else df.loc[df['IGBP'] == igbp]
+        print(f"binning {title}: {len(subset):,} records")
+        all_results[title] = binned_for(subset)
+    thresholds = None
 
 # Colour by slope, not by temperature. The sign of the slope is the message: blue where
 # rising VPD goes with rising NEP, red where it goes with falling NEP.
@@ -214,14 +235,20 @@ _all_slopes = np.concatenate([sf['slope'].values for sf in slope_frames.values()
 s_lo = np.nanpercentile(_all_slopes[_all_slopes < 0], 2)
 s_hi = np.nanpercentile(_all_slopes[_all_slopes > 0], 98)
 norm = mcolors.TwoSlopeNorm(vmin=s_lo, vcenter=0.0, vmax=s_hi)
-cmap = plt.get_cmap('RdBu')
+# Red through yellow to blue, with yellow at zero slope. A white centre disappears
+# against the panel, and zero slope is what the threshold is defined by, so it should not
+# be the least visible colour in the figure.
+cmap = mcolors.LinearSegmentedColormap.from_list(
+    'red_yellow_blue', ['#67001f', '#d6604d', '#f4a582', '#ffe08a', '#ffd23f',
+                        '#ffe08a', '#92c5de', '#4393c3', '#053061'])
 
 # Panel a takes the left two thirds and the full height, the four forest types stack in
 # two rows on the right. Panel a is then much the largest, the four small panels share
 # their axes with each other, and the colour bar gets a strip of its own under everything.
-fig = plt.figure(figsize=(15, 8.6), dpi=150)
-gs = fig.add_gridspec(3, 4, width_ratios=[1.15, 1.15, 1, 1],
-                      height_ratios=[1, 1, 0.08], hspace=0.32, wspace=0.22)
+fig = plt.figure(figsize=(13.5, 7.4), dpi=150, constrained_layout=True)
+fig.get_layout_engine().set(w_pad=0.03, h_pad=0.03, wspace=0.03, hspace=0.04)
+gs = fig.add_gridspec(3, 4, width_ratios=[1.2, 1.2, 1, 1],
+                      height_ratios=[1, 1, 0.075])
 ax_main = fig.add_subplot(gs[0:2, 0:2])
 ax_small = [fig.add_subplot(gs[0, 2]), fig.add_subplot(gs[0, 3]),
             fig.add_subplot(gs[1, 2]), fig.add_subplot(gs[1, 3])]
@@ -244,8 +271,12 @@ for ax_i, (letter, (title, igbp)) in enumerate(zip('abcde', PANELS)):
 
     ax.axhline(0, color='black', lw=0.8, linestyle='--', alpha=0.5, zorder=1)
 
-    subset_df = df if igbp is None else df.loc[df['IGBP'] == igbp]
-    point, lo, hi, n_ok = measured_threshold(subset_df)
+    if thresholds is not None:
+        row = thresholds.loc[title]
+        point, lo, hi = row['measured'], row['ci_lower'], row['ci_upper']
+    else:
+        subset_df = df if igbp is None else df.loc[df['IGBP'] == igbp]
+        point, lo, hi, _ = measured_threshold(subset_df)
     model = MODEL_Z[title]
     summary.append({'panel': title, 'measured': point, 'ci_lower': lo, 'ci_upper': hi,
                     'model': model})
@@ -259,15 +290,17 @@ for ax_i, (letter, (title, igbp)) in enumerate(zip('abcde', PANELS)):
                else df.loc[df['IGBP'] == igbp, 'SITE'].nunique())
     ax.set_title(f'{letter} | {title}', fontsize=AX_LABELS_FONTSIZE, loc='left',
                  fontweight='bold')
-    ax.text(0.03, 0.03,
+    ax.text(0.025, 0.025,
             f'measured {point:.2f} [{lo:.2f}, {hi:.2f}]' + chr(10)
             + f'model {model:.2f}' + chr(10)
             + f'{n_sites} sites, {int(res[f"{YVAR}_COUNTS"].sum()):,} half-hours',
-            transform=ax.transAxes, fontsize=AX_LABELS_FONTSIZE * 0.7, va='bottom',
-            color='#333333')
+            transform=ax.transAxes, fontsize=AX_LABELS_FONTSIZE * 0.62, va='bottom',
+            color='#333333', linespacing=1.25)
 
-    ax.set_xlim(-2, 4)
-    ax.set_ylim(-1.25, 0.55)
+    # The classes run past VPD 4 but only a handful of segments reach there, so the axis
+    # stops where the data are still dense and the panels stay comparable.
+    ax.set_xlim(-1.8, 3.2)
+    ax.set_ylim(-1.15, 0.55)
     if ax_i == 0 or ax_i >= 3:
         ax.set_xlabel(r'VPD ($\sigma$)', fontsize=AX_LABELS_FONTSIZE * 0.9)
     else:
@@ -288,19 +321,19 @@ cb.set_label(r'$\Delta$NEP / $\Delta$VPD within a TA class ($\sigma$/$\sigma$). 
 cb.ax.tick_params(labelsize=AX_LABELS_FONTSIZE * 0.8)
 
 fig.suptitle('PLANNED supplementary figure, not yet adopted   '
-             f'({N_TA_CLASSES} TA classes x {N_VPD_BINS} VPD bins, measured values.   '
-             'black line and band: measured threshold with bootstrap interval.   '
-             'orange line: model threshold for that group)',
-             fontsize=AX_LABELS_FONTSIZE * 0.9, color='#D55E00', fontweight='bold',
-             x=0.02, ha='left')
+             f'({N_TA_CLASSES} TA classes x {N_VPD_BINS} VPD bins, measured values.'
+             + chr(10) +
+             'Black line and band: measured threshold with bootstrap interval over sites.'
+             '   Orange line: model threshold for that group.)',
+             fontsize=AX_LABELS_FONTSIZE * 0.8, color='#D55E00', fontweight='bold',
+             x=0.01, ha='left')
 
-outfile = outdir / (f'67_PLANNED-SUPPFIG_Boomerang_Measured_{YVAR}_vs_{XVAR}'
-                    f'_by{N_TA_CLASSES}x{ZVAR}_perBiome.png')
 fig.savefig(outfile, dpi=300, facecolor='white', bbox_inches='tight')
 
-pd.concat([r.assign(panel=k) for k, r in all_results.items()]).to_csv(
-    str(outfile).replace('.png', '_DATA.csv'), index=False)
-pd.DataFrame(summary).to_csv(str(outfile).replace('.png', '_THRESHOLDS.csv'), index=False)
+if not cached:
+    pd.concat([r.assign(panel=k) for k, r in all_results.items()]).to_csv(
+        cache_binned, index=False)
+    pd.DataFrame(summary).to_csv(cache_thresholds, index=False)
 print(pd.DataFrame(summary).round(3).to_string(index=False))
 print(f"Saved to {outfile}")
 if SHOW_PLOT:
