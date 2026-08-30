@@ -26,9 +26,10 @@ point value. It is not the prediction band of the fitted curve: that band descri
 a polynomial fits one aggregated curve and says nothing about site-to-site agreement, the
 point A13 makes.
 
-**One row is different.** The estimator row varies how the curve is fitted rather than
-which sites are included, so a site bootstrap does not apply to it. It shows the spread
-across the 23 settings instead, is drawn with a diamond, and the caption has to say so.
+**Two rows have no site bootstrap** and are drawn with a diamond. The estimator row varies
+how the curve is fitted rather than which sites are included, so it shows the spread across
+its 23 settings. The ALE row has no interval at all, because script 55 derives the all-sites
+value from a single pooled curve rather than from per-site curves. The caption says both.
 
 **Why the VPD quartile split is not here.** It used to be the last row. It does not belong:
 the other rows ask whether the number survives a different analytical choice, while that
@@ -207,6 +208,17 @@ else:
     rows.append(('Model fitting', 'Blocked cross-validation',
                  *threshold_with_ci(piv, seed=2), None))
 
+    # Accumulated local effects instead of SHAP. A different attribution method
+    # altogether, so this is the row that shares least machinery with the published
+    # analysis. Script 55 writes the all-sites value from a single pooled curve, so
+    # there is no interval to show and none is invented here.
+    ale = pd.read_csv(folder.parent / 'ale' /
+                      f'55_FIG_ALE_ResponseCurve_VPD_ZSCORE_{FLUX}_THRESHOLD.csv')
+    ale_z = float(ale.loc[ale['group'] == 'ALL SITES', 'threshold'].iloc[0])
+    ale_kpa = to_kpa(ale_z, base.index)
+    rows.append(('Model fitting', 'ALE instead of SHAP', ale_kpa, ale_kpa, ale_kpa,
+                 len(base), 'single pooled curve, no interval'))
+
     # The estimator row varies the fit, not the sites, so it carries the spread across the 23
     # settings rather than a bootstrap.
     method = pd.read_csv(folder / '60_Threshold_MethodSensitivity.csv')
@@ -256,8 +268,9 @@ for group, *_ in ordered:
     prev_group = group
     y += 1.0
 
-fig, ax = plt.subplots(figsize=(11, 6.6), dpi=150)
-fig.subplots_adjust(left=0.34, right=0.87, top=0.87, bottom=0.17)
+fig, ax = plt.subplots(figsize=(11, 7.4), dpi=150)
+# The caption runs to four lines, so it gets its own band at the bottom.
+fig.subplots_adjust(left=0.34, right=0.87, top=0.88, bottom=0.24)
 trans = ax.get_yaxis_transform()
 
 ax.axvspan(pub_lo - published, pub_hi - published, color=COLOR_REF, alpha=0.10,
@@ -268,8 +281,9 @@ for (group, label, mid, lo, hi, n, note), y in zip(ordered, ypos):
     shift = mid - published
     colour = COLOR_MOVER if abs(shift) >= MOVER else COLOR_POINT
     ax.plot([0, 1], [y, y], transform=trans, color='#F2F2F2', lw=0.8, zorder=0)
-    ax.plot([lo - published, hi - published], [y, y], color=colour, lw=3.2,
-            alpha=0.32 if note else 0.55, zorder=3, solid_capstyle='round')
+    if hi > lo:
+        ax.plot([lo - published, hi - published], [y, y], color=colour, lw=3.2,
+                alpha=0.32 if note else 0.55, zorder=3, solid_capstyle='round')
     ax.scatter([shift], [y], s=44, color=colour, zorder=4,
                marker='D' if note else 'o', linewidths=0)
     ax.text(LABEL_X, y, label, transform=trans, ha='left', va='center',
@@ -303,13 +317,15 @@ ax.text(0, 1.01, f' published {published:.2f} kPa', transform=ax.get_xaxis_trans
 ax.text(VALUE_X, max(ypos) + 0.62, 'shift, kPa', transform=trans, ha='left', va='center',
         color='#9a9a9a', fontsize=AX_LABELS_FONTSIZE * 0.7, fontweight='bold')
 
-fig.text(0.025, 0.03,
+fig.text(0.025, 0.015,
          f'Zero crossing of the fitted curve, published value {published:.2f} kPa '
          f'[{pub_lo:.2f}, {pub_hi:.2f}]. Bars are a bootstrap over sites, {N_BOOT} '
-         f'replicates.' + chr(10) + f'Red marks a shift of at least {MOVER:.2f} kPa. '
-         'The diamond marks the row whose spread is across settings rather than sites.',
+         f'replicates.' + chr(10) + f'Red marks a shift of at least {MOVER:.2f} kPa.'
+         + chr(10) + 'Diamonds mark the two rows without a site bootstrap: the '
+         'estimator row shows the spread across its 23 settings, and ALE has no'
+         + chr(10) + 'interval because that method gives one pooled curve.',
          fontsize=AX_LABELS_FONTSIZE * 0.72, color='#666666', ha='left', linespacing=1.5)
-fig.text(0.025, 0.955, 'PLANNED supplementary figure, not yet adopted',
+fig.text(0.025, 0.962, 'PLANNED supplementary figure, not yet adopted',
          fontsize=AX_LABELS_FONTSIZE * 0.8, color=COLOR_REF, fontweight='bold', ha='left')
 
 fig.savefig(outfile, dpi=300, facecolor='white')

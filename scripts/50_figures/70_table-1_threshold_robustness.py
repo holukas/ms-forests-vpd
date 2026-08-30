@@ -51,6 +51,8 @@ WHAT_IT_VARIES = {
         'The same sites, using their deepest layer',
     'Blocked cross-validation':
         'One calendar year left out at a time instead of a shuffled split',
+    'ALE instead of SHAP':
+        'Accumulated local effects, a different attribution method entirely',
     'Threshold estimator, 23 settings':
         'Polynomial degree, smoothing, bin width and fitting range',
     'Europe removed': 'European sites excluded',
@@ -63,7 +65,14 @@ WHAT_IT_VARIES = {
 
 
 def interval(row):
-    """The interval, with a note where it is not a site bootstrap."""
+    """The interval, with a note where it is not a site bootstrap.
+
+    A row whose bounds equal its point value has no interval at all, which is the case for
+    ALE: script 55 derives the all-sites number from a single pooled curve. Printing
+    "1.25 to 1.25" would read as a precision claim, so it says none instead.
+    """
+    if row['upper'] <= row['lower']:
+        return 'none *'
     text = f"{row['lower']:.2f} to {row['upper']:.2f}"
     return text + (' *' if isinstance(row['note'], str) else '')
 
@@ -93,7 +102,8 @@ footnote = (
     f"Threshold is the highest zero crossing of a fourth-order polynomial fitted to the "
     f"VPD SHAP values, the same estimator as in Figure 4. Intervals are a bootstrap over "
     f"sites, 2000 replicates. Rows marked * show the spread across the settings varied "
-    f"rather than a bootstrap. The published value is {ref['threshold_kpa']:.2f} kPa. The "
+    f"rather than a bootstrap, or no interval where the method gives one pooled curve. "
+    f"The published value is {ref['threshold_kpa']:.2f} kPa. The "
     f"largest departure from it is {biggest['test'].lower()} at "
     f"{biggest['threshold_kpa']:.2f} kPa; every other test lands within 0.06 kPa of the "
     f"published value."
