@@ -151,7 +151,7 @@ colors_symbols = ['black', 'black', 'black']
 
 # Load settings
 settings = load_settings()
-shap_type = 'conditional' if CONDITIONAL else 'standard'
+shap_type = 'conditional' if CONDITIONAL else 'interventional'
 results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
@@ -166,7 +166,7 @@ dir_out.mkdir(parents=True, exist_ok=True)
 
 
 # Paths & Settings
-shap_type = 'conditional' if CONDITIONAL else 'standard'
+shap_type = 'conditional' if CONDITIONAL else 'interventional'
 settings = load_settings()
 dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 df_coeffs = pd.DataFrame(columns=['IGBP', 'a', 'b', 'c', 'd', 'e', 'R2', 'Threshold'])  # Collect coefficients

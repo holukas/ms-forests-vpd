@@ -221,7 +221,7 @@ CV_STRATEGY = "random"
 
 # Load settings
 settings = load_settings()
-shap_type = 'conditional' if CONDITIONAL else 'standard'
+shap_type = 'conditional' if CONDITIONAL else 'interventional'
 
 # Load subsets info, from the same variant the results are written to
 infile = (Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
@@ -235,7 +235,7 @@ results_outdir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type
 results_outdir.mkdir(parents=True, exist_ok=True)
 
 # Write to file (overwrites if file exists, creates if not)
-substr = "conditional" if CONDITIONAL else "standard"
+substr = "conditional" if CONDITIONAL else "interventional"
 modelstxt = Path(results_outdir) / f"1_models_xgboost_shap-{substr}_{FLUX}.txt"
 with open(modelstxt, 'w') as file:
     file.write("XGBOOST MODELS and SHAP CALCULATIONS\n")
@@ -328,7 +328,7 @@ if cv_results_all:
         print(f"Hyperparameter tuning results saved to:")
     else:
         cv_csv_path = Path(
-            results_outdir) / f"2_cv_results_all_sites-{('conditional' if CONDITIONAL else 'standard')}_{FLUX}.csv"
+            results_outdir) / f"2_cv_results_all_sites-{('conditional' if CONDITIONAL else 'interventional')}_{FLUX}.csv"
         print(f"\n{'=' * 80}")
         print(f"Saved aggregated CV results for all sites to:")
     print(f"{cv_csv_path}")

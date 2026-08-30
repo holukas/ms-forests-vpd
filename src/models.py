@@ -112,7 +112,7 @@ def train_rf_models_and_shap(target: str, features: list,
         merged[addcol] = subset[addcol].copy()
     merged = merged.sort_index(axis=1)
 
-    substr = "conditional" if conditional else "standard"
+    substr = "conditional" if conditional else "interventional"
     outfilepath = dv.save_parquet(
         filename=f"{siteconfig['SITE']}_shap-{substr}_{target}",
         data=merged,
@@ -395,7 +395,7 @@ def train_xgboost_models_and_shap(target: str, features: list,
         merged[addcol] = subset[addcol].copy()
     merged = merged.sort_index(axis=1)
 
-    substr = "conditional" if conditional else "standard"
+    substr = "conditional" if conditional else "interventional"
     outfilepath = dv.save_parquet(
         filename=f"{siteconfig['SITE']}_shap-{substr}_{target}",
         data=merged,

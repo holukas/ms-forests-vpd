@@ -127,7 +127,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
     count_vals_col = (f"{zvar}", "count")
 
     # Paths
-    shap_type = 'conditional' if CONDITIONAL else 'standard'
+    shap_type = 'conditional' if CONDITIONAL else 'interventional'
     settings = load_settings()
     dir_res = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 

@@ -66,7 +66,7 @@ for VARS in VAR_PAIRS:
 
     # Load settings
     settings = load_settings()
-    shap_type = 'conditional' if CONDITIONAL else 'standard'
+    shap_type = 'conditional' if CONDITIONAL else 'interventional'
     dir_prev_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type / VARIANT
 
     # Load subsets info

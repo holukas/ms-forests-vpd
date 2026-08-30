@@ -41,7 +41,7 @@ COLORS = {'ENF': '#009E73', 'DBF': '#D55E00', 'EBF': '#56B4E9', 'MF': '#E69F00'}
 
 AX_LABELS_FONTSIZE = 12
 
-shap_type = 'conditional' if CONDITIONAL else 'standard'
+shap_type = 'conditional' if CONDITIONAL else 'interventional'
 settings = load_settings()
 folder = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 

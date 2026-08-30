@@ -36,7 +36,7 @@ def describe(values: pd.Series) -> dict:
 
 def main():
     settings = load_settings()
-    shap_type = 'conditional' if CONDITIONAL else 'standard'
+    shap_type = 'conditional' if CONDITIONAL else 'interventional'
     dir_in = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type / VARIANT
     subsets = pd.read_csv(Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
                           / "21_SUBSETS_parquet_vars_stats_subsets.csv")

@@ -61,7 +61,7 @@ XVAR, YVAR, ZVAR = 'VPD_ZSCORE', 'NEP_ZSCORE', 'TA_ZSCORE'
 AGG = 'median'
 AX_LABELS_FONTSIZE = 12
 
-shap_type = 'conditional' if CONDITIONAL else 'standard'
+shap_type = 'conditional' if CONDITIONAL else 'interventional'
 settings = load_settings()
 indir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type / VARIANT
 outdir = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
