@@ -31,12 +31,14 @@ MINIMA = [1, 2, 3, 5, 10]
 def main():
     settings = load_settings()
     plots = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
+    info = Path(settings['DIR_INFO_OUT']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
+    info.mkdir(parents=True, exist_ok=True)
     agg = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
 
     sites = pd.read_csv(Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
                         / "21_SUBSETS_parquet_vars_stats_subsets.csv")
     stages = pd.read_parquet(agg / f"44_SHAPVALUES-conditional_AggregatedAcrossScenarios_{FLUX}.parquet")
-    thresholds = pd.read_csv(plots / "59_SiteThresholds.csv")
+    thresholds = pd.read_csv(agg / "49_SiteThresholds.csv")
 
     sites.loc[sites['SITE'].isin(PA_UNIT_SITES), ['VPD_Z0', 'VPD_SD']] /= PA_TO_HPA
 
@@ -77,7 +79,7 @@ def main():
           f"sites and {base['records_kept_pct'] - out.loc[out.min_years == 3, 'records_kept_pct'].iloc[0]:.1f} "
           f"per cent of the records.")
 
-    outfile = plots / "64_ShortRecordSensitivity.csv"
+    outfile = info / "64_INFO_ShortRecordSensitivity.csv"
     out.to_csv(outfile, index=False)
     print(f"Saved {outfile}")
 

@@ -69,6 +69,8 @@ def curve_points(x: np.ndarray, y: np.ndarray) -> dict:
 def main():
     settings = load_settings()
     d = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
+    info = Path(settings['DIR_INFO_OUT']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
+    info.mkdir(parents=True, exist_ok=True)
     sites = pd.read_csv(Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
                         / "21_SUBSETS_parquet_vars_stats_subsets.csv")
     sites.loc[sites['SITE'].isin(PA_UNIT_SITES), ['VPD_Z0', 'VPD_SD']] /= PA_TO_HPA
@@ -117,7 +119,7 @@ def main():
           f"{all_sites['zero_crossing_kPa']:.2f} kPa.")
     print("Only the third is the published threshold.")
 
-    outfile = d / "61_Threshold_Definitions.csv"
+    outfile = info / "61_INFO_ThresholdDefinitions.csv"
     out.to_csv(outfile, index=False)
     print(f"\nSaved {outfile}")
 

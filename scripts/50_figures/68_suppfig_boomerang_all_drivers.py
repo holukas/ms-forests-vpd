@@ -53,6 +53,7 @@ shap_type = 'conditional' if CONDITIONAL else 'interventional'
 settings = load_settings()
 indir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / shap_type / VARIANT
 outdir = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
+agg = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 outdir.mkdir(parents=True, exist_ok=True)
 
 files = sorted(indir.glob(f'*_shap-{shap_type}_{FLUX}.parquet'))
@@ -149,7 +150,7 @@ def measured_threshold(data, rng_seed=42):
     return point, lo, hi
 
 
-conv = pd.read_csv(outdir / '58_Threshold_zscore_to_kPa.csv').set_index('group')
+conv = pd.read_csv(agg / '48_Threshold_zscore_to_kPa.csv').set_index('group')
 MODEL_Z = {'Global forests': float(conv.loc['ALL SITES', 'z'])}
 for g in ('ENF', 'DBF', 'EBF', 'MF'):
     MODEL_Z[g] = float(conv.loc[g, 'z'])

@@ -190,6 +190,8 @@ which is what the aggregation and figure scripts consume.
 | `45_stage_distributions.py` | Driver medians and quartiles inside each stage, globally and per forest type, in standardized and measured units |
 | `46_ale_thresholds.py` | Puts the per-site ALE curves on one grid and finds the thresholds, globally and per forest type |
 | `47_threshold_robustness.py` | Twelve robustness tests of the VPD threshold with a bootstrap over sites, plus the 23-setting estimator sweep. Feeds Table 1 and its supplementary figure |
+| `48_threshold_zscore_to_kpa.py` | Converts the threshold from sigma to kPa per site, then averages, and reproduces the published values |
+| `49_biome_thresholds.py` | One threshold per site, then Kruskal-Wallis and Holm-corrected pairwise tests between forest types |
 
 Equal weighting throughout: a site with 20 years of data counts the same as a site with
 three. Bins that fewer than half of the sites reach are dropped from the aggregated
@@ -219,22 +221,30 @@ Each figure script reads the aggregation output and writes to
 `50_plots/<FLUX>/<type>/<VARIANT>/`, so a variant cannot overwrite a published figure.
 
 Script 51 (the site map) has no variant and needs none, since the site list does not
-depend on which soil water layer was used. Script 70 reads the ALE output, so script 32
+depend on which soil water layer was used. Stage 46 reads the ALE output, so script 32
 has to have run with the same variant first.
 
-Scripts 57 to 64 test how far the published results hold under different choices.
-None of them produces a manuscript figure. Script 66 draws a figure, the rest write
-tables:
+`66_fig_data_flow_sankey.py` draws `22_data_flow.csv` as a Sankey, one ribbon narrowing at
+each filtering step. It is not placed in the manuscript yet.
+
+## Stage 60, information only
+
+`scripts/60_info/` holds the analyses that test how far the published results hold under
+different choices. Their output is quoted in the text and in the response letter, and no
+figure or table reads it, which is what the `INFO` in the file name says. They write to
+`60_info/<FLUX>/<type>/<VARIANT>/`.
 
 | Script | What it does |
 |--------|--------------|
-| `66_fig_data_flow_sankey.py` | Draws `22_data_flow.csv` as a Sankey, one ribbon narrowing at each filtering step |
-| `58_threshold_zscore_to_kpa.py` | Converts the threshold from sigma to kPa per site, then averages, and reproduces the published values |
-| `59_biome_threshold_significance.py` | One threshold per site, then Kruskal-Wallis and Holm-corrected pairwise tests between forest types |
 | `61_threshold_definitions.py` | Separates the peak, the steepest decline and the zero crossing, and flags points on the range edge |
 | `62_threshold_vs_site_vpd_range.py` | Splits sites by their own maximum VPD and checks whether the threshold tracks it |
 | `63_leave_region_out.py` | Recomputes the threshold and the stage 8 attribution with Europe, North America or both removed |
 | `64_short_record_sensitivity.py` | Recomputes them while requiring progressively longer retained records |
+
+Scripts 63 and 64 answer the same two questions as two rows of Table 1, but from the median
+of the per-site thresholds rather than from the aggregated curve. The two estimators differ
+by about 0.07 kPa, so their numbers are not the numbers in the table and should not be
+quoted beside them.
 
 Script 52 draws both Figure 2 and Extended Data Figure 2 and picks between them by which
 of two blocks near the top is commented out. Running it twice, once per block, gives

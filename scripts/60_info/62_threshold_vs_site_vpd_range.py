@@ -46,9 +46,12 @@ PA_UNIT_COLS = ['VPD_Z0', 'VPD_SD', 'VPD_MAX']
 def main():
     settings = load_settings()
     plots = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
+    agg = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
+    info = Path(settings['DIR_INFO_OUT']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
+    info.mkdir(parents=True, exist_ok=True)
     sites = pd.read_csv(Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
                         / "21_SUBSETS_parquet_vars_stats_subsets.csv")
-    thresholds = pd.read_csv(plots / "59_SiteThresholds.csv")
+    thresholds = pd.read_csv(agg / "49_SiteThresholds.csv")
 
     d = thresholds.merge(sites[['SITE', 'VPD_Z0', 'VPD_SD', 'VPD_MAX']], on='SITE')
     d = d.copy()
@@ -89,10 +92,10 @@ def main():
     print(f"\nA zero crossing appears at {crossings} of {len(d)} sites, in every stratum,"
           f" so the nonlinearity is not confined to sites that reach high absolute VPD.")
 
-    outfile = plots / "62_Threshold_vs_SiteVPDRange.csv"
+    outfile = info / "62_INFO_ThresholdVsSiteVPDRange.csv"
     g.to_csv(outfile)
     d[['SITE', 'IGBP', 'threshold_z', 'threshold_kpa', 'vpd_max_kpa', 'stratum']].to_csv(
-        plots / "62_Threshold_vs_SiteVPDRange_perSite.csv", index=False)
+        info / "62_INFO_ThresholdVsSiteVPDRange_perSite.csv", index=False)
     print(f"\nSaved {outfile}")
 
 

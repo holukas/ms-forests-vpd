@@ -87,9 +87,9 @@ def main():
     overlap = biomes['kPa_lower'].max() <= biomes['kPa_upper'].min()
     print(f"Every biome interval overlaps every other: {overlap}")
 
-    dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
+    dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
     dir_out.mkdir(parents=True, exist_ok=True)
-    outfile = dir_out / "58_Threshold_zscore_to_kPa.csv"
+    outfile = dir_out / "48_Threshold_zscore_to_kPa.csv"
     out.to_csv(outfile, index=False)
     print(f"\nSaved {outfile}")
 

@@ -4,13 +4,13 @@ Per-site VPD thresholds by forest type, with the significance test drawn on.
 Figure 4 prints one threshold per forest type, taken from the polynomial fitted to the
 aggregated curve, so its interval describes the fit rather than the spread between sites.
 The question of whether the forest types differ needs the per-site thresholds instead,
-which is what `59_biome_threshold_significance.py` computes. This script only plots what
+which is what `40_aggregation/49_biome_thresholds.py` computes. This script only plots what
 that script wrote, it does not recompute anything.
 
 Reads from the plot folder:
-    59_SiteThresholds.csv              one threshold per site
-    59_BiomeThresholds_Summary.csv     median, IQR and bootstrap CI per forest type
-    59_BiomeThresholds_PairwiseTests.csv   Holm-corrected pairwise tests
+    49_SiteThresholds.csv              one threshold per site
+    49_BiomeThresholds_Summary.csv     median, IQR and bootstrap CI per forest type
+    49_BiomeThresholds_PairwiseTests.csv   Holm-corrected pairwise tests
 
 Supplementary figure, not a main display item.
 """
@@ -44,10 +44,11 @@ AX_LABELS_FONTSIZE = 12
 shap_type = 'conditional' if CONDITIONAL else 'interventional'
 settings = load_settings()
 folder = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
+agg = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 
-sites = pd.read_csv(folder / '59_SiteThresholds.csv')
-summary = pd.read_csv(folder / '59_BiomeThresholds_Summary.csv').set_index('IGBP')
-pairs = pd.read_csv(folder / '59_BiomeThresholds_PairwiseTests.csv')
+sites = pd.read_csv(agg / '49_SiteThresholds.csv')
+summary = pd.read_csv(agg / '49_BiomeThresholds_Summary.csv').set_index('IGBP')
+pairs = pd.read_csv(agg / '49_BiomeThresholds_PairwiseTests.csv')
 
 fig, ax = plt.subplots(figsize=(8, 5.5), dpi=150)
 

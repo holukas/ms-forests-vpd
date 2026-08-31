@@ -103,11 +103,11 @@ def main():
     print("Within-biome spread exceeds the between-biome spread."
           if widest > spread else "Between-biome spread exceeds the within-biome spread.")
 
-    dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
+    dir_out = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / 'conditional' / VARIANT / SITE_SUBSET
     dir_out.mkdir(parents=True, exist_ok=True)
-    t.to_csv(dir_out / "59_SiteThresholds.csv", index=False)
-    pd.DataFrame(summary).to_csv(dir_out / "59_BiomeThresholds_Summary.csv", index=False)
-    pd.DataFrame(pair_rows).to_csv(dir_out / "59_BiomeThresholds_PairwiseTests.csv", index=False)
+    t.to_csv(dir_out / "49_SiteThresholds.csv", index=False)
+    pd.DataFrame(summary).to_csv(dir_out / "49_BiomeThresholds_Summary.csv", index=False)
+    pd.DataFrame(pair_rows).to_csv(dir_out / "49_BiomeThresholds_PairwiseTests.csv", index=False)
     print(f"\nSaved three tables to {dir_out}")
 
 
