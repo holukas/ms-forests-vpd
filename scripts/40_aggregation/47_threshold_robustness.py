@@ -41,13 +41,13 @@ curve fitted here at all, since stage 46 derives its value as a mean of per-site
 both columns repeat the point value. All three are flagged in the `note` column, and the
 display items mark them rather than showing an interval.
 
-Reads: stage 41 per-site curves for the baseline and the deep-sm, deeper-only and blocked-cv
-variants, stage 42 for the aggregated curve, the stage 21 subsets table, and the ALE
+Reads: stage 41 per-site curves for the baseline and the deep-sm, deeper-only, blocked-cv
+and no_ta variants, stage 42 for the aggregated curve, the stage 21 subsets table, and the ALE
 thresholds written by stage 46.
 
 Writes, into the aggregation folder:
     47_THRESHOLD_EstimatorSweep_{FLUX}.csv    23 estimator settings, thresholds in sigma
-    47_THRESHOLD_Robustness_{FLUX}.csv        thirteen tests plus the published reference, kPa,
+    47_THRESHOLD_Robustness_{FLUX}.csv        fourteen tests plus the published reference, kPa,
                                               with both intervals per row
     47_THRESHOLD_LeaveOneSiteOut_{FLUX}.csv   the threshold with each site dropped in turn,
                                               one row per site, kPa
@@ -333,6 +333,16 @@ def robustness_rows(sweep):
         rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=1), None))
 
     # --- model fitting ----------------------------------------------------------
+    # Air temperature dropped from the predictor set. Every other row varies a setting, while
+    # this one removes the driver R3 says VPD may be standing in for: the two correlate at
+    # 0.78, so if the threshold survives a model that never sees temperature, the leakage
+    # objection is answered with a number rather than an argument. Temperature still bins the
+    # grid, as in every other row, so the estimator is unchanged and only the model behind the
+    # SHAP values differs.
+    piv = site_curves('no_ta')
+    rows.append(('Model fitting', 'Air temperature dropped from the model',
+                 *threshold_with_ci(piv, seed=3), None))
+
     piv = site_curves('blocked-cv')
     rows.append(('Model fitting', 'Blocked cross-validation',
                  *threshold_with_ci(piv, seed=2), None))

@@ -190,7 +190,7 @@ which is what the aggregation and figure scripts consume.
 | `44_agg_per_scenario.py` | Averages SHAP values within the nine stress stages, per site and then across sites |
 | `45_stage_distributions.py` | Driver medians and quartiles inside each stage, globally and per forest type, in standardized and measured units |
 | `46_ale_thresholds.py` | Puts the per-site ALE curves on one grid and finds the thresholds, globally and per forest type |
-| `47_threshold_robustness.py` | Thirteen robustness tests of the VPD threshold with a bootstrap over sites, plus the 23-setting estimator sweep and the threshold with each site removed in turn. Feeds Table 1 and its supplementary figure |
+| `47_threshold_robustness.py` | Fourteen robustness tests of the VPD threshold with a bootstrap over sites, plus the 23-setting estimator sweep and the threshold with each site removed in turn. Feeds Table 1 and its supplementary figure |
 | `49_biome_thresholds.py` | One threshold per site, then Kruskal-Wallis and Holm-corrected pairwise tests between forest types |
 
 Equal weighting throughout: a site with 20 years of data counts the same as a site with

@@ -1,7 +1,7 @@
 """
 Threshold robustness: main-text Table 1 and the matching supplementary figure.
 
-One script, because both display items show the same thirteen tests. Rendering them from two
+One script, because both display items show the same fourteen tests. Rendering them from two
 scripts is how a table and a figure drift apart.
 
 **It computes nothing.** `40_aggregation/47_threshold_robustness.py` builds the rows and
@@ -190,6 +190,8 @@ WHAT_IT_VARIES = {
         'Only the sites that have a deeper layer, using their shallow layer',
     'Matched sites, deepest layer':
         'The same sites, using their deepest layer',
+    'Air temperature dropped from the model':
+        'The model never sees temperature, so nothing of it can reach the VPD values',
     'Blocked cross-validation':
         'One calendar year left out at a time instead of a shuffled split',
     'ALE instead of SHAP':
