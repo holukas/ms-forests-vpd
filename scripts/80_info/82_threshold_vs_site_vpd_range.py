@@ -19,7 +19,7 @@ If the standardization manufactured the threshold, the value in kPa would rise i
 proportion to the site's range. If the threshold were purely physical, it would not
 move at all.
 
-Uses the per-site thresholds from script 59 and the per-site VPD statistics from
+Uses the per-site thresholds from script 49 and the per-site VPD statistics from
 stage 21.
 """
 from pathlib import Path

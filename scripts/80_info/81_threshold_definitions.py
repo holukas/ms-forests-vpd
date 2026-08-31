@@ -12,7 +12,7 @@ the manuscript reports one number for them. They answer different questions:
   minimum         where the effect is most negative, inside the fitted range
 
 Same fitted curve as Figure 4, same data, four readings of it. Also converted to
-kPa the way script 58 does, since the manuscript quotes absolute values.
+kPa the way script 54 does, since the manuscript quotes absolute values.
 """
 from pathlib import Path
 
