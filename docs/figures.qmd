@@ -11,7 +11,7 @@ to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
 | `52_fig-2+suppfig_flameplots.py` | Figure 2 and the matching supplementary figure, binned SHAP heatmaps | `40_aggregation/` |
 | `53_fig-3_sankeyplot_shapvalues_8stages.py` | Figure 3, SHAP flow across the stress stages | `40_aggregation/` |
 | `54_fig-4+supptable_vpd_response_curve_shap_agg.py` | Figure 4, and the supplementary table of polynomial coefficients with the threshold in sigma and kPa | `40_aggregation/`, `20_subsets/` |
-| `55_table-1+suppfig_threshold_robustness.py` | Table 1 and the matching supplementary figure, twelve robustness tests of the threshold | `40_aggregation/47_...csv` |
+| `55_table-1+suppfig_threshold_robustness.py` | Table 1 and the matching supplementary figure, thirteen robustness tests of the threshold | `40_aggregation/47_...csv` |
 | `56_suppfig+supptable_scenarios_boxplot_shapsums.py` | Supplementary figure and table, sina plots of the stage SHAP sums | `40_aggregation/` |
 | `57_suppfig_ale_response_curve.py` | Supplementary figure, ALE response curves with consensus threshold | `40_aggregation/46_...parquet` |
 | `65_suppfig_biome_threshold_distributions.py` | Supplementary figure, per-site thresholds by forest type | `40_aggregation/49_...csv` |

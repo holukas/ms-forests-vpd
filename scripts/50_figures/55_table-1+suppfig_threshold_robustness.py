@@ -1,7 +1,7 @@
 """
 Threshold robustness: main-text Table 1 and the matching supplementary figure.
 
-One script, because both display items show the same twelve tests. Rendering them from two
+One script, because both display items show the same thirteen tests. Rendering them from two
 scripts is how a table and a figure drift apart.
 
 **It computes nothing.** `40_aggregation/47_threshold_robustness.py` builds the rows and
@@ -20,10 +20,11 @@ coefficient table show, so the reference row reads 1.26 [1.16, 1.36] in both pla
 threshold depends on which sites are in the network. That one is not shown here, because two
 different intervals on the same number would confuse a reader. Use it in the response letter.
 
-**Two rows have no interval.** The figure draws them with a diamond and the table marks them
-with an asterisk. The estimator row shows the spread across its 23 settings instead. The ALE
-row has no curve fitted here at all, since its value is a mean of per-site crossings. Script
-47 flags both in the `note` column.
+**Three rows have no interval.** The figure draws them with a diamond and the table marks
+them with an asterisk. The estimator row shows the spread across its 23 settings instead, and
+the leave-one-site-out row the spread across its 208 removals, which are not independent of
+each other. The ALE row has no curve fitted here at all, since its value is a mean of per-site
+crossings. Script 47 flags all three in the `note` column.
 
 **No shift column in the table.** Rounded to two decimals four of the shifts read as +0.00
 or -0.00, and three decimals would imply a precision the bootstrap interval, about plus or
@@ -167,8 +168,9 @@ fig.text(0.025, 0.015,
          f'Zero crossing of the fitted curve, published value {published:.2f} kPa '
          f'[{pub_lo:.2f}, {pub_hi:.2f}]. Bars are the 95 % prediction band of that fit.'
          + chr(10) + f'Red marks a shift of at least {MOVER:.2f} kPa.'
-         + chr(10) + 'Diamonds mark the two rows with no band: the estimator row shows '
-         'the spread across its 23 settings, and ALE fits' + chr(10) + 'no curve here.',
+         + chr(10) + 'Diamonds mark the three rows with no band: the estimator row and '
+         'the leave-one-site-out row show the spread across' + chr(10) + 'their settings and '
+         'their removals, and ALE fits no curve here.',
          fontsize=AX_LABELS_FONTSIZE * 0.72, color='#666666', ha='left', linespacing=1.5)
 fig.savefig(outfile, dpi=300, facecolor='white')
 print(f"Saved {outfile}")
@@ -194,6 +196,8 @@ WHAT_IT_VARIES = {
         'Accumulated local effects, a different attribution method entirely',
     'Threshold estimator, 23 settings':
         'Polynomial degree, smoothing, bin width and fitting range',
+    'Any one site removed':
+        'Each site dropped from the network in turn, one at a time',
     'Europe removed': 'European sites excluded',
     'North America removed': 'North American sites excluded',
     'Europe and North America removed': 'Both regions excluded',
@@ -241,7 +245,8 @@ footnote = (
     f"Threshold is the highest zero crossing of a fourth-order polynomial fitted to the "
     f"VPD SHAP values, the same estimator as in Figure 4. Intervals are the 95 % prediction "
     f"band of that fit, as in Figure 4. Rows marked * have no band: the estimator row shows "
-    f"the spread across the settings varied, and the ALE row fits no curve. "
+    f"the spread across the settings varied, the leave-one-site-out row the spread across the "
+    f"removals, and the ALE row fits no curve. "
     f"The published value is {ref['threshold_kpa']:.2f} kPa. The "
     f"largest departure from it is {biggest['test'].lower()} at "
     f"{biggest['threshold_kpa']:.2f} kPa; every other test lands within {MOVER:.2f} kPa of "

@@ -3,9 +3,9 @@ Every robustness test of the VPD threshold, computed once and written to file.
 
 This is the heavy half of what used to live in `50_figures`. Scripts under `50_figures`
 draw, they do not compute, because they become notebooks under S10 and a notebook must not
-aggregate a campaign. The bootstrap here refits a polynomial 2000 times for each of twelve
-tests and takes about two minutes, which is exactly the kind of work that belongs at this
-stage. `55_table-1+suppfig_threshold_robustness.py` reads what this writes and renders it
+aggregate a campaign. The bootstrap here refits a polynomial 2000 times for every test that
+carries an interval, and the leave-one-site-out row refits it once per site, together about
+two minutes, which is exactly the kind of work that belongs at this stage. `55_table-1+suppfig_threshold_robustness.py` reads what this writes and renders it
 as Table 1 and the matching supplementary figure.
 
 It also absorbs the estimator sweep that was `50_figures/60_threshold_method_sensitivity.py`.
@@ -33,11 +33,13 @@ a robustness test is really asked, and it is about five times narrower. It stays
 in `boot_lower` and `boot_upper`, because it is the stronger answer for the response letter,
 and it is the point A13 makes.
 
-**Two rows have neither interval.** The estimator row varies how the curve is fitted rather
+**Three rows have neither interval.** The estimator row varies how the curve is fitted rather
 than which sites are included, so both columns carry the spread across its 23 settings. The
-ALE row has no curve fitted here at all, since stage 46 derives its value as a mean of
-per-site crossings, so both columns repeat the point value. Both are flagged in the `note`
-column and the display items leave their bars off.
+leave-one-site-out row carries the spread across its 208 removals for the same reason: those
+values share 207 sites with each other, so they are not independent draws. The ALE row has no
+curve fitted here at all, since stage 46 derives its value as a mean of per-site crossings, so
+both columns repeat the point value. All three are flagged in the `note` column, and the
+display items mark them rather than showing an interval.
 
 Reads: stage 41 per-site curves for the baseline and the deep-sm, deeper-only and blocked-cv
 variants, stage 42 for the aggregated curve, the stage 21 subsets table, and the ALE
@@ -45,8 +47,10 @@ thresholds written by stage 46.
 
 Writes, into the aggregation folder:
     47_THRESHOLD_EstimatorSweep_{FLUX}.csv    23 estimator settings, thresholds in sigma
-    47_THRESHOLD_Robustness_{FLUX}.csv        twelve tests plus the published reference, kPa,
+    47_THRESHOLD_Robustness_{FLUX}.csv        thirteen tests plus the published reference, kPa,
                                               with both intervals per row
+    47_THRESHOLD_LeaveOneSiteOut_{FLUX}.csv   the threshold with each site dropped in turn,
+                                              one row per site, kPa
 """
 from pathlib import Path
 
@@ -293,6 +297,26 @@ def threshold_with_ci(piv, seed=0):
             float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n)
 
 
+def point_threshold(piv):
+    """Crossing of the aggregated curve in kPa, without either interval.
+
+    The cheap half of `threshold_with_ci`, for the leave-one-site-out row, which needs 208
+    point values and no bootstrap.
+    """
+    x = piv.columns.get_level_values('BIN_VPD_ZSCORE').to_numpy(dtype=float)
+    M = piv.to_numpy(dtype=float)
+    xk, yk = aggregate(M, x, np.ceil(len(M) / 2))
+    if not len(xk):
+        return np.nan
+    return float(to_kpa(crossing(xk, yk), piv.index))
+
+
+def leave_one_site_out(piv):
+    """Threshold with each site dropped in turn, one value per site, in kPa."""
+    return pd.Series({site: point_threshold(piv.drop(index=site)) for site in piv.index},
+                     name='threshold_kpa').rename_axis('site_removed')
+
+
 def robustness_rows(sweep):
     # (group, label, value, band_lo, band_hi, boot_lo, boot_hi, n_sites, note)
     rows = []
@@ -334,6 +358,16 @@ def robustness_rows(sweep):
                  float(est.min()), float(est.max()), n_base, 'spread across settings'))
 
     # --- site set ---------------------------------------------------------------
+    # Leave one site out. Every other row in this group drops a whole class of sites, so none
+    # of them answers the simplest question a reader has: does the number rest on a handful of
+    # sites? Drop each site in turn and refit. The row carries the median and the full range
+    # over the removals rather than an interval, because any two of those values share 207
+    # sites and are not independent draws.
+    loo = leave_one_site_out(base).dropna()
+    rows.append(('Site set', 'Any one site removed', float(loo.median()),
+                 float(loo.min()), float(loo.max()), float(loo.min()), float(loo.max()),
+                 n_base, 'range across single-site removals'))
+
     REGIONS = {
         'Europe': ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR',
                    'IE', 'IT', 'NL', 'PL', 'PT', 'RU', 'SE', 'SJ', 'SK', 'UK'],
@@ -359,7 +393,7 @@ def robustness_rows(sweep):
                        columns=['group', 'test', 'threshold_kpa', 'lower', 'upper',
                                 'boot_lower', 'boot_upper', 'n_sites', 'note'])
     out['shift_kpa'] = out['threshold_kpa'] - published
-    return out
+    return out, loo
 
 
 def main():
@@ -367,17 +401,24 @@ def main():
     sweep_file = dir_out / f'47_THRESHOLD_EstimatorSweep_{FLUX}.csv'
     sweep.to_csv(sweep_file, index=False)
 
-    out = robustness_rows(sweep)
+    out, loo = robustness_rows(sweep)
     rows_file = dir_out / f'47_THRESHOLD_Robustness_{FLUX}.csv'
     out.to_csv(rows_file, index=False)
+
+    loo_file = dir_out / f'47_THRESHOLD_LeaveOneSiteOut_{FLUX}.csv'
+    loo.to_frame().to_csv(loo_file)
 
     ref = out.loc[out['test'] == 'PUBLISHED REFERENCE'].iloc[0]
     print()
     print(out.round(3).to_string(index=False))
     print(f"\npublished reference: {ref['threshold_kpa']:.3f} "
           f"[{ref['lower']:.3f}, {ref['upper']:.3f}] kPa, {int(ref['n_sites'])} sites")
+    worst = (loo - ref['threshold_kpa']).abs().idxmax()
+    print(f"leave one site out: {len(loo)} removals, {loo.min():.3f} to {loo.max():.3f} kPa, "
+          f"largest shift {loo[worst] - ref['threshold_kpa']:+.3f} kPa without {worst}")
     print(f"Saved {sweep_file}")
     print(f"Saved {rows_file}")
+    print(f"Saved {loo_file}")
 
 
 if __name__ == '__main__':
