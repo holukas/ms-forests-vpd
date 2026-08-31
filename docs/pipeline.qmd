@@ -53,6 +53,25 @@ differs. See [Methods](methods.qmd#soil-water-depth).
 Set the same value in every stage of a variant run. A stage whose predecessor has not
 run with that variant fails on a missing file rather than falling back to the baseline.
 
+`VARIANT` also carries the model-side alternatives. `blocked-cv` is a run with
+`CV_STRATEGY = "blocked"`, `no_ta` and `no_vpd` are runs with the matching `FEATURE_SET`.
+The runs that exist, and the last stage each has output for:
+
+| VARIANT | what it changes | output through |
+|---|---|---|
+| empty | nothing, the published run | every stage |
+| `deep-sm` | deepest usable soil water layer per site | stage 49, and the ALE side, 32 and 46 |
+| `blocked-cv` | leave-one-year-out instead of a shuffled split | stage 49 |
+| `no_ta` | air temperature dropped from the predictor set | stage 41 |
+| `no_vpd` | VPD dropped from the predictor set | stage 31 |
+
+`SITE_SUBSET = "deeper-only"` has stage 41 to 49 output against the empty variant and
+against `deep-sm`, which is the matched pair above.
+
+The `no_ta` run was carried through stage 41 for all five variable pairs and all 208 sites,
+about 13 minutes. Script 47 reads those per-site curves for the Table 1 row that drops air
+temperature from the model.
+
 `31_shap.py` and `32_validate_shap_methods.py` also take `SITES` and `MAX_SITES`, which
 limit a run to a few sites for timing. `SITES` names them and wins if it is not empty,
 `MAX_SITES` takes the first n rows, and 0 means all sites. Both scripts report how long
@@ -193,6 +212,17 @@ which is what the aggregation and figure scripts consume.
 | `47_threshold_robustness.py` | Fourteen robustness tests of the VPD threshold with a bootstrap over sites, plus the 23-setting estimator sweep and the threshold with each site removed in turn. Feeds Table 1 and its supplementary figure |
 | `49_biome_thresholds.py` | One threshold per site, then Kruskal-Wallis and Holm-corrected pairwise tests between forest types |
 
+Script 47 writes three files:
+
+| File | Contents |
+|---|---|
+| `47_THRESHOLD_Robustness_{FLUX}.csv` | the fourteen tests plus the published reference row, in kPa, each with the prediction band of the fit and the bootstrap over sites |
+| `47_THRESHOLD_EstimatorSweep_{FLUX}.csv` | the 23 estimator settings, thresholds in sigma |
+| `47_THRESHOLD_LeaveOneSiteOut_{FLUX}.csv` | the threshold with each site dropped in turn, one row per site, in kPa |
+
+Script 55 reads the first of the three. The other two hold the detail behind two of its
+rows.
+
 Equal weighting throughout: a site with 20 years of data counts the same as a site with
 three. Bins that fewer than half of the sites reach are dropped from the aggregated
 grids.
@@ -212,7 +242,9 @@ One run of each script covers all five. Script 44 takes no pair and runs once.
 Order matters: 41 first, then 42 and 43, which read what 41 wrote. Those two can run at
 the same time as each other, since they write different files. Script 44 reads the SHAP
 output directly and can run at any point after 31. Then 46, which reads the ALE output of
-script 32, then 47, which reads what 46 wrote. Script 49 can run any time after 42. Timings on 208 sites: 41 takes about
+script 32, then 47, which reads what 46 wrote. Script 47 also reads the stage 41 per-site
+curves of the `deep-sm`, `deeper-only`, `blocked-cv` and `no_ta` runs, so each of those has
+to have reached stage 41 before it can fill its row. Script 49 can run any time after 42. Timings on 208 sites: 41 takes about
 40 minutes because it reads every site file once per pair, 42 is a minute, 43 about ten,
 44 a minute.
 
@@ -234,7 +266,7 @@ at each filtering step. The number is not assigned yet, hence the `X`.
 ## Stage 80, information only
 
 `scripts/80_info/` holds the analyses that test how far the published results hold under
-different choices. Their output is quoted in the text and in the response letter, and no
+different choices. Their output is quoted in the text, and no
 figure or table reads it, which is what the `INFO` in the file name says. They write to
 `80_info/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/`, resolved from the `DIR_INFO_OUT`
 key in `settings.yaml`. All four read the conditional run only.

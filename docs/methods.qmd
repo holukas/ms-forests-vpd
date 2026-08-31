@@ -107,6 +107,14 @@ SHAP for TA goes from 0.106 to 0.194 without VPD, and VPD goes from 0.179 to 0.2
 without TA. Read the attributions in the full model as conditional on the other variable
 being present.
 
+The `no_ta` run is carried through the aggregation as well, so the threshold can be
+re-estimated from models that never saw temperature. It comes out at 1.28 kPa, with a
+prediction band of 1.19 to 1.37 over the same 208 sites, against the published 1.26. That is
+one of the rows of Table 1. Air temperature still bins the grid there, as it does in every
+other row: the `no_ta` files keep the `TA_ZSCORE` data column and only lack
+`TA_ZSCORE_SHAPVALS`, so the estimator is unchanged and only the model behind the SHAP values
+differs.
+
 A third alternative, TA with a different humidity variable, is not available. No site in
 the analysis records RH, and humidity variables that could be derived from these data are
 exact functions of TA and VPD.
@@ -262,7 +270,7 @@ varies while VPD is held near baseline.
 
 A site with a narrow VPD range reaches +3 sigma at a modest absolute VPD, so a threshold
 in sigma could in principle come from the standardization rather than from a limit on the
-plant. Script `62` tests this.
+plant. Script `82` tests this.
 
 The direct test is not possible here. It would need sites whose VPD never exceeds about
 1.25 kPa, and no site in the analysis stays that low. The lowest site maximum is 1.69 kPa
@@ -289,7 +297,7 @@ types, 1.22 to 1.32 kPa.
 
 ### Does the network composition matter?
 
-Europe and North America hold 74 per cent of the sites, 56 and 98 of 208. Script `63`
+Europe and North America hold 74 per cent of the sites, 56 and 98 of 208. Script `83`
 drops each region and recomputes, using the country prefix of the site code.
 
 | set | sites | threshold kPa | VPD/SM ratio |
@@ -312,7 +320,7 @@ earlier is the crossing of the aggregated curve. Two different quantities.
 
 Fifteen sites keep fewer than three years, and two keep one year, although a three-year
 minimum is stated. The minimum is applied before the QC, daytime, peak-month and
-balancing filters, which then cut into the record. Script `64` checks whether those sites
+balancing filters, which then cut into the record. Script `84` checks whether those sites
 change anything.
 
 | minimum years | sites | records kept | threshold kPa |
@@ -389,9 +397,20 @@ Bin width barely registers, 0.008 sigma across a fivefold change. LOWESS runs
 systematically lowest, 0.155 to 0.174, so the non-polynomial estimate sits slightly below
 the polynomial rather than centred on it.
 
+### Does any single site carry it?
+
+Script `47` drops each of the 208 sites in turn, re-aggregates the remaining curves and
+refits. The 208 thresholds run from 1.253 to 1.268 kPa with a median of 1.264, which is the
+published value. The largest shift is 0.010 kPa, when US-CMW is dropped.
+
+Table 1 shows that range rather than an interval. Any two of the 208 values share 207 sites,
+so they are not independent draws, and a percentile over them would not mean what an interval
+means. The per-site values are written to
+`47_THRESHOLD_LeaveOneSiteOut_NEP_ZSCORE.csv`.
+
 ### Three points, not one
 
-Script `61` separates quantities that a single "threshold" conflates. Across all sites
+Script `81` separates quantities that a single "threshold" conflates. Across all sites
 the VPD effect peaks at 0.47 kPa, crosses zero at 1.26 kPa and falls fastest at 1.50 kPa.
 Only the zero crossing is the published threshold.
 

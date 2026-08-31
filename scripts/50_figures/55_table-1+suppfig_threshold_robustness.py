@@ -26,7 +26,7 @@ the leave-one-site-out row the spread across its 208 removals, which are not ind
 each other. The ALE row has no curve fitted here at all, since its value is a mean of per-site
 crossings. Script 47 flags all three in the `note` column.
 
-**No shift column in the table.** Rounded to two decimals four of the shifts read as +0.00
+**No shift column in the table.** Rounded to two decimals several of the shifts read as +0.00
 or -0.00, and three decimals would imply a precision the bootstrap interval, about plus or
 minus 0.02, does not support. The threshold column read against the reference row says the
 same thing. The figure plots the shift, because there an axis centred on the published value
