@@ -49,7 +49,7 @@ fits 4th-order polynomials for smoothing, and detects response thresholds via ze
 - Y-axis: Per-sample SHAP values (feature importance)
 - Interpretation: How much features contribute to NEP variation
 
-**Script 70:**
+**Script 57:**
 - X-axis: Continuous feature values
 - Y-axis: Isolated feature effects on predictions
 - Interpretation: How NEP responds to feature changes
@@ -502,7 +502,7 @@ if mean_effect is not None and std_effect is not None:
     # The number is a placeholder. This was Extended Data Fig. 2 in the submitted
     # version, Extended Data is not a Nature Communications category (T26), so it
     # becomes a supplementary figure and X stands in until the number is assigned.
-    outfilepath = dir_out / f'70_SUPPFIG-X_ALE_ResponseCurve_{PLOT_FEATURE}_{FLUX}.png'
+    outfilepath = dir_out / f'57_SUPPFIG-X_ALE_ResponseCurve_{PLOT_FEATURE}_{FLUX}.png'
     fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
     print(f"Saved figure to: {outfilepath}\n")
 

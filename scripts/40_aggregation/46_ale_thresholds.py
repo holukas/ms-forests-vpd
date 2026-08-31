@@ -1,9 +1,9 @@
 """
 ALE curves on a common grid, and the thresholds that come out of them.
 
-The heavy half of what used to be `50_figures/70_suppfig_ale_response_curve.py`. Reading
-208 per-site ALE files is aggregation, not drawing, so it belongs at this stage. Script 70
-reads what this writes and draws the five-panel figure, and script 47 reads the threshold
+The heavy half of what used to be the ALE figure script. Reading 208 per-site ALE files is
+aggregation, not drawing, so it belongs at this stage. Script 57 reads what this writes
+and draws the five-panel figure, and script 47 reads the threshold
 table for the ALE row of the robustness analysis. Before this split, a stage 40 script had
 to read a file that a figure script wrote, which is backwards.
 

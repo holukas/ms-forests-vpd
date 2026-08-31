@@ -83,14 +83,14 @@ def main():
 
     dir_out = Path(settings['DIR_PLOTS_OUT']) / 'NEP_ZSCORE' / 'conditional' / VARIANT
     dir_out.mkdir(parents=True, exist_ok=True)
-    outfile = dir_out / "57_FIG_DataFlow_Sankey.png"
+    outfile = dir_out / "66_FIG_DataFlow_Sankey.png"
     fig.savefig(outfile, dpi=300, bbox_inches='tight', facecolor='white')
     print(f"Saved {outfile}")
 
     summary = pd.DataFrame({'step': [k for k, _ in STEPS], 'records': totals.values})
     summary['removed'] = summary['records'].shift(1) - summary['records']
     summary['share_kept_pct'] = summary['records'] / start * 100
-    summary.to_csv(dir_out / "57_FIG_DataFlow_Sankey_DATA.csv", index=False)
+    summary.to_csv(dir_out / "66_FIG_DataFlow_Sankey_DATA.csv", index=False)
     print(summary.to_string(index=False))
 
 
