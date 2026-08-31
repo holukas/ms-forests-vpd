@@ -11,8 +11,13 @@ to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
 | `52_fig-2+ExtFig_flameplots.py` | Figure 2 and the matching Extended Data figures, binned SHAP heatmaps | `40_aggregation/` |
 | `53_fig-3_sankeyplot_shapvalues_8stages.py` | Figure 3, SHAP flow across the stress stages | `40_aggregation/` |
 | `54_fig-4_vpd_response_curve_shap_agg.py` | Figure 4, VPD response curve from SHAP with threshold | `40_aggregation/` |
-| `70_suppfig_ale_response_curve.py` | ALE response curves with consensus threshold | `30_shap/<flux>/ale/` |
-| `56_ExtDataFig1+Table1_scenarios_boxplot_shapsums.py` | Extended Data Figure 1 and Table 1 | `40_aggregation/` |
+| `55_table-1+suppfig_threshold_robustness.py` | Table 1 and the matching supplementary figure, twelve robustness tests of the threshold | `40_aggregation/`, scripts 60 and 70 |
+| `56_suppfig+supptable_scenarios_boxplot_shapsums.py` | Supplementary figure and table, sina plots of the stage SHAP sums | `40_aggregation/` |
+| `65_suppfig_biome_threshold_distributions.py` | Supplementary figure, per-site thresholds by forest type | script 59 |
+| `67_suppfig_boomerang_measured_nep_vpd.py` | Supplementary figure, measured NEP against VPD within temperature classes | `20_subsets/` |
+| `68_suppfig_boomerang_all_drivers.py` | Supplementary figure, the same with every co-driver held constant | `20_subsets/` |
+| `69_suppfig_stage_order_test.py` | Supplementary figure, the published stage sequence against its mirror | `40_aggregation/` |
+| `70_suppfig_ale_response_curve.py` | Supplementary figure, ALE response curves with consensus threshold | `30_shap/<flux>/ale/` |
 
 ## Figure 4: which values are averaged
 

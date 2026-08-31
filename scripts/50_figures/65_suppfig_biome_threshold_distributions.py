@@ -90,7 +90,7 @@ for sp in ('top', 'right'):
 
 fig.tight_layout()
 
-outfile = folder / f'65_SuppFig_BiomeThresholdDistributions_{FLUX}.png'
+outfile = folder / f'65_SUPPFIG-X_BiomeThresholdDistributions_{FLUX}.png'
 fig.savefig(outfile, dpi=300, facecolor='white', bbox_inches='tight')
 print(f"Saved to {outfile}")
 if SHOW_PLOT:
