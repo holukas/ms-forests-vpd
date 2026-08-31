@@ -14,11 +14,16 @@ The differences between tests are at most 0.08 kPa on a threshold of 1.26, so a 
 either magnifies them by zooming the axis or hides them by not zooming. The table states
 the numbers exactly. The figure keeps the shape of the result for readers who want it.
 
-**Two rows have no site bootstrap.** The figure draws them with a diamond and the table
-marks them with an asterisk. The estimator row varies how the curve is fitted rather than
-which sites are included, so it shows the spread across its 23 settings. The ALE row has no
-interval at all, because script 70 derives the all-sites value from a single pooled curve.
-Script 46 flags both in the `note` column.
+**The interval is the prediction band of the fitted curve**, the same one Figure 4 and the
+coefficient table show, so the reference row reads 1.26 [1.16, 1.36] in both places. Script
+47 also writes a bootstrap over sites, about five times narrower, which answers how much the
+threshold depends on which sites are in the network. That one is not shown here, because two
+different intervals on the same number would confuse a reader. Use it in the response letter.
+
+**Two rows have no interval.** The figure draws them with a diamond and the table marks them
+with an asterisk. The estimator row shows the spread across its 23 settings instead. The ALE
+row has no curve fitted here at all, since its value is a mean of per-site crossings. Script
+47 flags both in the `note` column.
 
 **No shift column in the table.** Rounded to two decimals four of the shifts read as +0.00
 or -0.00, and three decimals would imply a precision the bootstrap interval, about plus or
@@ -34,7 +39,7 @@ largest apparent instability where there was actually signal. Most of that signa
 mechanical: the threshold is estimated in sigma and converted per site, and drier sites have
 a larger mean and spread, so a constant sigma threshold already yields a higher kPa value in
 the drier quartiles. It belongs in its own supplementary analysis with that caveat stated,
-`62_threshold_vs_site_vpd_range.py`.
+`80_info/82_threshold_vs_site_vpd_range.py`.
 
 Writes:
   png    the supplementary figure
@@ -56,7 +61,6 @@ VARIANT = ""
 SITE_SUBSET = ""
 
 MOVER = 0.06             # kPa, beyond this a row reads as a real shift
-N_BOOT = 2000            # stated in the caption, set in script 46
 AX_LABELS_FONTSIZE = 12
 COLOR_POINT = '#0072B2'
 COLOR_MOVER = '#b2182b'
@@ -82,6 +86,11 @@ rows = [(g, t, v, lo, hi, int(n), (None if pd.isna(note) else note))
         [['group', 'test', 'threshold_kpa', 'lower', 'upper', 'n_sites', 'note']]
         .itertuples(index=False, name=None)]
 
+# The published analysis is the first row, the way the table lists it, so the reader sees
+# the value being tested rather than inferring it from a line.
+rows.insert(0, ('Reference', 'Published analysis', published, pub_lo, pub_hi,
+                int(ref_row['n_sites']), None))
+
 outfile = folder / f'55_SUPPFIG-X_ThresholdRobustness_{FLUX}.png'
 
 
@@ -106,13 +115,11 @@ for group, *_ in ordered:
     prev_group = group
     y += 1.0
 
-fig, ax = plt.subplots(figsize=(11, 7.4), dpi=150)
+fig, ax = plt.subplots(figsize=(11, 8.2), dpi=150)
 # The caption runs to four lines, so it gets its own band at the bottom.
 fig.subplots_adjust(left=0.34, right=0.87, top=0.88, bottom=0.24)
 trans = ax.get_yaxis_transform()
 
-ax.axvspan(pub_lo - published, pub_hi - published, color=COLOR_REF, alpha=0.10,
-           zorder=0, linewidth=0)
 ax.axvline(0, color=COLOR_REF, lw=1.4, zorder=2)
 
 for (group, label, mid, lo, hi, n, note), y in zip(ordered, ypos):
@@ -149,7 +156,8 @@ for sp in ('top', 'right', 'left'):
     ax.spines[sp].set_visible(False)
 ax.spines['bottom'].set_color('#CCCCCC')
 
-ax.text(0, 1.01, f' published {published:.2f} kPa', transform=ax.get_xaxis_transform(),
+ax.text(0, 1.01, f' published {published:.2f} kPa [{pub_lo:.2f}, {pub_hi:.2f}]',
+        transform=ax.get_xaxis_transform(),
         ha='left', va='bottom', color=COLOR_REF, fontweight='bold',
         fontsize=AX_LABELS_FONTSIZE * 0.9, clip_on=False)
 ax.text(VALUE_X, max(ypos) + 0.62, 'shift, kPa', transform=trans, ha='left', va='center',
@@ -157,11 +165,10 @@ ax.text(VALUE_X, max(ypos) + 0.62, 'shift, kPa', transform=trans, ha='left', va=
 
 fig.text(0.025, 0.015,
          f'Zero crossing of the fitted curve, published value {published:.2f} kPa '
-         f'[{pub_lo:.2f}, {pub_hi:.2f}]. Bars are a bootstrap over sites, {N_BOOT} '
-         f'replicates.' + chr(10) + f'Red marks a shift of at least {MOVER:.2f} kPa.'
-         + chr(10) + 'Diamonds mark the two rows without a site bootstrap: the '
-         'estimator row shows the spread across its 23 settings, and ALE has no'
-         + chr(10) + 'interval because that method gives one pooled curve.',
+         f'[{pub_lo:.2f}, {pub_hi:.2f}]. Bars are the 95 % prediction band of that fit.'
+         + chr(10) + f'Red marks a shift of at least {MOVER:.2f} kPa.'
+         + chr(10) + 'Diamonds mark the two rows with no band: the estimator row shows '
+         'the spread across its 23 settings, and ALE fits' + chr(10) + 'no curve here.',
          fontsize=AX_LABELS_FONTSIZE * 0.72, color='#666666', ha='left', linespacing=1.5)
 fig.savefig(outfile, dpi=300, facecolor='white')
 print(f"Saved {outfile}")
@@ -199,9 +206,9 @@ WHAT_IT_VARIES = {
 def interval(row):
     """The interval, with a note where it is not a site bootstrap.
 
-    A row whose bounds equal its point value has no interval at all, which is the case for
-    ALE: script 70 derives the all-sites number from a single pooled curve. Printing
-    "1.25 to 1.25" would read as a precision claim, so it says none instead.
+    Script 47 writes equal bounds for a row with no fitted curve, which is the case for ALE.
+    Printing "1.25 to 1.25" would read as a precision claim, so the cell says none instead
+    and the note column carries the reason.
     """
     if row['upper'] <= row['lower']:
         return 'none *'
@@ -232,13 +239,13 @@ table1 = pd.concat([reference_row, table1], ignore_index=True)
 biggest = tests.loc[tests['shift_kpa'].abs().idxmax()]
 footnote = (
     f"Threshold is the highest zero crossing of a fourth-order polynomial fitted to the "
-    f"VPD SHAP values, the same estimator as in Figure 4. Intervals are a bootstrap over "
-    f"sites, 2000 replicates. Rows marked * show the spread across the settings varied "
-    f"rather than a bootstrap, or no interval where the method gives one pooled curve. "
+    f"VPD SHAP values, the same estimator as in Figure 4. Intervals are the 95 % prediction "
+    f"band of that fit, as in Figure 4. Rows marked * have no band: the estimator row shows "
+    f"the spread across the settings varied, and the ALE row fits no curve. "
     f"The published value is {ref['threshold_kpa']:.2f} kPa. The "
     f"largest departure from it is {biggest['test'].lower()} at "
-    f"{biggest['threshold_kpa']:.2f} kPa; every other test lands within 0.06 kPa of the "
-    f"published value."
+    f"{biggest['threshold_kpa']:.2f} kPa; every other test lands within {MOVER:.2f} kPa of "
+    f"the published value."
 )
 
 stem = folder / f'55_TABLE-1_ThresholdRobustness_{FLUX}'

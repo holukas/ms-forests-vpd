@@ -328,7 +328,12 @@ if mean_effect is not None and std_effect is not None:
 
     ax_all.text(0, 1.05, 'a', transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2, weight='bold')
     ax_all.text(0.05, 1.05, 'Global forests', transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
-    ax_all.text(0.4, 1.05, f'(n={len(all_site_ale_curves)})', transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
+    # Both counts, because the threshold is the mean over the sites that cross, not over
+    # every site drawn. US-Cwt is the one that does not: its curve rises with VPD, so it
+    # has no positive to negative crossing.
+    _n_label = (f'(n={n_curves_total})' if n_curves_crossing == n_curves_total
+                else f'(n={n_curves_total}, {n_curves_crossing} crossing)')
+    ax_all.text(0.4, 1.05, _n_label, transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
 
     plot.format(ax=ax_all, fontsize=AX_LABELS_FONTSIZE, showyticklabels=True, showxticklabels=True,
                 xtickdigits=0, ytickdigits=1, showbottomspine=True, showleftspine=True, showymajorticks=True)
@@ -404,10 +409,14 @@ if mean_effect is not None and std_effect is not None:
                 else:
                     label_text = f'x={igbp_threshold_main:.2f}±{igbp_sem:.2f} SEM'
 
+                # Anchored in axes coordinates, not data coordinates. Placing it a fixed
+                # distance left of the marker pushed it into the y axis whenever the
+                # threshold sat near the left edge, which is most panels.
                 ax.annotate(label_text,
-                            xy=(igbp_threshold_main, 0), xytext=(igbp_threshold_main - 0.4, -0.5),
+                            xy=(igbp_threshold_main, 0), xycoords='data',
+                            xytext=(0.06, 0.12), textcoords='axes fraction',
                             arrowprops=dict(arrowstyle='->', color='black', lw=2, shrinkB=10),
-                            ha='center', fontsize=AX_LABELS_FONTSIZE * 0.75,
+                            ha='left', va='center', fontsize=AX_LABELS_FONTSIZE * 0.75,
                             color='black', zorder=11)
             else:
                 igbp_threshold_data.append({
@@ -432,8 +441,11 @@ if mean_effect is not None and std_effect is not None:
 
         # Add n= for this IGBP
         n_igbp = len(igbp_ale_interpolated.get(igbp, []))
+        n_igbp_crossing = len(igbp_individual_thresholds)
         if n_igbp > 0:
-            ax.text(0.4, 1.1, f'(n={n_igbp})', transform=ax.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
+            label = (f'(n={n_igbp})' if n_igbp_crossing == n_igbp
+                     else f'(n={n_igbp}, {n_igbp_crossing} crossing)')
+            ax.text(0.4, 1.1, label, transform=ax.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
 
         plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels,
                     showxticklabels=showxticklabels,

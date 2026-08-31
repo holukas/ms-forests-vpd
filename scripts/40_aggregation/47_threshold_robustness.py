@@ -20,17 +20,24 @@ Figure 4 shows and what the abstract reports. An earlier version used the median
 thresholds instead. That is a different quantity, it sat 0.07 kPa lower, and it silently
 drops any site whose own curve never crosses zero.
 
-**The interval is a bootstrap over sites.** Each replicate resamples sites with replacement,
-re-averages their binned curves, refits the polynomial and takes the crossing. That answers
-how much the threshold depends on which sites happen to be in the network. It is not the
-prediction band of the fitted curve, which describes how well a polynomial fits one
-aggregated curve and says nothing about site-to-site agreement, the point A13 makes.
+**Two intervals per row, and they answer different questions.** Both are written out.
 
-**Two rows have no site bootstrap.** The estimator row varies how the curve is fitted rather
-than which sites are included, so it carries the spread across its 23 settings. The ALE row
-has no interval here, because stage 46 derives the all-sites value as a mean of per-site
-crossings, and the t interval on that is not the same construction as the bootstrap on
-the other rows. Both are flagged in the `note` column.
+The **prediction band** comes from the polynomial fit, through `src.fit`, the same routine
+Figure 4 and the coefficient table use. It says how well the curve is pinned down. This is
+the one the display items show, so the global row reads 1.26 [1.16, 1.36], the same as the
+coefficient table. Publishing two different intervals for one number would confuse a reader.
+
+The **bootstrap over sites** resamples sites with replacement, re-aggregates and refits. It
+says how much the threshold depends on which sites are in the network, which is the question
+a robustness test is really asked, and it is about five times narrower. It stays in the file,
+in `boot_lower` and `boot_upper`, because it is the stronger answer for the response letter,
+and it is the point A13 makes.
+
+**Two rows have neither interval.** The estimator row varies how the curve is fitted rather
+than which sites are included, so both columns carry the spread across its 23 settings. The
+ALE row has no curve fitted here at all, since stage 46 derives its value as a mean of
+per-site crossings, so both columns repeat the point value. Both are flagged in the `note`
+column and the display items leave their bars off.
 
 Reads: stage 41 per-site curves for the baseline and the deep-sm, deeper-only and blocked-cv
 variants, stage 42 for the aggregated curve, the stage 21 subsets table, and the ALE
@@ -38,7 +45,8 @@ thresholds written by stage 46.
 
 Writes, into the aggregation folder:
     47_THRESHOLD_EstimatorSweep_{FLUX}.csv    23 estimator settings, thresholds in sigma
-    47_THRESHOLD_Robustness_{FLUX}.csv        twelve tests plus the published reference, kPa
+    47_THRESHOLD_Robustness_{FLUX}.csv        twelve tests plus the published reference, kPa,
+                                              with both intervals per row
 """
 from pathlib import Path
 
@@ -48,6 +56,7 @@ from scipy.interpolate import UnivariateSpline
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 import src.files as files
+import src.fit as fit
 from src.paths import data_path, load_settings
 
 FLUX = 'NEP_ZSCORE'
@@ -244,7 +253,21 @@ def aggregate(M, x, min_sites):
 
 
 def threshold_with_ci(piv, seed=0):
-    """Crossing of the aggregated curve, with a bootstrap over sites, both in kPa."""
+    """Crossing of the aggregated curve, with two intervals, all in kPa.
+
+    Returns the point value, the prediction band bounds, the bootstrap bounds and the site
+    count. The two intervals answer different questions and are not interchangeable:
+
+    - **The prediction band** is what Figure 4 and the coefficient table show. It comes from
+      the polynomial fit itself, through `src.fit`, and says how well the curve is pinned
+      down. This is the interval the manuscript publishes, so Table 1 uses it and the global
+      row reads the same as the coefficient table, 1.26 [1.16, 1.36].
+    - **The bootstrap over sites** resamples sites, re-aggregates and refits. It says how
+      much the threshold depends on which sites are in the network, which is the question a
+      robustness test is really asked. It is about five times narrower. It is written to
+      file for the response letter but not shown in the display items, because two
+      different intervals on the same number in one paper would confuse a reader.
+    """
     x = piv.columns.get_level_values('BIN_VPD_ZSCORE').to_numpy(dtype=float)
     M = piv.to_numpy(dtype=float)
     sites = piv.index
@@ -254,6 +277,11 @@ def threshold_with_ci(piv, seed=0):
     xk, yk = aggregate(M, x, min_sites)
     point = to_kpa(crossing(xk, yk), sites)
 
+    # The published interval: the same routine script 54 uses for Figure 4.
+    _, _, x_fit, y_fit, _, pi_upper, pi_lower = fit.fit_polynomial(xk, yk)
+    band = fit.calc_threshold(x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper)
+    band_lo, band_hi = to_kpa(band[1], sites), to_kpa(band[2], sites)
+
     rng = np.random.default_rng(seed)
     boot = np.empty(N_BOOT)
     for i in range(N_BOOT):
@@ -261,15 +289,17 @@ def threshold_with_ci(piv, seed=0):
         boot[i] = crossing(xk, yk) if len(xk) else np.nan
     boot = boot[np.isfinite(boot)]
     lo, hi = np.percentile(boot, [2.5, 97.5])
-    return float(point), float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n
+    return (float(point), float(band_lo), float(band_hi),
+            float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n)
 
 
 def robustness_rows(sweep):
-    rows = []  # (group, label, value, lo, hi, n_sites, note)
+    # (group, label, value, band_lo, band_hi, boot_lo, boot_hi, n_sites, note)
+    rows = []
 
     # Reference: the published run, same estimator.
     base = site_curves()
-    published, pub_lo, pub_hi, n_base = threshold_with_ci(base)
+    published, pub_lo, pub_hi, pub_boot_lo, pub_boot_hi, n_base = threshold_with_ci(base)
 
     # --- soil water depth -------------------------------------------------------
     for label, sub in [('Deepest available layer, all sites', ('deep-sm',)),
@@ -293,14 +323,15 @@ def robustness_rows(sweep):
     ale_z = float(ale.loc[ale['group'] == 'ALL SITES', 'threshold'].iloc[0])
     ale_kpa = to_kpa(ale_z, base.index)
     rows.append(('Model fitting', 'ALE instead of SHAP', ale_kpa, ale_kpa, ale_kpa,
-                 len(base), 'mean of per-site crossings, interval not comparable'))
+                 ale_kpa, ale_kpa, len(base),
+                 'no curve fitted here, value is a mean of per-site crossings'))
 
     # The estimator row varies the fit, not the sites, so it carries the spread across the
     # settings rather than a bootstrap.
     est = np.array([to_kpa(z, base.index) for z in sweep['threshold_z'].dropna()])
     rows.append(('Model fitting', f'Threshold estimator, {len(sweep)} settings',
-                 float(np.median(est)), float(est.min()), float(est.max()), n_base,
-                 'spread across settings'))
+                 float(np.median(est)), float(est.min()), float(est.max()),
+                 float(est.min()), float(est.max()), n_base, 'spread across settings'))
 
     # --- site set ---------------------------------------------------------------
     REGIONS = {
@@ -324,9 +355,9 @@ def robustness_rows(sweep):
 
     # The reference goes in as its own row, so the renderer needs nothing else.
     out = pd.DataFrame(rows + [('', 'PUBLISHED REFERENCE', published, pub_lo, pub_hi,
-                                n_base, None)],
+                                pub_boot_lo, pub_boot_hi, n_base, None)],
                        columns=['group', 'test', 'threshold_kpa', 'lower', 'upper',
-                                'n_sites', 'note'])
+                                'boot_lower', 'boot_upper', 'n_sites', 'note'])
     out['shift_kpa'] = out['threshold_kpa'] - published
     return out
 
