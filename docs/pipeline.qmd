@@ -228,8 +228,8 @@ depend on which soil water layer was used.
 Three figure scripts read a stage 40 file rather than the aggregation output directly, so
 that stage has to have run first: 55 needs 47, 57 needs 46, and 65 needs 49.
 
-`66_fig_data_flow_sankey.py` draws `22_data_flow.csv` as a Sankey, one ribbon narrowing at
-each filtering step. It is not placed in the manuscript yet.
+`66_suppfig_data_flow_sankey.py` draws `22_data_flow.csv` as a Sankey, one ribbon narrowing
+at each filtering step. The number is not assigned yet, hence the `X`.
 
 ## Stage 80, information only
 
