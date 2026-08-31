@@ -36,11 +36,11 @@ SHOW_PLOT = False
 #      'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
 # ]
 # figsize = (19, 13)
-# figure_info = [2, f'ShapValues-{plotvars_rows[0][3]}']
+# figure_info = ['FIG-2', f'ShapValues-{plotvars_rows[0][3]}']
 # show_only_max_marker = False
 
 
-# Extended Data Figure 2
+# Supplementary figure, the flux heatmaps
 # Flux heatmaps
 # Run variant. An empty string reads the results behind the submitted figures and
 # writes to the baseline plot folder. Any other value reads the matching variant
@@ -64,7 +64,9 @@ plotvars_rows = [
      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
 ]
 figsize = (19, 13 / 3 * 4)
-figure_info = ["ExtFig2", f'Fluxes-{plotvars_rows[0][3]}']
+# Supplementary, not Extended Data: that category does not exist at this journal (T26).
+# X stands in until the figure number is assigned.
+figure_info = ["SUPPFIG-X", f'Fluxes-{plotvars_rows[0][3]}']
 show_only_max_marker = True
 
 # Shared plotting constants
@@ -247,7 +249,7 @@ FLUX = plotvars[0]
 
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 dir_out.mkdir(parents=True, exist_ok=True)
-outfilepath = dir_out / f'52_FIG-{figure_info[0]}_FlamePlots{figure_info[1]}_{FLUX}.png'
+outfilepath = dir_out / f'52_{figure_info[0]}_FlamePlots{figure_info[1]}_{FLUX}.png'
 print(f"Saved to {outfilepath}")
 plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
 

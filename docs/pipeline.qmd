@@ -251,7 +251,7 @@ of the per-site thresholds rather than from the aggregated curve. The two estima
 by about 0.07 kPa, so their numbers are not the numbers in the table and should not be
 quoted beside them.
 
-Script 52 draws both Figure 2 and Extended Data Figure 2 and picks between them by which
+Script 52 draws both Figure 2 and the supplementary flux heatmaps, and picks between them by which
 of two blocks near the top is commented out. Running it twice, once per block, gives
 both.
 

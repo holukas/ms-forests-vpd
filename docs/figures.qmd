@@ -8,7 +8,7 @@ to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
 | Script | Produces | Reads |
 |--------|----------|-------|
 | `51_fig-1_worldmap_mat_map_era5.py` | Figure 1, site map with ERA5 climate normals | `10_datasets/17_..._era5.csv` |
-| `52_fig-2+ExtFig_flameplots.py` | Figure 2 and the matching Extended Data figures, binned SHAP heatmaps | `40_aggregation/` |
+| `52_fig-2+suppfig_flameplots.py` | Figure 2 and the matching supplementary figure, binned SHAP heatmaps | `40_aggregation/` |
 | `53_fig-3_sankeyplot_shapvalues_8stages.py` | Figure 3, SHAP flow across the stress stages | `40_aggregation/` |
 | `54_fig-4+supptable_vpd_response_curve_shap_agg.py` | Figure 4, and the supplementary table of polynomial coefficients with the threshold in sigma and kPa | `40_aggregation/`, `20_subsets/` |
 | `55_table-1+suppfig_threshold_robustness.py` | Table 1 and the matching supplementary figure, twelve robustness tests of the threshold | `40_aggregation/47_...csv` |
