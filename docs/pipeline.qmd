@@ -190,7 +190,6 @@ which is what the aggregation and figure scripts consume.
 | `45_stage_distributions.py` | Driver medians and quartiles inside each stage, globally and per forest type, in standardized and measured units |
 | `46_ale_thresholds.py` | Puts the per-site ALE curves on one grid and finds the thresholds, globally and per forest type |
 | `47_threshold_robustness.py` | Twelve robustness tests of the VPD threshold with a bootstrap over sites, plus the 23-setting estimator sweep. Feeds Table 1 and its supplementary figure |
-| `48_threshold_zscore_to_kpa.py` | Converts the threshold from sigma to kPa per site, then averages, and reproduces the published values |
 | `49_biome_thresholds.py` | One threshold per site, then Kruskal-Wallis and Holm-corrected pairwise tests between forest types |
 
 Equal weighting throughout: a site with 20 years of data counts the same as a site with

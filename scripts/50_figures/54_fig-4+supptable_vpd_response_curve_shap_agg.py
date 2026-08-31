@@ -504,6 +504,77 @@ if SHOW_PLOT:
 _outfilepath = dir_out / f'54_FIG-4_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_DATA_COEFFICIENTS.csv'
 df_coeffs.to_csv(_outfilepath, index=False)
 
+# ---------------------------------------------------------------------------
+# Supplementary table: the same coefficients, with the threshold in kPa
+# ---------------------------------------------------------------------------
+# This table used to be assembled by hand from two csv files, which is what Reviewer 2
+# could not follow in the code. It is written here because the coefficients are fitted
+# here, so the table can never disagree with the figure.
+#
+# Each site standardizes VPD against its own mean and standard deviation, so a threshold
+# in sigma means a different absolute VPD at every site:
+#
+#     VPD_abs = VPD_mean + z * VPD_sd
+#
+# with both statistics in hPa, over the same records the models saw, stored by stage 21.
+# Divide by 10 for kPa, then average sites with equal weight, the aggregation used
+# everywhere else. The biome value is the mean over the sites of that biome.
+#
+# The published range of 1.22 to 1.32 kPa is the span of the four biome means. It is not
+# a confidence interval, and the biome intervals overlap heavily.
+#
+# CD-Ygb records VPD in Pa where every other site uses hPa. The factor is exactly 100:
+# dividing gives a site mean of 18.10 hPa and a standard deviation of 6.56 hPa, both
+# inside the 4.5 to 31.8 hPa range the other sites span. The per-site z-scores do not
+# depend on the unit, so only this mapping changes and the site is converted, not dropped.
+PA_UNIT_SITES = ['CD-Ygb']
+PA_TO_HPA = 100
+
+_sites = pd.read_csv(Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
+                     / "21_SUBSETS_parquet_vars_stats_subsets.csv")
+_converted = _sites['SITE'].isin(PA_UNIT_SITES)
+_sites.loc[_converted, ['VPD_Z0', 'VPD_SD']] /= PA_TO_HPA
+
+
+def _to_kpa(sites_df, z):
+    """Site-wise absolute threshold in kPa, averaged with equal weight per site."""
+    return ((sites_df['VPD_Z0'] + z * sites_df['VPD_SD']) / 10).mean()
+
+
+def _parse_threshold(text):
+    """Split '0.20 [0.05, 0.34]' into its three numbers."""
+    point, rest = text.split('[')
+    lo, hi = rest.rstrip(']').split(',')
+    return float(point), float(lo), float(hi)
+
+
+_rows = []
+for _, _c in df_coeffs.iterrows():
+    _group = _c['IGBP']
+    _z, _z_lo, _z_hi = _parse_threshold(_c['Threshold'])
+    _sub = _sites if _group == 'ALL SITES' else _sites[_sites['IGBP'] == _group]
+    _rows.append({
+        'Group': _group,
+        'Sites': len(_sub),
+        'a': _c['a'], 'b': _c['b'], 'c': _c['c'], 'd': _c['d'], 'e': _c['e'],
+        'R2': round(_c['R2'], 3),
+        'Threshold (sigma)': _c['Threshold'],
+        'Threshold (kPa)': f"{_to_kpa(_sub, _z):.2f} [{_to_kpa(_sub, _z_lo):.2f}, "
+                           f"{_to_kpa(_sub, _z_hi):.2f}]",
+    })
+supptable = pd.DataFrame(_rows)
+
+_stem = dir_out / f'54_SUPPTABLE-X_ThresholdPolynomials_{FLUX}'
+supptable.to_csv(f'{_stem}.csv', index=False)
+with pd.ExcelWriter(f'{_stem}.xlsx', engine='openpyxl') as _writer:
+    supptable.to_excel(_writer, sheet_name='Threshold polynomials', index=False)
+    _sheet = _writer.sheets['Threshold polynomials']
+    for _col, _w in zip('ABCDEFGHIJ', (14, 7, 11, 11, 11, 11, 11, 8, 20, 22)):
+        _sheet.column_dimensions[_col].width = _w
+print()
+print(supptable.to_string(index=False))
+print(f"Saved {_stem}.xlsx and {_stem}.csv")
+
 # Save fig to file
 outfilepath = dir_out / f'54_FIG-4_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}.png'
 fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
