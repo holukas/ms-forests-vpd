@@ -1,68 +1,52 @@
 """
 Threshold robustness: main-text Table 1 and the matching supplementary figure.
 
-One script, because both display items show the same twelve tests. Computing them twice, or
-in two scripts that read each other, is how a table and a figure drift apart.
+One script, because both display items show the same twelve tests. Rendering them from two
+scripts is how a table and a figure drift apart.
+
+**It computes nothing.** `40_aggregation/46_threshold_robustness.py` builds the rows and
+writes them to file, which is where the two-minute bootstrap belongs. This script reads that
+file and draws. It runs in about a second, which is what every script under `50_figures`
+should do, because they become notebooks under S10.
 
 **The table is the main-text item, the figure is supplementary.** Decided 31 August 2026.
 The differences between tests are at most 0.08 kPa on a threshold of 1.26, so a figure
 either magnifies them by zooming the axis or hides them by not zooming. The table states
 the numbers exactly. The figure keeps the shape of the result for readers who want it.
 
-**The estimator is the published one.** The threshold is the highest zero crossing of a
-fourth-order polynomial fitted to the VPD SHAP values averaged across sites, which is what
-Figure 4 shows and what the abstract reports. An earlier version used the median of
-per-site thresholds instead. That is a different quantity, it sat 0.07 kPa lower, and it
-silently drops any site whose own curve never crosses zero, so a robustness test built on
-it would be testing an estimator the reader never sees.
-
-**The interval is a bootstrap over sites.** Each replicate resamples sites with
-replacement, re-averages their binned curves, refits the polynomial and takes the crossing.
-That answers how much the threshold depends on which sites happen to be in the network,
-which is the question a robustness test is asked, and it uses the same estimator as the
-point value. It is not the prediction band of the fitted curve: that band describes how well
-a polynomial fits one aggregated curve and says nothing about site-to-site agreement, the
-point A13 makes.
-
 **Two rows have no site bootstrap.** The figure draws them with a diamond and the table
 marks them with an asterisk. The estimator row varies how the curve is fitted rather than
 which sites are included, so it shows the spread across its 23 settings. The ALE row has no
-interval at all, because script 70 derives the all-sites value from a single pooled curve
-rather than from per-site curves.
+interval at all, because script 70 derives the all-sites value from a single pooled curve.
+Script 46 flags both in the `note` column.
 
 **No shift column in the table.** Rounded to two decimals four of the shifts read as +0.00
 or -0.00, and three decimals would imply a precision the bootstrap interval, about plus or
 minus 0.02, does not support. The threshold column read against the reference row says the
-same thing. The figure plots the shift, because there an axis centred on the published
-value is what makes agreement visible.
+same thing. The figure plots the shift, because there an axis centred on the published value
+is what makes agreement visible.
 
 **Why the VPD quartile split is not here.** It used to be the last row. It does not belong:
-the other rows ask whether the number survives a different analytical choice, while that
-one asks whether the threshold varies with site climate, and the answer is yes. Its range,
-1.00 to 1.41 kPa, was the widest bar in the figure, so a reader scanning for robustness saw
-the largest apparent instability where there was actually signal. Most of that signal is
-also mechanical: the threshold is estimated in sigma and converted per site, and drier sites
-have a larger mean and spread, so a constant sigma threshold already yields a higher kPa
-value in the drier quartiles. Holding sigma at 0.20 for every quartile gives a spread of
-0.74 kPa, wider than the 0.57 observed. In sigma the pattern runs the other way, 0.25, 0.29,
-0.16, 0.04, falling with dryness. It belongs in its own supplementary analysis with that
-caveat stated, `62_threshold_vs_site_vpd_range.py`.
-
-Reads the per-site binned curves written by stage 41, the estimator sweep from script 60,
-and the ALE threshold from script 70. Nothing is refitted from the models.
+the other rows ask whether the number survives a different analytical choice, while that one
+asks whether the threshold varies with site climate, and the answer is yes. Its range, 1.00
+to 1.41 kPa, was the widest bar in the figure, so a reader scanning for robustness saw the
+largest apparent instability where there was actually signal. Most of that signal is also
+mechanical: the threshold is estimated in sigma and converted per site, and drier sites have
+a larger mean and spread, so a constant sigma threshold already yields a higher kPa value in
+the drier quartiles. It belongs in its own supplementary analysis with that caveat stated,
+`62_threshold_vs_site_vpd_range.py`.
 
 Writes:
   png    the supplementary figure
   xlsx   Table 1, for pasting into Word, which keeps the table structure
-  csv    Table 1 for the repository and the data deposit, plus the cached numbers
+  csv    Table 1 for the repository and the data deposit
 """
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
-from src.paths import data_path, load_settings
+from src.paths import load_settings
 
 SHOW_PLOT = False
 
@@ -71,14 +55,8 @@ CONDITIONAL = True
 VARIANT = ""
 SITE_SUBSET = ""
 
-# Recompute the thresholds and the bootstrap, or reuse what the last run wrote. The
-# bootstrap refits the curve 2000 times for each of twelve rows and takes about three
-# minutes, while the layout takes seconds, so a layout change should not pay for the
-# statistics again. Set to True after changing anything that affects the numbers.
-RECOMPUTE = False
-N_BOOT = 2000
-POLY_DEGREE = 4          # the published choice
 MOVER = 0.06             # kPa, beyond this a row reads as a real shift
+N_BOOT = 2000            # stated in the caption, set in script 46
 AX_LABELS_FONTSIZE = 12
 COLOR_POINT = '#0072B2'
 COLOR_MOVER = '#b2182b'
@@ -87,175 +65,25 @@ COLOR_REF = '#D55E00'
 shap_type = 'conditional' if CONDITIONAL else 'interventional'
 settings = load_settings()
 folder = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
-agg_base = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type
+folder.mkdir(parents=True, exist_ok=True)
+agg = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 
-CURVE_FILE = (f'41_SHAPVALUES-{shap_type}_meanAggregatedPerSite'
-              f'_BIN-TA_ZSCORE+BIN-VPD_ZSCORE+{FLUX}.parquet')
+source = agg / f'46_THRESHOLD_Robustness_{FLUX}.csv'
+if not source.is_file():
+    raise FileNotFoundError(f"No rows at {source}. Run "
+                            f"40_aggregation/46_threshold_robustness.py first.")
 
-# Sigma to kPa. Per-site mean and standard deviation, averaged over the sites in the run,
-# so the mapping follows the site set.
-#
-# CD-Ygb records VPD in Pa where every other site uses hPa. Other scripts drop it for that
-# reason. It is converted here instead, which keeps all 208 sites: dividing by 100 gives a
-# mean of 18.1 hPa and a standard deviation of 6.6 hPa, both inside the range the other
-# sites span, 4.5 to 31.8 hPa. The z-scores are per site and therefore unaffected by the
-# unit, so the conversion only touches the mapping back to kPa.
-PA_UNIT_SITES = ['CD-Ygb']
-subsets = pd.read_csv(data_path('data/outputs/20_subsets/'
-                                '21_SUBSETS_parquet_vars_stats_subsets.csv'))
-is_pa = subsets['SITE'].isin(PA_UNIT_SITES)
-subsets.loc[is_pa, ['VPD_Z0', 'VPD_SD']] /= 100
-subsets = subsets.set_index('SITE')
-
-
-def site_curves(*subfolders):
-    """Per-site VPD SHAP for every TA by VPD cell, as a site by cell matrix.
-
-    Figure 4 fits the polynomial to the two-dimensional grid of TA and VPD bins, not to a
-    curve collapsed over TA, and it keeps only cells held by at least half the sites
-    (`src/files.py::load_data`). Both matter: collapsing over TA and keeping every sparse
-    edge cell moves the crossing by more than 0.2 kPa, so the reference would not
-    reproduce the published value.
-    """
-    path = agg_base.joinpath(*subfolders) / CURVE_FILE
-    d = pd.read_parquet(path, columns=['SITE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE',
-                                       'VPD_ZSCORE_SHAPVALS']).dropna()
-    d = d.loc[d['SITE'].isin(subsets.index)]
-    piv = (d.groupby(['SITE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE'])['VPD_ZSCORE_SHAPVALS']
-           .mean().unstack(['BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE']).sort_index())
-    return piv
-
-
-def crossing(x, y):
-    """Highest zero crossing of the fitted polynomial, or nan."""
-    ok = np.isfinite(y)
-    if ok.sum() <= POLY_DEGREE + 1:
-        return np.nan
-    coef = np.polyfit(x[ok], y[ok], POLY_DEGREE)
-    fine = np.linspace(x[ok].min(), x[ok].max(), 2000)
-    vals = np.polyval(coef, fine)
-    sign_change = np.where(np.diff(np.sign(vals)))[0]
-    if len(sign_change) == 0:
-        return np.nan
-    roots = [fine[i] - vals[i] * (fine[i + 1] - fine[i]) / (vals[i + 1] - vals[i])
-             for i in sign_change]
-    return max(roots)
-
-
-def to_kpa(z, sites):
-    """Sigma to kPa for one site set."""
-    use = subsets.loc[subsets.index.isin(sites)]
-    return (use['VPD_Z0'].mean() + z * use['VPD_SD'].mean()) / 10
-
-
-def aggregate(M, x, min_sites):
-    """Median across sites per cell, keeping only cells held by enough sites.
-
-    Median, not mean. Script 42 writes several aggregations per bin and Figure 4 reads the
-    median column, so a mean here reproduces 1.252 kPa instead of the published 1.260.
-    """
-    counts = np.isfinite(M).sum(axis=0)
-    keep = counts >= min_sites
-    if keep.sum() <= POLY_DEGREE + 1:
-        return np.array([]), np.array([])
-    with np.errstate(invalid='ignore'):
-        y = np.nanmedian(M[:, keep], axis=0)
-    return x[keep], y
-
-
-def threshold_with_ci(piv, seed=0):
-    """Crossing of the aggregated curve, with a bootstrap over sites, both in kPa."""
-    x = piv.columns.get_level_values('BIN_VPD_ZSCORE').to_numpy(dtype=float)
-    M = piv.to_numpy(dtype=float)
-    sites = piv.index
-    n = len(M)
-    min_sites = np.ceil(n / 2)
-
-    xk, yk = aggregate(M, x, min_sites)
-    point = to_kpa(crossing(xk, yk), sites)
-
-    rng = np.random.default_rng(seed)
-    boot = np.empty(N_BOOT)
-    for i in range(N_BOOT):
-        xk, yk = aggregate(M[rng.integers(0, n, n)], x, min_sites)
-        boot[i] = crossing(xk, yk) if len(xk) else np.nan
-    boot = boot[np.isfinite(boot)]
-    lo, hi = np.percentile(boot, [2.5, 97.5])
-    return float(point), float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n
-
+out = pd.read_csv(source)
+ref_row = out.loc[out['test'] == 'PUBLISHED REFERENCE'].iloc[0]
+published, pub_lo, pub_hi = ref_row['threshold_kpa'], ref_row['lower'], ref_row['upper']
+rows = [(g, t, v, lo, hi, int(n), (None if pd.isna(note) else note))
+        for g, t, v, lo, hi, n, note in
+        out.loc[out['test'] != 'PUBLISHED REFERENCE']
+        [['group', 'test', 'threshold_kpa', 'lower', 'upper', 'n_sites', 'note']]
+        .itertuples(index=False, name=None)]
 
 outfile = folder / f'55_SUPPFIG-X_ThresholdRobustness_{FLUX}.png'
-cache = Path(str(outfile).replace('.png', '_DATA.csv'))
-cached = (not RECOMPUTE) and cache.exists()
 
-if cached:
-    print(f'reusing {cache.name}, set RECOMPUTE = True to redo the numbers')
-    stored = pd.read_csv(cache)
-    ref = stored.loc[stored['test'] == 'PUBLISHED REFERENCE'].iloc[0]
-    published, pub_lo, pub_hi = ref['threshold_kpa'], ref['lower'], ref['upper']
-    n_base = int(ref['n_sites'])
-    rows = [tuple(r) for r in stored.loc[stored['test'] != 'PUBLISHED REFERENCE']
-            [['group', 'test', 'threshold_kpa', 'lower', 'upper', 'n_sites', 'note']]
-            .itertuples(index=False, name=None)]
-    rows = [(g, t, v, lo, hi, int(n), (None if pd.isna(note) else note))
-            for g, t, v, lo, hi, n, note in rows]
-else:
-    rows = []  # (group, label, value, lo, hi, n_sites, note)
-
-    # Reference: the published run, same estimator.
-    base = site_curves()
-    published, pub_lo, pub_hi, n_base = threshold_with_ci(base)
-
-    # --- soil water depth -------------------------------------------------------
-    for label, sub in [('Deepest available layer, all sites', ('deep-sm',)),
-                       ('Matched sites, layer 1', ('', 'deeper-only')),
-                       ('Matched sites, deepest layer', ('deep-sm', 'deeper-only'))]:
-        piv = site_curves(*[p for p in sub if p])
-        rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=1), None))
-
-    # --- model fitting ----------------------------------------------------------
-    piv = site_curves('blocked-cv')
-    rows.append(('Model fitting', 'Blocked cross-validation',
-                 *threshold_with_ci(piv, seed=2), None))
-
-    # Accumulated local effects instead of SHAP. A different attribution method
-    # altogether, so this is the row that shares least machinery with the published
-    # analysis. Script 70 writes the all-sites value from a single pooled curve, so
-    # there is no interval to show and none is invented here.
-    ale = pd.read_csv(folder.parent / 'ale' /
-                      f'70_SUPPFIG-X_ALE_ResponseCurve_VPD_ZSCORE_{FLUX}_THRESHOLD.csv')
-    ale_z = float(ale.loc[ale['group'] == 'ALL SITES', 'threshold'].iloc[0])
-    ale_kpa = to_kpa(ale_z, base.index)
-    rows.append(('Model fitting', 'ALE instead of SHAP', ale_kpa, ale_kpa, ale_kpa,
-                 len(base), 'single pooled curve, no interval'))
-
-    # The estimator row varies the fit, not the sites, so it carries the spread across the 23
-    # settings rather than a bootstrap.
-    method = pd.read_csv(folder / '60_Threshold_MethodSensitivity.csv')
-    est = np.array([to_kpa(z, base.index) for z in method['threshold_z']])
-    rows.append(('Model fitting', f'Threshold estimator, {len(method)} settings',
-                 float(np.median(est)), float(est.min()), float(est.max()), n_base,
-                 'spread across settings'))
-
-    # --- site set ---------------------------------------------------------------
-    REGIONS = {
-        'Europe': ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR',
-                   'IE', 'IT', 'NL', 'PL', 'PT', 'RU', 'SE', 'SJ', 'SK', 'UK'],
-        'North America': ['US', 'CA', 'MX', 'PR', 'CR', 'GL'],
-    }
-    LOOKUP = {code: region for region, codes in REGIONS.items() for code in codes}
-    region_of = pd.Series(base.index.str.split('-').str[0].map(LOOKUP), index=base.index)
-    for drop, label in [(['Europe'], 'Europe removed'),
-                        (['North America'], 'North America removed'),
-                        (['Europe', 'North America'], 'Europe and North America removed')]:
-        keep = base.loc[~region_of.isin(drop)]
-        rows.append(('Site set', label, *threshold_with_ci(keep, seed=len(drop) + 10), None))
-
-    years = subsets['N_YEARS']
-    for min_years in (3, 5, 10):
-        keep = base.loc[base.index.isin(years[years >= min_years].index)]
-        rows.append(('Site set', f'Records of at least {min_years} years',
-                     *threshold_with_ci(keep, seed=min_years + 20), None))
 
 # ---------------------------------------------------------------------------
 # Layout
@@ -336,24 +164,12 @@ fig.text(0.025, 0.015,
          + chr(10) + 'interval because that method gives one pooled curve.',
          fontsize=AX_LABELS_FONTSIZE * 0.72, color='#666666', ha='left', linespacing=1.5)
 fig.savefig(outfile, dpi=300, facecolor='white')
+print(f"Saved {outfile}")
 
-# The reference goes into the cache as its own row, so a reused run does not have to
-# recompute it either.
-out = pd.DataFrame(rows + [('', 'PUBLISHED REFERENCE', published, pub_lo, pub_hi,
-                            n_base, None)],
-                   columns=['group', 'test', 'threshold_kpa', 'lower', 'upper',
-                            'n_sites', 'note'])
-out['shift_kpa'] = out['threshold_kpa'] - published
-if not cached:
-    out.to_csv(cache, index=False)
-print(out.round(3).to_string(index=False))
-print(f"\npublished reference: {published:.3f} [{pub_lo:.3f}, {pub_hi:.3f}] kPa, "
-      f"{n_base} sites")
-print(f"Saved to {outfile}")
 # ---------------------------------------------------------------------------
 # Table 1
 # ---------------------------------------------------------------------------
-# Built from the same rows the figure used, in memory, so the two cannot disagree.
+# The same rows the figure used, so the two cannot disagree.
 ref = out.loc[out['test'] == 'PUBLISHED REFERENCE'].iloc[0]
 tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 

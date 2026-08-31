@@ -188,6 +188,7 @@ which is what the aggregation and figure scripts consume.
 | `43_binagg_across_igbp.py` | Same, separately per IGBP forest type |
 | `44_agg_per_scenario.py` | Averages SHAP values within the nine stress stages, per site and then across sites |
 | `45_stage_distributions.py` | Driver medians and quartiles inside each stage, globally and per forest type, in standardized and measured units |
+| `46_threshold_robustness.py` | Twelve robustness tests of the VPD threshold with a bootstrap over sites, plus the 23-setting estimator sweep. Feeds Table 1 and its supplementary figure |
 
 Equal weighting throughout: a site with 20 years of data counts the same as a site with
 three. Bins that fewer than half of the sites reach are dropped from the aggregated
@@ -229,7 +230,6 @@ tables:
 | `57_fig_data_flow_sankey.py` | Draws `22_data_flow.csv` as a Sankey, one ribbon narrowing at each filtering step |
 | `58_threshold_zscore_to_kpa.py` | Converts the threshold from sigma to kPa per site, then averages, and reproduces the published values |
 | `59_biome_threshold_significance.py` | One threshold per site, then Kruskal-Wallis and Holm-corrected pairwise tests between forest types |
-| `60_threshold_method_sensitivity.py` | Re-estimates the threshold under 23 estimator choices, from polynomial degree to bin width |
 | `61_threshold_definitions.py` | Separates the peak, the steepest decline and the zero crossing, and flags points on the range edge |
 | `62_threshold_vs_site_vpd_range.py` | Splits sites by their own maximum VPD and checks whether the threshold tracks it |
 | `63_leave_region_out.py` | Recomputes the threshold and the stage 8 attribution with Europe, North America or both removed |
