@@ -49,7 +49,8 @@ with a message naming the environment variable.
         ├── 20_subsets/
         ├── 30_shap/
         ├── 40_aggregation/
-        └── 50_plots/
+        ├── 50_plots/
+        └── 60_info/
 ```
 
 Each `00_raw/<source>/` folder holds the unpacked site archives of that source plus a

@@ -18,7 +18,7 @@ from src.paths import load_settings
 VARIANT = ""
 SITE_SUBSET = ""
 FLUX = 'NEP_ZSCORE'
-# CD-Ygb records VPD in Pa where every other site uses hPa, see script 58. The factor is
+# CD-Ygb records VPD in Pa where every other site uses hPa, see script 54. The factor is
 # exactly 100: dividing gives a site mean of 18.10 hPa and a standard deviation of
 # 6.56 hPa, both inside the 4.5 to 31.8 hPa range spanned by the other sites. The
 # per-site z-scores are unaffected by the unit, so only the mapping to kPa changes and

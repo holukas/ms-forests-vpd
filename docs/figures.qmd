@@ -38,20 +38,19 @@ carries the same bin edge, so mean and median return the same number, and the me
 used because averaging identical floats reintroduces rounding noise in the labels. The
 SHAP values themselves, `zcol`, use `aggfunc`.
 
-## Script 70: configuration
+## Script 57: configuration
 
-The ALE response curve script is the most configurable of the six. Options at the top of
-the file:
+The ALE response curve script has the most switches. Options at the top of the file:
 
 | Setting | Default | Effect |
 |---------|---------|--------|
 | `PLOT_FEATURE` | `VPD_ZSCORE` | Feature on the x axis |
 | `FLUX` | `NEP_ZSCORE` | Target |
 | `USE_MEDIAN` | `False` | Mean aggregation across sites; `True` switches to median |
-| `USE_CI` | `True` | 95 % percentile band; `False` shows the standard error |
-| `FAST_TEST_MODE` | `False` | Runs on five random sites, useful before a full pass |
+| `USE_CI` | `True` | Labels show a 95 % interval; `False` shows the standard error |
+| `VARIANT` | `""` | Reads the matching run variant and writes beside it |
 
-Output is one panel with all site curves in grey behind the aggregated curve and its
-percentile band, a marker at the consensus zero crossing, and four panels splitting the
-same data by IGBP type (ENF, DBF, MF, EBF). Per-site PNGs and a CSV with the threshold
-statistics are written alongside.
+Output is one figure: a large panel with every site curve in grey and a marker at the mean
+zero crossing, and four panels splitting the same data by IGBP type (ENF, DBF, MF, EBF).
+It writes nothing else. The curves and the threshold table come from script 46, which has
+to run first.

@@ -29,7 +29,8 @@ level on both sides, so a variant reads `20_subsets/<VARIANT>/` and writes
 that read baseline subsets and wrote variant results would finish without an error and
 produce numbers that mean nothing.
 
-Scripts 41 to 44 and the figure scripts take a second switch alongside it:
+Most scripts from 41 onwards take a second switch alongside it. Scripts 45, 46, 51, 57 and
+66 do not, because their output does not depend on the site set:
 
 ```python
 SITE_SUBSET = ""              # every site
@@ -210,18 +211,22 @@ One run of each script covers all five. Script 44 takes no pair and runs once.
 
 Order matters: 41 first, then 42 and 43, which read what 41 wrote. Those two can run at
 the same time as each other, since they write different files. Script 44 reads the SHAP
-output directly and can run at any point after 31. Timings on 208 sites: 41 takes about
+output directly and can run at any point after 31. Then 46, which reads the ALE output of
+script 32, then 47, which reads what 46 wrote. Script 49 can run any time after 42. Timings on 208 sites: 41 takes about
 40 minutes because it reads every site file once per pair, 42 is a minute, 43 about ten,
 44 a minute.
 
 ## 50_figures
 
 Each figure script reads the aggregation output and writes to
-`50_plots/<FLUX>/<type>/<VARIANT>/`, so a variant cannot overwrite a published figure.
+`50_plots/<FLUX>/<type>/<VARIANT>/<SITE_SUBSET>/`, so a variant cannot overwrite a
+published figure.
 
 Script 51 (the site map) has no variant and needs none, since the site list does not
-depend on which soil water layer was used. Stage 46 reads the ALE output, so script 32
-has to have run with the same variant first.
+depend on which soil water layer was used.
+
+Three figure scripts read a stage 40 file rather than the aggregation output directly, so
+that stage has to have run first: 55 needs 47, 57 needs 46, and 65 needs 49.
 
 `66_fig_data_flow_sankey.py` draws `22_data_flow.csv` as a Sankey, one ribbon narrowing at
 each filtering step. It is not placed in the manuscript yet.
@@ -231,7 +236,8 @@ each filtering step. It is not placed in the manuscript yet.
 `scripts/60_info/` holds the analyses that test how far the published results hold under
 different choices. Their output is quoted in the text and in the response letter, and no
 figure or table reads it, which is what the `INFO` in the file name says. They write to
-`60_info/<FLUX>/<type>/<VARIANT>/`.
+`60_info/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/`, resolved from the `DIR_INFO_OUT`
+key in `settings.yaml`. All four read the conditional run only.
 
 | Script | What it does |
 |--------|--------------|
