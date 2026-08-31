@@ -1,35 +1,40 @@
 """
-PLANNED SUPPLEMENTARY FIGURE, not yet adopted.
+Threshold robustness: main-text Table 1 and the matching supplementary figure.
 
-Every robustness test of the VPD threshold on one axis, with a confidence interval on each,
-plotted as the shift from the published value.
+One script, because both display items show the same twelve tests. Computing them twice, or
+in two scripts that read each other, is how a table and a figure drift apart.
 
-**The main text uses the table, not this figure.** Decided 31 August 2026. The
-differences between tests are at most 0.08 kPa on a threshold of 1.26, so a figure either
-magnifies them by zooming the axis or hides them by not zooming. Table 1, written by
-`70_table-1_threshold_robustness.py` from this script's cache, carries the numbers in the
-main text. This figure stays as the supplementary view for readers who want the shape of
-the result rather than the values.
+**The table is the main-text item, the figure is supplementary.** Decided 31 August 2026.
+The differences between tests are at most 0.08 kPa on a threshold of 1.26, so a figure
+either magnifies them by zooming the axis or hides them by not zooming. The table states
+the numbers exactly. The figure keeps the shape of the result for readers who want it.
 
 **The estimator is the published one.** The threshold is the highest zero crossing of a
 fourth-order polynomial fitted to the VPD SHAP values averaged across sites, which is what
-Figure 4 shows and what the abstract reports. An earlier version of this figure used the
-median of per-site thresholds instead. That is a different quantity, it sat 0.07 kPa lower,
-and it silently drops any site whose own curve never crosses zero, so a robustness figure
-built on it would be testing an estimator the reader never sees.
+Figure 4 shows and what the abstract reports. An earlier version used the median of
+per-site thresholds instead. That is a different quantity, it sat 0.07 kPa lower, and it
+silently drops any site whose own curve never crosses zero, so a robustness test built on
+it would be testing an estimator the reader never sees.
 
 **The interval is a bootstrap over sites.** Each replicate resamples sites with
 replacement, re-averages their binned curves, refits the polynomial and takes the crossing.
 That answers how much the threshold depends on which sites happen to be in the network,
-which is the question a robustness figure is asked, and it uses the same estimator as the
+which is the question a robustness test is asked, and it uses the same estimator as the
 point value. It is not the prediction band of the fitted curve: that band describes how well
 a polynomial fits one aggregated curve and says nothing about site-to-site agreement, the
 point A13 makes.
 
-**Two rows have no site bootstrap** and are drawn with a diamond. The estimator row varies
-how the curve is fitted rather than which sites are included, so it shows the spread across
-its 23 settings. The ALE row has no interval at all, because script 55 derives the all-sites
-value from a single pooled curve rather than from per-site curves. The caption says both.
+**Two rows have no site bootstrap.** The figure draws them with a diamond and the table
+marks them with an asterisk. The estimator row varies how the curve is fitted rather than
+which sites are included, so it shows the spread across its 23 settings. The ALE row has no
+interval at all, because script 70 derives the all-sites value from a single pooled curve
+rather than from per-site curves.
+
+**No shift column in the table.** Rounded to two decimals four of the shifts read as +0.00
+or -0.00, and three decimals would imply a precision the bootstrap interval, about plus or
+minus 0.02, does not support. The threshold column read against the reference row says the
+same thing. The figure plots the shift, because there an axis centred on the published
+value is what makes agreement visible.
 
 **Why the VPD quartile split is not here.** It used to be the last row. It does not belong:
 the other rows ask whether the number survives a different analytical choice, while that
@@ -43,8 +48,13 @@ value in the drier quartiles. Holding sigma at 0.20 for every quartile gives a s
 0.16, 0.04, falling with dryness. It belongs in its own supplementary analysis with that
 caveat stated, `62_threshold_vs_site_vpd_range.py`.
 
-Reads the per-site binned curves written by stage 41, plus what scripts 60 and 62 wrote.
-Nothing is refitted from the models.
+Reads the per-site binned curves written by stage 41, the estimator sweep from script 60,
+and the ALE threshold from script 70. Nothing is refitted from the models.
+
+Writes:
+  png    the supplementary figure
+  xlsx   Table 1, for pasting into Word, which keeps the table structure
+  csv    Table 1 for the repository and the data deposit, plus the cached numbers
 """
 from pathlib import Path
 
@@ -174,7 +184,7 @@ def threshold_with_ci(piv, seed=0):
     return float(point), float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n
 
 
-outfile = folder / f'66_PLANNED-SUPPFIG_ThresholdRobustness_{FLUX}.png'
+outfile = folder / f'55_SUPPFIG-X_ThresholdRobustness_{FLUX}.png'
 cache = Path(str(outfile).replace('.png', '_DATA.csv'))
 cached = (not RECOMPUTE) and cache.exists()
 
@@ -210,10 +220,10 @@ else:
 
     # Accumulated local effects instead of SHAP. A different attribution method
     # altogether, so this is the row that shares least machinery with the published
-    # analysis. Script 55 writes the all-sites value from a single pooled curve, so
+    # analysis. Script 70 writes the all-sites value from a single pooled curve, so
     # there is no interval to show and none is invented here.
     ale = pd.read_csv(folder.parent / 'ale' /
-                      f'55_SUPPFIG-X_ALE_ResponseCurve_VPD_ZSCORE_{FLUX}_THRESHOLD.csv')
+                      f'70_SUPPFIG-X_ALE_ResponseCurve_VPD_ZSCORE_{FLUX}_THRESHOLD.csv')
     ale_z = float(ale.loc[ale['group'] == 'ALL SITES', 'threshold'].iloc[0])
     ale_kpa = to_kpa(ale_z, base.index)
     rows.append(('Model fitting', 'ALE instead of SHAP', ale_kpa, ale_kpa, ale_kpa,
@@ -325,9 +335,6 @@ fig.text(0.025, 0.015,
          'estimator row shows the spread across its 23 settings, and ALE has no'
          + chr(10) + 'interval because that method gives one pooled curve.',
          fontsize=AX_LABELS_FONTSIZE * 0.72, color='#666666', ha='left', linespacing=1.5)
-fig.text(0.025, 0.962, 'PLANNED supplementary figure, not yet adopted',
-         fontsize=AX_LABELS_FONTSIZE * 0.8, color=COLOR_REF, fontweight='bold', ha='left')
-
 fig.savefig(outfile, dpi=300, facecolor='white')
 
 # The reference goes into the cache as its own row, so a reused run does not have to
@@ -343,5 +350,95 @@ print(out.round(3).to_string(index=False))
 print(f"\npublished reference: {published:.3f} [{pub_lo:.3f}, {pub_hi:.3f}] kPa, "
       f"{n_base} sites")
 print(f"Saved to {outfile}")
+# ---------------------------------------------------------------------------
+# Table 1
+# ---------------------------------------------------------------------------
+# Built from the same rows the figure used, in memory, so the two cannot disagree.
+ref = out.loc[out['test'] == 'PUBLISHED REFERENCE'].iloc[0]
+tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
+
+# What each test varies, so the table reads without the figure beside it.
+WHAT_IT_VARIES = {
+    'Deepest available layer, all sites':
+        'Soil water taken from the deepest layer each site has',
+    'Matched sites, layer 1':
+        'Only the sites that have a deeper layer, using their shallow layer',
+    'Matched sites, deepest layer':
+        'The same sites, using their deepest layer',
+    'Blocked cross-validation':
+        'One calendar year left out at a time instead of a shuffled split',
+    'ALE instead of SHAP':
+        'Accumulated local effects, a different attribution method entirely',
+    'Threshold estimator, 23 settings':
+        'Polynomial degree, smoothing, bin width and fitting range',
+    'Europe removed': 'European sites excluded',
+    'North America removed': 'North American sites excluded',
+    'Europe and North America removed': 'Both regions excluded',
+    'Records of at least 3 years': 'Sites with shorter records excluded',
+    'Records of at least 5 years': 'Sites with shorter records excluded',
+    'Records of at least 10 years': 'Sites with shorter records excluded',
+}
+
+
+def interval(row):
+    """The interval, with a note where it is not a site bootstrap.
+
+    A row whose bounds equal its point value has no interval at all, which is the case for
+    ALE: script 70 derives the all-sites number from a single pooled curve. Printing
+    "1.25 to 1.25" would read as a precision claim, so it says none instead.
+    """
+    if row['upper'] <= row['lower']:
+        return 'none *'
+    text = f"{row['lower']:.2f} to {row['upper']:.2f}"
+    return text + (' *' if isinstance(row['note'], str) else '')
+
+
+table1 = pd.DataFrame({
+    'Group': tests['group'],
+    'Test': tests['test'],
+    'What it varies': tests['test'].map(WHAT_IT_VARIES),
+    'Sites': tests['n_sites'].astype(int),
+    'Threshold (kPa)': tests['threshold_kpa'].round(2),
+    '95% interval (kPa)': tests.apply(interval, axis=1),
+})
+
+# The reference on top, since every shift is measured against it.
+reference_row = pd.DataFrame([{
+    'Group': 'Reference',
+    'Test': 'Published analysis',
+    'What it varies': 'None, this is the value reported in the manuscript',
+    'Sites': int(ref['n_sites']),
+    'Threshold (kPa)': round(ref['threshold_kpa'], 2),
+    '95% interval (kPa)': f"{ref['lower']:.2f} to {ref['upper']:.2f}",
+}])
+table1 = pd.concat([reference_row, table1], ignore_index=True)
+
+biggest = tests.loc[tests['shift_kpa'].abs().idxmax()]
+footnote = (
+    f"Threshold is the highest zero crossing of a fourth-order polynomial fitted to the "
+    f"VPD SHAP values, the same estimator as in Figure 4. Intervals are a bootstrap over "
+    f"sites, 2000 replicates. Rows marked * show the spread across the settings varied "
+    f"rather than a bootstrap, or no interval where the method gives one pooled curve. "
+    f"The published value is {ref['threshold_kpa']:.2f} kPa. The "
+    f"largest departure from it is {biggest['test'].lower()} at "
+    f"{biggest['threshold_kpa']:.2f} kPa; every other test lands within 0.06 kPa of the "
+    f"published value."
+)
+
+stem = folder / f'55_TABLE-1_ThresholdRobustness_{FLUX}'
+table1.to_csv(f'{stem}.csv', index=False)
+with pd.ExcelWriter(f'{stem}.xlsx', engine='openpyxl') as writer:
+    table1.to_excel(writer, sheet_name='Table 1', index=False, startrow=0)
+    sheet = writer.sheets['Table 1']
+    # Column widths, so the pasted table does not need manual fixing in Word.
+    for column, width in zip('ABCDEF', (16, 34, 52, 8, 16, 20)):
+        sheet.column_dimensions[column].width = width
+    sheet.cell(row=len(table1) + 3, column=1, value=footnote)
+
+print(table1.to_string(index=False))
+print()
+print(footnote)
+print(f"\nSaved {stem}.xlsx and {stem}.csv")
+
 if SHOW_PLOT:
     plt.show()
