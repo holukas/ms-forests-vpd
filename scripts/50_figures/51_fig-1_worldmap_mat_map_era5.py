@@ -231,7 +231,7 @@ panel_label(ax_climate, 'b', f'Bioclimatic distribution (n={n_sites_climate})')
 # ---------------------------------------------------------
 # 7. SAVE AND SHOW
 # ---------------------------------------------------------
-out_plot = data_path("data/outputs/50_plots/NEP_ZSCORE/conditional/51_FIG-1_18_WorldMap_MAT_MAP_ERA5.png")
+out_plot = data_path("data/outputs/50_plots/NEP_ZSCORE/conditional/51_FIG-1_WorldMap_MAT_MAP_ERA5.png")
 out_plot.parent.mkdir(parents=True, exist_ok=True)
 
 plt.savefig(out_plot, dpi=300, bbox_inches='tight', facecolor='white')
