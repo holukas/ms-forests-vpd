@@ -11,7 +11,7 @@ to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
 | `52_fig-2+ExtFig_flameplots.py` | Figure 2 and the matching Extended Data figures, binned SHAP heatmaps | `40_aggregation/` |
 | `53_fig-3_sankeyplot_shapvalues_8stages.py` | Figure 3, SHAP flow across the stress stages | `40_aggregation/` |
 | `54_fig-4_vpd_response_curve_shap_agg.py` | Figure 4, VPD response curve from SHAP with threshold | `40_aggregation/` |
-| `55_fig_ale_response_curve_with_context.py` | ALE response curves with consensus threshold | `30_shap/<flux>/ale/` |
+| `55_suppfig_ale_response_curve.py` | ALE response curves with consensus threshold | `30_shap/<flux>/ale/` |
 | `56_ExtDataFig1+Table1_scenarios_boxplot_shapsums.py` | Extended Data Figure 1 and Table 1 | `40_aggregation/` |
 
 ## Figure 4: which values are averaged

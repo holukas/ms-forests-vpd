@@ -584,10 +584,15 @@ if mean_effect is not None and std_effect is not None:
     if SHOW_PLOT:
 
         fig.show()
-    # # Save figure
-    # outfilepath = dir_out / f'55_FIG_ALE_ResponseCurve_{PLOT_FEATURE}_Threshold_{FLUX}.png'
-    # fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
-    # print(f"Saved figure to: {outfilepath}\n")
+    # Save figure. Commented out on 25 April 2026, in the same commit that changed the
+    # layout, so the PNG on disk kept the old layout while the code moved on.
+    #
+    # The number is a placeholder. This was Extended Data Fig. 2 in the submitted
+    # version, Extended Data is not a Nature Communications category (T26), so it
+    # becomes a supplementary figure and X stands in until the number is assigned.
+    outfilepath = dir_out / f'55_SUPPFIG-X_ALE_ResponseCurve_{PLOT_FEATURE}_{FLUX}.png'
+    fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
+    print(f"Saved figure to: {outfilepath}\n")
 
     # Save threshold results
     # All sites, then one row per forest type. The per-type thresholds were already
@@ -619,6 +624,6 @@ if mean_effect is not None and std_effect is not None:
         })
     df_threshold = pd.DataFrame(rows)
 
-    threshold_path = dir_out / f'55_FIG_ALE_ResponseCurve_{PLOT_FEATURE}_{FLUX}_THRESHOLD.csv'
+    threshold_path = dir_out / f'55_SUPPFIG-X_ALE_ResponseCurve_{PLOT_FEATURE}_{FLUX}_THRESHOLD.csv'
     df_threshold.to_csv(threshold_path, index=False)
     print(f"Saved threshold results to: {threshold_path}")

@@ -213,7 +213,7 @@ else:
     # analysis. Script 55 writes the all-sites value from a single pooled curve, so
     # there is no interval to show and none is invented here.
     ale = pd.read_csv(folder.parent / 'ale' /
-                      f'55_FIG_ALE_ResponseCurve_VPD_ZSCORE_{FLUX}_THRESHOLD.csv')
+                      f'55_SUPPFIG-X_ALE_ResponseCurve_VPD_ZSCORE_{FLUX}_THRESHOLD.csv')
     ale_z = float(ale.loc[ale['group'] == 'ALL SITES', 'threshold'].iloc[0])
     ale_kpa = to_kpa(ale_z, base.index)
     rows.append(('Model fitting', 'ALE instead of SHAP', ale_kpa, ale_kpa, ale_kpa,
