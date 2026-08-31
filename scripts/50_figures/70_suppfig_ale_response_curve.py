@@ -62,7 +62,6 @@ fits 4th-order polynomials for smoothing, and detects response thresholds via ze
 PLOT_FEATURE = 'VPD_ZSCORE'        # Feature to analyze
 FLUX = 'NEP_ZSCORE'                # Target variable
 
-FAST_TEST_MODE = False              # True: use 5 random sites for testing
 USE_MEDIAN = False                  # True: median aggregation (robust to outliers)
 USE_CI = True                       # True: show 95% CI, False: show SEM
 ```
@@ -90,10 +89,8 @@ USE_CI = True                       # True: show 95% CI, False: show SEM
 """
 from pathlib import Path
 
-import diive as dv
 import numpy as np
 import pandas as pd
-from scipy.interpolate import interp1d
 
 import src.files as files
 import src.plot as plot
@@ -163,7 +160,6 @@ FLUX = 'NEP_ZSCORE'
 # published figure. The aggregation must have run with the same value.
 VARIANT = ""
 PLOT_FEATURE = 'VPD_ZSCORE'
-FAST_TEST_MODE = False
 USE_MEDIAN = False
 USE_CI = True  # True: 95% CI, False: SEM
 IGBPS = ['ENF', 'DBF', 'MF', 'EBF']
@@ -175,126 +171,42 @@ BEAUTIFY = {
 }
 
 settings = load_settings()
-dir_ale_results = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS']) / FLUX / 'ale' / VARIANT
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'ale' / VARIANT
 
 agg_name = "median" if USE_MEDIAN else "mean"
 print(f"\n{'=' * 80}\nALE Response Curves | Feature: {BEAUTIFY[PLOT_FEATURE]} | Aggregation: {agg_name}\n{'=' * 80}\n")
 dir_out.mkdir(parents=True, exist_ok=True)
 
-subsets_df = pd.read_csv(str(data_path("data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv")))
 
 # ==============================
-# STEP 1: LOAD DATA
+# LOAD WHAT STAGE 46 WROTE
 # ==============================
+# The per-site curves used to be built here, by reading 208 ALE files and interpolating
+# them. That is aggregation, so it moved to `40_aggregation/46_ale_thresholds.py` and this
+# script only draws. The variable names below are the ones the plotting code already used.
 
-all_site_data = {}
-site_igbp_map = {}
+curves_file = (Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / 'ale' / VARIANT /
+               f'46_ALE_SiteCurves_{PLOT_FEATURE}_{FLUX}.parquet')
+if not curves_file.is_file():
+    raise FileNotFoundError(f"No curves at {curves_file}. Run "
+                            f"40_aggregation/46_ale_thresholds.py first.")
 
-if FAST_TEST_MODE:
-    sites_with_data = [ix for ix, row in subsets_df.iterrows()
-                       if (dir_ale_results / f"{row['SITE']}_ale_{FLUX}.parquet").exists()]
-    sample_size = min(5, len(sites_with_data))
-    if sites_with_data:
-        subsets_df = subsets_df.iloc[sites_with_data].sample(n=sample_size, random_state=42)
-        print(f"FAST TEST MODE: Using {sample_size} random sites\n")
-    else:
-        print("ERROR: No sites with data files found\n")
+stored = pd.read_parquet(curves_file)
+common_grid = np.array([float(c) for c in stored.columns if c != 'IGBP'])
+site_igbp_map = stored['IGBP'].to_dict()
+all_site_ale_curves = list(stored.index)          # only the count is used below
 
-for ix, siteconfig in subsets_df.iterrows():
-    site = siteconfig['SITE']
-    igbp = siteconfig['IGBP']
-    site_igbp_map[site] = igbp
+site_ale_interpolated = [row for row in stored.drop(columns='IGBP').to_numpy(float)]
+igbp_ale_interpolated = {igbp: [] for igbp in IGBPS}
+for site, curve in zip(stored.index, site_ale_interpolated):
+    igbp = site_igbp_map.get(site)
+    if igbp in igbp_ale_interpolated:
+        igbp_ale_interpolated[igbp].append(curve)
 
-    filepath = dir_ale_results / f"{site}_ale_{FLUX}.parquet"
-    if not filepath.exists():
-        continue
+print(f"{len(site_ale_interpolated)} site curves on a grid of {len(common_grid)} points")
 
-    try:
-        site_data = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
-    except Exception:
-        continue
-
-    if PLOT_FEATURE not in site_data.columns or FLUX not in site_data.columns:
-        continue
-
-    valid_idx = ~(site_data[PLOT_FEATURE].isna() | site_data[FLUX].isna())
-    site_data_clean = site_data[valid_idx].copy()
-
-    if len(site_data_clean) > 10:
-        all_site_data[site] = site_data_clean
-
-# ==============================
-# STEP 2: CALCULATE ALE
-# ==============================
-
-ale_results_by_temp = {}
-all_site_ale_curves = []
-
-for site in all_site_data.keys():
-    ale_curve_file = dir_ale_results / f"{site}_ale_curves_{FLUX}.csv"
-    if not ale_curve_file.exists():
-        continue
-
-    try:
-        ale_curves_df = pd.read_csv(ale_curve_file)
-        feature_data = ale_curves_df[ale_curves_df['feature'] == PLOT_FEATURE]
-        if len(feature_data) > 0:
-            all_site_ale_curves.append({
-                'site': site,
-                'feature_value': feature_data['feature_value'].values,
-                'effect': feature_data['effect'].values
-            })
-    except Exception:
-        continue
-
-# Store result metadata
-ale_results_by_temp[0] = {
-    'feature_value': all_site_ale_curves[0]['feature_value'] if all_site_ale_curves else np.array([]),
-    'effect': np.array([]),
-    'n_records': sum(len(data) for data in all_site_data.values()),
-    'n_sites': len(all_site_ale_curves)
-}
-
-# ==============================
-# STEP 3: INTERPOLATE TO COMMON GRID AND AVERAGE
-# ==============================
-
+ale_interpolated = {}
 if len(all_site_ale_curves) > 0:
-    # Single curve mode: interpolate per-site curves to common grid, then average
-    all_feature_values = np.concatenate([
-        curve['feature_value'] for curve in all_site_ale_curves
-    ])
-    common_grid = np.linspace(all_feature_values.min(), all_feature_values.max(), 50)
-
-    # Interpolate each site's ALE curve to common grid
-    ale_interpolated = {}
-    site_ale_interpolated = []
-    igbp_ale_interpolated = {igbp: [] for igbp in IGBPS}  # Track by IGBP
-
-    for curve_idx, curve_data in enumerate(all_site_ale_curves):
-        site = curve_data['site']
-        x_orig = curve_data['feature_value']
-        y_orig = curve_data['effect']
-
-        sort_idx = np.argsort(x_orig)
-        x_sorted = x_orig[sort_idx]
-        y_sorted = y_orig[sort_idx]
-
-        try:
-            # Only interpolate within data range; set extrapolated regions to NaN (no extrapolation)
-            f_interp = interp1d(x_sorted, y_sorted, kind='linear', bounds_error=False, fill_value=np.nan)
-            y_interp = f_interp(common_grid)
-            site_ale_interpolated.append(y_interp)
-
-            # Also track by IGBP
-            if site in site_igbp_map:
-                igbp = site_igbp_map[site]
-                if igbp in igbp_ale_interpolated:
-                    igbp_ale_interpolated[igbp].append(y_interp)
-        except Exception as e:
-            continue
-
     if len(site_ale_interpolated) > 0:
         site_ale_poly_fitted = fit_polynomial_to_curves(site_ale_interpolated, common_grid)
         site_ale_interpolated_array = np.array(site_ale_poly_fitted)
@@ -594,36 +506,5 @@ if mean_effect is not None and std_effect is not None:
     fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
     print(f"Saved figure to: {outfilepath}\n")
 
-    # Save threshold results
-    # All sites, then one row per forest type. The per-type thresholds were already
-    # computed for the subplot labels but were not written out, so they could not be
-    # compared with the SHAP or the measured thresholds.
-    rows = [{
-        'feature': PLOT_FEATURE,
-        'target': FLUX,
-        'method': 'Direct zero-crossing',
-        'group': 'ALL SITES',
-        'threshold': f'{threshold_main:.3f}',
-        'ci_lower': '',
-        'ci_upper': '',
-        'n_sites': len(all_site_ale_curves),
-        'mode': 'Single curve'
-    }]
-    for entry in igbp_threshold_data:
-        _, ci_lo, ci_hi = calc_ci_95(entry['individual_thresholds'])
-        rows.append({
-            'feature': PLOT_FEATURE,
-            'target': FLUX,
-            'method': 'Per-site zero-crossings, mean',
-            'group': entry['IGBP'],
-            'threshold': f"{entry['Threshold']:.3f}",
-            'ci_lower': f'{ci_lo:.3f}',
-            'ci_upper': f'{ci_hi:.3f}',
-            'n_sites': entry['N_crossing'],
-            'mode': 'Per-site curves'
-        })
-    df_threshold = pd.DataFrame(rows)
-
-    threshold_path = dir_out / f'70_SUPPFIG-X_ALE_ResponseCurve_{PLOT_FEATURE}_{FLUX}_THRESHOLD.csv'
-    df_threshold.to_csv(threshold_path, index=False)
-    print(f"Saved threshold results to: {threshold_path}")
+    # The threshold table is not written here any more. Stage 46 owns it, and two
+    # scripts writing the same numbers is how they drift apart.

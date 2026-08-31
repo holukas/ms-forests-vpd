@@ -28,16 +28,17 @@ aggregated curve and says nothing about site-to-site agreement, the point A13 ma
 
 **Two rows have no site bootstrap.** The estimator row varies how the curve is fitted rather
 than which sites are included, so it carries the spread across its 23 settings. The ALE row
-has no interval at all, because script 70 derives the all-sites value from a single pooled
-curve rather than from per-site curves. Both are flagged in the `note` column.
+has no interval here, because stage 46 derives the all-sites value as a mean of per-site
+crossings, and the t interval on that is not the same construction as the bootstrap on
+the other rows. Both are flagged in the `note` column.
 
 Reads: stage 41 per-site curves for the baseline and the deep-sm, deeper-only and blocked-cv
 variants, stage 42 for the aggregated curve, the stage 21 subsets table, and the ALE
-threshold written by script 70.
+thresholds written by stage 46.
 
 Writes, into the aggregation folder:
-    46_THRESHOLD_EstimatorSweep_{FLUX}.csv    23 estimator settings, thresholds in sigma
-    46_THRESHOLD_Robustness_{FLUX}.csv        twelve tests plus the published reference, kPa
+    47_THRESHOLD_EstimatorSweep_{FLUX}.csv    23 estimator settings, thresholds in sigma
+    47_THRESHOLD_Robustness_{FLUX}.csv        twelve tests plus the published reference, kPa
 """
 from pathlib import Path
 
@@ -284,14 +285,15 @@ def robustness_rows(sweep):
 
     # Accumulated local effects instead of SHAP. A different attribution method
     # altogether, so this is the row that shares least machinery with the published
-    # analysis. Script 70 writes the all-sites value from a single pooled curve, so
-    # there is no interval to show and none is invented here.
-    ale_dir = Path(settings['DIR_PLOTS_OUT']) / FLUX / 'ale' / VARIANT
-    ale = pd.read_csv(ale_dir / f'70_SUPPFIG-X_ALE_ResponseCurve_VPD_ZSCORE_{FLUX}_THRESHOLD.csv')
+    # analysis. Stage 46 writes the all-sites value as the mean of the per-site
+    # crossings. It has a t interval over those crossings, which is not the same
+    # construction as the bootstrap on the other rows, so it is not shown here.
+    ale_dir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / 'ale' / VARIANT
+    ale = pd.read_csv(ale_dir / f'46_ALE_Thresholds_VPD_ZSCORE_{FLUX}.csv')
     ale_z = float(ale.loc[ale['group'] == 'ALL SITES', 'threshold'].iloc[0])
     ale_kpa = to_kpa(ale_z, base.index)
     rows.append(('Model fitting', 'ALE instead of SHAP', ale_kpa, ale_kpa, ale_kpa,
-                 len(base), 'single pooled curve, no interval'))
+                 len(base), 'mean of per-site crossings, interval not comparable'))
 
     # The estimator row varies the fit, not the sites, so it carries the spread across the
     # settings rather than a bootstrap.
@@ -331,11 +333,11 @@ def robustness_rows(sweep):
 
 def main():
     sweep = estimator_sweep()
-    sweep_file = dir_out / f'46_THRESHOLD_EstimatorSweep_{FLUX}.csv'
+    sweep_file = dir_out / f'47_THRESHOLD_EstimatorSweep_{FLUX}.csv'
     sweep.to_csv(sweep_file, index=False)
 
     out = robustness_rows(sweep)
-    rows_file = dir_out / f'46_THRESHOLD_Robustness_{FLUX}.csv'
+    rows_file = dir_out / f'47_THRESHOLD_Robustness_{FLUX}.csv'
     out.to_csv(rows_file, index=False)
 
     ref = out.loc[out['test'] == 'PUBLISHED REFERENCE'].iloc[0]

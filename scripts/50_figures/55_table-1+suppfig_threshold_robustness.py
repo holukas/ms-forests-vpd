@@ -4,7 +4,7 @@ Threshold robustness: main-text Table 1 and the matching supplementary figure.
 One script, because both display items show the same twelve tests. Rendering them from two
 scripts is how a table and a figure drift apart.
 
-**It computes nothing.** `40_aggregation/46_threshold_robustness.py` builds the rows and
+**It computes nothing.** `40_aggregation/47_threshold_robustness.py` builds the rows and
 writes them to file, which is where the two-minute bootstrap belongs. This script reads that
 file and draws. It runs in about a second, which is what every script under `50_figures`
 should do, because they become notebooks under S10.
@@ -68,10 +68,10 @@ folder = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUB
 folder.mkdir(parents=True, exist_ok=True)
 agg = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 
-source = agg / f'46_THRESHOLD_Robustness_{FLUX}.csv'
+source = agg / f'47_THRESHOLD_Robustness_{FLUX}.csv'
 if not source.is_file():
     raise FileNotFoundError(f"No rows at {source}. Run "
-                            f"40_aggregation/46_threshold_robustness.py first.")
+                            f"40_aggregation/47_threshold_robustness.py first.")
 
 out = pd.read_csv(source)
 ref_row = out.loc[out['test'] == 'PUBLISHED REFERENCE'].iloc[0]

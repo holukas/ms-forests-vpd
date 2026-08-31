@@ -188,7 +188,8 @@ which is what the aggregation and figure scripts consume.
 | `43_binagg_across_igbp.py` | Same, separately per IGBP forest type |
 | `44_agg_per_scenario.py` | Averages SHAP values within the nine stress stages, per site and then across sites |
 | `45_stage_distributions.py` | Driver medians and quartiles inside each stage, globally and per forest type, in standardized and measured units |
-| `46_threshold_robustness.py` | Twelve robustness tests of the VPD threshold with a bootstrap over sites, plus the 23-setting estimator sweep. Feeds Table 1 and its supplementary figure |
+| `46_ale_thresholds.py` | Puts the per-site ALE curves on one grid and finds the thresholds, globally and per forest type |
+| `47_threshold_robustness.py` | Twelve robustness tests of the VPD threshold with a bootstrap over sites, plus the 23-setting estimator sweep. Feeds Table 1 and its supplementary figure |
 
 Equal weighting throughout: a site with 20 years of data counts the same as a site with
 three. Bins that fewer than half of the sites reach are dropped from the aggregated
