@@ -119,7 +119,7 @@ def main():
           f"{all_sites['zero_crossing_kPa']:.2f} kPa.")
     print("Only the third is the published threshold.")
 
-    outfile = info / "61_INFO_ThresholdDefinitions.csv"
+    outfile = info / "81_INFO_ThresholdDefinitions.csv"
     out.to_csv(outfile, index=False)
     print(f"\nSaved {outfile}")
 

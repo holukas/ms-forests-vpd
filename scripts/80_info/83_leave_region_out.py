@@ -93,7 +93,7 @@ def main():
     print(f"\nLargest change against the full network: ratio {worst_ratio:.2f}, "
           f"threshold {worst_thr:.2f} kPa.")
 
-    outfile = info / "63_INFO_LeaveRegionOut.csv"
+    outfile = info / "83_INFO_LeaveRegionOut.csv"
     out.to_csv(outfile, index=False)
     print(f"Saved {outfile}")
 

@@ -16,7 +16,7 @@ DIR_DATA_PROC_SUBSETS_BASE: data/outputs/20_subsets
 DIR_DATA_OUT_SHAP_ANALYSIS: data/outputs/30_shap
 DIR_DATA_OUT_SHAP_ANALYSIS_AGG: data/outputs/40_aggregation
 DIR_PLOTS_OUT: data/outputs/50_plots
-DIR_INFO_OUT: data/outputs/60_info
+DIR_INFO_OUT: data/outputs/80_info
 
 # Ecosystem types included in the analysis
 ECOSYSTEMS: ['DBF', 'DNF', 'EBF', 'ENF', 'MF']

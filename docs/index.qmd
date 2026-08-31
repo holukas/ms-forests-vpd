@@ -26,7 +26,7 @@ are aggregated with equal weight per site, both overall and by IGBP forest type.
 | `scripts/30_shap/` | Train XGBoost models, calculate SHAP values and ALE curves |
 | `scripts/40_aggregation/` | Aggregate SHAP values per site, across sites, by IGBP, by stress stage |
 | `scripts/50_figures/` | Manuscript figures and tables |
-| `scripts/60_info/` | Checks whose numbers are quoted in the text, read by no figure |
+| `scripts/80_info/` | Checks whose numbers are quoted in the text, read by no figure |
 | `src/` | Shared code: models, aggregation, plotting, statistics, curve fitting, stress stages, file handling, paths |
 | `config/` | `settings.yaml` and FLUXNET site metadata |
 | `data/worldmap/` | Natural Earth country outlines used by the map figure |

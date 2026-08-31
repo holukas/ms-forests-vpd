@@ -79,7 +79,7 @@ def main():
           f"sites and {base['records_kept_pct'] - out.loc[out.min_years == 3, 'records_kept_pct'].iloc[0]:.1f} "
           f"per cent of the records.")
 
-    outfile = info / "64_INFO_ShortRecordSensitivity.csv"
+    outfile = info / "84_INFO_ShortRecordSensitivity.csv"
     out.to_csv(outfile, index=False)
     print(f"Saved {outfile}")
 

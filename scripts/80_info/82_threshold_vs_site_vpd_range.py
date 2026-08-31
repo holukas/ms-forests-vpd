@@ -92,10 +92,10 @@ def main():
     print(f"\nA zero crossing appears at {crossings} of {len(d)} sites, in every stratum,"
           f" so the nonlinearity is not confined to sites that reach high absolute VPD.")
 
-    outfile = info / "62_INFO_ThresholdVsSiteVPDRange.csv"
+    outfile = info / "82_INFO_ThresholdVsSiteVPDRange.csv"
     g.to_csv(outfile)
     d[['SITE', 'IGBP', 'threshold_z', 'threshold_kpa', 'vpd_max_kpa', 'stratum']].to_csv(
-        info / "62_INFO_ThresholdVsSiteVPDRange_perSite.csv", index=False)
+        info / "82_INFO_ThresholdVsSiteVPDRange_perSite.csv", index=False)
     print(f"\nSaved {outfile}")
 
 

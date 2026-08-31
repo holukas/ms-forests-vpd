@@ -231,22 +231,22 @@ that stage has to have run first: 55 needs 47, 57 needs 46, and 65 needs 49.
 `66_fig_data_flow_sankey.py` draws `22_data_flow.csv` as a Sankey, one ribbon narrowing at
 each filtering step. It is not placed in the manuscript yet.
 
-## Stage 60, information only
+## Stage 80, information only
 
-`scripts/60_info/` holds the analyses that test how far the published results hold under
+`scripts/80_info/` holds the analyses that test how far the published results hold under
 different choices. Their output is quoted in the text and in the response letter, and no
 figure or table reads it, which is what the `INFO` in the file name says. They write to
-`60_info/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/`, resolved from the `DIR_INFO_OUT`
+`80_info/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/`, resolved from the `DIR_INFO_OUT`
 key in `settings.yaml`. All four read the conditional run only.
 
 | Script | What it does |
 |--------|--------------|
-| `61_threshold_definitions.py` | Separates the peak, the steepest decline and the zero crossing, and flags points on the range edge |
-| `62_threshold_vs_site_vpd_range.py` | Splits sites by their own maximum VPD and checks whether the threshold tracks it |
-| `63_leave_region_out.py` | Recomputes the threshold and the stage 8 attribution with Europe, North America or both removed |
-| `64_short_record_sensitivity.py` | Recomputes them while requiring progressively longer retained records |
+| `81_threshold_definitions.py` | Separates the peak, the steepest decline and the zero crossing, and flags points on the range edge |
+| `82_threshold_vs_site_vpd_range.py` | Splits sites by their own maximum VPD and checks whether the threshold tracks it |
+| `83_leave_region_out.py` | Recomputes the threshold and the stage 8 attribution with Europe, North America or both removed |
+| `84_short_record_sensitivity.py` | Recomputes them while requiring progressively longer retained records |
 
-Scripts 63 and 64 answer the same two questions as two rows of Table 1, but from the median
+Scripts 83 and 84 answer the same two questions as two rows of Table 1, but from the median
 of the per-site thresholds rather than from the aggregated curve. The two estimators differ
 by about 0.07 kPa, so their numbers are not the numbers in the table and should not be
 quoted beside them.
