@@ -31,7 +31,8 @@ list and the forest type.
 
 Writes, into the aggregation folder:
     46_ALE_SiteCurves_{FEATURE}_{FLUX}.parquet   one interpolated curve per site, plus IGBP
-    46_ALE_Thresholds_{FEATURE}_{FLUX}.csv       all sites, then one row per forest type
+    46_ALE_Thresholds_{FEATURE}_{FLUX}.csv       all sites, then one row per forest type,
+                                                 each with the spread and the interval
 """
 from pathlib import Path
 
@@ -172,14 +173,22 @@ def interpolate(curves):
 
 
 def group_threshold(curves_on_grid, grid):
-    """Mean of the per-site crossings for one group, with its interval."""
+    """Mean of the per-site crossings for one group, with its spread and its interval.
+
+    Three numbers, because they answer different questions and get confused for each other.
+    The standard deviation says how much sites differ. The standard error and the interval
+    say how well the mean is determined, and they are smaller by the square root of the site
+    count. For all sites that is 0.45 sigma against 0.03, a factor of fourteen.
+    """
     fitted = fit_polynomial_to_curves(curves_on_grid, grid)
     crossings = np.array([find_zero_crossing(c, grid) for c in fitted])
     crossings = crossings[~np.isnan(crossings)]
     if len(crossings) == 0:
-        return np.nan, np.nan, np.nan, 0, len(fitted)
+        return np.nan, np.nan, np.nan, np.nan, np.nan, 0, len(fitted)
     mean, lo, hi = calc_ci_95(crossings)
-    return mean, lo, hi, len(crossings), len(fitted)
+    sd = float(crossings.std(ddof=1)) if len(crossings) > 1 else np.nan
+    se = float(stats.sem(crossings)) if len(crossings) > 1 else np.nan
+    return mean, lo, hi, sd, se, len(crossings), len(fitted)
 
 
 def main():
@@ -196,11 +205,12 @@ def main():
     # All sites, the published value: the mean of the per-site crossings. Script 70 wrote
     # this number under a label saying it came from one pooled curve, which it does not.
     fitted = fit_polynomial_to_curves(matrix, grid)
-    mean, lo, hi, n_cross, n_total = group_threshold(matrix, grid)
+    mean, lo, hi, sd, se, n_cross, n_total = group_threshold(matrix, grid)
 
     rows = [{'feature': FEATURE, 'target': FLUX,
              'method': 'Per-site zero-crossings, mean', 'group': 'ALL SITES',
              'threshold': f'{mean:.3f}', 'ci_lower': f'{lo:.3f}', 'ci_upper': f'{hi:.3f}',
+             'sd': f'{sd:.3f}', 'se': f'{se:.3f}',
              'n_sites': n_cross, 'mode': 'Per-site curves'}]
 
     # The pooled curve, written so the two definitions stay visibly apart. Nothing in the
@@ -212,19 +222,19 @@ def main():
     rows.append({'feature': FEATURE, 'target': FLUX, 'method': 'Pooled curve zero-crossing',
                  'group': 'ALL SITES (pooled curve)',
                  'threshold': f'{find_zero_crossing(pooled, grid):.3f}',
-                 'ci_lower': '', 'ci_upper': '', 'n_sites': n_total,
+                 'ci_lower': '', 'ci_upper': '', 'sd': '', 'se': '', 'n_sites': n_total,
                  'mode': 'Single curve'})
 
     for igbp in IGBPS:
         keep = [i for i, s in enumerate(sites) if igbp_of.get(s) == igbp]
         if not keep:
             continue
-        mean, lo, hi, n_cross, _ = group_threshold(matrix[keep], grid)
+        mean, lo, hi, sd, se, n_cross, _ = group_threshold(matrix[keep], grid)
         rows.append({'feature': FEATURE, 'target': FLUX,
                      'method': 'Per-site zero-crossings, mean', 'group': igbp,
                      'threshold': f'{mean:.3f}', 'ci_lower': f'{lo:.3f}',
-                     'ci_upper': f'{hi:.3f}', 'n_sites': n_cross,
-                     'mode': 'Per-site curves'})
+                     'ci_upper': f'{hi:.3f}', 'sd': f'{sd:.3f}', 'se': f'{se:.3f}',
+                     'n_sites': n_cross, 'mode': 'Per-site curves'})
 
     out = pd.DataFrame(rows)
     thresholds_file = dir_out / f'46_ALE_Thresholds_{FEATURE}_{FLUX}.csv'

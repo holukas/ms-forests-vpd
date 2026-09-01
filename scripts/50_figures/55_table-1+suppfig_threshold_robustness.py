@@ -47,12 +47,18 @@ Writes:
   xlsx   Table 1, for pasting into Word, which keeps the table structure
   csv    Table 1 for the repository and the data deposit
 """
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from src.paths import load_settings
+
+# The row labels carry a greater-or-equal sign, and the Windows console is cp1252, so a
+# plain print of the table raises. Writing the files never did, only the echo.
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 SHOW_PLOT = False
 
@@ -116,12 +122,16 @@ SHORT = {
     'Air temperature dropped from the model': 'No air temperature',
     'Threshold estimator, 23 settings': 'Estimator, 23 settings',
     'Europe and North America removed': 'Europe and N. America removed',
-    'Records of at least 3 years': 'Records at least 3 years',
-    'Records of at least 5 years': 'Records at least 5 years',
-    'Records of at least 10 years': 'Records at least 10 years',
+    'Records of at least 3 years': 'Records ≥ 3 years',
+    'Records of at least 5 years': 'Records ≥ 5 years',
+    'Records of at least 10 years': 'Records ≥ 10 years',
 }
 
-plot_rows = [(g, SHORT.get(t, t), v, lo, hi, n, note)
+# The reference row was inserted under a friendlier name than the file uses, so the
+# lookup falls back to the reference sigma rather than failing on it.
+sigma_of = dict(zip(out['test'], out['threshold_sigma']))
+plot_rows = [(g, SHORT.get(t, t), v, lo, hi, n, note,
+              sigma_of.get(t, ref_row['threshold_sigma']))
              for g, t, v, lo, hi, n, note in rows]
 
 ordered = list(reversed(plot_rows))
@@ -136,14 +146,14 @@ for group, *_ in ordered:
 
 fig, (axt, ax) = plt.subplots(1, 2, figsize=(12.6, 8.6), dpi=150,
                               gridspec_kw={'width_ratios': [1.18, 1.0], 'wspace': 0.04})
-fig.subplots_adjust(left=0.02, right=0.97, top=0.90, bottom=0.17)
+fig.subplots_adjust(left=0.02, right=0.97, top=0.90, bottom=0.10)
 
 axt.axis('off')
 for a in (axt, ax):
     a.set_ylim(min(ypos) - 1.0, max(ypos) + 1.3)
 
 TAB = axt.get_yaxis_transform()
-COL_LABEL, COL_N, COL_VALUE = 0.00, 0.60, 0.66
+COL_LABEL, COL_N, COL_SIGMA, COL_VALUE = 0.00, 0.545, 0.655, 0.70
 
 
 def value_text(mid, lo, hi, note):
@@ -157,10 +167,12 @@ def value_text(mid, lo, hi, note):
     return f'{mid:.2f}   [{lo:.2f}, {hi:.2f}]'
 
 
-for (group, label, mid, lo, hi, n, note), y in zip(ordered, ypos):
+for (group, label, mid, lo, hi, n, note, sigma), y in zip(ordered, ypos):
     axt.text(COL_LABEL, y, label, transform=TAB, ha='left', va='center',
              fontsize=AX_LABELS_FONTSIZE * 0.92, color='#1a1a1a')
     axt.text(COL_N, y, f'{n}', transform=TAB, ha='right', va='center',
+             fontsize=AX_LABELS_FONTSIZE * 0.8, color=COLOR_GREY)
+    axt.text(COL_SIGMA, y, f'{sigma:.2f}', transform=TAB, ha='right', va='center',
              fontsize=AX_LABELS_FONTSIZE * 0.8, color=COLOR_GREY)
     axt.text(COL_VALUE, y, value_text(mid, lo, hi, note), transform=TAB, ha='left',
              va='center', fontsize=AX_LABELS_FONTSIZE * 0.8, color='#444444')
@@ -170,6 +182,8 @@ for group, ys in group_rows.items():
     axt.text(COL_LABEL, top, group.upper(), transform=TAB, ha='left', va='center',
              fontsize=AX_LABELS_FONTSIZE * 0.68, color=COLOR_GREY, fontweight='bold')
 axt.text(COL_N, max(ypos) + 0.66, 'sites', transform=TAB, ha='right', va='center',
+         fontsize=AX_LABELS_FONTSIZE * 0.68, color=COLOR_GREY, fontweight='bold')
+axt.text(COL_SIGMA, max(ypos) + 0.66, 'sigma', transform=TAB, ha='right', va='center',
          fontsize=AX_LABELS_FONTSIZE * 0.68, color=COLOR_GREY, fontweight='bold')
 axt.text(COL_VALUE, max(ypos) + 0.66, 'kPa [95 % band]', transform=TAB, ha='left',
          va='center', fontsize=AX_LABELS_FONTSIZE * 0.68, color=COLOR_GREY,
@@ -181,9 +195,10 @@ for a, x0, x1 in ((axt, COL_LABEL, 1.10), (ax, 0.0, 1.0)):
     a.plot([x0, x1], [rule_y, rule_y], transform=a.get_yaxis_transform(), color='#B8B8B8',
            lw=1.0, zorder=1, clip_on=False)
 
+ax.axvspan(pub_lo, pub_hi, color=COLOR_REF, alpha=0.08, lw=0, zorder=0)
 ax.axvline(published, color=COLOR_REF, lw=1.4, zorder=2)
 
-for (group, label, mid, lo, hi, n, note), y in zip(ordered, ypos):
+for (group, label, mid, lo, hi, n, note, sigma), y in zip(ordered, ypos):
     if hi <= lo:
         pass                                   # ALE: a marker on its own, no interval
     elif note:
@@ -207,13 +222,14 @@ ax.text(published, 1.01, f'  published {published:.2f} kPa',
         transform=ax.get_xaxis_transform(), ha='left', va='bottom', color=COLOR_REF,
         fontweight='bold', fontsize=AX_LABELS_FONTSIZE * 0.85, clip_on=False)
 
-fig.text(0.02, 0.015,
-         'Zero crossing of the fitted curve, one row per test. A thick bar is the 95 % '
-         'prediction band of that fit. Whiskers mark the two rows that carry a'
-         + chr(10) + 'spread instead: the estimator row across its 23 settings, and the '
-         'leave-one-site-out row across its 208 removals. ALE fits no'
-         + chr(10) + 'curve here, so it has no interval at all.',
-         fontsize=AX_LABELS_FONTSIZE * 0.7, color='#666666', ha='left', linespacing=1.6)
+# No caption text inside the image. The journal wants the legend as text beside the
+# display item, not baked into the png, so both the summary line and the explanation
+# live in the caption drafted in the revision notes. The numbers behind the summary
+# line are printed below instead, so a rerun still reports them.
+_points = [r[2] for r in rows if r[1] != 'Published analysis']
+_inside = sum(pub_lo <= v <= pub_hi for v in _points)
+print(f'{_inside} of {len(_points)} tests fall inside the band of the published '
+      f'threshold, {pub_lo:.2f} to {pub_hi:.2f} kPa')
 
 fig.savefig(outfile, dpi=300, facecolor='white')
 print(f"Saved {outfile}")
@@ -320,8 +336,9 @@ for group in ['Soil water depth', 'Model fitting', 'Site set']:
         continue
     records.append(_row(group, '', '', '', ''))          # sub-header row
     for _, r in block.iterrows():
-        records.append(_row(r['test'], int(r['n_sites']), f"{r['threshold_sigma']:.2f}",
-                            f"{r['threshold_kpa']:.2f}", interval(r)))
+        records.append(_row(SHORT.get(r['test'], r['test']), int(r['n_sites']),
+                            f"{r['threshold_sigma']:.2f}", f"{r['threshold_kpa']:.2f}",
+                            interval(r)))
 table1 = pd.DataFrame(records, columns=COLUMNS)
 
 
@@ -332,8 +349,8 @@ table1 = pd.DataFrame(records, columns=COLUMNS)
 # reference because it uses 59 sites, so two rows now clear 0.06 kPa rather than one.
 biggest = tests.loc[tests['shift_kpa'].abs().idxmax()]
 movers = tests.loc[tests['shift_kpa'].abs() >= MOVER].sort_values('shift_kpa')
-mover_text = '; '.join(f"{r['test'].lower()} at {r['threshold_kpa']:.2f} kPa"
-                       for _, r in movers.iterrows())
+mover_text = '; '.join(f"{SHORT.get(r['test'], r['test']).lower()} at "
+                       f"{r['threshold_kpa']:.2f} kPa" for _, r in movers.iterrows())
 footnote = (
     f"Threshold is the highest zero crossing of a fourth-order polynomial fitted to the "
     f"VPD SHAP values, the same estimator as in Figure 4. Intervals are the 95 % prediction "
