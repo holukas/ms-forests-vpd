@@ -64,7 +64,7 @@ SITE_SUBSET = ""
 MOVER = 0.06             # kPa, beyond this a row reads as a real shift
 AX_LABELS_FONTSIZE = 12
 COLOR_POINT = '#0072B2'
-COLOR_MOVER = '#b2182b'
+COLOR_GREY = '#8A8A8A'
 COLOR_REF = '#D55E00'
 
 shap_type = 'conditional' if CONDITIONAL else 'interventional'
@@ -98,16 +98,34 @@ outfile = folder / f'55_SUPPFIG-X_ThresholdRobustness_{FLUX}.png'
 # ---------------------------------------------------------------------------
 # Layout
 # ---------------------------------------------------------------------------
-# Plotted as the shift from the published threshold. Every test lands near 1.26 kPa, so on
-# an absolute axis the points crowd into a narrow band and the reader has to work out that
-# this is agreement. Centring on the published value makes zero mean something and lets the
-# few tests that do move stand out.
+# A table on the left and the bars on the right, sharing one row grid. The earlier version
+# plotted the shift from the published value on a centred axis, which made agreement easy to
+# see but hid the numbers the reader wants. Here the axis carries absolute kPa, the value and
+# its interval are printed, and the table half mirrors main-text Table 1 so the two read as
+# one argument.
+#
+# One blue throughout. Colouring the movers red made the eye go to two rows out of sixteen
+# and read them as failures, which is the opposite of what the figure says.
 
-LABEL_X, VALUE_X = -0.46, 1.02
+SHORT = {
+    'Deepest available layer, all sites': 'Deepest layer, all sites',
+    'Matched sites, layer 1': 'Matched sites, shallow',
+    'Matched sites, deepest layer': 'Matched sites, deepest',
+    'Layer 5+ sites, shallow soil water': 'Layer 5+ sites, shallow',
+    'Layer 5+ sites, deep soil water': 'Layer 5+ sites, deep',
+    'Air temperature dropped from the model': 'No air temperature',
+    'Threshold estimator, 23 settings': 'Estimator, 23 settings',
+    'Europe and North America removed': 'Europe and N. America removed',
+    'Records of at least 3 years': 'Records at least 3 years',
+    'Records of at least 5 years': 'Records at least 5 years',
+    'Records of at least 10 years': 'Records at least 10 years',
+}
 
-ordered = list(reversed(rows))
-ypos, group_rows, y = [], {}, 0.0
-prev_group = None
+plot_rows = [(g, SHORT.get(t, t), v, lo, hi, n, note)
+             for g, t, v, lo, hi, n, note in rows]
+
+ordered = list(reversed(plot_rows))
+ypos, group_rows, y, prev_group = [], {}, 0.0, None
 for group, *_ in ordered:
     if prev_group is not None and group != prev_group:
         y += 1.15
@@ -116,62 +134,87 @@ for group, *_ in ordered:
     prev_group = group
     y += 1.0
 
-fig, ax = plt.subplots(figsize=(11, 8.2), dpi=150)
-# The caption runs to four lines, so it gets its own band at the bottom.
-fig.subplots_adjust(left=0.34, right=0.87, top=0.88, bottom=0.24)
-trans = ax.get_yaxis_transform()
+fig, (axt, ax) = plt.subplots(1, 2, figsize=(12.6, 8.6), dpi=150,
+                              gridspec_kw={'width_ratios': [1.18, 1.0], 'wspace': 0.04})
+fig.subplots_adjust(left=0.02, right=0.97, top=0.90, bottom=0.17)
 
-ax.axvline(0, color=COLOR_REF, lw=1.4, zorder=2)
+axt.axis('off')
+for a in (axt, ax):
+    a.set_ylim(min(ypos) - 1.0, max(ypos) + 1.3)
+
+TAB = axt.get_yaxis_transform()
+COL_LABEL, COL_N, COL_VALUE = 0.00, 0.60, 0.66
+
+
+def value_text(mid, lo, hi, note):
+    """What the value column prints. It has to say which kind of interval each row carries,
+    so the word travels with the number rather than sitting in a column of its own where the
+    neighbouring axes would cover it."""
+    if hi <= lo:
+        return f'{mid:.2f}   (no band)'
+    if note:
+        return f'{mid:.2f}   ({lo:.2f} to {hi:.2f} range)'
+    return f'{mid:.2f}   [{lo:.2f}, {hi:.2f}]'
+
 
 for (group, label, mid, lo, hi, n, note), y in zip(ordered, ypos):
-    shift = mid - published
-    colour = COLOR_MOVER if abs(shift) >= MOVER else COLOR_POINT
-    ax.plot([0, 1], [y, y], transform=trans, color='#F2F2F2', lw=0.8, zorder=0)
-    if hi > lo:
-        ax.plot([lo - published, hi - published], [y, y], color=colour, lw=3.2,
-                alpha=0.32 if note else 0.55, zorder=3, solid_capstyle='round')
-    ax.scatter([shift], [y], s=44, color=colour, zorder=4,
-               marker='D' if note else 'o', linewidths=0)
-    ax.text(LABEL_X, y, label, transform=trans, ha='left', va='center',
-            fontsize=AX_LABELS_FONTSIZE * 0.92, color='#1a1a1a')
-    ax.text(LABEL_X, y - 0.34, f'{n} sites' + (f'   {note}' if note else ''),
-            transform=trans, ha='left', va='center',
-            fontsize=AX_LABELS_FONTSIZE * 0.66, color='#9a9a9a')
-    ax.text(VALUE_X, y, f'{shift:+.2f}', transform=trans, ha='left', va='center',
-            fontsize=AX_LABELS_FONTSIZE * 0.85,
-            color=colour if abs(shift) >= MOVER else '#666666',
-            fontweight='bold' if abs(shift) >= MOVER else 'normal')
+    axt.text(COL_LABEL, y, label, transform=TAB, ha='left', va='center',
+             fontsize=AX_LABELS_FONTSIZE * 0.92, color='#1a1a1a')
+    axt.text(COL_N, y, f'{n}', transform=TAB, ha='right', va='center',
+             fontsize=AX_LABELS_FONTSIZE * 0.8, color=COLOR_GREY)
+    axt.text(COL_VALUE, y, value_text(mid, lo, hi, note), transform=TAB, ha='left',
+             va='center', fontsize=AX_LABELS_FONTSIZE * 0.8, color='#444444')
 
 for group, ys in group_rows.items():
-    top = max(ys) + 0.62
-    ax.text(LABEL_X, top, group.upper(), transform=trans, ha='left', va='center',
-            fontsize=AX_LABELS_FONTSIZE * 0.7, color='#9a9a9a', fontweight='bold')
-    ax.plot([LABEL_X, 1.0], [top - 0.28, top - 0.28], transform=trans, color='#E2E2E2',
-            lw=0.9, zorder=0, clip_on=False)
+    top = max(ys) + 0.66
+    axt.text(COL_LABEL, top, group.upper(), transform=TAB, ha='left', va='center',
+             fontsize=AX_LABELS_FONTSIZE * 0.68, color=COLOR_GREY, fontweight='bold')
+axt.text(COL_N, max(ypos) + 0.66, 'sites', transform=TAB, ha='right', va='center',
+         fontsize=AX_LABELS_FONTSIZE * 0.68, color=COLOR_GREY, fontweight='bold')
+axt.text(COL_VALUE, max(ypos) + 0.66, 'kPa [95 % band]', transform=TAB, ha='left',
+         va='center', fontsize=AX_LABELS_FONTSIZE * 0.68, color=COLOR_GREY,
+         fontweight='bold')
+
+# A rule under the reference row, so the eye separates the value being tested from the tests.
+rule_y = ypos[-1] - 0.62
+for a, x0, x1 in ((axt, COL_LABEL, 1.10), (ax, 0.0, 1.0)):
+    a.plot([x0, x1], [rule_y, rule_y], transform=a.get_yaxis_transform(), color='#B8B8B8',
+           lw=1.0, zorder=1, clip_on=False)
+
+ax.axvline(published, color=COLOR_REF, lw=1.4, zorder=2)
+
+for (group, label, mid, lo, hi, n, note), y in zip(ordered, ypos):
+    if hi <= lo:
+        pass                                   # ALE: a marker on its own, no interval
+    elif note:
+        # Whiskers, not a band. These rows carry a spread across settings or removals, which
+        # is a different quantity from a prediction band, so it must not look the same.
+        ax.plot([lo, hi], [y, y], color=COLOR_POINT, lw=1.2, zorder=3)
+        for edge in (lo, hi):
+            ax.plot([edge, edge], [y - 0.26, y + 0.26], color=COLOR_POINT, lw=1.2, zorder=3)
+    else:
+        ax.plot([lo, hi], [y, y], color=COLOR_POINT, lw=3.2, alpha=0.45, zorder=3,
+                solid_capstyle='round')
+    ax.scatter([mid], [y], s=44, color=COLOR_POINT, zorder=4, linewidths=0)
 
 ax.set_yticks([])
-ax.set_ylim(min(ypos) - 1.0, max(ypos) + 1.1)
-ax.set_xlabel('Shift from the published threshold (kPa)', fontsize=AX_LABELS_FONTSIZE)
-ax.tick_params(axis='x', labelsize=AX_LABELS_FONTSIZE, colors='#555555', length=4)
+ax.set_xlabel('VPD threshold (kPa)', fontsize=AX_LABELS_FONTSIZE)
+ax.tick_params(axis='x', labelsize=AX_LABELS_FONTSIZE * 0.9, colors='#555555', length=4)
 for sp in ('top', 'right', 'left'):
     ax.spines[sp].set_visible(False)
 ax.spines['bottom'].set_color('#CCCCCC')
+ax.text(published, 1.01, f'  published {published:.2f} kPa',
+        transform=ax.get_xaxis_transform(), ha='left', va='bottom', color=COLOR_REF,
+        fontweight='bold', fontsize=AX_LABELS_FONTSIZE * 0.85, clip_on=False)
 
-ax.text(0, 1.01, f' published {published:.2f} kPa [{pub_lo:.2f}, {pub_hi:.2f}]',
-        transform=ax.get_xaxis_transform(),
-        ha='left', va='bottom', color=COLOR_REF, fontweight='bold',
-        fontsize=AX_LABELS_FONTSIZE * 0.9, clip_on=False)
-ax.text(VALUE_X, max(ypos) + 0.62, 'shift, kPa', transform=trans, ha='left', va='center',
-        color='#9a9a9a', fontsize=AX_LABELS_FONTSIZE * 0.7, fontweight='bold')
+fig.text(0.02, 0.015,
+         'Zero crossing of the fitted curve, one row per test. A thick bar is the 95 % '
+         'prediction band of that fit. Whiskers mark the two rows that carry a'
+         + chr(10) + 'spread instead: the estimator row across its 23 settings, and the '
+         'leave-one-site-out row across its 208 removals. ALE fits no'
+         + chr(10) + 'curve here, so it has no interval at all.',
+         fontsize=AX_LABELS_FONTSIZE * 0.7, color='#666666', ha='left', linespacing=1.6)
 
-fig.text(0.025, 0.015,
-         f'Zero crossing of the fitted curve, published value {published:.2f} kPa '
-         f'[{pub_lo:.2f}, {pub_hi:.2f}]. Bars are the 95 % prediction band of that fit.'
-         + chr(10) + f'Red marks a shift of at least {MOVER:.2f} kPa.'
-         + chr(10) + 'Diamonds mark the three rows with no band: the estimator row and '
-         'the leave-one-site-out row show the spread across' + chr(10) + 'their settings and '
-         'their removals, and ALE fits no curve here.',
-         fontsize=AX_LABELS_FONTSIZE * 0.72, color='#666666', ha='left', linespacing=1.5)
 fig.savefig(outfile, dpi=300, facecolor='white')
 print(f"Saved {outfile}")
 
@@ -253,25 +296,36 @@ def interval(row):
     return text + (' *' if isinstance(row['note'], str) else '')
 
 
-table1 = pd.DataFrame({
-    'Group': main['group'],
-    'Test': main['test'],
-    'What it varies': main['test'].map(WHAT_IT_VARIES),
-    'Sites': main['n_sites'].astype(int),
-    'Threshold (kPa)': main['threshold_kpa'].round(2),
-    '95% interval (kPa)': main.apply(interval, axis=1),
-})
+# Group names become sub-header rows rather than a column, which saves the width a Nature
+# Communications page does not have. The prose column is gone for the same reason: the test
+# names carry it, and the caption holds anything they do not.
+#
+# Sigma and kPa both, because every row converts with its own site set. A row can move in kPa
+# while standing still in sigma, and the reader cannot see that from kPa alone. It is also
+# the column that ties this table to Figure 4, which reports sigma.
+COLUMNS = ['Test', f'Sites (of {int(ref["n_sites"])})', 'Threshold (sigma)',
+           'Threshold (kPa)', '95% interval (kPa)']
 
-# The reference on top, since every shift is measured against it.
-reference_row = pd.DataFrame([{
-    'Group': 'Reference',
-    'Test': 'Published analysis',
-    'What it varies': 'None, this is the value reported in the manuscript',
-    'Sites': int(ref['n_sites']),
-    'Threshold (kPa)': round(ref['threshold_kpa'], 2),
-    '95% interval (kPa)': f"{ref['lower']:.2f} to {ref['upper']:.2f}",
-}])
-table1 = pd.concat([reference_row, table1], ignore_index=True)
+
+def _row(test, n, sigma, kpa, interval_text):
+    return dict(zip(COLUMNS, [test, n, sigma, kpa, interval_text]))
+
+
+records = [_row('Published analysis', int(ref['n_sites']), f"{ref['threshold_sigma']:.2f}",
+                f"{ref['threshold_kpa']:.2f}",
+                f"{ref['lower']:.2f} to {ref['upper']:.2f}")]
+for group in ['Soil water depth', 'Model fitting', 'Site set']:
+    block = main.loc[main['group'] == group]
+    if block.empty:
+        continue
+    records.append(_row(group, '', '', '', ''))          # sub-header row
+    for _, r in block.iterrows():
+        records.append(_row(r['test'], int(r['n_sites']), f"{r['threshold_sigma']:.2f}",
+                            f"{r['threshold_kpa']:.2f}", interval(r)))
+table1 = pd.DataFrame(records, columns=COLUMNS)
+
+
+
 
 # Which tests actually pass the cutoff, rather than a sentence that assumes one does. Adding
 # the layer 5+ pair made the old wording false: its shallow row sits 0.069 kPa below the
@@ -300,7 +354,7 @@ with pd.ExcelWriter(f'{stem}.xlsx', engine='openpyxl') as writer:
     table1.to_excel(writer, sheet_name='Table 1', index=False, startrow=0)
     sheet = writer.sheets['Table 1']
     # Column widths, so the pasted table does not need manual fixing in Word.
-    for column, width in zip('ABCDEF', (16, 34, 52, 8, 16, 20)):
+    for column, width in zip('ABCDE', (38, 13, 16, 16, 20)):
         sheet.column_dimensions[column].width = width
     sheet.cell(row=len(table1) + 3, column=1, value=footnote)
 

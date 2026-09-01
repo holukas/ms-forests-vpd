@@ -280,7 +280,8 @@ def threshold_with_ci(piv, seed=0):
     min_sites = np.ceil(n / 2)
 
     xk, yk = aggregate(M, x, min_sites)
-    point = to_kpa(crossing(xk, yk), sites)
+    point_z = crossing(xk, yk)
+    point = to_kpa(point_z, sites)
 
     # The published interval: the same routine script 54 uses for Figure 4.
     _, _, x_fit, y_fit, _, pi_upper, pi_lower = fit.fit_polynomial(xk, yk)
@@ -294,7 +295,7 @@ def threshold_with_ci(piv, seed=0):
         boot[i] = crossing(xk, yk) if len(xk) else np.nan
     boot = boot[np.isfinite(boot)]
     lo, hi = np.percentile(boot, [2.5, 97.5])
-    return (float(point), float(band_lo), float(band_hi),
+    return (float(point_z), float(point), float(band_lo), float(band_hi),
             float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n)
 
 
@@ -333,12 +334,13 @@ def deepest_layer_sites(min_layer):
 
 
 def robustness_rows(sweep):
-    # (group, label, value, band_lo, band_hi, boot_lo, boot_hi, n_sites, note)
+    # (group, label, sigma, value, band_lo, band_hi, boot_lo, boot_hi, n_sites, note)
     rows = []
 
     # Reference: the published run, same estimator.
     base = site_curves()
-    published, pub_lo, pub_hi, pub_boot_lo, pub_boot_hi, n_base = threshold_with_ci(base)
+    (published_z, published, pub_lo, pub_hi,
+     pub_boot_lo, pub_boot_hi, n_base) = threshold_with_ci(base)
 
     # --- soil water depth -------------------------------------------------------
     for label, sub in [('Deepest available layer, all sites', ('deep-sm',)),
@@ -386,14 +388,16 @@ def robustness_rows(sweep):
     ale = pd.read_csv(ale_dir / f'46_ALE_Thresholds_VPD_ZSCORE_{FLUX}.csv')
     ale_z = float(ale.loc[ale['group'] == 'ALL SITES', 'threshold'].iloc[0])
     ale_kpa = to_kpa(ale_z, base.index)
-    rows.append(('Model fitting', 'ALE instead of SHAP', ale_kpa, ale_kpa, ale_kpa,
+    rows.append(('Model fitting', 'ALE instead of SHAP', ale_z, ale_kpa, ale_kpa, ale_kpa,
                  ale_kpa, ale_kpa, len(base),
                  'no curve fitted here, value is a mean of per-site crossings'))
 
     # The estimator row varies the fit, not the sites, so it carries the spread across the
     # settings rather than a bootstrap.
-    est = np.array([to_kpa(z, base.index) for z in sweep['threshold_z'].dropna()])
+    est_z = sweep['threshold_z'].dropna().to_numpy()
+    est = np.array([to_kpa(z, base.index) for z in est_z])
     rows.append(('Model fitting', f'Threshold estimator, {len(sweep)} settings',
+                 float(np.median(est_z)),
                  float(np.median(est)), float(est.min()), float(est.max()),
                  float(est.min()), float(est.max()), n_base, 'spread across settings'))
 
@@ -404,7 +408,9 @@ def robustness_rows(sweep):
     # over the removals rather than an interval, because any two of those values share 207
     # sites and are not independent draws.
     loo = leave_one_site_out(base).dropna()
-    rows.append(('Site set', 'Any one site removed', float(loo.median()),
+    # The sigma value is the published one: every removal refits the same estimator on almost
+    # the same sites, and the row's spread is in kPa.
+    rows.append(('Site set', 'Any one site removed', published_z, float(loo.median()),
                  float(loo.min()), float(loo.max()), float(loo.min()), float(loo.max()),
                  n_base, 'range across single-site removals'))
 
@@ -428,10 +434,11 @@ def robustness_rows(sweep):
                      *threshold_with_ci(keep, seed=min_years + 20), None))
 
     # The reference goes in as its own row, so the renderer needs nothing else.
-    out = pd.DataFrame(rows + [('', 'PUBLISHED REFERENCE', published, pub_lo, pub_hi,
-                                pub_boot_lo, pub_boot_hi, n_base, None)],
-                       columns=['group', 'test', 'threshold_kpa', 'lower', 'upper',
-                                'boot_lower', 'boot_upper', 'n_sites', 'note'])
+    out = pd.DataFrame(rows + [('', 'PUBLISHED REFERENCE', published_z, published, pub_lo,
+                                pub_hi, pub_boot_lo, pub_boot_hi, n_base, None)],
+                       columns=['group', 'test', 'threshold_sigma', 'threshold_kpa',
+                                'lower', 'upper', 'boot_lower', 'boot_upper', 'n_sites',
+                                'note'])
     out['shift_kpa'] = out['threshold_kpa'] - published
     return out, loo
 
