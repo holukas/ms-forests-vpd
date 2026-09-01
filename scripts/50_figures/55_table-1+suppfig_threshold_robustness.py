@@ -182,6 +182,27 @@ print(f"Saved {outfile}")
 ref = out.loc[out['test'] == 'PUBLISHED REFERENCE'].iloc[0]
 tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 
+# Seven tests for the main table, one per kind of challenge. The figure keeps all of them.
+# The full set is too many for a main display item, and the reason is redundancy: three
+# record-length rows make one point, three region rows make one point, and each matched pair
+# is a two-row argument about one comparison. Both largest movers stay, North America and the
+# ten-year records, so the selection cannot be read as flattering. The estimator row is left
+# out on purpose: dropping it removes one of the three things the interval column means, so
+# the main table carries two instead of three.
+MAIN_ROWS = [
+    'Deepest available layer, all sites',
+    'Air temperature dropped from the model',
+    'Blocked cross-validation',
+    'ALE instead of SHAP',
+    'Any one site removed',
+    'North America removed',
+    'Records of at least 10 years',
+]
+missing = [t for t in MAIN_ROWS if t not in set(tests['test'])]
+if missing:
+    raise SystemExit(f'Main table rows not found in the input: {missing}')
+main = tests.loc[tests['test'].isin(MAIN_ROWS)].copy()
+
 # What each test varies, so the table reads without the figure beside it.
 WHAT_IT_VARIES = {
     'Deepest available layer, all sites':
@@ -223,12 +244,12 @@ def interval(row):
 
 
 table1 = pd.DataFrame({
-    'Group': tests['group'],
-    'Test': tests['test'],
-    'What it varies': tests['test'].map(WHAT_IT_VARIES),
-    'Sites': tests['n_sites'].astype(int),
-    'Threshold (kPa)': tests['threshold_kpa'].round(2),
-    '95% interval (kPa)': tests.apply(interval, axis=1),
+    'Group': main['group'],
+    'Test': main['test'],
+    'What it varies': main['test'].map(WHAT_IT_VARIES),
+    'Sites': main['n_sites'].astype(int),
+    'Threshold (kPa)': main['threshold_kpa'].round(2),
+    '95% interval (kPa)': main.apply(interval, axis=1),
 })
 
 # The reference on top, since every shift is measured against it.
@@ -246,13 +267,12 @@ biggest = tests.loc[tests['shift_kpa'].abs().idxmax()]
 footnote = (
     f"Threshold is the highest zero crossing of a fourth-order polynomial fitted to the "
     f"VPD SHAP values, the same estimator as in Figure 4. Intervals are the 95 % prediction "
-    f"band of that fit, as in Figure 4. Rows marked * have no band: the estimator row shows "
-    f"the spread across the settings varied, the leave-one-site-out row the spread across the "
-    f"removals, and the ALE row fits no curve. "
-    f"The published value is {ref['threshold_kpa']:.2f} kPa. The "
+    f"band of that fit, as in Figure 4. Rows marked * have no band: the leave-one-site-out "
+    f"row shows the spread across the 208 removals, and the ALE row fits no curve. "
+    f"The published value is {ref['threshold_kpa']:.2f} kPa. Of all {len(tests)} tests, the "
     f"largest departure from it is {biggest['test'].lower()} at "
-    f"{biggest['threshold_kpa']:.2f} kPa; every other test lands within {MOVER:.2f} kPa of "
-    f"the published value."
+    f"{biggest['threshold_kpa']:.2f} kPa, and every other test lands within {MOVER:.2f} kPa "
+    f"of the published value. The full set is in Supplementary Fig. X."
 )
 
 stem = folder / f'55_TABLE-1_ThresholdRobustness_{FLUX}'

@@ -73,6 +73,7 @@ VARIANT = ""
 SITE_SUBSET = ""
 
 N_BOOT = 2000
+DEEP_LAYER_MIN = 5       # the deepest-layer rows use sites at this layer or below
 POLY_DEGREE = 4          # the published choice
 
 shap_type = 'conditional' if CONDITIONAL else 'interventional'
@@ -317,6 +318,20 @@ def leave_one_site_out(piv):
                      name='threshold_kpa').rename_axis('site_removed')
 
 
+def deepest_layer_sites(min_layer):
+    """Sites whose deep-sm run sits at `min_layer` or below.
+
+    Stage 21 records the layer it chose per site, so the list costs nothing. 80 sites stay on
+    layer 1, and the 128 that move spread over layers 2 to 9.
+    """
+    path = (Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / 'deep-sm'
+            / '21_SUBSETS_parquet_vars_stats_subsets.csv')
+    layers = pd.read_csv(path)
+    keep = layers.loc[layers['SWC_LAYER'] >= min_layer, 'SITE']
+    print(f'{len(keep)} sites on soil water layer {min_layer} or deeper')
+    return set(keep)
+
+
 def robustness_rows(sweep):
     # (group, label, value, band_lo, band_hi, boot_lo, boot_hi, n_sites, note)
     rows = []
@@ -331,6 +346,18 @@ def robustness_rows(sweep):
                        ('Matched sites, deepest layer', ('deep-sm', 'deeper-only'))]:
         piv = site_curves(*[p for p in sub if p])
         rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=1), None))
+
+    # The deepest layers on their own. The matched pair above uses all 128 sites that moved
+    # down, and most of them moved one layer, so the depth contrast is diluted. These are the
+    # sites that reached layer 5 or below, held fixed across both rows, so only the depth
+    # changes and the contrast is the largest the network allows. This is where R3's objection
+    # bites hardest: surface soil water is not the water a tree reaches.
+    deep_sites = deepest_layer_sites(DEEP_LAYER_MIN)
+    for label, sub in [(f'Layer {DEEP_LAYER_MIN}+ sites, layer 1', ('',)),
+                       (f'Layer {DEEP_LAYER_MIN}+ sites, their deep layer', ('deep-sm',))]:
+        piv = site_curves(*[p for p in sub if p])
+        piv = piv.loc[piv.index.isin(deep_sites)]
+        rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=3), None))
 
     # --- model fitting ----------------------------------------------------------
     # Air temperature dropped from the predictor set. Every other row varies a setting, while
