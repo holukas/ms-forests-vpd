@@ -189,8 +189,14 @@ tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 # ten-year records, so the selection cannot be read as flattering. The estimator row is left
 # out on purpose: dropping it removes one of the three things the interval column means, so
 # the main table carries two instead of three.
+#
+# Depth is represented by the layer 5+ pair rather than by the all-sites row. That row mixes
+# the 80 sites that never moved with 128 that did, most of them by one layer, so its small
+# shift is diluted. The pair holds 59 sites fixed and swaps layer 1 for layer 5 or deeper,
+# which is the largest departure from the layer 1 selection the published number rests on.
 MAIN_ROWS = [
-    'Deepest available layer, all sites',
+    'Layer 5+ sites, shallow soil water',
+    'Layer 5+ sites, deep soil water',
     'Air temperature dropped from the model',
     'Blocked cross-validation',
     'ALE instead of SHAP',
@@ -213,6 +219,10 @@ WHAT_IT_VARIES = {
         'The same sites, using their deepest layer',
     'Air temperature dropped from the model':
         'The model never sees temperature, so nothing of it can reach the VPD values',
+    'Layer 5+ sites, shallow soil water':
+        'The 59 sites with a layer 5 or deeper sensor, using their surface layer',
+    'Layer 5+ sites, deep soil water':
+        'The same 59 sites, using soil water from layer 5 or deeper',
     'Blocked cross-validation':
         'One calendar year left out at a time instead of a shuffled split',
     'ALE instead of SHAP':
@@ -263,16 +273,25 @@ reference_row = pd.DataFrame([{
 }])
 table1 = pd.concat([reference_row, table1], ignore_index=True)
 
+# Which tests actually pass the cutoff, rather than a sentence that assumes one does. Adding
+# the layer 5+ pair made the old wording false: its shallow row sits 0.069 kPa below the
+# reference because it uses 59 sites, so two rows now clear 0.06 kPa rather than one.
 biggest = tests.loc[tests['shift_kpa'].abs().idxmax()]
+movers = tests.loc[tests['shift_kpa'].abs() >= MOVER].sort_values('shift_kpa')
+mover_text = '; '.join(f"{r['test'].lower()} at {r['threshold_kpa']:.2f} kPa"
+                       for _, r in movers.iterrows())
 footnote = (
     f"Threshold is the highest zero crossing of a fourth-order polynomial fitted to the "
     f"VPD SHAP values, the same estimator as in Figure 4. Intervals are the 95 % prediction "
     f"band of that fit, as in Figure 4. Rows marked * have no band: the leave-one-site-out "
     f"row shows the spread across the 208 removals, and the ALE row fits no curve. "
-    f"The published value is {ref['threshold_kpa']:.2f} kPa. Of all {len(tests)} tests, the "
-    f"largest departure from it is {biggest['test'].lower()} at "
-    f"{biggest['threshold_kpa']:.2f} kPa, and every other test lands within {MOVER:.2f} kPa "
-    f"of the published value. The full set is in Supplementary Fig. X."
+    f"The published value is {ref['threshold_kpa']:.2f} kPa. Of all {len(tests)} tests, "
+    f"{len(movers)} depart from it by more than {MOVER:.2f} kPa: {mover_text}. Every other "
+    f"test lands closer. The two layer 5+ rows are a pair and are read against each other, "
+    f"not against the reference: they use 59 sites rather than 208, so their offset from it "
+    f"is a difference in sample, while the difference between them, "
+    f"{abs(main.loc[main['test'].str.startswith('Layer'), 'threshold_kpa'].diff().iloc[-1]):.2f} "
+    f"kPa, is the effect of soil water depth. The full set is in Supplementary Fig. X."
 )
 
 stem = folder / f'55_TABLE-1_ThresholdRobustness_{FLUX}'

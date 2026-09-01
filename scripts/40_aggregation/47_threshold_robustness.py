@@ -353,8 +353,11 @@ def robustness_rows(sweep):
     # changes and the contrast is the largest the network allows. This is where R3's objection
     # bites hardest: surface soil water is not the water a tree reaches.
     deep_sites = deepest_layer_sites(DEEP_LAYER_MIN)
-    for label, sub in [(f'Layer {DEEP_LAYER_MIN}+ sites, layer 1', ('',)),
-                       (f'Layer {DEEP_LAYER_MIN}+ sites, their deep layer', ('deep-sm',))]:
+    # Named as a pair, because the two rows are read against each other and not against the
+    # published reference. Both sit about 0.06 kPa below it, which is these 59 sites being a
+    # different sample, not a depth effect.
+    for label, sub in [(f'Layer {DEEP_LAYER_MIN}+ sites, shallow soil water', ('',)),
+                       (f'Layer {DEEP_LAYER_MIN}+ sites, deep soil water', ('deep-sm',))]:
         piv = site_curves(*[p for p in sub if p])
         piv = piv.loc[piv.index.isin(deep_sites)]
         rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=3), None))

@@ -11,7 +11,7 @@ to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
 | `52_fig-2+suppfig_flameplots.py` | Figure 2 and the matching supplementary figure, binned SHAP heatmaps | `40_aggregation/` |
 | `53_fig-3_sankeyplot_shapvalues_8stages.py` | Figure 3, SHAP flow across the stress stages | `40_aggregation/` |
 | `54_fig-4+supptable_vpd_response_curve_shap_agg.py` | Figure 4, and the supplementary table of polynomial coefficients with the threshold in sigma and kPa | `40_aggregation/`, `20_subsets/` |
-| `55_table-1+suppfig_threshold_robustness.py` | Table 1 and the matching supplementary figure, fourteen robustness tests of the threshold | `40_aggregation/47_...csv` |
+| `55_table-1+suppfig_threshold_robustness.py` | Table 1, seven tests, and the matching supplementary figure, all sixteen | `40_aggregation/47_...csv` |
 | `56_suppfig+supptable_scenarios_boxplot_shapsums.py` | Supplementary figure and table, sina plots of the stage SHAP sums | `40_aggregation/` |
 | `57_suppfig_ale_response_curve.py` | Supplementary figure, ALE response curves with consensus threshold | `40_aggregation/46_...parquet` |
 | `65_suppfig_biome_threshold_distributions.py` | Supplementary figure, per-site thresholds by forest type | `40_aggregation/49_...csv` |
@@ -38,18 +38,18 @@ carries the same bin edge, so mean and median return the same number, and the me
 used because averaging identical floats reintroduces rounding noise in the labels. The
 SHAP values themselves, `zcol`, use `aggfunc`.
 
-## Table 1 and its figure: the fourteen tests
+## Table 1 and its figure: sixteen tests, seven of them in the main text
 
 `55_table-1+suppfig_threshold_robustness.py` computes nothing. Script 47 builds the rows and
 writes them to `47_THRESHOLD_Robustness_NEP_ZSCORE.csv`, and script 55 reads that file and
 renders it twice, as the main-text table and as the supplementary figure, so the two cannot
 disagree.
 
-Fourteen tests in three groups, with the published analysis on top as the reference row:
+Sixteen tests in three groups, with the published analysis on top as the reference row:
 
 | Group | Tests |
 |---|---|
-| Soil water depth | deepest available layer at all sites; the 128 matched sites on layer 1; the same sites on their deepest layer |
+| Soil water depth | deepest available layer at all sites; the 128 matched sites on layer 1; the same sites on their deepest layer; the 59 sites that reached layer 5 or deeper, on layer 1 and on their deep layer |
 | Model fitting | air temperature dropped from the predictor set; blocked cross-validation; ALE instead of SHAP; the threshold estimator across 23 settings |
 | Site set | any one site removed; Europe removed; North America removed; both removed; records of at least 3, 5 and 10 years |
 
@@ -65,6 +65,22 @@ in the figure. The estimator row carries the spread across its 23 settings. The
 leave-one-site-out row carries the spread across its 208 removals, which share 207 sites with
 each other and are not independent draws. The ALE row has no curve fitted here at all, since
 stage 46 derives its value as a mean of per-site crossings.
+
+**The main table takes seven of the sixteen**, one per kind of challenge: the deepest layer,
+air temperature dropped, blocked cross-validation, ALE, any one site removed, North America
+removed, and records of at least 10 years. `MAIN_ROWS` in script 55 holds that list. The rest
+are redundant in a main display item, since three record-length rows make one point, three
+region rows make one point, and each matched pair argues one comparison over two rows. Both
+largest movers stay in, so the selection cannot be read as flattering, and the estimator row
+goes out, which leaves the interval column with two meanings instead of three. The
+supplementary figure keeps all sixteen, and the table footnote points at it.
+
+**The deepest-layer pair.** The matched rows use all 128 sites that moved down, and most moved
+one layer, so the depth contrast is small. The pair restricted to the 59 sites that reached
+layer 5 or deeper holds the sites fixed and gives the largest contrast the network allows:
+1.195 kPa on layer 1 against 1.207 on their deep layer, so depth moves the threshold by
+0.012 kPa. Both sit about 0.06 kPa below the published value, which is those 59 sites being a
+different sample rather than a depth effect. That is why the row is a pair.
 
 The table has no shift column. Rounded to two decimals several of the shifts read as +0.00 or
 -0.00, and three decimals would claim a precision the interval does not support. The figure
