@@ -53,18 +53,23 @@ Sixteen tests in three groups, with the published analysis on top as the referen
 | Model fitting | air temperature dropped from the predictor set; blocked cross-validation; ALE instead of SHAP; the threshold estimator across 23 settings |
 | Site set | any one site removed; Europe removed; North America removed; both removed; records of at least 3, 5 and 10 years |
 
-Each row carries the test, what it varies, the number of sites, the threshold in kPa and an
-interval. The interval is the 95 % prediction band of the fitted polynomial, the same one
+Each row carries the test, the number of sites, the threshold in sigma and in kPa, and an
+interval. Both units, because every row converts sigma to kPa using its own site set: a row
+can move in kPa while standing still in sigma, and kPa alone hides that. Sigma is also what
+Figure 4 and the coefficient table report. The interval is the 95 % prediction band of the fitted polynomial, the same one
 Figure 4 and the coefficient table show, so the reference row reads 1.26 [1.16, 1.36] in all
 three places. Script 47 also writes a bootstrap over sites, about five times narrower, in
 `boot_lower` and `boot_upper`. That one is not shown here, because two intervals on the same
 number would confuse a reader.
 
-Three rows have no band. They are marked with an asterisk in the table and drawn as a diamond
-in the figure. The estimator row carries the spread across its 23 settings. The
-leave-one-site-out row carries the spread across its 208 removals, which share 207 sites with
-each other and are not independent draws. The ALE row has no curve fitted here at all, since
-stage 46 derives its value as a mean of per-site crossings.
+Three rows have no band, and the figure and the table both say so rather than leaving it to
+the caption. The estimator row carries the spread across its 23 settings, and the
+leave-one-site-out row the spread across its 208 removals, which share 207 sites with each
+other and are not independent draws. The ALE row has no curve fitted here at all, since stage
+46 derives its value as a mean of per-site crossings. In the figure those rows are drawn with
+whiskers instead of a bar. In the value column they read `1.26 (1.23 to 1.30 range)` and
+`1.25 (no band)`, so square brackets mean a prediction band and round brackets mean anything
+else. The table marks them with an asterisk as well.
 
 **The main table takes eight of the sixteen**, one per kind of challenge: the layer 5+ pair,
 air temperature dropped, blocked cross-validation, ALE, any one site removed, North America
@@ -83,10 +88,17 @@ layer 5 or deeper holds the sites fixed and gives the largest contrast the netwo
 0.012 kPa. Both sit about 0.06 kPa below the published value, which is those 59 sites being a
 different sample rather than a depth effect. That is why the row is a pair.
 
-The table has no shift column. Rounded to two decimals several of the shifts read as +0.00 or
--0.00, and three decimals would claim a precision the interval does not support. The figure
-plots the shift instead, on an axis centred on the published value, which is what makes
-agreement visible there.
+**Neither shows a shift column.** Rounded to two decimals several of the shifts read as +0.00
+or -0.00, and three decimals would claim a precision the interval does not support. An earlier
+version of the figure plotted the shift on an axis centred on the published value, which made
+agreement easy to see but hid the numbers a reader wants to quote. It now uses an absolute kPa
+axis with the value printed beside each row.
+
+**The figure is a table and a plot side by side**, the same rows in both halves: label, sites,
+threshold and interval on the left, bars on the right, one shared row grid. A rule sits under
+the reference row so the value being tested is separate from the tests. Everything is one
+blue. Colouring the two largest movers red made sixteen agreeing rows look like a list of
+passes and failures, which is the opposite of what the figure says.
 
 Output is one png, one xlsx for pasting into Word, and one csv of the same table.
 
