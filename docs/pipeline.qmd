@@ -216,7 +216,7 @@ Script 47 writes three files:
 
 | File | Contents |
 |---|---|
-| `47_THRESHOLD_Robustness_{FLUX}.csv` | the seventeen tests plus the published reference row, in kPa, each with the prediction band of the fit and the bootstrap over sites. Script 55 puts eight of them in Table 1 and all of them in the figure |
+| `47_THRESHOLD_Robustness_{FLUX}.csv` | the seventeen tests plus the published reference row, in kPa, each with the prediction band of the fit and the bootstrap over sites. Script 55 puts nine of them in Table 1 and all of them in the figure |
 | `47_THRESHOLD_EstimatorSweep_{FLUX}.csv` | the 23 estimator settings, thresholds in sigma |
 | `47_THRESHOLD_LeaveOneSiteOut_{FLUX}.csv` | the threshold with each site dropped in turn, one row per site, in kPa |
 

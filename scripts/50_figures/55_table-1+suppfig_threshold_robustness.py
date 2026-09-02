@@ -258,6 +258,7 @@ MAIN_ROWS = [
     'Layer 5+ sites, deep soil water',
     'Air temperature dropped from the model',
     'Blocked cross-validation',
+    'GAM instead of a polynomial',
     'ALE instead of SHAP',
     'Any one site removed',
     'North America removed',
