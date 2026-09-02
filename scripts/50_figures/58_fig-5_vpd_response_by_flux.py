@@ -1,12 +1,29 @@
 """
-Figure 5: the VPD response of four fluxes on one axis.
+Figure 5: the VPD response of NEP, GPP and ET on one axis.
 
 Figure 4 shows the VPD response of NEP. This figure puts the same curve beside the ones for
-GPP, RECO and ET, fitted the same way from the same sites, months, hours and model settings,
-so a reader sees what the NEP threshold is made of. GPP turns over where NEP does, RECO has
-no resolvable turning point, and ET keeps responding to VPD long after carbon uptake has
-stopped benefiting. The threshold is therefore a limit on photosynthesis, and water loss
-continues past it.
+GPP and ET, fitted the same way from the same sites, months, hours and model settings, so a
+reader sees what the NEP threshold is made of. GPP turns over where NEP does, and ET keeps
+responding to VPD long after carbon uptake has stopped benefiting. The threshold is therefore
+a limit on photosynthesis, and water loss continues past it.
+
+**The figure is not adopted yet.** Whether it becomes Figure 5 of the main text is open, see
+A19 in the revision plan.
+
+**RECO is deliberately not shown, decided 1 September 2026.** There is no mechanism by which
+atmospheric humidity acts on respiration. Respiration responds to temperature, to substrate
+supply and in soils to moisture, and stomata are irrelevant to it. The one real path is
+indirect, less photosynthesis means less fresh assimilate for growth and maintenance
+respiration, and it is lagged by hours to days, so it is weak at half-hourly resolution.
+Daytime RECO is also not measured: it is the night-time model extrapolated into the day, and
+that model is driven by temperature, which correlates with VPD at 0.78. So most of any VPD
+attribution to RECO is that correlation rather than respiration responding to dryness, and the
+weak unresolvable curve is what a variable with no mechanism should look like. Set
+`SHOW_RECO = True` to draw it for the supplementary version, where it serves as a negative
+control: it shows the NEP decline is not respiration rising.
+
+**GPP is a partitioning product too.** GPP is NEP plus RECO from the same algorithm, so only
+NEP and ET are measured. The caption has to say so.
 
 **It computes nothing new.** Each curve is the stage 42 output for its flux, read through
 `src.files.load_data` exactly as script 54 reads it for Figure 4, and fitted with
@@ -31,10 +48,11 @@ Reads, for each of the four fluxes:
     40_aggregation/{FLUX}/conditional/42_SHAPVALUES-conditional_meanAggregatedAcrossSites
         _BIN-TA_ZSCORE+BIN-VPD_ZSCORE+{FLUX}.parquet
 
-Writes, into the NEP plot folder, since this is a display item of the NEP paper:
-    58_FIG-5_VpdResponseByFlux_NEP+GPP+RECO+ET.png
-    58_FIG-5_VpdResponseByFlux_NEP+GPP+RECO+ET_CURVES.csv      fitted curve and band per flux
-    58_FIG-5_VpdResponseByFlux_NEP+GPP+RECO+ET_THRESHOLDS.csv  crossing per flux, in sigma
+Writes, into the NEP plot folder, since this is a display item of the NEP paper. The fluxes
+shown are in the file name, so the RECO version cannot overwrite the one without it:
+    58_FIG-5_VpdResponseByFlux_NEP+GPP+ET.png
+    58_FIG-5_VpdResponseByFlux_NEP+GPP+ET_CURVES.csv      fitted curve and band per flux
+    58_FIG-5_VpdResponseByFlux_NEP+GPP+ET_THRESHOLDS.csv  crossing per flux, in sigma
 """
 from pathlib import Path
 
@@ -52,8 +70,14 @@ CONDITIONAL = True
 VARIANT = ""
 SITE_SUBSET = ""
 
+# RECO is off by default, see the docstring. True gives the supplementary version, where it
+# is the negative control rather than a mechanism.
+SHOW_RECO = False
+
 # Order is the order of the legend and of the threshold labels.
 FLUXES = ['NEP_ZSCORE', 'GPP_ZSCORE', 'RECO_ZSCORE', 'ET_ZSCORE']
+if not SHOW_RECO:
+    FLUXES = [f for f in FLUXES if f != 'RECO_ZSCORE']
 NAMES = {'NEP_ZSCORE': 'NEP', 'GPP_ZSCORE': 'GPP', 'RECO_ZSCORE': 'RECO', 'ET_ZSCORE': 'ET'}
 # Okabe and Ito, distinguishable for every common colour vision deficiency.
 COLORS = {'NEP_ZSCORE': '#000000', 'GPP_ZSCORE': '#009E73',
@@ -74,7 +98,7 @@ settings = load_settings()
 agg_base = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG'])
 dir_out = Path(settings['DIR_PLOTS_OUT']) / 'NEP_ZSCORE' / shap_type / VARIANT / SITE_SUBSET
 dir_out.mkdir(parents=True, exist_ok=True)
-stem = dir_out / '58_FIG-5_VpdResponseByFlux_NEP+GPP+RECO+ET'
+stem = dir_out / f"58_FIG-5_VpdResponseByFlux_{'+'.join(NAMES[f] for f in FLUXES)}"
 
 
 def load_curve(flux):
