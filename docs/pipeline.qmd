@@ -209,14 +209,14 @@ which is what the aggregation and figure scripts consume.
 | `44_agg_per_scenario.py` | Averages SHAP values within the nine stress stages, per site and then across sites |
 | `45_stage_distributions.py` | Driver medians and quartiles inside each stage, globally and per forest type, in standardized and measured units |
 | `46_ale_thresholds.py` | Puts the per-site ALE curves on one grid and finds the thresholds, globally and per forest type |
-| `47_threshold_robustness.py` | Sixteen robustness tests of the VPD threshold with a bootstrap over sites, plus the 23-setting estimator sweep and the threshold with each site removed in turn. Feeds Table 1 and its supplementary figure |
+| `47_threshold_robustness.py` | Seventeen robustness tests of the VPD threshold with a bootstrap over sites, plus the 23-setting estimator sweep and the threshold with each site removed in turn. Feeds Table 1 and its supplementary figure |
 | `49_biome_thresholds.py` | One threshold per site, then Kruskal-Wallis and Holm-corrected pairwise tests between forest types |
 
 Script 47 writes three files:
 
 | File | Contents |
 |---|---|
-| `47_THRESHOLD_Robustness_{FLUX}.csv` | the sixteen tests plus the published reference row, in kPa, each with the prediction band of the fit and the bootstrap over sites. Script 55 puts eight of them in Table 1 and all of them in the figure |
+| `47_THRESHOLD_Robustness_{FLUX}.csv` | the seventeen tests plus the published reference row, in kPa, each with the prediction band of the fit and the bootstrap over sites. Script 55 puts eight of them in Table 1 and all of them in the figure |
 | `47_THRESHOLD_EstimatorSweep_{FLUX}.csv` | the 23 estimator settings, thresholds in sigma |
 | `47_THRESHOLD_LeaveOneSiteOut_{FLUX}.csv` | the threshold with each site dropped in turn, one row per site, in kPa |
 

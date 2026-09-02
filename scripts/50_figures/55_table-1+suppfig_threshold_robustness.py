@@ -110,7 +110,7 @@ outfile = folder / f'55_SUPPFIG-X_ThresholdRobustness_{FLUX}.png'
 # its interval are printed, and the table half mirrors main-text Table 1 so the two read as
 # one argument.
 #
-# One blue throughout. Colouring the movers red made the eye go to two rows out of sixteen
+# One blue throughout. Colouring the movers red made the eye go to two rows out of seventeen
 # and read them as failures, which is the opposite of what the figure says.
 
 SHORT = {
@@ -282,6 +282,8 @@ WHAT_IT_VARIES = {
         'The 59 sites with a layer 5 or deeper sensor, using their surface layer',
     'Layer 5+ sites, deep soil water':
         'The same 59 sites, using soil water from layer 5 or deeper',
+    'GAM instead of a polynomial':
+        'A spline whose shape the data set, instead of a fourth-order polynomial',
     'Blocked cross-validation':
         'One calendar year left out at a time instead of a shuffled split',
     'ALE instead of SHAP':

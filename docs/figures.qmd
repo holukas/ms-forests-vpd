@@ -11,7 +11,7 @@ to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
 | `52_fig-2+suppfig_flameplots.py` | Figure 2 and the matching supplementary figure, binned SHAP heatmaps | `40_aggregation/` |
 | `53_fig-3_sankeyplot_shapvalues_8stages.py` | Figure 3, SHAP flow across the stress stages | `40_aggregation/` |
 | `54_fig-4+supptable_vpd_response_curve_shap_agg.py` | Figure 4, and the supplementary table of polynomial coefficients with the threshold in sigma and kPa | `40_aggregation/`, `20_subsets/` |
-| `55_table-1+suppfig_threshold_robustness.py` | Table 1, eight tests, and the matching supplementary figure, all sixteen | `40_aggregation/47_...csv` |
+| `55_table-1+suppfig_threshold_robustness.py` | Table 1, eight tests, and the matching supplementary figure, all seventeen | `40_aggregation/47_...csv` |
 | `56_suppfig+supptable_scenarios_boxplot_shapsums.py` | Supplementary figure and table, sina plots of the stage SHAP sums | `40_aggregation/` |
 | `57_suppfig_ale_response_curve.py` | Supplementary figure, ALE response curves with consensus threshold | `40_aggregation/46_...parquet` |
 | `65_suppfig_biome_threshold_distributions.py` | Supplementary figure, per-site thresholds by forest type | `40_aggregation/49_...csv` |
@@ -38,14 +38,14 @@ carries the same bin edge, so mean and median return the same number, and the me
 used because averaging identical floats reintroduces rounding noise in the labels. The
 SHAP values themselves, `zcol`, use `aggfunc`.
 
-## Table 1 and its figure: sixteen tests, eight of them in the main text
+## Table 1 and its figure: seventeen tests, eight of them in the main text
 
 `55_table-1+suppfig_threshold_robustness.py` computes nothing. Script 47 builds the rows and
 writes them to `47_THRESHOLD_Robustness_NEP_ZSCORE.csv`, and script 55 reads that file and
 renders it twice, as the main-text table and as the supplementary figure, so the two cannot
 disagree.
 
-Sixteen tests in three groups, with the published analysis on top as the reference row:
+Seventeen tests in three groups, with the published analysis on top as the reference row:
 
 | Group | Tests |
 |---|---|
@@ -71,7 +71,7 @@ whiskers instead of a bar. In the value column they read `1.26 (1.23 to 1.30 ran
 `1.25 (no band)`, so square brackets mean a prediction band and round brackets mean anything
 else. The table marks them with an asterisk as well.
 
-**The main table takes eight of the sixteen**, one per kind of challenge: the layer 5+ pair,
+**The main table takes eight of the seventeen**, one per kind of challenge: the layer 5+ pair,
 air temperature dropped, blocked cross-validation, ALE, any one site removed, North America
 removed, and records of at least 10 years. Depth is the one theme that takes two rows,
 because the pair is the comparison. `MAIN_ROWS` in script 55 holds that list. The rest
@@ -79,7 +79,7 @@ are redundant in a main display item, since three record-length rows make one po
 region rows make one point, and each matched pair argues one comparison over two rows. Both
 largest movers stay in, so the selection cannot be read as flattering, and the estimator row
 goes out, which leaves the interval column with two meanings instead of three. The
-supplementary figure keeps all sixteen, and the table footnote points at it.
+supplementary figure keeps all seventeen, and the table footnote points at it.
 
 **The deepest-layer pair.** The matched rows use all 128 sites that moved down, and most moved
 one layer, so the depth contrast is small. The pair restricted to the 59 sites that reached
@@ -97,7 +97,7 @@ axis with the value printed beside each row.
 **The figure is a table and a plot side by side**, the same rows in both halves: label, sites,
 threshold and interval on the left, bars on the right, one shared row grid. A rule sits under
 the reference row so the value being tested is separate from the tests. Everything is one
-blue. Colouring the two largest movers red made sixteen agreeing rows look like a list of
+blue. Colouring the two largest movers red made seventeen agreeing rows look like a list of
 passes and failures, which is the opposite of what the figure says.
 
 Output is one png, one xlsx for pasting into Word, and one csv of the same table.

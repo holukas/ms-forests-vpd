@@ -56,7 +56,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 from scipy.interpolate import UnivariateSpline
+from statsmodels.gam.api import BSplines, GLMGam
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 import src.files as files
@@ -299,6 +301,96 @@ def threshold_with_ci(piv, seed=0):
             float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n)
 
 
+# --- the GAM row ------------------------------------------------------------------
+# A penalised cubic regression spline instead of the quartic. Every other estimator in this
+# script fixes the shape of the curve in advance, and a fourth-order polynomial can only make
+# certain shapes, so the published threshold can be said to carry the shape that was assumed.
+# A spline assumes none of it: the curve is built from local pieces and the data decide where
+# it bends. This is the alternative breakpoint method R2 asked for by name.
+#
+# **The smoothing is not tuned, and it does not need to be.** Generalised cross-validation
+# drives the penalty to zero at every basis size tried, 8 to 20 degrees of freedom, so the
+# selected fit is effectively the unpenalised spline. The crossing barely notices: it lands
+# between 0.171 and 0.177 sigma across that whole range, about 0.005 kPa. The grid is kept and
+# the selected value is printed, so this can be checked rather than trusted.
+GAM_DF = 12
+GAM_ALPHA_GRID = np.logspace(-8, 4, 49)
+
+
+def gam_curve(x, y, alpha=None):
+    """Fitted spline on a fine grid, its prediction band, and the penalty used.
+
+    The band is built exactly as `src.fit.fit_polynomial` builds the polynomial one: standard
+    error of the fitted curve from the coefficient covariance, plus the residual variance, times
+    t. So the GAM row's interval is the same kind of statement as every other row's.
+    """
+    order = np.argsort(x)
+    xs, ys = x[order], y[order]
+    basis = BSplines(xs, df=[GAM_DF], degree=[3])
+
+    def fitted(a):
+        model = GLMGam(ys, smoother=basis, alpha=[a]).fit()
+        edf = model.df_model + 1
+        resid = np.sum((ys - model.fittedvalues) ** 2)
+        gcv = len(ys) * resid / (len(ys) - edf) ** 2
+        return gcv, model, edf, resid
+
+    if alpha is None:
+        alpha = min((fitted(a)[0], a) for a in GAM_ALPHA_GRID)[1]
+    _, model, edf, resid = fitted(alpha)
+
+    x_fit = np.linspace(xs.min(), xs.max(), 2000)
+    design = basis.transform(x_fit)
+    if len(model.params) == design.shape[1] + 1:
+        design = np.column_stack([np.ones(len(x_fit)), design])
+    y_fit = design @ model.params
+
+    cov = np.asarray(model.cov_params())
+    se_fit = np.sqrt(np.einsum('ij,jk,ik->i', design, cov, design))
+    mse = resid / (len(ys) - edf)
+    se_pred = np.sqrt(se_fit ** 2 + mse)
+    t_value = stats.t.ppf(0.975, len(ys) - edf)
+    return x_fit, y_fit, y_fit - t_value * se_pred, y_fit + t_value * se_pred, alpha, edf
+
+
+def gam_threshold_with_ci(piv, seed=0):
+    """The GAM row, returning the same tuple as `threshold_with_ci`.
+
+    The bootstrap refits the spline on resampled sites, at the penalty selected on the full
+    curve rather than reselected each time, so the interval measures the site set and not the
+    tuning. One fit takes about 3 ms, so 2000 of them cost seconds.
+    """
+    x = piv.columns.get_level_values('BIN_VPD_ZSCORE').to_numpy(dtype=float)
+    M = piv.to_numpy(dtype=float)
+    sites = piv.index
+    n = len(M)
+    min_sites = np.ceil(n / 2)
+
+    xk, yk = aggregate(M, x, min_sites)
+    x_fit, y_fit, lo_fit, hi_fit, alpha, edf = gam_curve(xk, yk)
+    point_z = highest_crossing(x_fit, y_fit)
+    band_lo = to_kpa(highest_crossing(x_fit, lo_fit), sites)
+    band_hi = to_kpa(highest_crossing(x_fit, hi_fit), sites)
+    if band_lo > band_hi:
+        band_lo, band_hi = band_hi, band_lo
+    print(f"GAM: penalty {alpha:.3g}, effective df {edf:.1f}, "
+          f"crossing {point_z:.3f} sigma")
+
+    rng = np.random.default_rng(seed)
+    boot = np.empty(N_BOOT)
+    for i in range(N_BOOT):
+        xb, yb = aggregate(M[rng.integers(0, n, n)], x, min_sites)
+        if not len(xb):
+            boot[i] = np.nan
+            continue
+        xf, yf, _, _, _, _ = gam_curve(xb, yb, alpha=alpha)
+        boot[i] = highest_crossing(xf, yf)
+    boot = boot[np.isfinite(boot)]
+    lo, hi = np.percentile(boot, [2.5, 97.5])
+    return (float(point_z), float(to_kpa(point_z, sites)), float(band_lo), float(band_hi),
+            float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n)
+
+
 def point_threshold(piv):
     """Crossing of the aggregated curve in kPa, without either interval.
 
@@ -378,6 +470,12 @@ def robustness_rows(sweep):
     piv = site_curves('blocked-cv')
     rows.append(('Model fitting', 'Blocked cross-validation',
                  *threshold_with_ci(piv, seed=2), None))
+
+    # A spline instead of the quartic, on the same curve. It is the only row that changes how
+    # the shape of the response is estimated rather than which data go in, so it answers the
+    # objection that the published number carries the shape that was assumed.
+    rows.append(('Model fitting', 'GAM instead of a polynomial',
+                 *gam_threshold_with_ci(base, seed=4), None))
 
     # Accumulated local effects instead of SHAP. A different attribution method
     # altogether, so this is the row that shares least machinery with the published
