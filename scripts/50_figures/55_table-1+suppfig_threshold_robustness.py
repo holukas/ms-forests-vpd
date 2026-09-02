@@ -262,6 +262,7 @@ MAIN_ROWS = [
     'ALE instead of SHAP',
     'Any one site removed',
     'North America removed',
+    'Europe and North America removed',
     'Records of at least 10 years',
 ]
 missing = [t for t in MAIN_ROWS if t not in set(tests['test'])]
