@@ -15,7 +15,7 @@ to the record total the manuscript reports. No model is refitted and no SHAP val
 `50_figures` display, they do not compute, and `80_info` is for numbers that back a sentence
 and are read by no figure. Script 49 moved here for the same reason on 31 August 2026.
 
-Three exceedance measures, because they answer different questions:
+Four exceedance measures, because they answer different questions:
 
     published, kPa      VPD above 1.26 kPa. This is exposure: how much of the peak-season
                         daylight a site spends in air drier than the crossing. It is the
@@ -29,6 +29,11 @@ Three exceedance measures, because they answer different questions:
     site's own          VPD above that site's own zero crossing from script 49, in that
                         site's sigma. Asks how often a site is past its own limit rather
                         than the global one.
+    forest type's own   VPD above the median crossing of the site's forest type from script
+                        49, in the site's sigma. Sits between the two above: one threshold
+                        per type, not one for the network and not one per site. The four
+                        types differ, 0.14 to 0.33 sigma, so the same site gets a different
+                        fraction depending on which type it belongs to.
 
 Two ways to average, both reported, because they disagree. The record-weighted fraction pools
 every half-hour and answers "what share of the observations", so a long record counts more
@@ -44,6 +49,7 @@ Reads:
     20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv        the site list and IGBP class
     40_aggregation/47_THRESHOLD_Robustness_{FLUX}.csv           the published threshold
     40_aggregation/49_SiteThresholds.csv                        the per-site crossings
+    40_aggregation/49_BiomeThresholds_Summary.csv               the per-forest-type crossings
 
 Writes, into the aggregation folder:
     48_EXCEEDANCE_PerSite_{FLUX}.csv     one row per site
@@ -72,8 +78,8 @@ HPA_PER_KPA = 10
 
 
 def site_row(filepath: Path, site: str, igbp: str, threshold_kpa: float,
-             threshold_z: float, own_z: float) -> dict:
-    """Exceedance counts for one site, all three measures."""
+             threshold_z: float, own_z: float, biome_z: float) -> dict:
+    """Exceedance counts for one site, all four measures."""
     d = pd.read_parquet(filepath, columns=['VPD', 'VPD_ZSCORE']).dropna()
     vpd = d['VPD'] / PA_TO_HPA if site in PA_UNIT_SITES else d['VPD']
     vpd_kpa = vpd / HPA_PER_KPA
@@ -92,6 +98,9 @@ def site_row(filepath: Path, site: str, igbp: str, threshold_kpa: float,
         'above_own_threshold_pct': float(100 * (d['VPD_ZSCORE'] > own_z).mean())
         if np.isfinite(own_z) else np.nan,
         'own_threshold_z': own_z,
+        'above_biome_threshold_pct': float(100 * (d['VPD_ZSCORE'] > biome_z).mean())
+        if np.isfinite(biome_z) else np.nan,
+        'biome_threshold_z': biome_z,
         # How far past the threshold the air goes when it is past it. A high frequency with a
         # small excess is a different climate from a low frequency with a large one.
         'mean_excess_kpa': float(excess.mean()) if above.any() else 0.0,
@@ -112,6 +121,9 @@ def main():
     ref = robustness.loc[robustness['test'] == 'PUBLISHED REFERENCE'].iloc[0]
     threshold_kpa, threshold_z = float(ref['threshold_kpa']), float(ref['threshold_sigma'])
     own = pd.read_csv(agg / "49_SiteThresholds.csv").set_index('SITE')['threshold_z']
+    # One crossing per forest type, the median of the sites in it, from script 49.
+    biome_thresholds = pd.read_csv(agg / "49_BiomeThresholds_Summary.csv") \
+        .set_index('IGBP')['median']
 
     print(f"published threshold: {threshold_kpa:.3f} kPa, {threshold_z:.3f} sigma, "
           f"{int(ref['n_sites'])} sites")
@@ -124,7 +136,8 @@ def main():
             print(f"  no subset file for {site}, skipping")
             continue
         rows.append(site_row(filepath, site, igbp, threshold_kpa, threshold_z,
-                             float(own.get(site, np.nan))))
+                             float(own.get(site, np.nan)),
+                             float(biome_thresholds.get(igbp, np.nan))))
         if (ix + 1) % 25 == 0:
             print(f"  {ix + 1} sites")
 
@@ -152,12 +165,15 @@ def main():
     o50 = per_site['above_own_threshold_pct'].median()
     print(f"above the site's own crossing: median {o50:.1f} %, "
           f"{int(per_site['above_own_threshold_pct'].notna().sum())} sites with a crossing")
+    b50 = per_site['above_biome_threshold_pct'].median()
+    print(f"above the forest type's crossing: median {b50:.1f} %, "
+          f"thresholds " + ", ".join(f"{b} {biome_thresholds[b]:.2f}" for b in BIOMES) + " sigma")
 
     biome_rows = []
-    for biome in BIOMES + ['all']:
-        g = per_site if biome == 'all' else per_site.loc[per_site['IGBP'] == biome]
+    for biome_name in BIOMES + ['all']:
+        g = per_site if biome_name == 'all' else per_site.loc[per_site['IGBP'] == biome_name]
         biome_rows.append({
-            'IGBP': biome,
+            'IGBP': biome_name,
             'n_sites': len(g),
             'n_records': int(g['n_records'].sum()),
             'pooled_pct': 100 * g['n_above'].sum() / g['n_records'].sum(),
@@ -166,6 +182,9 @@ def main():
             'site_max_pct': g['above_published_kpa_pct'].max(),
             'sigma_median_pct': g['above_published_sigma_pct'].median(),
             'own_threshold_median_pct': g['above_own_threshold_pct'].median(),
+            'biome_threshold_z': float(biome_thresholds[biome_name])
+            if biome_name != 'all' else np.nan,
+            'biome_threshold_median_pct': g['above_biome_threshold_pct'].median(),
             'mean_excess_kpa': g['mean_excess_kpa'].median(),
         })
     per_biome = pd.DataFrame(biome_rows)

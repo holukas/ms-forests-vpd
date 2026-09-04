@@ -11,6 +11,12 @@ from: a site whose mean already sits near the threshold is above it half the tim
 site's own standard deviations the share is close to 38 % everywhere, so the ranking in
 panel a is a ranking of climates, not of responses.
 
+Panel c changes the threshold instead of the site. Each site is counted against the crossing
+of its own forest type, from script 49, in the site's own standard deviations. The four
+crossings differ, so the panel shows what that difference costs in exposure. The dashed line
+is the same set of sites counted against the one network crossing, which is the comparison
+that makes the four groups readable.
+
 Reads what `40_aggregation/48_threshold_exceedance.py` writes and draws it. Nothing is
 computed here.
 
@@ -24,6 +30,7 @@ Supplementary figure, not a main display item.
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from src.paths import load_settings
@@ -61,8 +68,8 @@ threshold_kpa = float(robustness.loc[robustness['test'] == 'PUBLISHED REFERENCE'
 pooled = per_biome.loc['all', 'pooled_pct']
 counts = per_site['IGBP'].value_counts()
 
-fig, axs = plt.subplots(1, 2, figsize=(12, 5), dpi=150,
-                        gridspec_kw={'width_ratios': [1.35, 1]})
+fig, axs = plt.subplots(1, 3, figsize=(16.5, 5), dpi=150,
+                        gridspec_kw={'width_ratios': [1.35, 1, 1]})
 
 # Panel a: every site as one bar, ranked. Bars rather than a curve, because the reader is
 # meant to see 208 sites and not a smooth distribution.
@@ -91,12 +98,43 @@ axs[1].set_xlabel('Site mean VPD (kPa)', fontsize=AX_LABELS_FONTSIZE)
 axs[1].set_ylabel(f'Half-hours above {threshold_kpa:.2f} kPa (%)', fontsize=AX_LABELS_FONTSIZE)
 axs[1].legend(fontsize=AX_LABELS_FONTSIZE * 0.8, frameon=False, loc='lower right')
 
-for letter, ax in zip('ab', axs):
+# Panel c: one point per site, against the crossing of its own forest type. Points and a
+# median bar rather than a bar chart, so the within-type spread stays visible.
+# The jitter only separates overlapping points, so it is seeded and never changes the figure.
+rng = np.random.default_rng(42)
+global_sigma_median = per_site['above_published_sigma_pct'].median()
+axs[2].axhline(global_sigma_median, color='black', lw=1.2, linestyle='--', zorder=1)
+# The label sits in a margin on the right, because the point clouds reach the line.
+axs[2].text(3.55, global_sigma_median + 1.5, f'network\ncrossing\n{global_sigma_median:.0f} %',
+            fontsize=AX_LABELS_FONTSIZE * 0.85, va='bottom')
+
+tick_labels = []
+for pos, igbp in enumerate(IGBP_ORDER):
+    g = per_site.loc[per_site['IGBP'] == igbp, 'above_biome_threshold_pct'].dropna()
+    axs[2].scatter(pos + rng.uniform(-0.22, 0.22, len(g)), g, s=22, alpha=0.8,
+                   color=COLORS[igbp], linewidths=0, zorder=2)
+    axs[2].plot([pos - 0.32, pos + 0.32], [g.median()] * 2, color='black', lw=1.8, zorder=3)
+    tick_labels.append(f'{igbp}\n{per_biome.loc[igbp, "biome_threshold_z"]:.2f} '
+                       f'$\\sigma$\nn = {len(g)}')
+
+axs[2].set_xlim(-0.6, len(IGBP_ORDER) + 0.5)
+axs[2].set_ylim(0, 100)
+axs[2].set_xticks(range(len(IGBP_ORDER)))
+axs[2].set_xticklabels(tick_labels)
+axs[2].set_xlabel('Forest type, with its own crossing', fontsize=AX_LABELS_FONTSIZE,
+                  labelpad=8)
+axs[2].set_ylabel("Half-hours above the forest type's crossing (%)",
+                  fontsize=AX_LABELS_FONTSIZE)
+
+for letter, ax in zip('abc', axs):
     ax.tick_params(labelsize=AX_LABELS_FONTSIZE)
     for sp in ('top', 'right'):
         ax.spines[sp].set_visible(False)
     ax.text(-0.09, 1.03, letter, transform=ax.transAxes, fontsize=AX_LABELS_FONTSIZE * 1.2,
             fontweight='bold', va='bottom')
+
+# Three lines per label, so they need less room than the shared size gives them.
+axs[2].tick_params(axis='x', labelsize=AX_LABELS_FONTSIZE * 0.85)
 
 fig.tight_layout()
 
@@ -110,6 +148,9 @@ print(f"above {threshold_kpa:.2f} kPa: {pooled:.1f} % of all half-hours, "
       f"range {ranked['above_published_kpa_pct'].iloc[0]:.1f} to "
       f"{ranked['above_published_kpa_pct'].iloc[-1]:.1f} %")
 print(f"lowest site {ranked['SITE'].iloc[0]}, highest site {ranked['SITE'].iloc[-1]}")
+print("above the forest type's own crossing, site median: " + ", ".join(
+    f"{i} {per_biome.loc[i, 'biome_threshold_median_pct']:.1f} % "
+    f"at {per_biome.loc[i, 'biome_threshold_z']:.2f} sigma" for i in IGBP_ORDER))
 print(f"Saved to {outfile}")
 if SHOW_PLOT:
     plt.show()
