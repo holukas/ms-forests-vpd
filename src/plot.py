@@ -34,17 +34,23 @@ def create_colormap(fig, ax, cmap, label, absmax, labelsize):
     norm = mpl.colors.Normalize(vmin=-absmax, vmax=absmax)
     sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
     cb = fig.colorbar(sm, cax=ax, extend='both')
-    cb.ax.yaxis.set_major_locator(ticker.MultipleLocator(0.2))
-    cb.ax.yaxis.set_major_formatter(ticker.FuncFormatter(cb_formatter))
+    # Tick spacing follows the range, so a colorbar for a small effect still carries
+    # ticks. A fixed 0.2 left the soil water effect, about 0.1 sigma, with a bare
+    # zero. The factor 1.5 is set by the three cases drawn so far: 0.66 keeps the
+    # published 0.2, and 0.31 and 0.10 get a single tick each side, at 0.2 and 0.05.
+    step = next(s for s in (0.5, 0.2, 0.1, 0.05, 0.02, 0.01) if absmax / s >= 1.5)
+    cb.ax.yaxis.set_major_locator(ticker.MultipleLocator(step))
+    cb.ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: cb_formatter(x, pos, step)))
     cb.set_label(label, size=labelsize, labelpad=20)
     cb.ax.tick_params(labelsize=labelsize)
 
 
-def cb_formatter(x, pos):
-    """Custom format: 0 as '0', others as '0.1f'"""
+def cb_formatter(x, pos, step: float = 0.2):
+    """Custom format: 0 as '0', others with as many decimals as the tick step needs"""
     if np.isclose(x, 0, atol=1e-5):
         return "0"
-    return f"{x:.1f}"
+    decimals = max(1, -int(np.floor(np.log10(step))))
+    return f"{x:.{decimals}f}"
 
 
 def add_gradient_arrow(ax, vertices, color_main, direction='up'):
@@ -664,8 +670,11 @@ def plot_markers(ax, df, xvals, yvals, zvals, flux_txt, ax_labels_fontsize, area
     for m_type, (lx, ly) in locs.items():
         x, y = lx + 0.05, ly + 0.05
         marker = '+' if m_type == 'max' else '_'
-        ax.scatter(x, y, c='k', marker=marker, lw=3, s=650, zorder=100, alpha=0.5)
-        ax.scatter(x, y, facecolors='none', edgecolors='k', marker='o', lw=3, s=650, zorder=100, alpha=0.5)
+        # clip_on=False: a marker at the edge of the data is drawn whole rather than
+        # cut by the axes box.
+        ax.scatter(x, y, c='k', marker=marker, lw=3, s=650, zorder=100, alpha=0.5, clip_on=False)
+        ax.scatter(x, y, facecolors='none', edgecolors='k', marker='o', lw=3, s=650, zorder=100, alpha=0.5,
+                   clip_on=False)
 
         if annotate:
             txt, y_off = (f'highest {flux_txt} increase', 2) if m_type == 'max' else (

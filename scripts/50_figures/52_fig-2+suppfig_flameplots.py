@@ -18,30 +18,6 @@ from src.paths import load_settings
 SHOW_PLOT = False
 
 # --- SETTINGS ---
-# Each inner list represents one row
-# Order: explained flux, x-bins, y-bins, z-colors, x in filename, y in filename, colormap for row,
-# show colormap for row (if False shows one overall colormap for all rows)
-
-# # Figure 2
-# # SHAP values heatmaps
-# # 1: Physical drivers (atmosphere, drivers)
-# # 2: Supply limitation (soil, constraints; supply vs. demand)
-# # 3: Physiological response (plant, response)
-# plotvars_rows = [
-#     ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-#      'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-#     ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-#      'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-#     ['NEP_ZSCORE', 'BIN_ET_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
-#      'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
-# ]
-# figsize = (19, 13)
-# figure_info = ['FIG-2', f'ShapValues-{plotvars_rows[0][3]}']
-# show_only_max_marker = False
-
-
-# Supplementary figure, the flux heatmaps
-# Flux heatmaps
 # Run variant. An empty string reads the results behind the submitted figures and
 # writes to the baseline plot folder. Any other value reads the matching variant
 # folder and writes the figures next to it, so a sensitivity run cannot overwrite a
@@ -53,21 +29,78 @@ VARIANT = ""
 # the one the aggregation ran with.
 SITE_SUBSET = ""
 
-plotvars_rows = [
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'GPP_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'BrBG', True],
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'RECO_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'coolwarm', True],
-    ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'ET_ZSCORE',
-     'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
-]
-figsize = (19, 13 / 3 * 4)
+# Which figure to draw. The three share every line of plotting code below and
+# differ only in what colours the grid, so one script draws all of them.
+#   "fig2"            Figure 2: the VPD effect on NEP, mapped on TA, SM and ET.
+#   "fluxes"          Supplementary: the fluxes themselves on the SM by VPD grid.
+#   "driver-effects"  Supplementary: the TA effect on the TA by VPD grid and the
+#                     SM effect on the SM by VPD grid. The same SHAP campaign that
+#                     gave the VPD column gave these, so nothing is recomputed.
+FIGURE = "fluxes"
+
+# Each inner list is one row of panels.
+# Order: explained flux, x-bins, y-bins, z-colors, x in filename, y in filename,
+# colormap for row, show colormap for row (False shares one colormap over all rows).
 # Supplementary, not Extended Data: that category does not exist at this journal (T26).
 # X stands in until the figure number is assigned.
-figure_info = ["SUPPFIG-X", f'Fluxes-{plotvars_rows[0][3]}']
-show_only_max_marker = True
+FIGURES = {
+    # Rows: 1 physical drivers (atmosphere), 2 supply limitation (soil),
+    # 3 physiological response (plant).
+    "fig2": dict(
+        plotvars_rows=[
+            ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+             'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+            ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+             'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+            ['NEP_ZSCORE', 'BIN_ET_ZSCORE', 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS',
+             'BIN-ET_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', False],
+        ],
+        figsize=(19, 13),
+        figure_info=['FIG-2', 'ShapValues-VPD_ZSCORE_SHAPVALS'],
+        show_only_max_marker=False,
+    ),
+    "fluxes": dict(
+        plotvars_rows=[
+            ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'NEP_ZSCORE',
+             'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
+            ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'GPP_ZSCORE',
+             'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'BrBG', True],
+            ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'RECO_ZSCORE',
+             'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'coolwarm', True],
+            ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'ET_ZSCORE',
+             'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
+        ],
+        figsize=(19, 13 / 3 * 4),
+        figure_info=["SUPPFIG-X", 'Fluxes-NEP_ZSCORE'],
+        show_only_max_marker=True,
+    ),
+    # Same colormap as Figure 2, so blue is a positive effect on NEP in both. Each
+    # row gets its own colorbar because the two effects differ in size.
+    "driver-effects": dict(
+        plotvars_rows=[
+            ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE', 'TA_ZSCORE_SHAPVALS',
+             'BIN-TA_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
+            ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'BIN_VPD_ZSCORE', 'SWC_ZSCORE_SHAPVALS',
+             'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
+        ],
+        figsize=(19, 13 / 3 * 2),
+        figure_info=["SUPPFIG-X", 'DriverEffects-TA+SM'],
+        show_only_max_marker=False,
+    ),
+}
+
+plotvars_rows = FIGURES[FIGURE]["plotvars_rows"]
+figsize = FIGURES[FIGURE]["figsize"]
+figure_info = FIGURES[FIGURE]["figure_info"]
+show_only_max_marker = FIGURES[FIGURE]["show_only_max_marker"]
+
+# Header geometry, in figure fractions. The gap between the two header lines and
+# the room the panels leave for them are set in inches and divided by the figure
+# height, so a two-row figure gets the same clearance as the three-row one. Fixed
+# fractions put the site count on top of the column title in the short figure.
+HEADER_TOP = 0.99
+HEADER_GAP = 0.40 / figsize[1]
+HEADER_ROOM = 0.75 / figsize[1]
 
 # Shared plotting constants
 aggfunc, CONDITIONAL = 'mean', True
@@ -177,9 +210,9 @@ for row_idx, plotvars in enumerate(plotvars_rows):
         if row_idx == 0:
             coltitle = igbp if 1 <= col_idx <= 4 else "Global forests"
             trans = transforms.blended_transform_factory(ax.transAxes, fig.transFigure)
-            fig.text(0.5, 0.99, coltitle, transform=trans,
+            fig.text(0.5, HEADER_TOP, coltitle, transform=trans,
                      fontsize=AX_LABELS_FONTSIZE * 1.2, ha='center', va='top', weight='bold')
-            fig.text(0.5, 0.965, f"n={n_sites} (min. {minmax_counts[0]})", transform=trans,
+            fig.text(0.5, HEADER_TOP - HEADER_GAP, f"n={n_sites} (min. {minmax_counts[0]})", transform=trans,
                      fontsize=AX_LABELS_FONTSIZE, ha='center', va='top', weight='normal')
 
         # Panel letters
@@ -241,7 +274,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
 if not show_row_colormap:
     plot.create_colormap(fig=fig, ax=cax, cmap=cmap, label=zlabel, absmax=absmax, labelsize=AX_LABELS_FONTSIZE)
 
-plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave room for the super-title
+plt.tight_layout(rect=[0, 0, 1, 1 - HEADER_ROOM])  # Leave room for the column headers
 gs.update(wspace=0.1, hspace=0.3)
 
 # Save fig
