@@ -1,7 +1,8 @@
 """
-Water use efficiency against VPD, the test of the stomatal reading of Figure 5.
+Water use efficiency against VPD, the test of the stomatal reading of the by-flux figure.
 
-Figure 5 shows GPP turning over at 0.18 sigma while ET keeps rising to 1.66. Stomatal control
+The supplementary by-flux figure (script 58) shows GPP turning over at 0.18 sigma while ET
+keeps rising to 1.66. Stomatal control
 predicts exactly that: transpiration is conductance times VPD, and VPD rises faster than
 conductance falls, so water loss keeps increasing through partial closure while photosynthesis
 loses carbon from the first increment of closure. If that is the mechanism, then GPP per unit
