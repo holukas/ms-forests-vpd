@@ -116,10 +116,10 @@ outfile = folder / f'55_SUPPFIG-5_ThresholdRobustness_{FLUX}.png'
 
 SHORT = {
     'Deepest available layer, all sites': 'Deepest layer, all sites',
-    'Matched sites, layer 1': 'Matched sites, shallow',
-    'Matched sites, deepest layer': 'Matched sites, deepest',
-    'Layer 5+ sites, shallow soil water': 'Layer 5+ sites, shallow',
-    'Layer 5+ sites, deep soil water': 'Layer 5+ sites, deep',
+    'Matched sites, shallowest depth': 'Matched sites, shallowest',
+    'Matched sites, deepest depth': 'Matched sites, deepest',
+    'Sites with 5+ SM depths, shallowest': 'Sites with 5+ SM depths, shallowest',
+    'Sites with 5+ SM depths, deepest': 'Sites with 5+ SM depths, deepest',
     'Air temperature dropped from the model': 'No air temperature',
     'Mean instead of median per bin': 'Mean per bin',
     'Threshold estimator, 23 settings': 'Estimator, 23 settings',
@@ -253,13 +253,13 @@ tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 # out on purpose: dropping it removes one of the three things the interval column means, so
 # the main table carries two instead of three.
 #
-# Depth is represented by the layer 5+ pair rather than by the all-sites row. That row mixes
+# Depth is represented by the five-or-more-depths pair rather than by the all-sites row. That row mixes
 # the 80 sites that never moved with 128 that did, most of them by one layer, so its small
-# shift is diluted. The pair holds 59 sites fixed and swaps layer 1 for layer 5 or deeper,
-# which is the largest departure from the layer 1 selection the published number rests on.
+# shift is diluted. The pair holds 59 sites fixed and swaps their shallowest depth for their
+# deepest, which is the largest departure from the shallow selection the published number rests on.
 MAIN_ROWS = [
-    'Layer 5+ sites, shallow soil water',
-    'Layer 5+ sites, deep soil water',
+    'Sites with 5+ SM depths, shallowest',
+    'Sites with 5+ SM depths, deepest',
     'Air temperature dropped from the model',
     'Blocked cross-validation',
     'Mean instead of median per bin',
@@ -279,16 +279,16 @@ main = tests.loc[tests['test'].isin(MAIN_ROWS)].copy()
 WHAT_IT_VARIES = {
     'Deepest available layer, all sites':
         'Soil water taken from the deepest layer each site has',
-    'Matched sites, layer 1':
+    'Matched sites, shallowest depth':
         'Only the sites that have a deeper layer, using their shallow layer',
-    'Matched sites, deepest layer':
+    'Matched sites, deepest depth':
         'The same sites, using their deepest layer',
     'Air temperature dropped from the model':
         'The model never sees temperature, so nothing of it can reach the VPD values',
-    'Layer 5+ sites, shallow soil water':
-        'The 59 sites with a layer 5 or deeper sensor, using their surface layer',
-    'Layer 5+ sites, deep soil water':
-        'The same 59 sites, using soil water from layer 5 or deeper',
+    'Sites with 5+ SM depths, shallowest':
+        'The 59 sites with five or more soil water depths, using their shallowest',
+    'Sites with 5+ SM depths, deepest':
+        'The same 59 sites, using their deepest depth',
     'GAM instead of a polynomial':
         'A spline whose shape the data set, instead of a fourth-order polynomial',
     'Blocked cross-validation':
@@ -360,7 +360,7 @@ table1 = pd.DataFrame(records, columns=COLUMNS)
 
 
 # Which tests actually pass the cutoff, rather than a sentence that assumes one does. Adding
-# the layer 5+ pair made the old wording false: its shallow row sits 0.069 kPa below the
+# the five-or-more-depths pair made the old wording false: its shallow row sits 0.069 kPa below the
 # reference because it uses 59 sites, so two rows now clear 0.06 kPa rather than one.
 biggest = tests.loc[tests['shift_kpa'].abs().idxmax()]
 movers = tests.loc[tests['shift_kpa'].abs() >= MOVER].sort_values('shift_kpa')
@@ -371,9 +371,9 @@ footnote = (
     "cross-site median VPD effect per bin, and the brackets give its 95% prediction band, "
     "both as in Fig. 4. Rows marked with an asterisk carry a different interval: the "
     f"leave-one-site-out row the range across the {int(ref['n_sites'])} removals, the ALE "
-    "row the 95% confidence interval of the mean of the per-site crossings. The two layer 5+ "
-    "rows use the 59 sites with a sensor at layer 5 or deeper and are compared with each "
-    "other; their offset from the published value reflects the smaller site set. The tests "
+    "row the 95% confidence interval of the mean of the per-site crossings. The two rows for "
+    "sites with five or more soil water depths use the same 59 sites and are compared with "
+    "each other; their offset from the published value reflects the smaller site set. The tests "
     f"are described in Methods; all {len(tests)} are shown in Supplementary Fig. 5."
 )
 

@@ -452,8 +452,8 @@ def robustness_rows(sweep):
 
     # --- soil water depth -------------------------------------------------------
     for label, sub in [('Deepest available layer, all sites', ('deep-sm',)),
-                       ('Matched sites, layer 1', ('', 'deeper-only')),
-                       ('Matched sites, deepest layer', ('deep-sm', 'deeper-only'))]:
+                       ('Matched sites, shallowest depth', ('', 'deeper-only')),
+                       ('Matched sites, deepest depth', ('deep-sm', 'deeper-only'))]:
         piv = site_curves(*[p for p in sub if p])
         rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=1), None))
 
@@ -463,11 +463,13 @@ def robustness_rows(sweep):
     # changes and the contrast is the largest the network allows. This is where R3's objection
     # bites hardest: surface soil water is not the water a tree reaches.
     deep_sites = deepest_layer_sites(DEEP_LAYER_MIN)
+    # Named by the selection rule, sites with five or more soil water depths, since "layer 5"
+    # is a FLUXNET variable index whose depth differs by site and means nothing to a reader.
     # Named as a pair, because the two rows are read against each other and not against the
     # published reference. Both sit about 0.06 kPa below it, which is these 59 sites being a
     # different sample, not a depth effect.
-    for label, sub in [(f'Layer {DEEP_LAYER_MIN}+ sites, shallow soil water', ('',)),
-                       (f'Layer {DEEP_LAYER_MIN}+ sites, deep soil water', ('deep-sm',))]:
+    for label, sub in [(f'Sites with {DEEP_LAYER_MIN}+ SM depths, shallowest', ('',)),
+                       (f'Sites with {DEEP_LAYER_MIN}+ SM depths, deepest', ('deep-sm',))]:
         piv = site_curves(*[p for p in sub if p])
         piv = piv.loc[piv.index.isin(deep_sites)]
         rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=3), None))

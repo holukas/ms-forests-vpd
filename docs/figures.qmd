@@ -50,7 +50,7 @@ Eighteen tests in three groups, with the published analysis on top as the refere
 
 | Group | Tests |
 |---|---|
-| Soil water depth | deepest available layer at all sites; the 128 matched sites on layer 1; the same sites on their deepest layer; the 59 sites that reached layer 5 or deeper, on layer 1 and on their deep layer |
+| Soil water depth | deepest available layer at all sites; the 128 matched sites on layer 1; the same sites on their deepest layer; the 59 sites with five or more soil water depths, on layer 1 and on their deep layer |
 | Model fitting | air temperature dropped from the predictor set; blocked cross-validation; ALE instead of SHAP; the threshold estimator across 23 settings |
 | Site set | any one site removed; Europe removed; North America removed; both removed; records of at least 3, 5 and 10 years |
 
@@ -75,7 +75,7 @@ instead of a bar. In the value column they read `1.26 (1.23 to 1.30 range)` and
 `1.25 (1.21 to 1.29 CI)`, so square brackets mean a prediction band and round brackets mean
 anything else. The table marks them with an asterisk as well.
 
-**The main table takes eleven of the eighteen**, one per kind of challenge: the layer 5+ pair,
+**The main table takes eleven of the eighteen**, one per kind of challenge: the pair of rows for sites with five or more soil water depths,
 air temperature dropped, blocked cross-validation, the mean per bin, the GAM, ALE, any one site
 removed, North America removed, Europe and North America removed, and records of at least 10
 years. Depth is the one theme that takes two rows,
@@ -86,6 +86,11 @@ largest movers stay in, so the selection cannot be read as flattering, and the e
 goes out, which leaves the interval column with two meanings instead of three. The
 supplementary figure keeps all eighteen, and the table footnote points at it.
 
+**Row labels, 7 September 2026.** "Layer 5" was a FLUXNET variable index whose depth differs by
+site, so the rows are now named by their selection rule, sites with five or more soil water
+depths, at their shallowest and their deepest; the matched pair reads shallowest and deepest
+depth for the same reason.
+
 **The mean-per-bin row, added 6 September 2026.** Figure 4 fits the cross-site median of each
 bin, not the mean, and it does so because of a line in script 54 that tests the x variable
 rather than by a decision written down anywhere. Script 42 writes both aggregations, so script
@@ -95,8 +100,8 @@ being found by reading the code.
 
 **The deepest-layer pair.** The matched rows use all 128 sites that moved down, and most moved
 one layer, so the depth contrast is small. The pair restricted to the 59 sites that reached
-layer 5 or deeper holds the sites fixed and gives the largest contrast the network allows:
-1.195 kPa on layer 1 against 1.207 on their deep layer, so depth moves the threshold by
+five or more soil water depths holds the sites fixed and gives the largest contrast the network allows:
+1.195 kPa at their shallowest depth against 1.207 at their deepest, so depth moves the threshold by
 0.012 kPa. Both sit about 0.06 kPa below the published value, which is those 59 sites being a
 different sample rather than a depth effect. That is why the row is a pair.
 
