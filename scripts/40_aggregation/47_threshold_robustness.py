@@ -244,22 +244,26 @@ def site_curves(*subfolders):
     return piv
 
 
-def aggregate(M, x, min_sites):
-    """Median across sites per cell, keeping only cells held by enough sites.
+def aggregate(M, x, min_sites, stat='median'):
+    """Cross-site value per cell, keeping only cells held by enough sites.
 
-    Median, not mean. Script 42 writes several aggregations per bin and Figure 4 reads the
-    median column, so a mean here reproduces 1.252 kPa instead of the published 1.260.
+    Median by default, because that is what Figure 4 fits: script 42 writes several
+    aggregations per bin and script 54 reads the median column (its `yagg` line tests the
+    x variable, which is a bin, so the median is always chosen). The mean is the other
+    aggregation script 42 writes, and the "Mean instead of median per bin" row asks for it,
+    so that the choice between the two stands in Table 1 as a tested setting rather than a
+    line of code. The mean reproduces about 1.25 kPa against the published 1.26.
     """
     counts = np.isfinite(M).sum(axis=0)
     keep = counts >= min_sites
     if keep.sum() <= POLY_DEGREE + 1:
         return np.array([]), np.array([])
     with np.errstate(invalid='ignore'):
-        y = np.nanmedian(M[:, keep], axis=0)
+        y = np.nanmedian(M[:, keep], axis=0) if stat == 'median' else np.nanmean(M[:, keep], axis=0)
     return x[keep], y
 
 
-def threshold_with_ci(piv, seed=0):
+def threshold_with_ci(piv, seed=0, stat='median'):
     """Crossing of the aggregated curve, with two intervals, all in kPa.
 
     Returns the point value, the prediction band bounds, the bootstrap bounds and the site
@@ -281,7 +285,7 @@ def threshold_with_ci(piv, seed=0):
     n = len(M)
     min_sites = np.ceil(n / 2)
 
-    xk, yk = aggregate(M, x, min_sites)
+    xk, yk = aggregate(M, x, min_sites, stat)
     point_z = crossing(xk, yk)
     point = to_kpa(point_z, sites)
 
@@ -293,7 +297,7 @@ def threshold_with_ci(piv, seed=0):
     rng = np.random.default_rng(seed)
     boot = np.empty(N_BOOT)
     for i in range(N_BOOT):
-        xk, yk = aggregate(M[rng.integers(0, n, n)], x, min_sites)
+        xk, yk = aggregate(M[rng.integers(0, n, n)], x, min_sites, stat)
         boot[i] = crossing(xk, yk) if len(xk) else np.nan
     boot = boot[np.isfinite(boot)]
     lo, hi = np.percentile(boot, [2.5, 97.5])
@@ -470,6 +474,13 @@ def robustness_rows(sweep):
     piv = site_curves('blocked-cv')
     rows.append(('Model fitting', 'Blocked cross-validation',
                  *threshold_with_ci(piv, seed=2), None))
+
+    # The cross-site mean per bin instead of the median. Figure 4 fits the median because
+    # of a line in script 54 that tests the x variable, not by a decision written down
+    # anywhere, so the alternative is put here on the same footing as the other choices.
+    # Same sites, same cells, same fit; only the aggregation across sites differs.
+    rows.append(('Model fitting', 'Mean instead of median per bin',
+                 *threshold_with_ci(base, seed=5, stat='mean'), None))
 
     # A spline instead of the quartic, on the same curve. It is the only row that changes how
     # the shape of the response is estimated rather than which data go in, so it answers the

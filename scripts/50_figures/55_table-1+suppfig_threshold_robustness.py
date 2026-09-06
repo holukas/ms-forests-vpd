@@ -1,7 +1,7 @@
 """
 Threshold robustness: main-text Table 1 and the matching supplementary figure.
 
-One script, because both display items show the same fourteen tests. Rendering them from two
+One script, because both display items show the same eighteen tests. Rendering them from two
 scripts is how a table and a figure drift apart.
 
 **It computes nothing.** `40_aggregation/47_threshold_robustness.py` builds the rows and
@@ -110,7 +110,7 @@ outfile = folder / f'55_SUPPFIG-X_ThresholdRobustness_{FLUX}.png'
 # its interval are printed, and the table half mirrors main-text Table 1 so the two read as
 # one argument.
 #
-# One blue throughout. Colouring the movers red made the eye go to two rows out of seventeen
+# One blue throughout. Colouring the movers red made the eye go to two rows out of eighteen
 # and read them as failures, which is the opposite of what the figure says.
 
 SHORT = {
@@ -120,6 +120,7 @@ SHORT = {
     'Layer 5+ sites, shallow soil water': 'Layer 5+ sites, shallow',
     'Layer 5+ sites, deep soil water': 'Layer 5+ sites, deep',
     'Air temperature dropped from the model': 'No air temperature',
+    'Mean instead of median per bin': 'Mean per bin',
     'Threshold estimator, 23 settings': 'Estimator, 23 settings',
     'Europe and North America removed': 'Europe and N. America removed',
     'Records of at least 3 years': 'Records ≥ 3 years',
@@ -258,6 +259,7 @@ MAIN_ROWS = [
     'Layer 5+ sites, deep soil water',
     'Air temperature dropped from the model',
     'Blocked cross-validation',
+    'Mean instead of median per bin',
     'GAM instead of a polynomial',
     'ALE instead of SHAP',
     'Any one site removed',
@@ -288,6 +290,8 @@ WHAT_IT_VARIES = {
         'A spline whose shape the data set, instead of a fourth-order polynomial',
     'Blocked cross-validation':
         'One calendar year left out at a time instead of a shuffled split',
+    'Mean instead of median per bin':
+        'The cross-site mean of each bin fitted instead of the median',
     'ALE instead of SHAP':
         'Accumulated local effects, a different attribution method entirely',
     'Threshold estimator, 23 settings':

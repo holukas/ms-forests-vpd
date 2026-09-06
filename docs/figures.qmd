@@ -11,7 +11,7 @@ to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
 | `52_fig-2+suppfig_flameplots.py` | Figure 2 and the matching supplementary figure, binned SHAP heatmaps | `40_aggregation/` |
 | `53_fig-3_sankeyplot_shapvalues_8stages.py` | Figure 3, SHAP flow across the stress stages | `40_aggregation/` |
 | `54_fig-4+supptable_vpd_response_curve_shap_agg.py` | Figure 4, and the supplementary table of polynomial coefficients with the threshold in sigma and kPa | `40_aggregation/`, `20_subsets/` |
-| `55_table-1+suppfig_threshold_robustness.py` | Table 1, nine tests, and the matching supplementary figure, all seventeen | `40_aggregation/47_...csv` |
+| `55_table-1+suppfig_threshold_robustness.py` | Table 1, eleven tests, and the matching supplementary figure, all eighteen | `40_aggregation/47_...csv` |
 | `56_suppfig+supptable_scenarios_boxplot_shapsums.py` | Supplementary figure and table, sina plots of the stage SHAP sums | `40_aggregation/` |
 | `57_suppfig_ale_response_curve.py` | Supplementary figure, ALE response curves with consensus threshold | `40_aggregation/46_...parquet` |
 | `59_supptable_stage_distributions+min_records.py` | Two supplementary tables, the driver distributions within each stage and the effect of a minimum number of Stage 8 records per site | `40_aggregation/45_...csv`, `30_shap/` |
@@ -39,14 +39,14 @@ carries the same bin edge, so mean and median return the same number, and the me
 used because averaging identical floats reintroduces rounding noise in the labels. The
 SHAP values themselves, `zcol`, use `aggfunc`.
 
-## Table 1 and its figure: seventeen tests, nine of them in the main text
+## Table 1 and its figure: eighteen tests, eleven of them in the main text
 
 `55_table-1+suppfig_threshold_robustness.py` computes nothing. Script 47 builds the rows and
 writes them to `47_THRESHOLD_Robustness_NEP_ZSCORE.csv`, and script 55 reads that file and
 renders it twice, as the main-text table and as the supplementary figure, so the two cannot
 disagree.
 
-Seventeen tests in three groups, with the published analysis on top as the reference row:
+Eighteen tests in three groups, with the published analysis on top as the reference row:
 
 | Group | Tests |
 |---|---|
@@ -72,15 +72,23 @@ whiskers instead of a bar. In the value column they read `1.26 (1.23 to 1.30 ran
 `1.25 (no band)`, so square brackets mean a prediction band and round brackets mean anything
 else. The table marks them with an asterisk as well.
 
-**The main table takes nine of the seventeen**, one per kind of challenge: the layer 5+ pair,
-air temperature dropped, blocked cross-validation, the GAM, ALE, any one site removed, North
-America removed, and records of at least 10 years. Depth is the one theme that takes two rows,
+**The main table takes eleven of the eighteen**, one per kind of challenge: the layer 5+ pair,
+air temperature dropped, blocked cross-validation, the mean per bin, the GAM, ALE, any one site
+removed, North America removed, Europe and North America removed, and records of at least 10
+years. Depth is the one theme that takes two rows,
 because the pair is the comparison. `MAIN_ROWS` in script 55 holds that list. The rest
 are redundant in a main display item, since three record-length rows make one point, three
 region rows make one point, and each matched pair argues one comparison over two rows. Both
 largest movers stay in, so the selection cannot be read as flattering, and the estimator row
 goes out, which leaves the interval column with two meanings instead of three. The
-supplementary figure keeps all seventeen, and the table footnote points at it.
+supplementary figure keeps all eighteen, and the table footnote points at it.
+
+**The mean-per-bin row, added 6 September 2026.** Figure 4 fits the cross-site median of each
+bin, not the mean, and it does so because of a line in script 54 that tests the x variable
+rather than by a decision written down anywhere. Script 42 writes both aggregations, so script
+47 fits the mean as one more row under model fitting. The crossing moves by 0.007 kPa. The row
+is in the main table so that the choice stands beside the other tested settings instead of
+being found by reading the code.
 
 **The deepest-layer pair.** The matched rows use all 128 sites that moved down, and most moved
 one layer, so the depth contrast is small. The pair restricted to the 59 sites that reached
@@ -98,7 +106,7 @@ axis with the value printed beside each row.
 **The figure is a table and a plot side by side**, the same rows in both halves: label, sites,
 threshold and interval on the left, bars on the right, one shared row grid. A rule sits under
 the reference row so the value being tested is separate from the tests. Everything is one
-blue. Colouring the two largest movers red made seventeen agreeing rows look like a list of
+blue. Colouring the two largest movers red made eighteen agreeing rows look like a list of
 passes and failures, which is the opposite of what the figure says.
 
 Output is one png, one xlsx for pasting into Word, and one csv of the same table.
