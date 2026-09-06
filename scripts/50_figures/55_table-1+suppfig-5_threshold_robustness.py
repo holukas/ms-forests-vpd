@@ -367,14 +367,14 @@ movers = tests.loc[tests['shift_kpa'].abs() >= MOVER].sort_values('shift_kpa')
 mover_text = '; '.join(f"{SHORT.get(r['test'], r['test']).lower()} at "
                        f"{r['threshold_kpa']:.2f} kPa" for _, r in movers.iterrows())
 footnote = (
-    "Threshold, highest zero crossing of a fourth-order polynomial fitted to the cross-site "
-    "median VPD effect per bin, and its 95% prediction band in brackets, both as in Fig. 4. "
-    "Asterisk, not a prediction band: the leave-one-site-out row gives the range across the "
-    f"{int(ref['n_sites'])} removals, the ALE row the 95% confidence interval of the mean of "
-    "the per-site crossings. The two layer 5+ rows use "
-    "the 59 sites with a sensor at layer 5 or deeper and are compared with each other; their "
-    "offset from the published value reflects the smaller site set. The tests are described "
-    f"in Methods; all {len(tests)} are shown in Supplementary Fig. 5."
+    "The threshold is the highest zero crossing of a fourth-order polynomial fitted to the "
+    "cross-site median VPD effect per bin, and the brackets give its 95% prediction band, "
+    "both as in Fig. 4. Rows marked with an asterisk carry a different interval: the "
+    f"leave-one-site-out row the range across the {int(ref['n_sites'])} removals, the ALE "
+    "row the 95% confidence interval of the mean of the per-site crossings. The two layer 5+ "
+    "rows use the 59 sites with a sensor at layer 5 or deeper and are compared with each "
+    "other; their offset from the published value reflects the smaller site set. The tests "
+    f"are described in Methods; all {len(tests)} are shown in Supplementary Fig. 5."
 )
 
 stem = folder / f'55_TABLE-1_ThresholdRobustness_{FLUX}'
