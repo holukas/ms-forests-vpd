@@ -257,8 +257,14 @@ published figure.
 Script 51 (the site map) has no variant and needs none, since the site list does not
 depend on which soil water layer was used.
 
-Three figure scripts read a stage 40 file rather than the aggregation output directly, so
-that stage has to have run first: 55 needs 47, 57 needs 46, and 65 needs 49.
+Four figure scripts read a stage 40 file rather than the aggregation output directly, so
+that stage has to have run first: 55 needs 47, 57 needs 46, 59 needs 45, and 65 needs 49.
+
+`59_supptable_stage_distributions+min_records.py` writes two supplementary tables. The
+first is the stage distribution table of script 45, laid out for the supplement. The
+second raises a minimum number of Stage 8 records per site from 1 to 100 and reports how
+the Stage 8 effects change, which is the one part of the 50s that goes back to the
+per-site SHAP files of stage 31. It takes a few minutes on 208 sites.
 
 `66_suppfig_data_flow_sankey.py` draws `22_data_flow.csv` as a Sankey, one ribbon narrowing
 at each filtering step. The number is not assigned yet, hence the `X`.
