@@ -5,7 +5,7 @@ This is the heavy half of what used to live in `50_figures`. Scripts under `50_f
 draw, they do not compute, because they become notebooks under S10 and a notebook must not
 aggregate a campaign. The bootstrap here refits a polynomial 2000 times for every test that
 carries an interval, and the leave-one-site-out row refits it once per site, together about
-two minutes, which is exactly the kind of work that belongs at this stage. `55_table-1+suppfig_threshold_robustness.py` reads what this writes and renders it
+two minutes, which is exactly the kind of work that belongs at this stage. `55_table-1+suppfig-5_threshold_robustness.py` reads what this writes and renders it
 as Table 1 and the matching supplementary figure.
 
 It also absorbs the estimator sweep that was `50_figures/60_threshold_method_sensitivity.py`.
@@ -47,7 +47,7 @@ thresholds written by stage 46.
 
 Writes, into the aggregation folder:
     47_THRESHOLD_EstimatorSweep_{FLUX}.csv    23 estimator settings, thresholds in sigma
-    47_THRESHOLD_Robustness_{FLUX}.csv        fourteen tests plus the published reference, kPa,
+    47_THRESHOLD_Robustness_{FLUX}.csv        eighteen tests plus the published reference, kPa,
                                               with both intervals per row
     47_THRESHOLD_LeaveOneSiteOut_{FLUX}.csv   the threshold with each site dropped in turn,
                                               one row per site, kPa

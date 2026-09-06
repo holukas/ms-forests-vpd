@@ -98,7 +98,7 @@ rows = [(g, t, v, lo, hi, int(n), (None if pd.isna(note) else note))
 rows.insert(0, ('Reference', 'Published analysis', published, pub_lo, pub_hi,
                 int(ref_row['n_sites']), None))
 
-outfile = folder / f'55_SUPPFIG-X_ThresholdRobustness_{FLUX}.png'
+outfile = folder / f'55_SUPPFIG-5_ThresholdRobustness_{FLUX}.png'
 
 
 # ---------------------------------------------------------------------------
@@ -370,7 +370,7 @@ footnote = (
     f"not against the reference: they use 59 sites rather than 208, so their offset from it "
     f"is a difference in sample, while the difference between them, "
     f"{abs(main.loc[main['test'].str.startswith('Layer'), 'threshold_kpa'].diff().iloc[-1]):.2f} "
-    f"kPa, is the effect of soil water depth. The full set is in Supplementary Fig. X."
+    f"kPa, is the effect of soil water depth. The full set is in Supplementary Fig. 5."
 )
 
 stem = folder / f'55_TABLE-1_ThresholdRobustness_{FLUX}'

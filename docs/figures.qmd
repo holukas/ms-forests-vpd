@@ -11,7 +11,7 @@ to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
 | `52_fig-2+suppfig_flameplots.py` | Figure 2 and the matching supplementary figure, binned SHAP heatmaps | `40_aggregation/` |
 | `53_fig-3_sankeyplot_shapvalues_8stages.py` | Figure 3, SHAP flow across the stress stages | `40_aggregation/` |
 | `54_fig-4+supptable_vpd_response_curve_shap_agg.py` | Figure 4, and the supplementary table of polynomial coefficients with the threshold in sigma and kPa | `40_aggregation/`, `20_subsets/` |
-| `55_table-1+suppfig_threshold_robustness.py` | Table 1, eleven tests, and the matching supplementary figure, all eighteen | `40_aggregation/47_...csv` |
+| `55_table-1+suppfig-5_threshold_robustness.py` | Table 1, eleven tests, and the matching supplementary figure, all eighteen | `40_aggregation/47_...csv` |
 | `56_suppfig+supptable_scenarios_boxplot_shapsums.py` | Supplementary figure and table, sina plots of the stage SHAP sums | `40_aggregation/` |
 | `57_suppfig_ale_response_curve.py` | Supplementary figure, ALE response curves with consensus threshold | `40_aggregation/46_...parquet` |
 | `59_supptable_stage_distributions+min_records.py` | Two supplementary tables, the driver distributions within each stage and the effect of a minimum number of Stage 8 records per site | `40_aggregation/45_...csv`, `30_shap/` |
@@ -41,7 +41,7 @@ SHAP values themselves, `zcol`, use `aggfunc`.
 
 ## Table 1 and its figure: eighteen tests, eleven of them in the main text
 
-`55_table-1+suppfig_threshold_robustness.py` computes nothing. Script 47 builds the rows and
+`55_table-1+suppfig-5_threshold_robustness.py` computes nothing. Script 47 builds the rows and
 writes them to `47_THRESHOLD_Robustness_NEP_ZSCORE.csv`, and script 55 reads that file and
 renders it twice, as the main-text table and as the supplementary figure, so the two cannot
 disagree.
