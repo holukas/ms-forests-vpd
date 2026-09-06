@@ -327,8 +327,8 @@ def interval(row):
 # Sigma and kPa both, because every row converts with its own site set. A row can move in kPa
 # while standing still in sigma, and the reader cannot see that from kPa alone. It is also
 # the column that ties this table to Figure 4, which reports sigma.
-COLUMNS = ['Test', f'Sites (of {int(ref["n_sites"])})', 'Threshold (sigma)',
-           'Threshold (kPa)', '95% interval (kPa)']
+COLUMNS = ['Test', f'Sites (of {int(ref["n_sites"])})', 'Threshold (σ)',
+           'Threshold (kPa)', '95% prediction interval (kPa)']
 
 
 def _row(test, n, sigma, kpa, interval_text):
