@@ -137,6 +137,12 @@ def to_kpa(z, sites):
     return (use['VPD_Z0'].mean() + z * use['VPD_SD'].mean()) / 10
 
 
+def to_sigma(kpa, sites):
+    """kPa back to sigma for one site set, the inverse of `to_kpa`."""
+    use = subsets.loc[subsets.index.isin(sites)]
+    return (kpa * 10 - use['VPD_Z0'].mean()) / use['VPD_SD'].mean()
+
+
 # ---------------------------------------------------------------------------
 # Part 1: the estimator sweep, formerly script 60
 # ---------------------------------------------------------------------------
@@ -301,8 +307,11 @@ def threshold_with_ci(piv, seed=0, stat='median'):
         boot[i] = crossing(xk, yk) if len(xk) else np.nan
     boot = boot[np.isfinite(boot)]
     lo, hi = np.percentile(boot, [2.5, 97.5])
+    # The band in sigma travels with the row as well, so Table 1 can print both units with
+    # their intervals without inverting the kPa mapping per site set.
     return (float(point_z), float(point), float(band_lo), float(band_hi),
-            float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n)
+            float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n,
+            float(band[1]), float(band[2]))
 
 
 # --- the GAM row ------------------------------------------------------------------
@@ -373,10 +382,11 @@ def gam_threshold_with_ci(piv, seed=0):
     xk, yk = aggregate(M, x, min_sites)
     x_fit, y_fit, lo_fit, hi_fit, alpha, edf = gam_curve(xk, yk)
     point_z = highest_crossing(x_fit, y_fit)
-    band_lo = to_kpa(highest_crossing(x_fit, lo_fit), sites)
-    band_hi = to_kpa(highest_crossing(x_fit, hi_fit), sites)
-    if band_lo > band_hi:
-        band_lo, band_hi = band_hi, band_lo
+    band_lo_z = highest_crossing(x_fit, lo_fit)
+    band_hi_z = highest_crossing(x_fit, hi_fit)
+    if band_lo_z > band_hi_z:
+        band_lo_z, band_hi_z = band_hi_z, band_lo_z
+    band_lo, band_hi = to_kpa(band_lo_z, sites), to_kpa(band_hi_z, sites)
     print(f"GAM: penalty {alpha:.3g}, effective df {edf:.1f}, "
           f"crossing {point_z:.3f} sigma")
 
@@ -392,7 +402,8 @@ def gam_threshold_with_ci(piv, seed=0):
     boot = boot[np.isfinite(boot)]
     lo, hi = np.percentile(boot, [2.5, 97.5])
     return (float(point_z), float(to_kpa(point_z, sites)), float(band_lo), float(band_hi),
-            float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n)
+            float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n,
+            float(band_lo_z), float(band_hi_z))
 
 
 def point_threshold(piv):
@@ -430,13 +441,14 @@ def deepest_layer_sites(min_layer):
 
 
 def robustness_rows(sweep):
-    # (group, label, sigma, value, band_lo, band_hi, boot_lo, boot_hi, n_sites, note)
+    # (group, label, sigma, value, band_lo, band_hi, boot_lo, boot_hi, n_sites,
+    #  band_lo_sigma, band_hi_sigma, note)
     rows = []
 
     # Reference: the published run, same estimator.
     base = site_curves()
     (published_z, published, pub_lo, pub_hi,
-     pub_boot_lo, pub_boot_hi, n_base) = threshold_with_ci(base)
+     pub_boot_lo, pub_boot_hi, n_base, pub_lo_z, pub_hi_z) = threshold_with_ci(base)
 
     # --- soil water depth -------------------------------------------------------
     for label, sub in [('Deepest available layer, all sites', ('deep-sm',)),
@@ -498,7 +510,7 @@ def robustness_rows(sweep):
     ale_z = float(ale.loc[ale['group'] == 'ALL SITES', 'threshold'].iloc[0])
     ale_kpa = to_kpa(ale_z, base.index)
     rows.append(('Model fitting', 'ALE instead of SHAP', ale_z, ale_kpa, ale_kpa, ale_kpa,
-                 ale_kpa, ale_kpa, len(base),
+                 ale_kpa, ale_kpa, len(base), ale_z, ale_z,
                  'no curve fitted here, value is a mean of per-site crossings'))
 
     # The estimator row varies the fit, not the sites, so it carries the spread across the
@@ -508,7 +520,8 @@ def robustness_rows(sweep):
     rows.append(('Model fitting', f'Threshold estimator, {len(sweep)} settings',
                  float(np.median(est_z)),
                  float(np.median(est)), float(est.min()), float(est.max()),
-                 float(est.min()), float(est.max()), n_base, 'spread across settings'))
+                 float(est.min()), float(est.max()), n_base,
+                 float(est_z.min()), float(est_z.max()), 'spread across settings'))
 
     # --- site set ---------------------------------------------------------------
     # Leave one site out. Every other row in this group drops a whole class of sites, so none
@@ -521,7 +534,8 @@ def robustness_rows(sweep):
     # the same sites, and the row's spread is in kPa.
     rows.append(('Site set', 'Any one site removed', published_z, float(loo.median()),
                  float(loo.min()), float(loo.max()), float(loo.min()), float(loo.max()),
-                 n_base, 'range across single-site removals'))
+                 n_base, float(to_sigma(loo.min(), base.index)),
+                 float(to_sigma(loo.max(), base.index)), 'range across single-site removals'))
 
     REGIONS = {
         'Europe': ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR',
@@ -544,10 +558,11 @@ def robustness_rows(sweep):
 
     # The reference goes in as its own row, so the renderer needs nothing else.
     out = pd.DataFrame(rows + [('', 'PUBLISHED REFERENCE', published_z, published, pub_lo,
-                                pub_hi, pub_boot_lo, pub_boot_hi, n_base, None)],
+                                pub_hi, pub_boot_lo, pub_boot_hi, n_base, pub_lo_z, pub_hi_z,
+                                None)],
                        columns=['group', 'test', 'threshold_sigma', 'threshold_kpa',
                                 'lower', 'upper', 'boot_lower', 'boot_upper', 'n_sites',
-                                'note'])
+                                'lower_sigma', 'upper_sigma', 'note'])
     out['shift_kpa'] = out['threshold_kpa'] - published
     return out, loo
 

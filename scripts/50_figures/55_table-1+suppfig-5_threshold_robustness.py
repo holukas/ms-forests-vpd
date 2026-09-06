@@ -307,17 +307,20 @@ WHAT_IT_VARIES = {
 }
 
 
-def interval(row):
-    """The interval, with a note where it is not a site bootstrap.
+def cell(value, lo, hi, note):
+    """A value with its interval in brackets, in one unit.
 
     Script 47 writes equal bounds for a row with no fitted curve, which is the case for ALE.
-    Printing "1.25 to 1.25" would read as a precision claim, so the cell says none instead
-    and the note column carries the reason.
+    Printing "1.25 [1.25, 1.25]" would read as a precision claim, so the cell carries the
+    value and the asterisk alone, and the footnote says why. Rows whose bracket is a spread
+    rather than a band keep the bracket and take the asterisk.
     """
-    if row['upper'] <= row['lower']:
-        return 'none *'
-    text = f"{row['lower']:.2f} to {row['upper']:.2f}"
-    return text + (' *' if isinstance(row['note'], str) else '')
+    # Rounding first and adding zero keeps a bound like -0.004 from printing as -0.00.
+    value, lo, hi = (round(v, 2) + 0.0 for v in (value, lo, hi))
+    if hi <= lo:
+        return f"{value:.2f} *"
+    text = f"{value:.2f} [{lo:.2f}, {hi:.2f}]"
+    return text + (' *' if isinstance(note, str) else '')
 
 
 # Group names become sub-header rows rather than a column, which saves the width a Nature
@@ -326,27 +329,28 @@ def interval(row):
 #
 # Sigma and kPa both, because every row converts with its own site set. A row can move in kPa
 # while standing still in sigma, and the reader cannot see that from kPa alone. It is also
-# the column that ties this table to Figure 4, which reports sigma.
-COLUMNS = ['Test', f'Sites (of {int(ref["n_sites"])})', 'Threshold (σ)',
-           'Threshold (kPa)', '95% prediction interval (kPa)']
+# the column that ties this table to Figure 4, which reports sigma. Each value carries its
+# 95 % prediction band in brackets, as Figure 4 and the text do, which saves the interval
+# column the table used to have.
+COLUMNS = ['Test', f'Sites (of {int(ref["n_sites"])})', 'Threshold (σ)', 'Threshold (kPa)']
 
 
-def _row(test, n, sigma, kpa, interval_text):
-    return dict(zip(COLUMNS, [test, n, sigma, kpa, interval_text]))
+def _row(test, n, sigma, kpa):
+    return dict(zip(COLUMNS, [test, n, sigma, kpa]))
 
 
-records = [_row('Published analysis', int(ref['n_sites']), f"{ref['threshold_sigma']:.2f}",
-                f"{ref['threshold_kpa']:.2f}",
-                f"{ref['lower']:.2f} to {ref['upper']:.2f}")]
+records = [_row('Published analysis', int(ref['n_sites']),
+                cell(ref['threshold_sigma'], ref['lower_sigma'], ref['upper_sigma'], None),
+                cell(ref['threshold_kpa'], ref['lower'], ref['upper'], None))]
 for group in ['Soil water depth', 'Model fitting', 'Site set']:
     block = main.loc[main['group'] == group]
     if block.empty:
         continue
-    records.append(_row(group, '', '', '', ''))          # sub-header row
+    records.append(_row(group, '', '', ''))          # sub-header row
     for _, r in block.iterrows():
         records.append(_row(SHORT.get(r['test'], r['test']), int(r['n_sites']),
-                            f"{r['threshold_sigma']:.2f}", f"{r['threshold_kpa']:.2f}",
-                            interval(r)))
+                            cell(r['threshold_sigma'], r['lower_sigma'], r['upper_sigma'], r['note']),
+                            cell(r['threshold_kpa'], r['lower'], r['upper'], r['note'])))
 table1 = pd.DataFrame(records, columns=COLUMNS)
 
 
@@ -360,17 +364,13 @@ movers = tests.loc[tests['shift_kpa'].abs() >= MOVER].sort_values('shift_kpa')
 mover_text = '; '.join(f"{SHORT.get(r['test'], r['test']).lower()} at "
                        f"{r['threshold_kpa']:.2f} kPa" for _, r in movers.iterrows())
 footnote = (
-    f"Threshold is the highest zero crossing of a fourth-order polynomial fitted to the "
-    f"VPD SHAP values, the same estimator as in Figure 4. Intervals are the 95 % prediction "
-    f"band of that fit, as in Figure 4. Rows marked * have no band: the leave-one-site-out "
-    f"row shows the spread across the 208 removals, and the ALE row fits no curve. "
-    f"The published value is {ref['threshold_kpa']:.2f} kPa. Of all {len(tests)} tests, "
-    f"{len(movers)} depart from it by more than {MOVER:.2f} kPa: {mover_text}. Every other "
-    f"test lands closer. The two layer 5+ rows are a pair and are read against each other, "
-    f"not against the reference: they use 59 sites rather than 208, so their offset from it "
-    f"is a difference in sample, while the difference between them, "
-    f"{abs(main.loc[main['test'].str.startswith('Layer'), 'threshold_kpa'].diff().iloc[-1]):.2f} "
-    f"kPa, is the effect of soil water depth. The full set is in Supplementary Fig. 5."
+    "Threshold, highest zero crossing of a fourth-order polynomial fitted to the cross-site "
+    "median VPD effect per bin, and its 95% prediction band in brackets, both as in Fig. 4. "
+    "Asterisk, no band: the leave-one-site-out row gives the range across the "
+    f"{int(ref['n_sites'])} removals, the ALE row fits no curve. The two layer 5+ rows use "
+    "the 59 sites with a sensor at layer 5 or deeper and are compared with each other; their "
+    "offset from the published value reflects the smaller site set. The tests are described "
+    f"in Methods; all {len(tests)} are shown in Supplementary Fig. 5."
 )
 
 stem = folder / f'55_TABLE-1_ThresholdRobustness_{FLUX}'
@@ -379,7 +379,7 @@ with pd.ExcelWriter(f'{stem}.xlsx', engine='openpyxl') as writer:
     table1.to_excel(writer, sheet_name='Table 1', index=False, startrow=0)
     sheet = writer.sheets['Table 1']
     # Column widths, so the pasted table does not need manual fixing in Word.
-    for column, width in zip('ABCDE', (38, 13, 16, 16, 20)):
+    for column, width in zip('ABCD', (38, 13, 22, 22)):
         sheet.column_dimensions[column].width = width
     sheet.cell(row=len(table1) + 3, column=1, value=footnote)
 
