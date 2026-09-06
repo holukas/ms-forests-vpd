@@ -63,14 +63,17 @@ three places. Script 47 also writes a bootstrap over sites, about five times nar
 `boot_lower` and `boot_upper`. That one is not shown here, because two intervals on the same
 number would confuse a reader.
 
-Three rows have no band, and the figure and the table both say so rather than leaving it to
-the caption. The estimator row carries the spread across its 23 settings, and the
-leave-one-site-out row the spread across its 208 removals, which share 207 sites with each
+Three rows have no prediction band, and the figure and the table both say so rather than
+leaving it to the caption. The estimator row carries the spread across its 23 settings, and
+the leave-one-site-out row the spread across its 208 removals, which share 207 sites with each
 other and are not independent draws. The ALE row has no curve fitted here at all, since stage
-46 derives its value as a mean of per-site crossings. In the figure those rows are drawn with
-whiskers instead of a bar. In the value column they read `1.26 (1.23 to 1.30 range)` and
-`1.25 (no band)`, so square brackets mean a prediction band and round brackets mean anything
-else. The table marks them with an asterisk as well.
+46 derives its value as a mean of per-site crossings, so it carries the 95 % confidence
+interval of that mean, the interval the Results quote for ALE (added 7 September 2026; fitting
+the Table 1 estimator to the cross-site ALE curve instead would give 1.20 kPa, a second ALE
+threshold, so that route was not taken). In the figure those rows are drawn with whiskers
+instead of a bar. In the value column they read `1.26 (1.23 to 1.30 range)` and
+`1.25 (1.21 to 1.29 CI)`, so square brackets mean a prediction band and round brackets mean
+anything else. The table marks them with an asterisk as well.
 
 **The main table takes eleven of the eighteen**, one per kind of challenge: the layer 5+ pair,
 air temperature dropped, blocked cross-validation, the mean per bin, the GAM, ALE, any one site

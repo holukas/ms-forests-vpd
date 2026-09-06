@@ -20,11 +20,12 @@ coefficient table show, so the reference row reads 1.26 [1.16, 1.36] in both pla
 threshold depends on which sites are in the network. That one is not shown here, because two
 different intervals on the same number would confuse a reader. Use it in the response letter.
 
-**Three rows have no interval.** The figure draws them with a diamond and the table marks
-them with an asterisk. The estimator row shows the spread across its 23 settings instead, and
-the leave-one-site-out row the spread across its 208 removals, which are not independent of
-each other. The ALE row has no curve fitted here at all, since its value is a mean of per-site
-crossings. Script 47 flags all three in the `note` column.
+**Three rows carry something other than a prediction band**, and both display items say so
+with an asterisk and whiskers instead of a bar. The estimator row shows the spread across its
+23 settings, the leave-one-site-out row the spread across its 208 removals, which are not
+independent of each other, and the ALE row the 95 % confidence interval of the mean of the
+per-site crossings, the interval the Results quote for ALE, since no curve is fitted for that
+row here. Script 47 flags all three in the `note` column.
 
 **No shift column in the table.** Rounded to two decimals several of the shifts read as +0.00
 or -0.00, and three decimals would imply a precision the bootstrap interval, about plus or
@@ -163,6 +164,8 @@ def value_text(mid, lo, hi, note):
     neighbouring axes would cover it."""
     if hi <= lo:
         return f'{mid:.2f}   (no band)'
+    if note and 'confidence' in note:
+        return f'{mid:.2f}   ({lo:.2f} to {hi:.2f} CI)'
     if note:
         return f'{mid:.2f}   ({lo:.2f} to {hi:.2f} range)'
     return f'{mid:.2f}   [{lo:.2f}, {hi:.2f}]'
@@ -366,8 +369,9 @@ mover_text = '; '.join(f"{SHORT.get(r['test'], r['test']).lower()} at "
 footnote = (
     "Threshold, highest zero crossing of a fourth-order polynomial fitted to the cross-site "
     "median VPD effect per bin, and its 95% prediction band in brackets, both as in Fig. 4. "
-    "Asterisk, no band: the leave-one-site-out row gives the range across the "
-    f"{int(ref['n_sites'])} removals, the ALE row fits no curve. The two layer 5+ rows use "
+    "Asterisk, not a prediction band: the leave-one-site-out row gives the range across the "
+    f"{int(ref['n_sites'])} removals, the ALE row the 95% confidence interval of the mean of "
+    "the per-site crossings. The two layer 5+ rows use "
     "the 59 sites with a sensor at layer 5 or deeper and are compared with each other; their "
     "offset from the published value reflects the smaller site set. The tests are described "
     f"in Methods; all {len(tests)} are shown in Supplementary Fig. 5."

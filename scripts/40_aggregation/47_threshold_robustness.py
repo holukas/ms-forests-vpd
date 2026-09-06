@@ -33,13 +33,13 @@ a robustness test is really asked, and it is about five times narrower. It stays
 in `boot_lower` and `boot_upper`, because it is the stronger answer for the response letter,
 and it is the point A13 makes.
 
-**Three rows have neither interval.** The estimator row varies how the curve is fitted rather
+**Three rows carry neither interval.** The estimator row varies how the curve is fitted rather
 than which sites are included, so both columns carry the spread across its 23 settings. The
 leave-one-site-out row carries the spread across its 208 removals for the same reason: those
 values share 207 sites with each other, so they are not independent draws. The ALE row has no
 curve fitted here at all, since stage 46 derives its value as a mean of per-site crossings, so
-both columns repeat the point value. All three are flagged in the `note` column, and the
-display items mark them rather than showing an interval.
+both columns carry the 95 % confidence interval of that mean, which is what the Results quote
+for ALE. All three are flagged in the `note` column, and the display items mark them.
 
 Reads: stage 41 per-site curves for the baseline and the deep-sm, deeper-only, blocked-cv
 and no_ta variants, stage 42 for the aggregated curve, the stage 21 subsets table, and the ALE
@@ -503,15 +503,21 @@ def robustness_rows(sweep):
     # Accumulated local effects instead of SHAP. A different attribution method
     # altogether, so this is the row that shares least machinery with the published
     # analysis. Stage 46 writes the all-sites value as the mean of the per-site
-    # crossings. It has a t interval over those crossings, which is not the same
-    # construction as the bootstrap on the other rows, so it is not shown here.
+    # crossings, with a 95 % confidence interval of that mean over the sites. The row
+    # carries that interval in the band columns, flagged in the note, since it is the
+    # interval the Results quote for ALE and not a prediction band; the display scripts
+    # mark it as they mark the two range rows. Fitting the Table 1 estimator to the
+    # cross-site ALE curve instead would give 1.20 kPa [1.17, 1.24], a second ALE
+    # threshold 0.05 kPa below the published one, which is why that route was not taken
+    # (checked 7 September 2026).
     ale_dir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / 'ale' / VARIANT
     ale = pd.read_csv(ale_dir / f'46_ALE_Thresholds_VPD_ZSCORE_{FLUX}.csv')
-    ale_z = float(ale.loc[ale['group'] == 'ALL SITES', 'threshold'].iloc[0])
-    ale_kpa = to_kpa(ale_z, base.index)
-    rows.append(('Model fitting', 'ALE instead of SHAP', ale_z, ale_kpa, ale_kpa, ale_kpa,
-                 ale_kpa, ale_kpa, len(base), ale_z, ale_z,
-                 'no curve fitted here, value is a mean of per-site crossings'))
+    ale_row = ale.loc[ale['group'] == 'ALL SITES'].iloc[0]
+    ale_z, ale_lo_z, ale_hi_z = (float(ale_row[c]) for c in ('threshold', 'ci_lower', 'ci_upper'))
+    ale_kpa, ale_lo, ale_hi = (to_kpa(z, base.index) for z in (ale_z, ale_lo_z, ale_hi_z))
+    rows.append(('Model fitting', 'ALE instead of SHAP', ale_z, ale_kpa, ale_lo, ale_hi,
+                 ale_lo, ale_hi, int(ale_row['n_sites']), ale_lo_z, ale_hi_z,
+                 '95% confidence interval of the mean of per-site crossings'))
 
     # The estimator row varies the fit, not the sites, so it carries the spread across the
     # settings rather than a bootstrap.
