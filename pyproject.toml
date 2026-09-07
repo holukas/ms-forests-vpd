@@ -11,30 +11,31 @@ requires-python = ">=3.12,<3.13"
 license = { text = "GPL-3.0-or-later" }
 authors = [{ name = "Lukas Hörtnagl", email = "lukas.hoertnagl@usys.ethz.ch" }]
 
+# Every runtime dependency is pinned to the version the published results were
+# produced with, so that `pip install .` gives the same environment as `uv sync`.
+# This is an analysis repository, not a library, and the pins are the record of
+# what ran. The one that matters most is xgboost: rerunning the same data and
+# the same seeds under 3.3.0 instead of 3.0.5 gives different models, with
+# predictions correlating at 0.995, mean |SHAP| for VPD rising at every site
+# tested and the VPD/SWC ratio rising by 6 to 21 %. Do not change that pin
+# without rerunning the whole campaign and updating every number in the
+# manuscript. shap 0.52.0 and scikit-learn 1.9.0 reproduce the April results
+# exactly. numpy stays below 2.5 because numba, pulled in by shap, supports
+# no more, and numba 0.53 does not build on Python 3.12.
 dependencies = [
     "diive==0.91.0",
-    "pandas>=3.0.0,<4.0.0",
-    # Upper bound follows numba (pulled in by shap), which supports numpy<2.5.
-    # Without it the resolver keeps numpy at 2.5 and falls back to numba 0.53,
-    # which does not build on Python 3.12.
-    "numpy>=2.2.4,<2.5",
-    "scipy>=1.15.0,<2.0.0",
-    "matplotlib>=3.10.0,<4.0.0",
-    "scikit-learn>=1.6.1,<2.0.0",
-    # Pinned, not a range. The submitted results were produced with xgboost
-    # 3.0.5 in April 2026. Rerunning the same data and the same seeds under
-    # 3.3.0 gives different models: predictions correlate at 0.995, mean
-    # |SHAP| for VPD rises at every site tested and the VPD/SWC ratio rises
-    # by 6 to 21 %. Data and seeds are identical, two runs in one environment
-    # are bit-identical, so the version is the only difference left.
-    # Do not relax this without rerunning the whole campaign and updating
-    # every number in the manuscript.
+    "pandas==3.0.5",
+    "numpy==2.4.6",
+    "scipy==1.18.0",
+    "matplotlib==3.11.1",
+    "scikit-learn==1.9.0",
     "xgboost==3.0.5",
-    "shap>=0.50.0,<1.0.0",
-    "pyale>=1.2.0,<2.0.0",
-    "geopandas>=1.1.1,<2.0.0",
-    "pyyaml>=6.0.2,<7.0.0",
-    "openpyxl>=3.1.5,<4.0.0",
+    "shap==0.52.0",
+    "pyale==1.2.0",
+    "statsmodels==0.14.6",
+    "geopandas==1.1.4",
+    "pyyaml==6.0.3",
+    "openpyxl==3.1.5",
 ]
 
 [project.optional-dependencies]

@@ -28,22 +28,25 @@ Once the repository is public it is published at
 - **Python 3.12**, pinned in `.python-version` and enforced by `pyproject.toml`
 - [uv](https://docs.astral.sh/uv/) for dependency management
 
-Direct dependencies, with exact transitive versions in `uv.lock`:
+Direct dependencies, pinned in `pyproject.toml` to the versions the published results
+were produced with, so that `pip install .` and `uv sync` give the same environment.
+Transitive versions are in `uv.lock`.
 
 | Package | Version |
 |---------|---------|
 | `diive` | 0.91.0 |
-| `pandas` | >=3.0, <4.0 |
-| `numpy` | >=2.2.4, <2.5 |
-| `scipy` | >=1.15, <2.0 |
-| `matplotlib` | >=3.10, <4.0 |
-| `scikit-learn` | >=1.6.1, <2.0 |
-| `xgboost` | >=3.0, <4.0 |
-| `shap` | >=0.50, <1.0 |
-| `pyale` | >=1.2, <2.0 |
-| `geopandas` | >=1.1.1, <2.0 |
-| `pyyaml` | >=6.0.2, <7.0 |
-| `openpyxl` | >=3.1.5, <4.0 |
+| `pandas` | 3.0.5 |
+| `numpy` | 2.4.6 |
+| `scipy` | 1.18.0 |
+| `matplotlib` | 3.11.1 |
+| `scikit-learn` | 1.9.0 |
+| `xgboost` | 3.0.5, see the docs on reproducing the published numbers |
+| `shap` | 0.52.0 |
+| `pyale` | 1.2.0 |
+| `statsmodels` | 0.14.6 |
+| `geopandas` | 1.1.4 |
+| `pyyaml` | 6.0.3 |
+| `openpyxl` | 3.1.5 |
 
 Optional extras: `era5` for the ERA5 download scripts, dev group for JupyterLab and
 pytest.

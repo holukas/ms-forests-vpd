@@ -53,26 +53,31 @@ uv run python scripts/30_shap/31_shap.py
 
 ## Packages
 
-Direct dependencies, declared in `pyproject.toml`:
+Direct dependencies, declared in `pyproject.toml`. Every runtime package is pinned to
+the version the published results were produced with, so that `pip install .` gives the
+same environment as `uv sync`. This is an analysis repository, not a library, and the
+pins are the record of what ran.
 
 | Package | Version | Used for |
 |---------|---------|----------|
 | `diive` | 0.91.0 | Parquet I/O, FLUXNET file reading, grid aggregation, heatmaps, ET from LE |
-| `pandas` | >=3.0, <4.0 | Data handling |
-| `numpy` | >=2.2.4, <2.5 | Numerics |
-| `scipy` | >=1.15, <2.0 | Z-scores, nearest-neighbour search, statistics |
-| `matplotlib` | >=3.10, <4.0 | All figures |
-| `scikit-learn` | >=1.6.1, <2.0 | Cross-validation, metrics, hyperparameter search |
-| `xgboost` | **==3.0.5** | Gradient-boosted regression models, pinned, see below |
-| `shap` | >=0.50, <1.0 | SHAP values via `TreeExplainer` |
-| `pyale` | >=1.2, <2.0 | Accumulated Local Effects curves |
-| `geopandas` | >=1.1.1, <2.0 | Site map |
-| `pyyaml` | >=6.0.2, <7.0 | Reading `config/settings.yaml` |
-| `openpyxl` | >=3.1.5, <4.0 | Writing the Extended Data table |
+| `pandas` | 3.0.5 | Data handling |
+| `numpy` | 2.4.6 | Numerics |
+| `scipy` | 1.18.0 | Z-scores, nearest-neighbour search, statistics |
+| `matplotlib` | 3.11.1 | All figures |
+| `scikit-learn` | 1.9.0 | Cross-validation, metrics, hyperparameter search |
+| `xgboost` | 3.0.5 | Gradient-boosted regression models, the one pin that changes results, see below |
+| `shap` | 0.52.0 | SHAP values via `TreeExplainer` |
+| `pyale` | 1.2.0 | Accumulated Local Effects curves |
+| `statsmodels` | 0.14.6 | The GAM row of the threshold robustness table |
+| `geopandas` | 1.1.4 | Site map |
+| `pyyaml` | 6.0.3 | Reading `config/settings.yaml` |
+| `openpyxl` | 3.1.5 | Writing the tables for Word |
 
-The numpy upper bound comes from numba, which shap pulls in and which does not yet
-support numpy 2.5. Without the bound the resolver picks a numba release that fails to
-build on Python 3.12.
+numpy stays below 2.5 because numba, which shap pulls in, supports no more, and the
+numba release the resolver falls back to otherwise does not build on Python 3.12. shap
+0.52.0 and scikit-learn 1.9.0 were checked against the April run and reproduce it exactly;
+xgboost is the package whose version changes the fitted models.
 
 Transitive versions are pinned in `uv.lock`.
 
