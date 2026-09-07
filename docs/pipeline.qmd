@@ -275,7 +275,8 @@ at each filtering step. The number is not assigned yet, hence the `X`.
 different choices. Their output is quoted in the text, and no
 figure or table reads it, which is what the `INFO` in the file name says. They write to
 `80_info/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/`, resolved from the `DIR_INFO_OUT`
-key in `settings.yaml`. All four read the conditional run only.
+key in `settings.yaml`. All of them read the conditional run; 86 also reads the
+blocked cross-validation variant.
 
 | Script | What it does |
 |--------|--------------|
@@ -283,14 +284,17 @@ key in `settings.yaml`. All four read the conditional run only.
 | `82_threshold_vs_site_vpd_range.py` | Splits sites by their own maximum VPD and checks whether the threshold tracks it |
 | `83_leave_region_out.py` | Recomputes the threshold and the stage 8 attribution with Europe, North America or both removed |
 | `84_short_record_sensitivity.py` | Recomputes them while requiring progressively longer retained records |
+| `85_wue_vs_vpd.py` | Water use efficiency against VPD per site, and the log-log exponent that separates passive from stomatal adjustment |
+| `86_site_skill.py` | Site-level R2, RMSE, MAE and bias over all records, in Stage 8 and in the high-VPD tail, under both cross-validation splits |
+| `87_stage_cutoff_percentiles.py` | Where the fixed stage cut-offs fall in each site's empirical distribution, against the Gaussian share |
 
 Scripts 83 and 84 answer the same two questions as two rows of Table 1, but from the median
 of the per-site thresholds rather than from the aggregated curve. The two estimators differ
 by about 0.07 kPa, so their numbers are not the numbers in the table and should not be
 quoted beside them.
 
-Script 52 draws both Figure 2 and the supplementary flux heatmaps, and picks between them by which
-of two blocks near the top is commented out. Running it twice, once per block, gives
-both.
+Script 52 draws Figure 2, the supplementary flux heatmaps and the supplementary maps of the
+TA and SM effects, and picks between them with the `FIGURE` switch near the top. Running it
+once per setting gives all three.
 
 See [Figures](figures.qmd) for what each one shows.
