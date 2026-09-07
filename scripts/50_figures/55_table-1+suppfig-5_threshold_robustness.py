@@ -253,11 +253,15 @@ tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 # out on purpose: dropping it removes one of the three things the interval column means, so
 # the main table carries two instead of three.
 #
-# Depth is represented by the five-or-more-depths pair rather than by the all-sites row. That row mixes
-# the 80 sites that never moved with 128 that did, most of them by one layer, so its small
-# shift is diluted. The pair holds 59 sites fixed and swaps their shallowest depth for their
-# deepest, which is the largest departure from the shallow selection the published number rests on.
+# Depth takes three rows. The all-sites row is the published analysis rerun on the deepest
+# layer each site has, which is the test the text names first; it mixes the 80 sites that
+# never moved with 128 that did, most of them by one layer, so its shift is small. The
+# five-or-more-depths pair holds 59 sites fixed and swaps their shallowest depth for their
+# deepest, which is the largest departure from the shallow selection the published number
+# rests on. The pair answers whether depth moves the threshold, the all-sites row whether
+# the published analysis survives the deepest layer the network offers.
 MAIN_ROWS = [
+    'Deepest available layer, all sites',
     'Sites with 5+ SM depths, shallowest',
     'Sites with 5+ SM depths, deepest',
     'Air temperature dropped from the model',
