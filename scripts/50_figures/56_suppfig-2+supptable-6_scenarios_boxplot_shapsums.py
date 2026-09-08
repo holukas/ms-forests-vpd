@@ -1,3 +1,20 @@
+"""
+Supplementary Fig. 2 and Supplementary Table 6: the driver effects across the eight stages.
+
+The figure shows the per-site effects of VPD, TA, SM and SW on the flux at each stage,
+for all sites and per forest type. The table gives the cross-site mean, its standard
+deviation and the range per driver and stage, in the same groups, plus one extra block
+for all sites with the deepest available soil water layer (the deep-sm run), so the
+Stage 8 effects under the deeper layer stand next to the published ones.
+
+Reads:
+    40_aggregation/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/44_SHAPVALUES-conditional_AggregatedAcrossScenarios_<FLUX>.parquet
+    the same file from the DEEP_SM_VARIANT folder, for the extra table block
+
+Writes, into the plot folder:
+    56_SUPPFIG-2_Stages_SinaPlots_ShapMeans_<FLUX>.png
+    56_SUPPTABLE-6_Stages_SinaPlots_ShapMeans_<FLUX>.xlsx | _DATA-FeatureStatsFull.csv
+"""
 from pathlib import Path
 
 import diive as dv
@@ -31,6 +48,11 @@ VARIANT = ""
 # from below layer 1, and writes the figures next to it. The value has to match
 # the one the aggregation ran with.
 SITE_SUBSET = ""
+# Variant whose all-sites block is added to the table below the published one. The
+# deep-sm run uses the deepest soil water layer that keeps at least 90 % of the layer 1
+# records at each site, 128 sites on a deeper layer and 80 on layer 1. Empty skips the block.
+DEEP_SM_VARIANT = "deep-sm"
+DEEP_SM_LABEL = "Global forests, deepest SM layer"
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 COLUMN_ORDER = ['All sites'] + IGBP_CLASSES
 STAGE_ORDER = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -210,8 +232,7 @@ plt.subplots_adjust(left=0.05, right=0.98, top=0.95, bottom=0.08)
 STAGE_ORDER_NAMES = ['1', '2', '3', '4', '5', '6', '7', '8']
 scen_map = {1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8'}
 
-# CHANGED: 'Global forests' instead of 'All sites'
-IGBP_ORDER = ['Global forests', 'ENF', 'DBF', 'MF', 'EBF']
+IGBP_ORDER = ['Global forests', 'ENF', 'DBF', 'MF', 'EBF', DEEP_SM_LABEL]
 VAR_ORDER = ['VPD', 'TA', 'SM', 'SW']
 
 # Map raw variable names to display names
@@ -224,21 +245,7 @@ var_map = {
 }
 
 # ---------------------------------------------------------
-# 1. DEFINE SCENARIO CONDITIONS (THE HEADER LOGIC)
-# ---------------------------------------------------------
-STAGE_DEFINITIONS = {
-    'VPD':
-        ['normal', 'unrestricted', 'unrestricted', 'unrestricted', 'unrestricted', 'very dry'],
-    'TA':
-        ['normal', 'warm', 'warm', 'hot', 'hot', 'hot'],
-    'SM':
-        ['normal', 'normal', 'dry', 'dry', 'very dry', 'very dry'],
-    'SW':
-        ['normal', 'unrestricted', 'unrestricted', 'unrestricted', 'unrestricted', 'unrestricted']
-}
-
-# ---------------------------------------------------------
-# 2. CALCULATE SCENARIO STATS (Existing Code)
+# 1. CALCULATE STAGE STATS
 # ---------------------------------------------------------
 print("Calculating scenario stats...")
 
@@ -257,8 +264,24 @@ for i, igbp in enumerate(IGBP_CLASSES):
         shap_suffix_avg=SHAP_SUFFIX_AVG, shap_suffix_sd=SHAP_SUFFIX_SD)
     stage_stats = pd.concat([stage_stats, igbp_data], axis=0)
 
+# All sites with the deepest soil water layer, from the deep-sm aggregation. Same
+# stages, same statistics, labelled as its own group so it forms one block of the table.
+if DEEP_SM_VARIANT:
+    filepath_deep = (Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / DEEP_SM_VARIANT
+                     / SITE_SUBSET / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet")
+    if filepath_deep.exists():
+        df_deep = dv.load_parquet(filepath_deep, sanitize_timestamp=False, output_middle_timestamp=False)
+        df_deep = df_deep[df_deep['IGBP'].isin(IGBP_CLASSES) & df_deep['SCENARIO'].isin(STAGE_ORDER)]
+        deep_stats = stages.calculate_stage_stats(
+            df_input=df_deep, igbp='global-deep', stage_order=STAGE_ORDER, vars=VARS,
+            shap_suffix_avg=SHAP_SUFFIX_AVG, shap_suffix_sd=SHAP_SUFFIX_SD)
+        stage_stats = pd.concat([stage_stats, deep_stats], axis=0)
+        print(f"Added the {DEEP_SM_LABEL} block from {filepath_deep}")
+    else:
+        print(f"No deep-sm aggregation at {filepath_deep}, the table has no deepest-layer block.")
+
 # ---------------------------------------------------------
-# 3. PREPARE DATA FOR TABLE
+# 2. PREPARE DATA FOR TABLE
 # ---------------------------------------------------------
 df = stage_stats.copy()
 
@@ -273,8 +296,7 @@ else:
 df['Driver'] = df[var_col].map(var_map).fillna(df[var_col])
 df['Stage_Name'] = df['stage'].map(scen_map)
 
-# CHANGED: Map 'global' to 'Global forests'
-igbp_map = {'global': 'Global forests'}
+igbp_map = {'global': 'Global forests', 'global-deep': DEEP_SM_LABEL}
 df['IGBP_Display'] = df['igbp'].replace(igbp_map)
 
 # Format Statistics
@@ -297,42 +319,13 @@ table_str = df.pivot_table(index=['IGBP_Display', 'Driver'],
 table_str = table_str.reindex(columns=STAGE_ORDER_NAMES)
 
 # ---------------------------------------------------------
-# 4. CONSTRUCT ROWS (HEADER + DATA)
+# 3. CONSTRUCT ROWS
 # ---------------------------------------------------------
+# The stages are defined in Supplementary Table 3, so the table carries no condition
+# header; it starts with the first group. The index column is headed "Stage".
 final_rows = []
 
-# # --- A. ADD SCENARIO NUMBER ROW ---
-# # This creates the row: "Scenario" | 1 | 2 | 3 | 4 | 5 | 6
-# row_scen_num = {'index': 'Scenario'}
-# for col in SCENARIO_ORDER_NAMES:
-#     row_scen_num[col] = col
-# final_rows.append(row_scen_num)
-
-# --- B. ADD SCENARIO CONDITIONS HEADER ---
-# 1. Main Header Title
-final_rows.append({'index': 'Scenario conditions',
-                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': '', '7': '', '8': ''})
-
-# 2. Condition Rows (VPD, Temp, etc.)
-for driver in VAR_ORDER:
-    # Get the list of conditions for this driver
-    conditions = STAGE_DEFINITIONS.get(driver, ['?'] * 6)
-
-    row_cond = {'index': f"  {driver}"}
-    for idx, col_name in enumerate(STAGE_ORDER_NAMES):
-        if idx < len(conditions):
-            row_cond[col_name] = conditions[idx]
-        else:
-            row_cond[col_name] = '-'
-    final_rows.append(row_cond)
-
-final_rows.append({'index': '',
-                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': '', '7': '', '8': ''})
-
-final_rows.append({'index': 'IGBP / Environmental driver',
-                   '1': '', '2': '', '3': '', '4': '', '5': '', '6': '', '7': '', '8': ''})
-
-# --- C. ADD DATA ROWS (IGBP GROUPS) ---
+# --- DATA ROWS (IGBP GROUPS) ---
 # Iterate through 'Global forests' then IGBPs
 for igbp in IGBP_ORDER:
     # Header Row (IGBP Name)
@@ -366,19 +359,20 @@ for igbp in IGBP_ORDER:
         final_rows.append(net_row_dict)
 
 # ---------------------------------------------------------
-# 5. FINALIZE & SAVE
+# 4. FINALIZE & SAVE
 # ---------------------------------------------------------
 table_1_final = pd.DataFrame(final_rows)
 table_1_final.set_index('index', inplace=True)
+table_1_final.index.name = 'Stage'
 
 # Save
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 dir_out.mkdir(parents=True, exist_ok=True)
-outfilepath_excel = dir_out / f'56_SUPPTABLE-X_Stages_SinaPlots_ShapMeans_{FLUX}.xlsx'
+outfilepath_excel = dir_out / f'56_SUPPTABLE-6_Stages_SinaPlots_ShapMeans_{FLUX}.xlsx'
 table_1_final.to_excel(outfilepath_excel, index=True)
 
 # Save all collected stats in separate csv
-outfilepath = dir_out / f'56_SUPPTABLE-X_Stages_SinaPlots_ShapMeans_{FLUX}_DATA-FeatureStatsFull.csv'
+outfilepath = dir_out / f'56_SUPPTABLE-6_Stages_SinaPlots_ShapMeans_{FLUX}_DATA-FeatureStatsFull.csv'
 featurestats_df.to_csv(outfilepath, index=False, encoding='utf-8-sig')
 
 # Show table
@@ -390,7 +384,7 @@ print(table_1_final.to_string(index=True))
 # Save fig to file
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
 dir_out.mkdir(parents=True, exist_ok=True)
-outfilepath = dir_out / f'56_SUPPFIG-X_Stages_SinaPlots_ShapMeans_{FLUX}.png'
+outfilepath = dir_out / f'56_SUPPFIG-2_Stages_SinaPlots_ShapMeans_{FLUX}.png'
 fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
 
 # Show figure
