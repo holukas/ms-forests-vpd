@@ -1,5 +1,5 @@
 """
-Supplementary table: where the fixed stage cut-offs fall in the site distributions.
+Supplementary Table 3, lower part: where the fixed stage cut-offs fall in the site distributions.
 
 The stages are defined by fixed z-values, the same at every site, and not by the
 empirical percentiles of each site. Standardisation does not make the drivers Gaussian,
@@ -15,7 +15,7 @@ Reads:
     80_info/<FLUX>/87_INFO_StageCutoffPercentiles_summary.csv
 
 Writes, into the plot folder next to the other supplementary tables:
-    61_SUPPTABLE-X_StageCutoffPercentiles_<FLUX>.csv | .xlsx
+    61_SUPPTABLE-3_StageCutoffPercentiles_<FLUX>.csv | .xlsx
 """
 from pathlib import Path
 
@@ -59,7 +59,7 @@ n_sites = int(summary['sites'].iloc[0])
 print(f"Median share of records at or below each cut-off, across {n_sites} sites\n")
 print(table.to_string(index=False))
 
-table.to_csv(dir_out / f"61_SUPPTABLE-X_StageCutoffPercentiles_{FLUX}.csv",
+table.to_csv(dir_out / f"61_SUPPTABLE-3_StageCutoffPercentiles_{FLUX}.csv",
              index=False, encoding='utf-8-sig')
-table.to_excel(dir_out / f"61_SUPPTABLE-X_StageCutoffPercentiles_{FLUX}.xlsx", index=False)
+table.to_excel(dir_out / f"61_SUPPTABLE-3_StageCutoffPercentiles_{FLUX}.xlsx", index=False)
 print(f"\nSaved two files to {dir_out}")

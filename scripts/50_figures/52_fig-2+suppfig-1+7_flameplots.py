@@ -32,8 +32,8 @@ SITE_SUBSET = ""
 # Which figure to draw. The three share every line of plotting code below and
 # differ only in what colours the grid, so one script draws all of them.
 #   "fig2"            Figure 2: the VPD effect on NEP, mapped on TA, SM and ET.
-#   "fluxes"          Supplementary: the fluxes themselves on the SM by VPD grid.
-#   "driver-effects"  Supplementary: the TA effect on the TA by VPD grid and the
+#   "fluxes"          Supplementary Fig. 7: the fluxes themselves on the SM by VPD grid.
+#   "driver-effects"  Supplementary Fig. 1: the TA effect on the TA by VPD grid and the
 #                     SM effect on the SM by VPD grid. The same SHAP campaign that
 #                     gave the VPD column gave these, so nothing is recomputed.
 FIGURE = "fluxes"
@@ -41,8 +41,6 @@ FIGURE = "fluxes"
 # Each inner list is one row of panels.
 # Order: explained flux, x-bins, y-bins, z-colors, x in filename, y in filename,
 # colormap for row, show colormap for row (False shares one colormap over all rows).
-# Supplementary, not Extended Data: that category does not exist at this journal (T26).
-# X stands in until the figure number is assigned.
 FIGURES = {
     # Rows: 1 physical drivers (atmosphere), 2 supply limitation (soil),
     # 3 physiological response (plant).
@@ -71,7 +69,7 @@ FIGURES = {
              'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdBu', True],
         ],
         figsize=(19, 13 / 3 * 4),
-        figure_info=["SUPPFIG-X", 'Fluxes-NEP_ZSCORE'],
+        figure_info=["SUPPFIG-7", 'Fluxes-NEP_ZSCORE'],
         show_only_max_marker=True,
     ),
     # Same colormap as Figure 2, so blue is a positive effect on NEP in both. Each
@@ -84,7 +82,7 @@ FIGURES = {
              'BIN-SWC_ZSCORE', 'BIN-VPD_ZSCORE', 'RdYlBu', True],
         ],
         figsize=(19, 13 / 3 * 2),
-        figure_info=["SUPPFIG-X", 'DriverEffects-TA+SM'],
+        figure_info=["SUPPFIG-1", 'DriverEffects-TA+SM'],
         show_only_max_marker=False,
     ),
 }

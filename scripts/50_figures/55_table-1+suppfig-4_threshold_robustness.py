@@ -99,7 +99,7 @@ rows = [(g, t, v, lo, hi, int(n), (None if pd.isna(note) else note))
 rows.insert(0, ('Reference', 'Published analysis', published, pub_lo, pub_hi,
                 int(ref_row['n_sites']), None))
 
-outfile = folder / f'55_SUPPFIG-5_ThresholdRobustness_{FLUX}.png'
+outfile = folder / f'55_SUPPFIG-4_ThresholdRobustness_{FLUX}.png'
 
 
 # ---------------------------------------------------------------------------
@@ -378,7 +378,7 @@ footnote = (
     "row the 95% confidence interval of the mean of the per-site crossings. The two rows for "
     "sites with five or more soil water depths use the same 59 sites and are compared with "
     "each other; their offset from the published value reflects the smaller site set. The tests "
-    f"are described in Methods; all {len(tests)} are shown in Supplementary Fig. 5."
+    f"are described in Methods; all {len(tests)} are shown in Supplementary Fig. 4."
 )
 
 stem = folder / f'55_TABLE-1_ThresholdRobustness_{FLUX}'
