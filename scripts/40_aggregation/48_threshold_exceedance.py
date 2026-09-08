@@ -11,7 +11,7 @@ Reads the stage 21 subsets, the records every later stage was built on, so the c
 to the record total the manuscript reports. No model is refitted and no SHAP value is read.
 
 **Why this sits in stage 40 and not in `80_info`.** It reads 208 parquet files and
-`50_figures/60_suppfig_threshold_exceedance.py` draws what it writes. Scripts under
+`50_figures/60_suppfig-8_threshold_exceedance.py` draws what it writes. Scripts under
 `50_figures` display, they do not compute, and `80_info` is for numbers that back a sentence
 and are read by no figure. Script 49 moved here for the same reason on 31 August 2026.
 

@@ -15,7 +15,10 @@ Panel c changes the threshold instead of the site. Each site is counted against 
 of its own forest type, from script 49, in the site's own standard deviations. The four
 crossings differ, so the panel shows what that difference costs in exposure. The dashed line
 is the same set of sites counted against the one network crossing, which is the comparison
-that makes the four groups readable.
+that makes the four groups readable. The count against each site's own crossing is in the
+stage 48 file but not drawn: its tails run from almost never to almost always, and they mix
+dry sites whose crossing sits far below their mean with flat curves where the polynomial has
+no real crossing, which a reader cannot tell apart in a column of points.
 
 Reads what `40_aggregation/48_threshold_exceedance.py` writes and draws it. Nothing is
 computed here.
@@ -25,7 +28,7 @@ Reads:
     48_EXCEEDANCE_PerBiome_{FLUX}.csv      one row per forest type, plus an all-sites row
     47_THRESHOLD_Robustness_{FLUX}.csv     the published threshold, for the axis labels
 
-Supplementary figure, not a main display item.
+Supplementary Fig. 8.
 """
 from pathlib import Path
 
@@ -108,12 +111,17 @@ axs[2].axhline(global_sigma_median, color='black', lw=1.2, linestyle='--', zorde
 axs[2].text(3.55, global_sigma_median + 1.5, f'network\ncrossing\n{global_sigma_median:.0f} %',
             fontsize=AX_LABELS_FONTSIZE * 0.85, va='bottom')
 
+# The median bar and its number take the colour of the group, so each group reads against
+# the black network line the way the network number does.
 tick_labels = []
 for pos, igbp in enumerate(IGBP_ORDER):
     g = per_site.loc[per_site['IGBP'] == igbp, 'above_biome_threshold_pct'].dropna()
     axs[2].scatter(pos + rng.uniform(-0.22, 0.22, len(g)), g, s=22, alpha=0.8,
                    color=COLORS[igbp], linewidths=0, zorder=2)
-    axs[2].plot([pos - 0.32, pos + 0.32], [g.median()] * 2, color='black', lw=1.8, zorder=3)
+    axs[2].plot([pos - 0.32, pos + 0.32], [g.median()] * 2, color=COLORS[igbp], lw=1.8,
+                zorder=3)
+    axs[2].text(pos, g.max() + 1.5, f'{g.median():.0f} %', color=COLORS[igbp], ha='center',
+                va='bottom', fontsize=AX_LABELS_FONTSIZE * 0.85, zorder=4)
     tick_labels.append(f'{igbp}\n{per_biome.loc[igbp, "biome_threshold_z"]:.2f} '
                        f'$\\sigma$\nn = {len(g)}')
 
@@ -138,7 +146,7 @@ axs[2].tick_params(axis='x', labelsize=AX_LABELS_FONTSIZE * 0.85)
 
 fig.tight_layout()
 
-outfile = folder / f'60_SUPPFIG-X_ThresholdExceedance_{FLUX}.png'
+outfile = folder / f'60_SUPPFIG-8_ThresholdExceedance_{FLUX}.png'
 fig.savefig(outfile, dpi=300, facecolor='white', bbox_inches='tight')
 
 # The numbers a caption would quote, so they can be checked without opening the figure.
@@ -148,6 +156,10 @@ print(f"above {threshold_kpa:.2f} kPa: {pooled:.1f} % of all half-hours, "
       f"range {ranked['above_published_kpa_pct'].iloc[0]:.1f} to "
       f"{ranked['above_published_kpa_pct'].iloc[-1]:.1f} %")
 print(f"lowest site {ranked['SITE'].iloc[0]}, highest site {ranked['SITE'].iloc[-1]}")
+own = per_site['above_own_threshold_pct']
+print(f"above the site's own crossing: site median {own.median():.1f} %, "
+      f"IQR {own.quantile(0.25):.1f} to {own.quantile(0.75):.1f} %, "
+      f"range {own.min():.1f} to {own.max():.1f} %")
 print("above the forest type's own crossing, site median: " + ", ".join(
     f"{i} {per_biome.loc[i, 'biome_threshold_median_pct']:.1f} % "
     f"at {per_biome.loc[i, 'biome_threshold_z']:.2f} sigma" for i in IGBP_ORDER))
