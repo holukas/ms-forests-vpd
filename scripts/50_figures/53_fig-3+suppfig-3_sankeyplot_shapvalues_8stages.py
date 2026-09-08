@@ -1,3 +1,20 @@
+"""
+Figure 3 and Supplementary Fig. 3: the driver effects along the eight stress stages.
+
+The published stage order (Figure 3) lets temperature rise and soil water fall step by
+step while VPD is held below its extreme cut-off, and adds extreme VPD at Stage 8. The
+mirrored order (Supplementary Fig. 3) lets VPD rise instead and adds extreme soil
+dryness at Stage 8. Both end at the same Stage 8. The figure is the same for both; the
+variant decides which aggregation is read, which condition labels are printed above the
+bars and which number the output carries.
+
+Reads:
+    40_aggregation/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/44_SHAPVALUES-conditional_AggregatedAcrossScenarios_<FLUX>.parquet
+
+Writes, both into the base plot folder:
+    53_FIG-3_SankeyPlotStages_<FLUX>.png | _DATA.csv          (VARIANT = "")
+    53_SUPPFIG-3_SankeyPlotStages_<FLUX>.png | _DATA.csv      (VARIANT = "mirrored-stages")
+"""
 from pathlib import Path
 
 import diive as dv
@@ -32,6 +49,13 @@ VARIANT = ""
 # from below layer 1, and writes the figures next to it. The value has to match
 # the one the aggregation ran with.
 SITE_SUBSET = ""
+# The mirrored-stages aggregation is the only variant with its own stage sequence, so it
+# also gets its own condition labels and its own figure number.
+STAGE_SEQUENCE = 'mirrored' if VARIANT == 'mirrored-stages' else 'published'
+FIGURE_TOKEN = 'SUPPFIG-3' if STAGE_SEQUENCE == 'mirrored' else 'FIG-3'
+# The mirrored figure is a numbered display item with its own token, so it is written
+# next to Fig. 3 and not into the variant subfolder; the token keeps the two apart.
+PLOT_SUBFOLDER = '' if STAGE_SEQUENCE == 'mirrored' else VARIANT
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 STAGE_ORDER = [1, 2, 3, 4, 5, 6, 7, 8]
 STAGE_LABELS = [f"Stage {sl}" for sl in STAGE_ORDER]
@@ -163,7 +187,7 @@ for pix, p in enumerate(panels_data):
     plot.draw_panel(ax=ax, df=p['data'], title=p['title'], fixed_ylim=fixedy, is_small=p['is_small'],
                     show_stage_labels=p['show_stage_labels'], vars=VARS, palette=PALETTE,
                     stage_ids=STAGE_ORDER, stage_labels=STAGE_LABELS, shap_suffix_avg=SHAP_SUFFIX_AVG,
-                    fontsize=AX_LABELS_FONTSIZE)
+                    fontsize=AX_LABELS_FONTSIZE, stage_conditions=plot.STAGE_CONDITIONS[STAGE_SEQUENCE])
 
     if not p['is_small']:
         color_limzone = '#d6604d'
@@ -202,14 +226,14 @@ first_ax.legend(handles=legend_elements, loc='lower left', ncol=3,
 plt.subplots_adjust(left=0.035, right=0.975, top=0.95, bottom=0.02)
 
 # Save fig
-dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT / SITE_SUBSET
+dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / PLOT_SUBFOLDER / SITE_SUBSET
 dir_out.mkdir(parents=True, exist_ok=True)
-outfilepath = dir_out / f'53_FIG-3_SankeyPlotStages_{FLUX}.png'
+outfilepath = dir_out / f'53_{FIGURE_TOKEN}_SankeyPlotStages_{FLUX}.png'
 print(f"Saved to {outfilepath}")
 plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
 
 # Save panels data
-stage_stats.to_csv(dir_out / f"53_FIG-3_SankeyPlotStages_{FLUX}_DATA.csv", index=False)
+stage_stats.to_csv(dir_out / f"53_{FIGURE_TOKEN}_SankeyPlotStages_{FLUX}_DATA.csv", index=False)
 
 if SHOW_PLOT:
 

@@ -116,8 +116,44 @@ def sigmoid(x, x_start, x_end, y_start, y_end):
     return y_start + s * (y_end - y_start)
 
 
+# What each stage holds, as printed above the bars of the stage figures. One entry per
+# stage sequence of src/stages.py. "non-extreme" marks the driver that is only kept off
+# its extreme cut-off until the last stage: VPD in the published order, soil water in
+# the mirrored one.
+STAGE_CONDITIONS = {
+    'published': {
+        'VPD_ZSCORE':
+            ['moderate', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme',
+             'non-extreme', '↑↑↑ extreme'],
+        'TA_ZSCORE':
+            ['moderate', '↑ high', '↑ high', '↑↑ very high', '↑↑ very high', '↑↑↑ extreme',
+             '↑↑↑ extreme', '↑↑↑ extreme'],
+        'SWC_ZSCORE':
+            ['moderate', 'moderate', '↓ low', '↓ low', '↓↓ very low', '↓↓  very low',
+             '↓↓↓ extreme', '↓↓↓ extreme'],
+        'SWIN_ZSCORE':
+            ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'all'],
+    },
+    'mirrored': {
+        'VPD_ZSCORE':
+            ['moderate', 'moderate', '↑ high', '↑ high', '↑↑ very high', '↑↑ very high',
+             '↑↑↑ extreme', '↑↑↑ extreme'],
+        'TA_ZSCORE':
+            ['moderate', '↑ high', '↑ high', '↑↑ very high', '↑↑ very high', '↑↑↑ extreme',
+             '↑↑↑ extreme', '↑↑↑ extreme'],
+        'SWC_ZSCORE':
+            ['moderate', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme',
+             'non-extreme', '↓↓↓ extreme'],
+        'SWIN_ZSCORE':
+            ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'all'],
+    },
+}
+
+
 def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stage_labels,
-               stage_ids, shap_suffix_avg, fontsize, is_small=False):
+               stage_ids, shap_suffix_avg, fontsize, is_small=False, stage_conditions=None):
+    """stage_conditions: the labels printed above the bars, one list per driver, see
+    STAGE_CONDITIONS. Defaults to the published sequence."""
     x_centers = [x for x in range(0, len(stage_ids))]
     bar_width = 0.55 if not is_small else 0.4
     x_centers_shifted_left = np.array(x_centers) - bar_width / 3
@@ -214,17 +250,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
 
         # Scenario Labels, N-counts, and Condition Rectangles (ABOVE the bars)
         if show_stage_labels:
-            scenario_symbols = {
-                'VPD_ZSCORE':
-                    ['moderate', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme',
-                     '↑↑↑ extreme'],
-                'TA_ZSCORE':
-                    ['moderate', '↑ high', '↑ high', '↑↑ very high', '↑↑ very high', '↑↑↑ extreme', '↑↑↑ extreme', '↑↑↑ extreme'],
-                'SWC_ZSCORE':
-                    ['moderate', 'moderate', '↓ low', '↓ low', '↓↓ very low', '↓↓  very low', '↓↓↓ extreme', '↓↓↓ extreme'],
-                'SWIN_ZSCORE':
-                    ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'all']
-            }
+            scenario_symbols = stage_conditions or STAGE_CONDITIONS['published']
 
             y_range = fixed_ylim[1] - fixed_ylim[0]
             box_height = y_range * 0.035  # Slightly thinner to fit everything
