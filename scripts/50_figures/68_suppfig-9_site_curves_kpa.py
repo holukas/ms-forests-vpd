@@ -1,5 +1,5 @@
 """
-Supplementary figure: the per-site VPD responses of NEP on one kPa axis.
+Supplementary Fig. 9: the per-site VPD responses of NEP on one kPa axis.
 
 Figure 4 shows one fitted curve for the network and four for the forest types, in sigma.
 This figure shows every site: its own fitted VPD response of NEP, mapped from its own sigma
@@ -32,8 +32,8 @@ Reads:
     20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv          the kPa mapping
 
 Writes, into the NEP plot folder. X stands in until the figure number is assigned:
-    68_SUPPFIG-X_SiteCurvesKpa_NEP_ZSCORE.png
-    68_SUPPFIG-X_SiteCurvesKpa_Crossings_NEP_ZSCORE.csv   per site: crossing in sigma and kPa, IGBP
+    68_SUPPFIG-9_SiteCurvesKpa_NEP_ZSCORE.png
+    68_SUPPFIG-9_SiteCurvesKpa_Crossings_NEP_ZSCORE.csv   per site: crossing in sigma and kPa, IGBP
 """
 from pathlib import Path
 
@@ -71,7 +71,7 @@ shap_type = 'conditional' if CONDITIONAL else 'interventional'
 agg = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
 dir_out = Path(settings['DIR_PLOTS_OUT']) / FLUX / shap_type / VARIANT
 dir_out.mkdir(parents=True, exist_ok=True)
-stem = dir_out / '68_SUPPFIG-X_SiteCurvesKpa'
+stem = dir_out / '68_SUPPFIG-9_SiteCurvesKpa'
 
 # Site statistics for the kPa mapping, CD-Ygb converted from Pa.
 sites = pd.read_csv(Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
