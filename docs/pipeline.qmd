@@ -210,6 +210,7 @@ which is what the aggregation and figure scripts consume.
 | `45_stage_distributions.py` | Driver medians and quartiles inside each stage, globally and per forest type, in standardized and measured units |
 | `46_ale_thresholds.py` | Puts the per-site ALE curves on one grid and finds the thresholds, globally and per forest type |
 | `47_threshold_robustness.py` | Eighteen robustness tests of the VPD threshold with a bootstrap over sites, plus the 23-setting estimator sweep and the threshold with each site removed in turn. Feeds Table 1 and its supplementary figure |
+| `48_threshold_exceedance.py` | Counts the peak-season daytime half-hours above the threshold per site and per forest type, against the published value in kPa, the network crossing in sigma, the forest type's crossing and the site's own crossing. Reads the stage 21 subsets and the crossings of scripts 47 and 49 |
 | `49_biome_thresholds.py` | One threshold per site, then Kruskal-Wallis and Holm-corrected pairwise tests between forest types |
 
 Script 47 writes three files:
@@ -244,7 +245,7 @@ the same time as each other, since they write different files. Script 44 reads t
 output directly and can run at any point after 31. Then 46, which reads the ALE output of
 script 32, then 47, which reads what 46 wrote. Script 47 also reads the stage 41 per-site
 curves of the `deep-sm`, `deeper-only`, `blocked-cv` and `no_ta` runs, so each of those has
-to have reached stage 41 before it can fill its row. Script 49 can run any time after 42. Timings on 208 sites: 41 takes about
+to have reached stage 41 before it can fill its row. Script 49 can run any time after 42, and 48 needs 47 and 49. Timings on 208 sites: 41 takes about
 40 minutes because it reads every site file once per pair, 42 is a minute, 43 about ten,
 44 a minute.
 
@@ -258,7 +259,7 @@ Script 51 (the site map) has no variant and needs none, since the site list does
 depend on which soil water layer was used.
 
 Four figure scripts read a stage 40 file rather than the aggregation output directly, so
-that stage has to have run first: 55 needs 47, 57 needs 46, 59 needs 45, and 65 needs 49.
+that stage has to have run first: 55 needs 47, 57 needs 46, 59 needs 45, 60 needs 48, and 65 needs 49.
 Script 61 reads the stage 80 summary of script 87.
 
 `59_supptable_stage_distributions+min_records.py` writes two supplementary tables. The
