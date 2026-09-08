@@ -267,7 +267,7 @@ second raises a minimum number of Stage 8 records per site from 1 to 100 and rep
 the Stage 8 effects change, which is the one part of the 50s that goes back to the
 per-site SHAP files of stage 31. It takes a few minutes on 208 sites.
 
-`61_supptable_stage_cutoff_percentiles.py` lays out the summary of script 87 as a six-row table,
+`61_supptable-3_stage_cutoff_percentiles.py` lays out the summary of script 87 as a six-row table,
 one row per stage cut-off, with the standard-normal percentile beside the median share of
 records across sites for each driver. It reads the 80_info summary, so script 87 has to have
 run first.
@@ -293,6 +293,7 @@ blocked cross-validation variant.
 | `85_wue_vs_vpd.py` | Water use efficiency against VPD per site, and the log-log exponent that separates passive from stomatal adjustment |
 | `86_site_skill.py` | Site-level R2, RMSE, MAE and bias over all records, in Stage 8 and in the high-VPD tail, under both cross-validation splits |
 | `87_stage_cutoff_percentiles.py` | Where the fixed stage cut-offs fall in each site's empirical distribution, against the Gaussian share |
+| `88_stage_order_test.py` | The net effect along the published and the mirrored stage order: the cost of the last step and the two second-to-last stages that isolate one extreme each |
 
 Scripts 83 and 84 answer the same two questions as two rows of Table 1, but from the median
 of the per-site thresholds rather than from the aggregated curve. The two estimators differ
