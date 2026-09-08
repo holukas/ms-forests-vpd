@@ -1,5 +1,5 @@
 """
-Supplementary figure: the VPD response of NEP, GPP and ET on one axis, with RECO as the control.
+Supplementary Fig. 6: the VPD response of NEP, GPP and ET on one axis, with RECO as the control.
 
 Figure 4 shows the VPD response of NEP. This figure puts the same curve beside the ones for
 GPP and ET, fitted the same way from the same sites, months, hours and model settings, so a
@@ -13,18 +13,15 @@ so the figure rests on modelled quantities except for its black curve. A main-te
 built on them would widen the paper past the measured net flux it is about. The legend says
 where each flux comes from, and the caption has to say it again.
 
-**RECO has its own panel, decided 5 September 2026, and its crossing is drawn.** The claim of
-panel a is that the NEP threshold is a GPP threshold, and the question a reader asks next is
-whether the NEP decline could instead be respiration rising with VPD. Panel b answers it: RECO
-does not rise, it falls, gently and monotonically, to about a quarter of the GPP decline at
-3 sigma. That is the one thing the panel has to show, and it is why the panel is a control for
-the NEP claim without being a null result.
-
-The central curve does cross zero, at -0.18 sigma, so the figure draws that crossing as an open
-marker and gives it the interval the band supports, which is open on the low side and ends at
-0.96 on the high side. An earlier version wrote "no resolvable crossing" over a curve that
-visibly crossed, which was not honest; "not resolved" refers to the interval, and the figure
-now shows it. The fit is the weakest of the four, R2 about 0.75.
+**RECO is drawn on the same axis as the control, decided 8 September 2026.** The claim is
+that the NEP threshold is a GPP threshold, and the question a reader asks next is whether the
+NEP decline could instead be respiration rising with VPD. The RECO curve answers it: RECO does
+not rise, it falls, gently and monotonically, to about a quarter of the GPP decline at 3 sigma.
+Its central curve does cross zero, at -0.18 sigma, so the crossing is drawn as an open marker,
+but the interval the band gives it is open on the low side, so the crossing is not resolved and
+no interval bar is drawn; the caption says so. An earlier two-panel version with the interval
+bar was folded into one panel on 8 September. The fit is the weakest of the four, R2 about
+0.75.
 
 Why RECO falls with VPD is not a stomatal effect, because respiration has no stomatal pathway.
 Two things are in play and this figure cannot separate them. Daytime RECO is not measured: it
@@ -36,14 +33,15 @@ The remainder is credit shared with temperature, which correlates with VPD at 0.
 substrate pathway is the one real physiological route, less assimilate under high VPD means
 less growth and maintenance respiration, and it is lagged, so it is weak at half-hourly
 resolution, which is what a gentle decline looks like. Set SHOW_RECO = False for the
-three-curve version without the panel.
+three-curve version without RECO.
 
 **The top axis is in kPa.** Each site standardises VPD against its own mean and standard
 deviation, so a sigma value is a different absolute VPD at every site. The axis uses the
-network mean of the site means and of the site standard deviations, equal weight per site,
-which is the same mapping script 54 uses for the kPa column of the coefficient table. It is a
-guide for the reader, not a second measurement: the 1.26 kPa in the text is the site-wise mean
-of the mapped thresholds, which is what script 54 reports.
+mean over the sites of the site means and of the site standard deviations, equal weight per site,
+which is the same mapping script 54 uses for the kPa column of the coefficient table: the
+site-wise conversion averaged with equal weight over the sites is a straight line with the
+mean site mean and the mean site standard deviation, so the axis reproduces the published
+1.26 kPa exactly for the all-sites curve.
 
 **It computes nothing new.** Each curve is the stage 42 output for its flux, read through
 `src.files.load_data` exactly as script 54 reads it for Figure 4, and fitted with
@@ -66,10 +64,9 @@ and the stage 21 subsets table for the kPa axis.
 
 Writes, into the NEP plot folder, since this is a display item of the NEP paper. The fluxes
 shown are in the file name, so the version without RECO cannot overwrite the one with it.
-X stands in until the figure number is assigned:
-    58_SUPPFIG-X_VpdResponseByFlux_NEP+GPP+RECO+ET.png
-    58_SUPPFIG-X_VpdResponseByFlux_NEP+GPP+RECO+ET_CURVES.csv      fitted curve and band per flux
-    58_SUPPFIG-X_VpdResponseByFlux_NEP+GPP+RECO+ET_THRESHOLDS.csv  crossing per flux, sigma and kPa
+    58_SUPPFIG-6_VpdResponseByFlux_NEP+GPP+RECO+ET.png
+    58_SUPPFIG-6_VpdResponseByFlux_NEP+GPP+RECO+ET_CURVES.csv      fitted curve and band per flux
+    58_SUPPFIG-6_VpdResponseByFlux_NEP+GPP+RECO+ET_THRESHOLDS.csv  crossing per flux, sigma and kPa
 """
 from pathlib import Path
 
@@ -87,8 +84,7 @@ CONDITIONAL = True
 VARIANT = ""
 SITE_SUBSET = ""
 
-# RECO in its own panel as the negative control, see the docstring. False gives the
-# three-curve version on one panel.
+# RECO on the same axis as the control, see the docstring. False leaves it out.
 SHOW_RECO = True
 
 # Order is the order of the legend and of the threshold labels.
@@ -102,12 +98,15 @@ SOURCE = {'NEP_ZSCORE': 'measured', 'GPP_ZSCORE': 'partitioned',
 # Okabe and Ito, distinguishable for every common colour vision deficiency.
 COLORS = {'NEP_ZSCORE': '#000000', 'GPP_ZSCORE': '#009E73',
           'RECO_ZSCORE': '#D55E00', 'ET_ZSCORE': '#0072B2'}
-# Fluxes whose fit is too weak to carry a crossing. Drawn, not marked, in their own panel.
+# Fluxes whose crossing interval is not resolved. Drawn with an open marker and no band.
 NO_THRESHOLD = {'RECO_ZSCORE'}
 # Threshold labels sit in a band above the curves, each with a dotted guide down to its
 # crossing, because the curves are steep where they cross and a label at the marker prints
 # on top of them. NEP and GPP cross 0.02 sigma apart, so their labels stack.
-LABEL_ROW = {'NEP_ZSCORE': 0, 'GPP_ZSCORE': 1, 'ET_ZSCORE': 0}
+LABEL_ROW = {'NEP_ZSCORE': 0, 'GPP_ZSCORE': 1, 'RECO_ZSCORE': 2, 'ET_ZSCORE': 0}
+# Labels that end at their guide rather than sitting centred on it, so that the two
+# labels near 0 sigma do not collide with the NEP label above them.
+LABEL_HA = {'GPP_ZSCORE': 'right', 'RECO_ZSCORE': 'right'}
 
 AX_LABELS_FONTSIZE = 12
 
@@ -118,10 +117,10 @@ settings = load_settings()
 agg_base = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG'])
 dir_out = Path(settings['DIR_PLOTS_OUT']) / 'NEP_ZSCORE' / shap_type / VARIANT / SITE_SUBSET
 dir_out.mkdir(parents=True, exist_ok=True)
-stem = dir_out / f"58_SUPPFIG-X_VpdResponseByFlux_{'+'.join(NAMES[f] for f in FLUXES)}"
+stem = dir_out / f"58_SUPPFIG-6_VpdResponseByFlux_{'+'.join(NAMES[f] for f in FLUXES)}"
 
 # Sigma to kPa, the mapping of script 54. CD-Ygb records VPD in Pa, every other site in hPa,
-# so its two statistics are divided by 100 before the network mean is taken.
+# so its two statistics are divided by 100 before the mean over sites is taken.
 PA_UNIT_SITES = ['CD-Ygb']
 PA_TO_HPA = 100
 _sites = pd.read_csv(Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
@@ -156,22 +155,16 @@ def style_axes(ax, xlabel=True):
     if xlabel:
         ax.set_xlabel(r'VPD ($\sigma$)', fontsize=AX_LABELS_FONTSIZE)
     ax.tick_params(axis='both', labelsize=AX_LABELS_FONTSIZE, length=5, width=1)
-    for side in ('right',):
-        ax.spines[side].set_visible(False)
+    ax.spines['right'].set_visible(True)
+    ax.tick_params(axis='y', right=False, labelright=False)
     top = ax.secondary_xaxis('top', functions=(sigma_to_kpa, kpa_to_sigma))
-    top.set_xlabel('VPD (kPa, network mean)', fontsize=AX_LABELS_FONTSIZE * 0.9, color='#555555')
+    top.set_xlabel('VPD (kPa, mean over sites)', fontsize=AX_LABELS_FONTSIZE * 0.9, color='#555555')
     top.tick_params(axis='x', labelsize=AX_LABELS_FONTSIZE * 0.9, length=4, width=1, colors='#555555')
     top.spines['top'].set_color('#555555')
 
 
-if SHOW_RECO:
-    fig, (ax, ax_reco) = plt.subplots(1, 2, figsize=(12.5, 5.6), dpi=150, sharey=True,
-                                      gridspec_kw=dict(width_ratios=[1.7, 1], wspace=0.08))
-    fig.subplots_adjust(left=0.075, right=0.985, top=0.86, bottom=0.13)
-else:
-    fig, ax = plt.subplots(figsize=(8.5, 5.6), dpi=150)
-    fig.subplots_adjust(left=0.11, right=0.97, top=0.86, bottom=0.13)
-    ax_reco = None
+fig, ax = plt.subplots(figsize=(7.5, 7.5), dpi=150)
+fig.subplots_adjust(left=0.13, right=0.97, top=0.88, bottom=0.10)
 
 curves, thresholds, marked_thresholds = [], [], []
 control_threshold = None
@@ -181,24 +174,21 @@ for flux in FLUXES:
     thr, thr_lo, thr_hi = fit.calc_threshold(x_fit, y_fit, pi_lower, pi_upper)
     name, colour = NAMES[flux], COLORS[flux]
     control = flux in NO_THRESHOLD
-    panel = ax_reco if (control and ax_reco is not None) else ax
+    note = ''
 
-    panel.fill_between(x_fit, pi_lower, pi_upper, color=colour, alpha=0.10, lw=0, zorder=1)
-    panel.plot(x_fit, y_fit, color=colour, lw=2.6, zorder=3, alpha=0.75 if control else 1.0,
-               label=f"{name}, {SOURCE[flux]}  (n = {n_sites}, fit R² = {r2:.2f})")
+    ax.fill_between(x_fit, pi_lower, pi_upper, color=colour, alpha=0.10, lw=0, zorder=1)
+    ax.plot(x_fit, y_fit, color=colour, lw=2.6, zorder=3, alpha=0.75 if control else 1.0,
+            label=f"{name}, {SOURCE[flux]}  (n = {n_sites}, fit R² = {r2:.2f}{note})")
 
     marked = not control and np.isfinite(thr)
     if marked:
-        panel.scatter([thr], [0], s=64, color=colour, edgecolor='white', linewidth=1.2, zorder=5)
+        ax.scatter([thr], [0], s=64, color=colour, edgecolor='white', linewidth=1.2, zorder=5)
         marked_thresholds.append((flux, thr))
     elif np.isfinite(thr):
-        # The central curve does cross, so the crossing is drawn, as an open marker, with
-        # the interval the band gives it. One side of that interval is unbounded, which is
-        # what "not resolved" means here, and the figure shows it rather than saying it.
-        panel.scatter([thr], [0], s=64, facecolor='white', edgecolor=colour, linewidth=1.6, zorder=5)
-        x_left = x_fit.min() if not np.isfinite(thr_lo) else thr_lo
-        x_right = x_fit.max() if not np.isfinite(thr_hi) else thr_hi
-        panel.plot([x_left, x_right], [0, 0], color=colour, lw=4, alpha=0.3, solid_capstyle='butt', zorder=4)
+        # The central curve does cross, so the crossing is drawn as an open marker. Its
+        # interval is open on one side, so no bar is drawn; the legend says it is not resolved.
+        ax.scatter([thr], [0], s=64, facecolor='white', edgecolor=colour, linewidth=1.6, zorder=5)
+        marked_thresholds.append((flux, thr))
         control_threshold = (flux, thr, thr_lo, thr_hi)
 
     curves.append(pd.DataFrame({'flux': name, 'vpd_z': x_fit, 'vpd_kpa_network': sigma_to_kpa(x_fit),
@@ -206,52 +196,33 @@ for flux in FLUXES:
     thresholds.append({'flux': name, 'source': SOURCE[flux], 'n_sites': n_sites, 'fit_r2': round(r2, 3),
                        'threshold_z': thr, 'lower_z': thr_lo, 'upper_z': thr_hi,
                        'threshold_kpa_network': sigma_to_kpa(thr) if np.isfinite(thr) else np.nan,
-                       'marked_in_figure': marked,
-                       'note': '' if marked else 'fit too weak to resolve a crossing'})
+                       'marked_in_figure': marked or np.isfinite(thr),
+                       'note': '' if not control else 'interval open on one side, crossing not resolved'})
 
 # Label band above the curves, guides down to the crossings.
 ymin, ymax = ax.get_ylim()
 span = ymax - ymin
 # The extra 0.3 of span above the curves holds the labels clear of the kPa axis on top.
-ax.set_ylim(ymin, ymax + 0.30 * span)
+ax.set_ylim(ymin, ymax + 0.36 * span)
 for flux, thr in marked_thresholds:
     y_text = ymax + (0.14 - 0.07 * LABEL_ROW[flux]) * span
     ax.plot([thr, thr], [0, y_text], ls=(0, (1, 3)), color=COLORS[flux], lw=1.2, zorder=2)
-    ax.text(thr, y_text, f"{NAMES[flux]} {thr:.2f}", color=COLORS[flux], ha='center',
+    ha = LABEL_HA.get(flux, 'center')
+    ax.text(thr + {'left': 0.04, 'right': -0.04}.get(ha, 0), y_text, f"{NAMES[flux]} {thr:.2f}$\sigma$", color=COLORS[flux], ha=ha,
             va='bottom', fontsize=AX_LABELS_FONTSIZE * 0.9, fontweight='bold', zorder=6,
             bbox=dict(facecolor='white', edgecolor='none', pad=1.5))
 
-# Neutral zone wording, since a positive value is uptake for two fluxes and loss for two.
-ax.text(0.015, 0.97, 'VPD raises the flux', transform=ax.transAxes, ha='left', va='top',
+# Zone wording names the attribution, not a cause, and stays neutral on the sign, since a
+# positive value is uptake for two fluxes and loss for two.
+ax.text(0.015, 0.97, 'Flux increase', transform=ax.transAxes, ha='left', va='top',
         color='#777777', fontsize=AX_LABELS_FONTSIZE * 0.85)
-ax.text(0.015, 0.03, 'VPD lowers the flux', transform=ax.transAxes, ha='left', va='bottom',
+ax.text(0.015, 0.03, 'Flux decrease', transform=ax.transAxes, ha='left', va='bottom',
         color='#777777', fontsize=AX_LABELS_FONTSIZE * 0.85)
 
 style_axes(ax)
 ax.set_ylabel(r'VPD effect on daytime flux ($\sigma$)', fontsize=AX_LABELS_FONTSIZE)
-ax.legend(loc='lower left', bbox_to_anchor=(0.015, 0.09), frameon=False,
+ax.legend(loc='lower left', bbox_to_anchor=(0.015, 0.11), frameon=False,
           fontsize=AX_LABELS_FONTSIZE * 0.85, handlelength=2.2)
-
-if ax_reco is not None:
-    style_axes(ax_reco)
-    ax_reco.spines['left'].set_visible(False)
-    ax_reco.tick_params(axis='y', left=False)
-    ax_reco.legend(loc='lower left', bbox_to_anchor=(0.015, 0.09), frameon=False,
-                   fontsize=AX_LABELS_FONTSIZE * 0.85, handlelength=2.2)
-    flux, thr, thr_lo, thr_hi = control_threshold or ('RECO_ZSCORE', np.nan, np.nan, np.nan)
-    lo_txt = f"{thr_lo:.2f}" if np.isfinite(thr_lo) else "open"
-    hi_txt = f"{thr_hi:.2f}" if np.isfinite(thr_hi) else "open"
-    y_text = ymax + 0.14 * span
-    ax_reco.plot([thr, thr], [0, y_text], ls=(0, (1, 3)), color=COLORS[flux], lw=1.2, zorder=2)
-    ax_reco.text(thr, y_text, f"{NAMES[flux]} {thr:.2f}", color=COLORS[flux], ha='center',
-                 va='bottom', fontsize=AX_LABELS_FONTSIZE * 0.9, fontweight='bold', zorder=6,
-                 bbox=dict(facecolor='white', edgecolor='none', pad=1.5))
-    ax_reco.text(0.97, 0.97, f'95 % interval {lo_txt} to {hi_txt}:\ncrossing not resolved',
-                 transform=ax_reco.transAxes, ha='right', va='top', color='#777777',
-                 fontsize=AX_LABELS_FONTSIZE * 0.8, linespacing=1.3)
-    for panel, letter in ((ax, 'a'), (ax_reco, 'b')):
-        panel.text(-0.02 if panel is ax_reco else -0.11, 1.12, letter, transform=panel.transAxes,
-                   fontsize=AX_LABELS_FONTSIZE * 1.4, fontweight='bold', ha='left', va='top')
 
 fig.savefig(f'{stem}.png', dpi=300, facecolor='white')
 pd.concat(curves, ignore_index=True).to_csv(f'{stem}_CURVES.csv', index=False)
@@ -260,7 +231,7 @@ thresholds.to_csv(f'{stem}_THRESHOLDS.csv', index=False)
 
 print()
 print(thresholds.round(3).to_string(index=False))
-print(f"\nkPa axis: {KPA_MEAN:.3f} + z * {KPA_SD:.3f}, network mean of the site statistics")
+print(f"\nkPa axis: {KPA_MEAN:.3f} + z * {KPA_SD:.3f}, mean over sites of the site statistics")
 print(f"\nSaved {stem}.png, _CURVES.csv and _THRESHOLDS.csv")
 
 if SHOW_PLOT:
