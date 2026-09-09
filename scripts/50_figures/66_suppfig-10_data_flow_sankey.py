@@ -1,9 +1,13 @@
 """
-Sankey diagram of the record losses from raw half-hours to the modelled dataset.
+Supplementary Fig. 10: the record losses from raw half-hours to the modelled dataset.
 
 Reads `22_data_flow.csv` from stage 20 and draws one ribbon that narrows at each
-filtering step, with the removed share branching off below it. Answers Reviewer
-2's request for a transparent data-flow figure.
+filtering step, with the removed share branching off below it, so the loss at each
+step is visible next to what remains. The per-site table behind it is Supplementary
+Data 1.
+
+Writes, into the plot folder:
+    66_SUPPFIG-10_DataFlow_Sankey.png | _DATA.csv
 """
 from pathlib import Path
 
@@ -39,6 +43,34 @@ def ribbon(ax, x0, x1, top0, bot0, top1, bot1, color, alpha):
     ax.fill_between(x, bot, top, color=color, alpha=alpha, linewidth=0, zorder=2)
 
 
+def lost_flow(ax, x0, x1, top0, depth, shaft, head, shaft_w, head_w, color, alpha):
+    """The removed records: a ribbon that leaves the node to the right, bends down in a
+    rounded turn into a vertical shaft of width shaft_w ending at x1, and ends in an
+    arrowhead pointing down. top0 is the top of the removed slice at the node, its bottom
+    is 0. The outer edge of the turn is a quarter ellipse from the end of the ribbon to the
+    shaft; the inner edge gets a smaller one, so neither corner is a right angle."""
+    xe = x1 - shaft_w
+    rx_in, ry_in = 0.06, 0.20 * depth          # inner rounding, x and y radii
+    ry_out = 0.85 * depth                      # outer rounding: from -0.15 depth down to -depth
+    x_top = np.linspace(x0, xe, 120)
+    top = sigmoid(x_top, x0, xe, top0, -0.15 * depth)
+    x_bot = np.linspace(x0, xe - rx_in, 120)
+    bot = sigmoid(x_bot, x0, xe - rx_in, 0.0, -depth)
+    th = np.linspace(0, np.pi / 2, 30)
+    outer = list(zip(xe + shaft_w * np.sin(th), -0.15 * depth - ry_out * (1 - np.cos(th))))
+    # Fillet of the re-entrant corner, centred outside the shape: from (xe, -d-ry) to (xe-rx, -d).
+    inner = list(zip(xe - rx_in + rx_in * np.sin(th[::-1]), -depth - ry_in + ry_in * np.cos(th[::-1])))
+    mid = (xe + x1) / 2
+    y_base = -depth - shaft
+    verts = list(zip(x_top, top)) + outer
+    verts += [(x1, y_base), (x1 + head_w, y_base), (mid, y_base - head),
+              (xe - head_w, y_base), (xe, y_base)]
+    verts += inner
+    verts += list(zip(x_bot[::-1], bot[::-1]))
+    ax.add_patch(plt.Polygon(verts, closed=True, facecolor=color, alpha=alpha, edgecolor='none', zorder=2))
+    return mid, y_base - head
+
+
 def main():
     settings = load_settings()
     indir = Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
@@ -49,12 +81,15 @@ def main():
     fig, ax = plt.subplots(figsize=(13, 6.5))
     node_w, gap = 0.22, 1.0
     drop_depth = 0.09 * start
+    # The removed flow: shaft below the ribbon and the arrowhead, in record units, and the
+    # shaft width and the arrowhead overhang in x units.
+    shaft, head, shaft_w, head_w = 0.11 * start, 0.055 * start, 0.16, 0.05
 
     for i, (key, label) in enumerate(STEPS):
         x = i * gap
         n = totals[key]
         ax.add_patch(plt.Rectangle((x, 0), node_w, n, facecolor=INK, edgecolor='none', zorder=3))
-        ax.text(x + node_w / 2, n + start * 0.035, label, ha='center', va='bottom',
+        ax.text(x + node_w / 2, n + start * 0.065, label, ha='center', va='bottom',
                 fontsize=10, color=INK, linespacing=1.35)
         ax.text(x + node_w / 2, n + start * 0.012, f"{n:,.0f}  ({n / start * 100:.1f} %)",
                 ha='center', va='bottom', fontsize=9.5, color=INK, fontweight='bold')
@@ -64,33 +99,31 @@ def main():
         nxt = totals[STEPS[i + 1][0]]
         removed = n - nxt
         ribbon(ax, x + node_w, x + gap, n, n - nxt, nxt, 0, KEPT, 0.55)
-        ribbon(ax, x + node_w, x + gap, n - nxt, 0, -drop_depth * 0.15, -drop_depth, LOST, 0.75)
-        ax.text(x + node_w + (gap - node_w) / 2, -drop_depth - start * 0.018,
-                f"-{removed:,.0f}", ha='center', va='top', fontsize=9, color=INK)
+        tip_x, tip_y = lost_flow(ax, x + node_w, x + gap - 0.14, n - nxt, drop_depth, shaft, head,
+                                 shaft_w, head_w, LOST, 0.75)
+        ax.text(tip_x, tip_y - start * 0.015, f"-{removed:,.0f}", ha='center', va='top',
+                fontsize=9, color=INK)
 
     ax.set_xlim(-0.35, (len(STEPS) - 1) * gap + node_w + 0.35)
-    ax.set_ylim(-drop_depth - start * 0.10, start * 1.16)
+    ax.set_ylim(-drop_depth - shaft - head - start * 0.09, start * 1.16)
     ax.axis('off')
+    # No title in the figure; the caption says what the ribbon is. The site count is
+    # printed for the caption: one site keeps no record after the last step.
     kept_sites = int((flow['complete_cases'] > 0).sum())
-    lost = len(flow) - kept_sites
-    subtitle = f"{len(flow)} forest sites in"
-    if lost:
-        names = ', '.join(flow.loc[flow['complete_cases'] == 0, 'SITE'])
-        subtitle += f", {kept_sites} with data left ({names} keeps none)"
-    title = "From site records to modelled data" + chr(10) + subtitle
-    ax.set_title(title, fontsize=13, color=INK, pad=18)
+    lost = flow.loc[flow['complete_cases'] == 0, 'SITE'].tolist()
+    print(f"{len(flow)} sites in, {kept_sites} with records left" + (f", none left at {', '.join(lost)}" if lost else ""))
     fig.tight_layout()
 
     dir_out = Path(settings['DIR_PLOTS_OUT']) / 'NEP_ZSCORE' / 'conditional' / VARIANT
     dir_out.mkdir(parents=True, exist_ok=True)
-    outfile = dir_out / "66_SUPPFIG-X_DataFlow_Sankey.png"
+    outfile = dir_out / "66_SUPPFIG-10_DataFlow_Sankey.png"
     fig.savefig(outfile, dpi=300, bbox_inches='tight', facecolor='white')
     print(f"Saved {outfile}")
 
     summary = pd.DataFrame({'step': [k for k, _ in STEPS], 'records': totals.values})
     summary['removed'] = summary['records'].shift(1) - summary['records']
     summary['share_kept_pct'] = summary['records'] / start * 100
-    summary.to_csv(dir_out / "66_SUPPFIG-X_DataFlow_Sankey_DATA.csv", index=False)
+    summary.to_csv(dir_out / "66_SUPPFIG-10_DataFlow_Sankey_DATA.csv", index=False)
     print(summary.to_string(index=False))
 
 
