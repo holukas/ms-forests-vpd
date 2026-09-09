@@ -1,7 +1,7 @@
 """
 Supplementary Fig. 9: the per-site VPD responses of NEP on one kPa axis.
 
-Figure 4 shows one fitted curve for the network and four for the forest types, in sigma.
+Figure 4 shows one fitted curve for all sites and four for the forest types, in sigma.
 This figure shows every site: its own fitted VPD response of NEP, mapped from its own sigma
 onto kPa with its own mean and standard deviation, all 208 drawn as thin lines on one kPa
 axis, with the median across sites as the heavy line, the published 1.26 kPa as the
@@ -13,7 +13,7 @@ thresholds, one fourth-order polynomial per site over its VPD bins, highest zero
 which is what the biome tests rest on. The per-site lines here are the same fits, redrawn in
 kPa. The kPa mapping is the one script 54 uses for its table, VPD = mean + z * sd per site,
 with CD-Ygb converted from Pa. The published 1.26 kPa is the site-wise mean of the mapped
-network crossing. The per-site crossings average 1.27 kPa with a median of 1.19 and an
+all-sites crossing. The per-site crossings average 1.27 kPa with a median of 1.19 and an
 interquartile range of 1.02 to 1.48; those numbers go in the caption, not on the figure.
 
 **Supplementary, decided 5 September 2026.** It began as an extra figure for a poster with
@@ -174,7 +174,7 @@ handles = [
     Line2D([], [], color=SITE_LINE, lw=1.0, alpha=0.6, label=f'single site (n = {n_drawn})'),
     Line2D([], [], color=MEDIAN, lw=2.4, label='median across sites'),
     Patch(facecolor=BAND, alpha=0.35, label='interquartile range across sites'),
-    Line2D([], [], color=THRESHOLD, lw=1.5, ls=(0, (5, 4)), label=f'network threshold, {PUBLISHED_KPA:.2f} kPa'),
+    Line2D([], [], color=THRESHOLD, lw=1.5, ls=(0, (5, 4)), label=f'threshold, all sites ({PUBLISHED_KPA:.2f} kPa)'),
 ] + [Line2D([], [], color=IGBP_COLORS[i], marker='|', lw=0, markersize=9, markeredgewidth=1.5,
             label=f'site crossing, {i} (n = {(ok["IGBP"] == i).sum()})') for i in IGBP_ORDER]
 ax.legend(handles=handles, loc='upper right', frameon=False, fontsize=AX_LABELS_FONTSIZE * 0.85,

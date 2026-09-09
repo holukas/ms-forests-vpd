@@ -1,7 +1,7 @@
 """
 How often each site sits above the VPD threshold.
 
-The threshold is one number for the whole network, but the air at one site is past it in
+The threshold is one number for all sites, but the air at one site is past it in
 one half-hour of fifty and at another in nine of ten. That spread is what this figure shows,
 and it is the part a sentence in the text cannot carry.
 
@@ -14,7 +14,7 @@ panel a is a ranking of climates, not of responses.
 Panel c changes the threshold instead of the site. Each site is counted against the crossing
 of its own forest type, from script 49, in the site's own standard deviations. The four
 crossings differ, so the panel shows what that difference costs in exposure. The dashed line
-is the same set of sites counted against the one network crossing, which is the comparison
+is the same set of sites counted against the one all-sites crossing, which is the comparison
 that makes the four groups readable. The count against each site's own crossing is in the
 stage 48 file but not drawn: its tails run from almost never to almost always, and they mix
 dry sites whose crossing sits far below their mean with flat curves where the polynomial has
@@ -108,11 +108,11 @@ rng = np.random.default_rng(42)
 global_sigma_median = per_site['above_published_sigma_pct'].median()
 axs[2].axhline(global_sigma_median, color='black', lw=1.2, linestyle='--', zorder=1)
 # The label sits in a margin on the right, because the point clouds reach the line.
-axs[2].text(3.55, global_sigma_median + 1.5, f'network\ncrossing\n{global_sigma_median:.0f} %',
+axs[2].text(3.55, global_sigma_median + 1.5, f'all sites\ncrossing\n{global_sigma_median:.0f} %',
             fontsize=AX_LABELS_FONTSIZE * 0.85, va='bottom')
 
 # The median bar and its number take the colour of the group, so each group reads against
-# the black network line the way the network number does.
+# the black all-sites line the way its number does.
 tick_labels = []
 for pos, igbp in enumerate(IGBP_ORDER):
     g = per_site.loc[per_site['IGBP'] == igbp, 'above_biome_threshold_pct'].dropna()
