@@ -95,9 +95,11 @@ d['BIN_VPD_ZSCORE'] = d['BIN_VPD_ZSCORE'].round(1)
 curves = d.groupby(['SITE', 'BIN_VPD_ZSCORE'])['VPD_ZSCORE_SHAPVALS'].mean()
 
 fig = plt.figure(figsize=(11, 7.6), dpi=150, facecolor='white')
-gs = fig.add_gridspec(2, 1, height_ratios=[0.16, 1.0], left=0.09, right=0.98, top=0.95, bottom=0.10, hspace=0.06)
-ax_strip = fig.add_subplot(gs[0, 0])
-ax = fig.add_subplot(gs[1, 0], sharex=ax_strip)
+# The curves sit on top as panel a and the strip of crossings underneath as panel b, because
+# the crossings are read off the curves; the x axis is shared and labelled once, under the strip.
+gs = fig.add_gridspec(2, 1, height_ratios=[1.0, 0.16], left=0.09, right=0.98, top=0.97, bottom=0.10, hspace=0.06)
+ax = fig.add_subplot(gs[0, 0])
+ax_strip = fig.add_subplot(gs[1, 0], sharex=ax)
 
 resampled = []
 n_drawn = 0
@@ -149,19 +151,20 @@ ax_strip.axvline(PUBLISHED_KPA, color=THRESHOLD, lw=1.5, ls=(0, (5, 4)), zorder=
 ax_strip.set_ylim(-0.7, 3.7)
 ax_strip.set_yticks(list(ylev.values()))
 ax_strip.set_yticklabels(list(ylev.keys()), fontsize=AX_LABELS_FONTSIZE * 0.85)
-for side in ('top', 'right', 'bottom'):
+for side in ('top', 'right'):
     ax_strip.spines[side].set_visible(False)
-ax_strip.tick_params(axis='x', labelbottom=False, length=0)
+ax_strip.tick_params(axis='x', labelsize=AX_LABELS_FONTSIZE * 0.9, length=4)
 ax_strip.tick_params(axis='y', length=0)
-ax_strip.text(-0.075, 1.0, 'a', transform=ax_strip.transAxes, fontsize=AX_LABELS_FONTSIZE * 1.3,
+ax_strip.set_xlabel('VPD (kPa)', fontsize=AX_LABELS_FONTSIZE)
+ax_strip.text(-0.075, 1.0, 'b', transform=ax_strip.transAxes, fontsize=AX_LABELS_FONTSIZE * 1.3,
               fontweight='bold', ha='right', va='top')
-ax.text(-0.075, 1.0, 'b', transform=ax.transAxes, fontsize=AX_LABELS_FONTSIZE * 1.3,
+ax.text(-0.075, 1.0, 'a', transform=ax.transAxes, fontsize=AX_LABELS_FONTSIZE * 1.3,
         fontweight='bold', ha='right', va='top')
 
 ax.set_xlim(0, XMAX)
 ymax = float(np.nanpercentile(np.abs(M), 99))
 ax.set_ylim(-ymax, ymax)
-ax.set_xlabel('VPD (kPa)', fontsize=AX_LABELS_FONTSIZE)
+ax.tick_params(axis='x', labelbottom=False)
 ax.set_ylabel('VPD effect on NEP ($\\sigma$)', fontsize=AX_LABELS_FONTSIZE)
 for side in ('top', 'right'):
     ax.spines[side].set_visible(False)
