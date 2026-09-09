@@ -26,8 +26,8 @@ Reads:
     30_shap/<FLUX>/conditional/{site}_shap-conditional_<FLUX>.parquet
 
 Writes, into the plot folder next to the other supplementary tables:
-    59_SUPPTABLE-X_StageDistributions_<FLUX>.csv | .xlsx
-    59_SUPPTABLE-X_Stage8MinRecords_<FLUX>.csv | .xlsx
+    59_SUPPTABLE-4_StageDistributions_<FLUX>.csv | .xlsx
+    59_SUPPTABLE-5_Stage8MinRecords_<FLUX>.csv | .xlsx
 """
 import glob
 from pathlib import Path
@@ -108,7 +108,8 @@ def stage_block(frame: pd.DataFrame, group_name: str) -> list:
         record = frame[frame['stage'] == stage].iloc[0]
         row = {'Group': group_name,
                'Stage': int(stage),
-               'Definition': STAGE_DEFINITIONS[int(stage)],
+               # No definition column: the stages are defined in Supplementary Table 3 and
+               # the caption points there. STAGE_DEFINITIONS stays for the console output.
                'Sites': int(record['sites']),
                'Records': int(record['records'])}
         for column, label, unit, factor in DRIVERS:
@@ -132,9 +133,9 @@ for igbp in IGBP_ORDER:
     table_a_rows += stage_block(subset, igbp)
 
 table_a = pd.DataFrame(table_a_rows)
-table_a.to_csv(dir_out / f"59_SUPPTABLE-X_StageDistributions_{FLUX}.csv",
+table_a.to_csv(dir_out / f"59_SUPPTABLE-4_StageDistributions_{FLUX}.csv",
                index=False, encoding='utf-8-sig')
-table_a.to_excel(dir_out / f"59_SUPPTABLE-X_StageDistributions_{FLUX}.xlsx", index=False)
+table_a.to_excel(dir_out / f"59_SUPPTABLE-4_StageDistributions_{FLUX}.xlsx", index=False)
 
 # The Results sentence quotes the shortwave radiation medians of two stages. If the
 # stored numbers disagree, the sentence is what has to be checked.
@@ -212,9 +213,9 @@ for minimum in MIN_RECORDS_STEPS:
     })
 
 table_b = pd.DataFrame(table_b_rows)
-table_b.to_csv(dir_out / f"59_SUPPTABLE-X_Stage8MinRecords_{FLUX}.csv",
+table_b.to_csv(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}.csv",
                index=False, encoding='utf-8-sig')
-table_b.to_excel(dir_out / f"59_SUPPTABLE-X_Stage8MinRecords_{FLUX}.xlsx", index=False)
+table_b.to_excel(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}.xlsx", index=False)
 
 # ---------------------------------------------------------------------------
 # The numbers the two Results sentences rest on
