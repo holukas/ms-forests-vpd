@@ -262,7 +262,7 @@ Four figure scripts read a stage 40 file rather than the aggregation output dire
 that stage has to have run first: 55 needs 47, 57 needs 46, 59 needs 45, 60 needs 48, and 65 needs 49.
 Script 61 reads the stage 80 summary of script 87.
 
-`59_supptable_stage_distributions+min_records.py` writes two supplementary tables. The
+`59_supptable-4+5_stage_distributions+min_records.py` writes two supplementary tables. The
 first is the stage distribution table of script 45, laid out for the supplement. The
 second raises a minimum number of Stage 8 records per site from 1 to 100 and reports how
 the Stage 8 effects change, which is the one part of the 50s that goes back to the
@@ -273,7 +273,7 @@ one row per stage cut-off, with the standard-normal percentile beside the median
 records across sites for each driver. It reads the 80_info summary, so script 87 has to have
 run first.
 
-`66_suppfig_data_flow_sankey.py` draws `22_data_flow.csv` as a Sankey, one ribbon narrowing
+`66_suppfig-10_data_flow_sankey.py` draws `22_data_flow.csv` as a Sankey, one ribbon narrowing
 at each filtering step. The number is not assigned yet, hence the `X`.
 
 ## Stage 80, information only
