@@ -27,7 +27,8 @@ Reads:
 
 Writes, into the plot folder next to the other supplementary tables:
     59_SUPPTABLE-4_StageDistributions_<FLUX>.csv | .xlsx
-    59_SUPPTABLE-5_Stage8MinRecords_<FLUX>.csv | .xlsx
+    59_SUPPTABLE-5_Stage8MinRecords_<FLUX>.csv | .xlsx   one column per minimum
+    59_SUPPTABLE-5_Stage8MinRecords_<FLUX>_DATA.csv      the same, one row per minimum, unrounded
 """
 import glob
 from pathlib import Path
@@ -213,9 +214,35 @@ for minimum in MIN_RECORDS_STEPS:
     })
 
 table_b = pd.DataFrame(table_b_rows)
-table_b.to_csv(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}.csv",
-               index=False, encoding='utf-8-sig')
-table_b.to_excel(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}.xlsx", index=False)
+
+# The display table is the transpose: one column per minimum, one row per quantity, with
+# short row labels and rounded values, because the long headers did not fit an A4 page.
+# The ratio and its interval share one cell. The long form stays beside it as _DATA.csv.
+def _fmt(value, decimals):
+    return f"{value:.{decimals}f}"
+
+
+display_rows = [
+    ('Sites kept', lambda r: f"{int(r['Sites kept'])}"),
+    ('Stage 8 records kept', lambda r: f"{int(r['Stage 8 records kept']):,}"),
+    ('Share of Stage 8 records kept (%)', lambda r: _fmt(r['Share of Stage 8 records kept (%)'], 1)),
+    ('Sites with a negative VPD effect', lambda r: f"{int(r['Sites with a negative VPD effect'])}"),
+    ('Share of kept sites with a negative VPD effect (%)',
+     lambda r: _fmt(r['Share of kept sites with a negative VPD effect (%)'], 1)),
+    ('Net effect (σ)', lambda r: _fmt(r['Net effect (sigma)'], 2)),
+    ('VPD effect (σ)', lambda r: _fmt(r['VPD effect (sigma)'], 2)),
+    ('SM effect (σ)', lambda r: _fmt(r['SM effect (sigma)'], 2)),
+    ('VPD to SM ratio [95% bootstrap interval]',
+     lambda r: f"{r['VPD to SM ratio']:.2f} {r['VPD to SM ratio, 95% bootstrap']}"),
+]
+table_b_display = pd.DataFrame(
+    {str(int(r['Minimum Stage 8 records per site'])): [f(r) for _, f in display_rows]
+     for _, r in table_b.iterrows()},
+    index=[label for label, _ in display_rows])
+table_b_display.index.name = 'Minimum Stage 8 records per site'
+table_b_display.to_csv(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}.csv", encoding='utf-8-sig')
+table_b_display.to_excel(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}.xlsx")
+table_b.to_csv(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}_DATA.csv", index=False, encoding='utf-8-sig')
 
 # ---------------------------------------------------------------------------
 # The numbers the two Results sentences rest on
