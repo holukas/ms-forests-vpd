@@ -268,10 +268,12 @@ second raises a minimum number of Stage 8 records per site from 1 to 100 and rep
 the Stage 8 effects change, which is the one part of the 50s that goes back to the
 per-site SHAP files of stage 31. It takes a few minutes on 208 sites.
 
-`61_supptable-3_stage_cutoff_percentiles.py` lays out the summary of script 87 as a six-row table,
-one row per stage cut-off, with the standard-normal percentile beside the median share of
-records across sites for each driver. It reads the 80_info summary, so script 87 has to have
-run first.
+`61_supptable-3_stage_cutoff_percentiles.py` writes the stage definition table in two parts on
+one sheet: the eight stages as conditions on the standardised drivers, written out as text and
+checked against the stage functions in `src/stages.py` on random values before anything is
+saved, and beneath them the summary of script 87 as six rows, one per stage cut-off, with the
+standard-normal percentile beside the median share of records across sites for each driver.
+It reads the 80_info summary, so script 87 has to have run first.
 
 `66_suppfig-10_data_flow_sankey.py` draws `22_data_flow.csv` as a Sankey, one ribbon narrowing
 at each filtering step. The number is not assigned yet, hence the `X`.
