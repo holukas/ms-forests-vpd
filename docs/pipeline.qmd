@@ -260,7 +260,7 @@ depend on which soil water layer was used.
 
 Four figure scripts read a stage 40 file rather than the aggregation output directly, so
 that stage has to have run first: 55 needs 47, 57 needs 46, 59 needs 45, 60 needs 48, and 65 needs 49.
-Scripts 61, 62 and 63 read the stage 80 output of scripts 87, 81 and 82.
+Scripts 61, 62, 63 and 64 read the stage 80 output of scripts 87, 81, 82 and 86.
 
 `59_supptable-4+5_stage_distributions+min_records.py` writes two supplementary tables. The
 first is the stage distribution table of script 45, laid out for the supplement. The
