@@ -564,7 +564,7 @@ for _, _c in df_coeffs.iterrows():
     })
 supptable = pd.DataFrame(_rows)
 
-_stem = dir_out / f'54_SUPPTABLE-X_ThresholdPolynomials_{FLUX}'
+_stem = dir_out / f'54_SUPPTABLE-7_ThresholdPolynomials_{FLUX}'
 supptable.to_csv(f'{_stem}.csv', index=False)
 with pd.ExcelWriter(f'{_stem}.xlsx', engine='openpyxl') as _writer:
     supptable.to_excel(_writer, sheet_name='Threshold polynomials', index=False)

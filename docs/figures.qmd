@@ -10,7 +10,7 @@ to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
 | `51_fig-1_worldmap_mat_map_era5.py` | Figure 1, site map with ERA5 climate normals | `10_datasets/17_..._era5.csv` |
 | `52_fig-2+suppfig-1+7_flameplots.py` | Figure 2 and the matching supplementary figure, binned SHAP heatmaps | `40_aggregation/` |
 | `53_fig-3+suppfig-3_sankeyplot_shapvalues_8stages.py` | Figure 3, SHAP flow across the stress stages; with `VARIANT = "mirrored-stages"` the same figure for the mirrored stage order, Supplementary Fig. 3 | `40_aggregation/` |
-| `54_fig-4+supptable_vpd_response_curve_shap_agg.py` | Figure 4, and the supplementary table of polynomial coefficients with the threshold in sigma and kPa | `40_aggregation/`, `20_subsets/` |
+| `54_fig-4+supptable-7_vpd_response_curve_shap_agg.py` | Figure 4, and Supplementary Table 7, the polynomial coefficients with the threshold in sigma and kPa | `40_aggregation/`, `20_subsets/` |
 | `55_table-1+suppfig-4_threshold_robustness.py` | Table 1, eleven tests, and the matching supplementary figure, all eighteen | `40_aggregation/47_...csv` |
 | `56_suppfig-2+supptable-6_scenarios_boxplot_shapsums.py` | Supplementary figure and table, sina plots of the stage SHAP sums | `40_aggregation/` |
 | `57_suppfig-5_ale_response_curve.py` | Supplementary figure, ALE response curves with consensus threshold | `40_aggregation/46_...parquet` |
@@ -23,7 +23,7 @@ to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
 
 ## Figure 4: which values are averaged
 
-`54_fig-4+supptable_vpd_response_curve_shap_agg.py` sets `aggfunc = 'mean'`. That is what the SHAP
+`54_fig-4+supptable-7_vpd_response_curve_shap_agg.py` sets `aggfunc = 'mean'`. That is what the SHAP
 values are aggregated with, matching the manuscript.
 
 The script also sets `median` for two columns, which is easy to misread as median
