@@ -94,13 +94,17 @@ uv run python scripts/30_shap/31_shap.py
 # ALE curves on the same models
 uv run python scripts/30_shap/32_validate_shap_methods.py
 
-# aggregate across sites, then draw a figure
+# bin per site, aggregate across sites, then draw a figure
+uv run python scripts/40_aggregation/41_binagg_per_site.py
 uv run python scripts/40_aggregation/42_binagg_across_sites.py
-uv run python scripts/50_figures/54_fig-4_vpd_response_curve_shap_agg.py
+uv run python scripts/50_figures/54_fig-4+supptable-7_vpd_response_curve_shap_agg.py
 ```
 
 Scripts are numbered in run order within each folder. The two model scripts take hours
-over the full site list; everything else is minutes.
+over the full site list; everything else is minutes. Display scripts carry the manuscript
+item they produce in their name (`fig-4`, `supptable-7`, `suppdata-1`), and their outputs
+carry the same token; scripts under `80_info/` write checks that are quoted in the text
+and read by no figure.
 
 ## Repository layout
 
@@ -110,7 +114,8 @@ over the full site list; everything else is minutes.
 | `scripts/20_subsets/` | Per-site analysis subsets and z-scores |
 | `scripts/30_shap/` | Model fitting, SHAP values, ALE curves |
 | `scripts/40_aggregation/` | Aggregation per site, across sites, by IGBP, by stress stage |
-| `scripts/50_figures/` | Manuscript figures and tables |
+| `scripts/50_figures/` | Manuscript figures, tables and data files, one script per display item |
+| `scripts/80_info/` | Checks whose numbers are quoted in the text, read by no figure |
 | `src/` | Shared code: models, aggregation, plotting, statistics, I/O, paths |
 | `config/` | `settings.yaml` and FLUXNET site metadata |
 | `data/worldmap/` | Natural Earth country outlines for the site map |
