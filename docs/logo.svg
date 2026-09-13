@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- ms-forests-vpd: three trees under the VPD response of net CO2 uptake, the dot marks the threshold -->
+  <rect width="128" height="128" rx="26" fill="#0d4a6b"/>
+  <!-- broadleaf, back -->
+  <g fill="#3f9e8c">
+    <circle cx="66" cy="62" r="13"/>
+    <circle cx="57" cy="70" r="11"/>
+    <circle cx="75" cy="70" r="11"/>
+    <circle cx="66" cy="74" r="12"/>
+  </g>
+  <polygon points="63,80 69,80 70,104 62,104" fill="#e8f4f1"/>
+  <!-- conifer, left -->
+  <polygon points="36,28 20,58 28,58 12,84 22,84 4,110 68,110 50,84 60,84 44,58 52,58" fill="#6cc4a8"/>
+  <polygon points="31,110 41,110 40,122 32,122" fill="#ffffff"/>
+  <!-- broadleaf, right -->
+  <g fill="#b3e5d9">
+    <circle cx="94" cy="66" r="17"/>
+    <circle cx="80" cy="78" r="14"/>
+    <circle cx="108" cy="78" r="14"/>
+    <circle cx="94" cy="84" r="15"/>
+  </g>
+  <polygon points="90,96 98,96 100,122 88,122" fill="#ffffff"/>
+  <!-- zero line -->
+  <line x1="10" y1="24" x2="118" y2="24" stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="0.1 4"/>
+  <!-- VPD response: rises, crosses zero, falls -->
+  <path d="M10 32 C 26 12, 46 8, 60 22 C 70 34, 90 48, 118 56" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="62" cy="24" r="5.5" fill="#f5a623" stroke="#0d4a6b" stroke-width="2.5"/>
+</svg>

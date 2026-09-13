@@ -12,9 +12,12 @@ website:
   title: "ms-forests-vpd"
   description: "Code documentation for the forest VPD / soil moisture SHAP analysis"
   repo-url: https://github.com/holukas/ms-forests-vpd
+  favicon: favicon.png
   repo-actions: [source, issue]
   page-navigation: true
   navbar:
+    logo: logo.png
+    logo-alt: "ms-forests-vpd"
     left:
       - href: index.qmd
         text: Overview
