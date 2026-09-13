@@ -20,15 +20,20 @@ count of Stage 8 records per site is not in any aggregated file.
 
 The bootstrap uses a fixed seed, so the interval is reproducible.
 
+Table B carries a second block: Stage 7 against Stage 8 on matched records, from the
+summary that `scripts/80_info/89_stage_matching.py` writes. Run 89 first.
+
 Reads:
     40_aggregation/<FLUX>/conditional/45_StageDistributions_overall.csv
     40_aggregation/<FLUX>/conditional/45_StageDistributions_byIGBP.csv
     30_shap/<FLUX>/conditional/{site}_shap-conditional_<FLUX>.parquet
+    80_info/<FLUX>/conditional/89_INFO_StageMatching_<FLUX>_SUMMARY.csv
 
 Writes, into the plot folder next to the other supplementary tables:
     59_SUPPTABLE-4_StageDistributions_<FLUX>.csv | .xlsx
-    59_SUPPTABLE-5_Stage8MinRecords_<FLUX>.csv | .xlsx   one column per minimum
-    59_SUPPTABLE-5_Stage8MinRecords_<FLUX>_DATA.csv      the same, one row per minimum, unrounded
+    59_SUPPTABLE-5_Stage8MinRecords_<FLUX>.csv | .xlsx   block one, one column per minimum;
+                                                          block two, the matched comparison
+    59_SUPPTABLE-5_Stage8MinRecords_<FLUX>_DATA.csv      block one, one row per minimum, unrounded
 """
 import glob
 from pathlib import Path
@@ -219,7 +224,9 @@ table_b = pd.DataFrame(table_b_rows)
 # short row labels and rounded values, because the long headers did not fit an A4 page.
 # The ratio and its interval share one cell. The long form stays beside it as _DATA.csv.
 def _fmt(value, decimals):
-    return f"{value:.{decimals}f}"
+    text = f"{value:.{decimals}f}"
+    # a rounded zero carries no sign
+    return text[1:] if text.startswith('-') and float(text) == 0 else text
 
 
 display_rows = [
@@ -240,9 +247,58 @@ table_b_display = pd.DataFrame(
      for _, r in table_b.iterrows()},
     index=[label for label, _ in display_rows])
 table_b_display.index.name = 'Minimum Stage 8 records per site'
-table_b_display.to_csv(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}.csv", encoding='utf-8-sig')
-table_b_display.to_excel(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}.xlsx")
 table_b.to_csv(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}_DATA.csv", index=False, encoding='utf-8-sig')
+
+# ---------------------------------------------------------------------------
+# Table B, second block: Stage 7 against Stage 8 on matched records
+# ---------------------------------------------------------------------------
+# The first block asks whether data-poor sites make the Stage 8 result; this block asks
+# whether the records do. Script 89 pairs every Stage 8 record with the closest Stage 7
+# record of the same site in TA, SM and SW (strict: also same month and hour of day) and
+# reads the attributed effects across the pairs. Its summary is laid out here as a second
+# block under the first, in the first two data columns, so the table stays one item.
+
+matching_file = (Path(settings['DIR_INFO_OUT']) / FLUX / shap_type / VARIANT
+                 / f'89_INFO_StageMatching_{FLUX}_SUMMARY.csv')
+if not matching_file.is_file():
+    raise FileNotFoundError(f"No matching summary at {matching_file}. Run 80_info/89_stage_matching.py first.")
+matching = pd.read_csv(matching_file).set_index('matching')
+
+MATCH_COLS = [('strict', 'Same month and hour of day'), ('covariate', 'Any month and hour')]
+matching_rows = [
+    ('Sites with records in both stages', lambda r: f"{int(r['sites_both_stages'])}"),
+    ('Sites with matched pairs', lambda r: f"{int(r['sites_with_pairs'])}"),
+    ('Stage 8 records matched (share of all, %)',
+     lambda r: f"{int(r['stage8_records_matched']):,} ({r['share_records_matched'] * 100:.0f})"),
+    ('Difference after matching, Stage 8 minus Stage 7: TA, SM, SW, VPD (σ)',
+     lambda r: ', '.join(f"{r[f'balance_{c}_mean']:+.2f}" for c in
+                         ['TA_ZSCORE', 'SWC_ZSCORE', 'SWIN_ZSCORE', 'VPD_ZSCORE'])),
+    ('Net effect difference, median across sites (σ)', lambda r: _fmt(r['d_net_median'], 2)),
+    ('Sites with a negative net difference (%)', lambda r: _fmt(r['d_net_share_negative'] * 100, 0)),
+    ('VPD contribution difference, median (σ)', lambda r: _fmt(r['d_VPD_median'], 2)),
+    ('Sites with a negative VPD difference (%)', lambda r: _fmt(r['d_VPD_share_negative'] * 100, 0)),
+    ('TA contribution difference, median (σ)', lambda r: _fmt(r['d_TA_median'], 2)),
+    ('SM contribution difference, median (σ)', lambda r: _fmt(r['d_SM_median'], 2)),
+    ('SW contribution difference, median (σ)', lambda r: _fmt(r['d_SW_median'], 2)),
+    ('Unmatched, same sites: net difference, mean (σ)',
+     lambda r: _fmt(r['unmatched_net_diff_mean_sites_with_pairs'], 2)),
+    ('Unmatched, same sites: sites with a negative net difference (%)',
+     lambda r: _fmt(r['unmatched_net_share_negative_sites_with_pairs'] * 100, 0)),
+]
+block_c = pd.DataFrame(
+    {label: [f(matching.loc[key]) for _, f in matching_rows] for key, label in MATCH_COLS},
+    index=[label for label, _ in matching_rows])
+
+# One display frame: block one, a blank row, the header row of block two, block two.
+cols = list(table_b_display.columns)
+combined = table_b_display.copy()
+combined.loc[''] = [''] * len(cols)
+combined.loc['b | Stage 7 against Stage 8 on matched records'] = [block_c.columns[0], block_c.columns[1]] + [''] * (len(cols) - 2)
+for label, row in block_c.iterrows():
+    combined.loc[label] = [row.iloc[0], row.iloc[1]] + [''] * (len(cols) - 2)
+combined.index.name = 'a | ' + table_b_display.index.name
+combined.to_csv(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}.csv", encoding='utf-8-sig')
+combined.to_excel(dir_out / f"59_SUPPTABLE-5_Stage8MinRecords_{FLUX}.xlsx")
 
 # ---------------------------------------------------------------------------
 # The numbers the two Results sentences rest on
