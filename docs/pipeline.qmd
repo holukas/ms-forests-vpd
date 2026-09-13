@@ -161,7 +161,7 @@ TUNE_HYPERPARAMETERS = True    # hyperparameter search instead
 TUNE_N_ITER = 25               # combinations tested per site in tuning mode
 ```
 
-`FLUX` picks the target. The published analysis is `NEP_ZSCORE`. The same pipeline
+`FLUX` picks the target. The main analysis is `NEP_ZSCORE`. The same pipeline
 runs for the other three fluxes, which support the decomposition arguments rather
 than the headline result:
 

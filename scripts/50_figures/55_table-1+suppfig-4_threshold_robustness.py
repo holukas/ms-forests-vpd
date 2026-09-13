@@ -94,9 +94,9 @@ rows = [(g, t, v, lo, hi, int(n), (None if pd.isna(note) else note))
         [['group', 'test', 'threshold_kpa', 'lower', 'upper', 'n_sites', 'note']]
         .itertuples(index=False, name=None)]
 
-# The published analysis is the first row, the way the table lists it, so the reader sees
+# The main analysis is the first row, the way the table lists it, so the reader sees
 # the value being tested rather than inferring it from a line.
-rows.insert(0, ('Reference', 'Published analysis', published, pub_lo, pub_hi,
+rows.insert(0, ('Reference', 'Main analysis', published, pub_lo, pub_hi,
                 int(ref_row['n_sites']), None))
 
 outfile = folder / f'55_SUPPFIG-4_ThresholdRobustness_{FLUX}.png'
@@ -222,7 +222,7 @@ ax.tick_params(axis='x', labelsize=AX_LABELS_FONTSIZE * 0.9, colors='#555555', l
 for sp in ('top', 'right', 'left'):
     ax.spines[sp].set_visible(False)
 ax.spines['bottom'].set_color('#CCCCCC')
-ax.text(published, 1.01, f'  published {published:.2f} kPa',
+ax.text(published, 1.01, f'  main analysis {published:.2f} kPa',
         transform=ax.get_xaxis_transform(), ha='left', va='bottom', color=COLOR_REF,
         fontweight='bold', fontsize=AX_LABELS_FONTSIZE * 0.85, clip_on=False)
 
@@ -230,9 +230,9 @@ ax.text(published, 1.01, f'  published {published:.2f} kPa',
 # display item, not baked into the png, so both the summary line and the explanation
 # live in the caption drafted in the revision notes. The numbers behind the summary
 # line are printed below instead, so a rerun still reports them.
-_points = [r[2] for r in rows if r[1] != 'Published analysis']
+_points = [r[2] for r in rows if r[1] != 'Main analysis']
 _inside = sum(pub_lo <= v <= pub_hi for v in _points)
-print(f'{_inside} of {len(_points)} tests fall inside the band of the published '
+print(f'{_inside} of {len(_points)} tests fall inside the band of the main '
       f'threshold, {pub_lo:.2f} to {pub_hi:.2f} kPa')
 
 fig.savefig(outfile, dpi=300, facecolor='white')
@@ -253,13 +253,13 @@ tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 # out on purpose: dropping it removes one of the three things the interval column means, so
 # the main table carries two instead of three.
 #
-# Depth takes three rows. The all-sites row is the published analysis rerun on the deepest
+# Depth takes three rows. The all-sites row is the main analysis rerun on the deepest
 # layer each site has, which is the test the text names first; it mixes the 80 sites that
 # never moved with 128 that did, most of them by one layer, so its shift is small. The
 # five-or-more-depths pair holds 59 sites fixed and swaps their shallowest depth for their
 # deepest, which is the largest departure from the shallow selection the published number
 # rests on. The pair answers whether depth moves the threshold, the all-sites row whether
-# the published analysis survives the deepest layer the network offers.
+# the main analysis survives the deepest layer the network offers.
 MAIN_ROWS = [
     'Deepest available layer, all sites',
     'Sites with 5+ SM depths, shallowest',
@@ -346,7 +346,7 @@ def _row(test, n, sigma, kpa):
     return dict(zip(COLUMNS, [test, n, sigma, kpa]))
 
 
-records = [_row('Published analysis', int(ref['n_sites']),
+records = [_row('Main analysis', int(ref['n_sites']),
                 cell(ref['threshold_sigma'], ref['lower_sigma'], ref['upper_sigma'], None),
                 cell(ref['threshold_kpa'], ref['lower'], ref['upper'], None))]
 for group in ['Soil water depth', 'Model fitting', 'Site set']:
@@ -377,7 +377,7 @@ footnote = (
     f"leave-one-site-out row the range across the {int(ref['n_sites'])} removals, the ALE "
     "row the 95% confidence interval of the mean of the per-site crossings. The two rows for "
     "sites with five or more soil water depths use the same 59 sites and are compared with "
-    "each other; their offset from the published value reflects the smaller site set. The tests "
+    "each other; their offset from the main analysis reflects the smaller site set. The tests "
     f"are described in Methods; all {len(tests)} are shown in Supplementary Fig. 4."
 )
 

@@ -12,7 +12,7 @@ One XGBoost regressor per site, target `NEP_ZSCORE`, predictors `TA_ZSCORE`,
 
 ## Flux targets
 
-The published analysis explains `NEP_ZSCORE`. The same models and the same settings
+The main analysis explains `NEP_ZSCORE`. The same models and the same settings
 also run for three other targets, which support the decomposition arguments in the
 revision rather than the headline result. All four use the full 208 sites.
 

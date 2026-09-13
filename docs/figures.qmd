@@ -52,7 +52,7 @@ writes them to `47_THRESHOLD_Robustness_NEP_ZSCORE.csv`, and script 55 reads tha
 renders it twice, as the main-text table and as the supplementary figure, so the two cannot
 disagree.
 
-Eighteen tests in three groups, with the published analysis on top as the reference row:
+Eighteen tests in three groups, with the main analysis on top as the reference row:
 
 | Group | Tests |
 |---|---|
