@@ -80,6 +80,11 @@ or by adding `DATA_ROOT` to `config/settings.local.yaml`. The folder is expected
 contain `data/00_raw/` and `data/outputs/`. See [`docs/data.qmd`](docs/data.qmd) for the
 layout and for where the FLUXNET source datasets come from.
 
+The per-site subsets and the aggregated outputs behind every figure and table are
+deposited in the ETH Research Collection: <https://doi.org/10.3929/ethz-c-000798579>
+[DEPOSIT PENDING: link goes live with the final upload]. Unpack them into
+`data/outputs/` to run everything from `30_shap` onward without the raw source files.
+
 ## Running
 
 Paths resolve from the repository root, so scripts can be started from anywhere:
