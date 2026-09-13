@@ -2,44 +2,42 @@
 title: "Overview"
 ---
 
-Code for the analysis of vapour pressure deficit (VPD) and soil water content (SWC)
-effects on daytime net ecosystem productivity (NEP) at forest eddy covariance sites.
+Code for the analysis of vapor pressure deficit (VPD) and soil water content (SWC)
+effects on daytime net ecosystem productivity (NEP) at 208 forest eddy covariance sites.
 
-One XGBoost model is trained per site. The fitted models are then interpreted with
-SHAP values (per-sample contributions, calculated out-of-sample through 5-fold
-cross-validation) and with ALE curves (isolated feature effects). Site-level results
-are aggregated with equal weight per site, both overall and by IGBP forest type.
+One XGBoost model is fitted per site. The models are interpreted with SHAP values,
+computed out-of-sample through 5-fold cross-validation, and with ALE curves. Site results
+are aggregated with equal weight per site, overall and per IGBP forest type.
 
 - Target: `NEP_ZSCORE`, half-hourly, daytime, four months of highest GPP per site.
   `GPP_ZSCORE`, `RECO_ZSCORE` and `ET_ZSCORE` run through the same pipeline as
-  supporting analyses
-- Features: `TA_ZSCORE`, `SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`
-- All variables are z-scored within site, so sites with different absolute ranges
-  can be compared
+  supporting analyses.
+- Predictors: `TA_ZSCORE`, `SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`.
+- All variables are z-scored within site.
 
-## What is in the repository
+## Repository layout
 
 | Path | Contents |
 |------|----------|
 | `scripts/10_datasets/` | Find and merge source datasets, check variable coverage, add ERA5 climate normals |
-| `scripts/20_subsets/` | Build the per-site analysis subset and calculate z-scores |
-| `scripts/30_shap/` | Train XGBoost models, calculate SHAP values and ALE curves |
-| `scripts/40_aggregation/` | Aggregate SHAP values per site, across sites, by IGBP, by stress stage |
+| `scripts/20_subsets/` | Build the per-site analysis subset and compute z-scores |
+| `scripts/30_shap/` | Fit XGBoost models, compute SHAP values and ALE curves |
+| `scripts/40_aggregation/` | Aggregate SHAP values per site, across sites, by forest type and by stress stage |
 | `scripts/50_figures/` | Manuscript figures and tables |
-| `scripts/80_info/` | Checks whose numbers are quoted in the text, read by no figure |
+| `scripts/80_info/` | Sensitivity checks quoted in the text |
 | `src/` | Shared code: models, aggregation, plotting, statistics, curve fitting, stress stages, file handling, paths |
 | `config/` | `settings.yaml` and FLUXNET site metadata |
-| `data/worldmap/` | Natural Earth country outlines used by the map figure |
+| `data/worldmap/` | Natural Earth country outlines for the site map |
 
-Source data and analysis outputs are **not** in the repository. See [Data](data.qmd).
+Source data and analysis outputs are not in the repository. See [Data](data.qmd).
 
-## Where to start
+## Reading order
 
-Start with [Installation](installation.qmd), then point the code at a data folder as
-described in [Data](data.qmd). [Pipeline](pipeline.qmd) lists the scripts in the order
-they run and what each one writes. [Figures](figures.qmd) maps manuscript figures to
-the scripts that produce them.
+[Installation](installation.qmd), then [Data](data.qmd) to point the code at a data
+folder. [Pipeline](pipeline.qmd) lists the scripts in run order. [Methods](methods.qmd)
+documents the choices that are hard to read from the code. [Figures](figures.qmd) maps
+each display item to its script.
 
-## Licence
+## License
 
 GPL-3.0-or-later. See `LICENSE` in the repository root.

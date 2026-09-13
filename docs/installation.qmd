@@ -4,12 +4,9 @@ title: "Installation"
 
 ## Requirements
 
-- Python 3.12 (pinned in `.python-version` and enforced by `pyproject.toml`)
+- Python 3.12, pinned in `.python-version` and enforced by `pyproject.toml`
 - [uv](https://docs.astral.sh/uv/) for dependency management
-- Roughly 4 GB of free disk space for the environment
-- Git, if you clone rather than download a zip
-
-The analysis itself needs considerably more disk space for the data, see [Data](data.qmd).
+- About 4 GB of disk space for the environment; the data need far more, see [Data](data.qmd)
 
 ## Install
 
@@ -20,7 +17,7 @@ uv sync
 ```
 
 `uv sync` reads `uv.lock` and creates `.venv` with the exact package versions used for
-the manuscript. If uv is not on your machine yet:
+the manuscript. It downloads Python 3.12 if the system does not have it. To install uv:
 
 ```bash
 # Windows PowerShell
@@ -30,22 +27,16 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-uv downloads Python 3.12 itself if the system does not have it, so no separate Python
-install is needed.
-
 ::: {.callout-important title="Pre-publication state"}
-`diive` 0.91.0 is not on PyPI yet, so `pyproject.toml` currently resolves it from a
-local checkout next to this repository (`../../diive`) through a `[tool.uv.sources]`
-block. On any other machine `uv sync` will fail until that release is published, the
-block is removed and `uv.lock` is regenerated. The version pin itself,
-`diive==0.91.0`, is already final.
+`diive` is resolved from a local checkout (`../../diive`) through a `[tool.uv.sources]`
+block, so `uv sync` fails on other machines until release 0.91.1 is on PyPI, the pin is
+changed from 0.91.0 to 0.91.1, the block is removed and `uv.lock` is regenerated.
 :::
 
 ## Running scripts
 
-Scripts import from `src/`, which `uv sync` installs into the environment in editable
-mode. Paths are resolved from the repository root, not from the working directory, so
-scripts can be started from anywhere:
+Scripts import from `src/`, which `uv sync` installs in editable mode. Paths are resolved
+from the repository root, so scripts run from anywhere:
 
 ```bash
 uv run python scripts/30_shap/31_shap.py
@@ -53,122 +44,60 @@ uv run python scripts/30_shap/31_shap.py
 
 ## Packages
 
-Direct dependencies, declared in `pyproject.toml`. Every runtime package is pinned to
-the version the published results were produced with, so that `pip install .` gives the
-same environment as `uv sync`. This is an analysis repository, not a library, and the
-pins are the record of what ran.
+Every runtime dependency is pinned in `pyproject.toml` to the version the published
+results were produced with, so `pip install .` and `uv sync` give the same environment.
+Transitive versions are in `uv.lock`.
 
 | Package | Version | Used for |
 |---------|---------|----------|
 | `diive` | 0.91.0 | Parquet I/O, FLUXNET file reading, grid aggregation, heatmaps, ET from LE |
 | `pandas` | 3.0.5 | Data handling |
 | `numpy` | 2.4.6 | Numerics |
-| `scipy` | 1.18.0 | Z-scores, nearest-neighbour search, statistics |
-| `matplotlib` | 3.11.1 | All figures |
+| `scipy` | 1.18.0 | Z-scores, nearest-neighbor search, statistics |
+| `matplotlib` | 3.11.1 | Figures |
 | `scikit-learn` | 1.9.0 | Cross-validation, metrics, hyperparameter search |
-| `xgboost` | 3.0.5 | Gradient-boosted regression models, the one pin that changes results, see below |
+| `xgboost` | 3.0.5 | Gradient-boosted regression; the one pin that changes results |
 | `shap` | 0.52.0 | SHAP values via `TreeExplainer` |
-| `pyale` | 1.2.0 | Accumulated Local Effects curves |
-| `statsmodels` | 0.14.6 | The GAM row of the threshold robustness table |
+| `pyale` | 1.2.0 | ALE curves |
+| `statsmodels` | 0.14.6 | Spline row of the threshold robustness table |
 | `geopandas` | 1.1.4 | Site map |
-| `pyyaml` | 6.0.3 | Reading `config/settings.yaml` |
-| `openpyxl` | 3.1.5 | Writing the tables for Word |
+| `pyyaml` | 6.0.3 | Settings |
+| `openpyxl` | 3.1.5 | Tables for Word |
 
-numpy stays below 2.5 because numba, which shap pulls in, supports no more, and the
-numba release the resolver falls back to otherwise does not build on Python 3.12. shap
-0.52.0 and scikit-learn 1.9.0 were checked against the April run and reproduce it exactly;
-xgboost is the package whose version changes the fitted models.
+## Reproducibility
 
-Transitive versions are pinned in `uv.lock`.
+The results were produced with xgboost 3.0.5 and `n_jobs=-1` on a 24-thread machine. At
+that version and thread count they reproduce bit for bit across all 208 sites. Both
+settings change the fitted trees through the order of floating-point additions in the
+`hist` tree method:
 
-## Reproducing the published numbers
+- Under xgboost 3.3.0, predictions correlate at 0.995 with the published ones, the mean
+  absolute SHAP of VPD is higher at every site tested, and the site-level VPD to soil
+  moisture ratio is 6 to 21 percent higher. Out-of-sample R2 is unchanged.
+- Under 3.0.5 with a different thread count, the early-stopping iteration at one site
+  ranged from 478 (24 threads) to 1021 (one thread), and the site-level ratio from 1.53
+  to 1.69.
 
-`xgboost` is pinned to one exact version, not a range. The version changes the fitted
-models.
+These differences are per site; aggregates over 208 sites are affected less. The shap
+and scikit-learn versions make no difference: 0.52.0 and 1.9.0 reproduce the results of
+0.48.0 and 1.6.1 exactly.
 
-The published results come from 3.0.5. Rerun the same data with the same seeds under
-3.3.0 and the trees come out different. On the sites tested, predictions correlate at
-0.995, mean absolute SHAP for VPD is higher at every site, and the VPD over soil
-moisture ratio is 6 to 21 per cent higher. Accuracy is the same either way: the mean
-difference in out-of-sample R2 is zero to four decimal places, and which version scores
-higher varies from site to site.
-
-This comes from the order of floating point additions. The `hist` tree method sums
-gradients into histogram bins in parallel, and 3.2 changed how that work is divided
-between threads, including making the histogram block size depend on the CPU cache. Bin
-sums then differ in their last bits. Where two candidate splits are nearly tied, the
-choice can flip, and the subtree below that node grows differently. Early stopping
-compounds it.
-
-Thread count has the same effect. Holding xgboost at 3.0.5 and varying `n_jobs` on one
-site, the stopping iteration ranged from 478 at 24 threads to 1021 at a single thread,
-and the site-level VPD over soil moisture ratio from 1.53 to 1.69. The models here were
-fitted with `n_jobs=-1` on a machine with 24 threads.
-
-The pin alone therefore does not guarantee a match. At the same version and thread count
-the results reproduce bit for bit, checked across all 208 sites. Elsewhere, expect
-differences of roughly the size given above.
-
-All those figures are per-site. Averaging over 208 sites should reduce them, though by
-how much has not been measured, so read them as an upper bound rather than as an error
-bar on a published aggregate.
-
-`shap` and `scikit-learn` versions make no difference. 0.52.0 and 1.9.0 reproduce the
-0.48.0 and 1.6.1 numbers exactly, so it is tree building that matters, not the explainer.
-
-### Optional: ERA5 downloads
-
-Scripts `16a` to `16d` re-download ERA5 climate normals and need extra packages plus
-personal credentials:
+## Optional groups
 
 ```bash
-uv sync --extra era5
+uv sync --extra era5     # scripts 16a to 16d, ERA5 downloads, need credentials
+uv sync --group dev      # JupyterLab, pytest, Quarto, ghp-import
 ```
 
-This is only needed to rebuild the ERA5 climate normals from scratch. The rest of the
-pipeline reads the aggregated result. See [Data](data.qmd) for the credentials.
+## Building the documentation
 
-### Optional: development tools
-
-```bash
-uv sync --group dev
-```
-
-Adds JupyterLab, pytest, Quarto and ghp-import. The `quarto-cli` package ships the
-Quarto binary, so no separate system install is needed.
-
-## Building these docs
-
-The documentation is a [Quarto](https://quarto.org/) website under `docs/`. Notebooks
-and code blocks are not executed at render time, so no data folder is required.
-
-Live preview with reload on save:
+The site is a [Quarto](https://quarto.org/) website under `docs/`. Nothing is executed at
+render time, so no data folder is needed.
 
 ```powershell
-.\preview_docs.ps1
+.\preview_docs.ps1            # live preview
+.\preview_docs.ps1 -Render    # build into docs/_site/
 ```
 
-Build once into `docs/_site/`:
-
-```powershell
-.\preview_docs.ps1 -Render
-```
-
-`-Port` and `-NoBrowser` are passed through to Quarto. The script uses the Quarto binary
-from `.venv` and falls back to one on `PATH`. `Get-Help .\preview_docs.ps1 -Examples`
-shows the usage.
-
-Outside Windows, call Quarto directly:
-
-```bash
-uv run quarto preview docs
-uv run quarto render docs
-```
-
-The published version is built by GitHub Actions on every push to `main`, which needs
-Pages enabled on the repository. To push a build by hand instead:
-
-```powershell
-.\preview_docs.ps1 -Render
-uv run ghp-import -n -p -f docs/_site
-```
+Outside Windows: `uv run quarto preview docs` and `uv run quarto render docs`. The
+published site is built by GitHub Actions on every push to `main`.

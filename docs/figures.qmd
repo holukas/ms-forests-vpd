@@ -2,142 +2,66 @@
 title: "Figures"
 ---
 
-Figure scripts read the aggregated results under `<DATA_ROOT>/data/outputs/` and write
-to `50_plots/`. None of them fit a model, so they run in seconds to minutes.
+Figure scripts read `<DATA_ROOT>/data/outputs/` and write to `50_plots/`. None fits a
+model. Output file names carry the display item (`FIG-N`, `SUPPFIG-N`, `SUPPTABLE-N`,
+`SUPPDATA-N`), and every figure script also writes the plotted values as a `_DATA.csv`.
 
-| Script | Produces | Reads |
-|--------|----------|-------|
-| `51_fig-1_worldmap_mat_map_era5.py` | Figure 1, site map with ERA5 climate normals | `10_datasets/17_..._era5.csv` |
-| `52_fig-2+suppfig-1+7_flameplots.py` | Figure 2 and the matching supplementary figure, binned SHAP heatmaps | `40_aggregation/` |
-| `53_fig-3+suppfig-3_sankeyplot_shapvalues_8stages.py` | Figure 3, SHAP flow across the stress stages; with `VARIANT = "mirrored-stages"` the same figure for the mirrored stage order, Supplementary Fig. 3 | `40_aggregation/` |
-| `54_fig-4+supptable-7_vpd_response_curve_shap_agg.py` | Figure 4, and Supplementary Table 7, the polynomial coefficients with the threshold in sigma and kPa | `40_aggregation/`, `20_subsets/` |
-| `55_table-1+suppfig-4_threshold_robustness.py` | Table 1, eleven tests, and the matching supplementary figure, all eighteen | `40_aggregation/47_...csv` |
-| `56_suppfig-2+supptable-6_scenarios_boxplot_shapsums.py` | Supplementary figure and table, sina plots of the stage SHAP sums | `40_aggregation/` |
-| `57_suppfig-5_ale_response_curve.py` | Supplementary figure, ALE response curves with consensus threshold | `40_aggregation/46_...parquet` |
-| `59_supptable-4+5_stage_distributions+min_records.py` | Two supplementary tables, the driver distributions within each stage, and the effect of a minimum number of Stage 8 records per site with the matched Stage 7 to 8 comparison of script 89 as a second block | `40_aggregation/45_...csv`, `30_shap/` |
-| `60_suppfig-8_threshold_exceedance.py` | Supplementary Fig. 8, how often each site sits above the threshold: ranked sites, the share against site mean VPD, and the count against the network and forest type crossings | `40_aggregation/48_...csv`, `47_...csv` |
-| `68_suppfig-9_site_curves_kpa.py` | Supplementary Fig. 9, every site's fitted VPD response on one kPa axis, with the per-site crossings by forest type; also writes the crossings as a csv | `40_aggregation/41_...parquet`, `20_subsets/` |
-| `61_supptable-3_stage_cutoff_percentiles.py` | Supplementary Table 3, the stage definitions checked against `src/stages.py`, with the cut-off percentiles of script 87 beneath | `80_info/87_...csv` |
-| `62_supptable-9_threshold_definitions.py` | Supplementary Table 9, the peak, the steepest decline and the zero crossing of the fitted VPD response, laid out from the script 81 output | `80_info/81_...csv` |
-| `63_supptable-8_threshold_vs_site_vpd_range.py` | Supplementary Table 8, the per-site threshold by quartile of the site's maximum VPD, laid out from the script 82 summary | `80_info/82_...csv` |
-| `64_suppdata-2_site_skill.py` | Supplementary Data 2, the skill of every site model under both cross-validation splits, laid out from the script 86 output | `80_info/86_...csv`, `20_subsets/` |
-| `65_suppfig_biome_threshold_distributions.py` | Supplementary figure, per-site thresholds by forest type | `40_aggregation/49_...csv` |
-| `66_suppfig-10_data_flow_sankey.py` | Supplementary figure, the data flow Sankey | `20_subsets/22_data_flow.csv` |
-| `67_suppdata-1_data_flow_per_site.py` | Supplementary Data 1, the record losses per site as a table for the journal | `20_subsets/22_data_flow.csv` |
+| Script | Display item | Reads |
+|--------|--------------|-------|
+| `51_fig-1_worldmap_mat_map_era5.py` | Fig. 1, site map and climate | `10_datasets/17_..._era5.csv` |
+| `52_fig-2+suppfig-1+7_flameplots.py` | Fig. 2, the VPD effect on TA, SM and ET grids; Supplementary Fig. 1, the TA and SM effects; Supplementary Fig. 7, the flux maps; selected with `FIGURE` | `40_aggregation/` |
+| `53_fig-3+suppfig-3_sankeyplot_shapvalues_8stages.py` | Fig. 3, driver effects across the stages; Supplementary Fig. 3 with `VARIANT = "mirrored-stages"` | `40_aggregation/` |
+| `54_fig-4+supptable-7_vpd_response_curve_shap_agg.py` | Fig. 4, the VPD response curve; Supplementary Table 7, coefficients and thresholds in σ and kPa | `40_aggregation/`, `20_subsets/` |
+| `55_table-1+suppfig-4_threshold_robustness.py` | Table 1, twelve of the eighteen tests; Supplementary Fig. 4, all eighteen | `40_aggregation/47_...csv` |
+| `56_suppfig-2+supptable-6_scenarios_boxplot_shapsums.py` | Supplementary Fig. 2, per-site effects across the stages; Supplementary Table 6, stage means and SD | `40_aggregation/` |
+| `57_suppfig-5_ale_response_curve.py` | Supplementary Fig. 5, ALE curves | `40_aggregation/46_...` |
+| `58_suppfig-6_vpd_response_by_flux.py` | Supplementary Fig. 6, the VPD response of NEP, GPP, RECO and ET | `40_aggregation/` per flux |
+| `59_supptable-4+5_stage_distributions+min_records.py` | Supplementary Table 4, driver distributions per stage; Supplementary Table 5, part a the minimum-records sweep, part b the matched Stage 7 to 8 comparison | `40_aggregation/45_...csv`, `30_shap/`, `80_info/89_...csv` |
+| `60_suppfig-8_threshold_exceedance.py` | Supplementary Fig. 8, share of half-hours above the threshold | `40_aggregation/48_...csv`, `47_...csv` |
+| `61_supptable-3_stage_cutoff_percentiles.py` | Supplementary Table 3, stage definitions checked against `src/stages.py`, with the cut-off percentiles of script 87 | `80_info/87_...csv` |
+| `62_supptable-9_threshold_definitions.py` | Supplementary Table 9, peak, steepest decline and zero crossing | `80_info/81_...csv` |
+| `63_supptable-8_threshold_vs_site_vpd_range.py` | Supplementary Table 8, per-site threshold by quartile of site VPD range | `80_info/82_...csv` |
+| `64_suppdata-2_site_skill.py` | Supplementary Data 2, site model skill under both cross-validation splits | `80_info/86_...csv`, `20_subsets/` |
+| `65_suppfig_biome_threshold_distributions.py` | Per-site thresholds by forest type, not in the manuscript | `40_aggregation/49_...csv` |
+| `66_suppfig-10_data_flow_sankey.py` | Supplementary Fig. 10, records retained at each filter | `20_subsets/22_data_flow.csv` |
+| `67_suppdata-1_data_flow_per_site.py` | Supplementary Data 1, record losses per site | `20_subsets/22_data_flow.csv` |
+| `68_suppfig-9_site_curves_kpa.py` | Supplementary Fig. 9, every site's VPD response on one kPa axis with the per-site crossings | `40_aggregation/41_...`, `20_subsets/` |
 
-## Figure 4: which values are averaged
+## Figure 4 aggregation
 
-`54_fig-4+supptable-7_vpd_response_curve_shap_agg.py` sets `aggfunc = 'mean'`. That is what the SHAP
-values are aggregated with, matching the manuscript.
+Script 54 aggregates the SHAP values with `aggfunc = 'mean'` within each site grid, and
+fits the curve to the cross-site median per bin. The `median` set for the two bin
+coordinate columns applies to the bin edges only, where every record carries the same
+value; it avoids floating-point noise in the labels and does not affect the SHAP values.
 
-The script also sets `median` for two columns, which is easy to misread as median
-aggregation of the results:
+## Table 1 and Supplementary Fig. 4
 
-```python
-# Bins always use 'median', b/c using 'mean' results in floating point errors
-xagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
-yagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
-xcol, ycol, zcol = (f"{xvar}", xagg), (f"{yvar}", yagg), (f"{zvar}", aggfunc)
-```
-
-`xagg` and `yagg` apply to the bin coordinate columns only. Every record in a bin
-carries the same bin edge, so mean and median return the same number, and the median is
-used because averaging identical floats reintroduces rounding noise in the labels. The
-SHAP values themselves, `zcol`, use `aggfunc`.
-
-## Table 1 and its figure: eighteen tests, eleven of them in the main text
-
-`55_table-1+suppfig-4_threshold_robustness.py` computes nothing. Script 47 builds the rows and
-writes them to `47_THRESHOLD_Robustness_NEP_ZSCORE.csv`, and script 55 reads that file and
-renders it twice, as the main-text table and as the supplementary figure, so the two cannot
-disagree.
-
-Eighteen tests in three groups, with the main analysis on top as the reference row:
+Script 47 computes the eighteen tests and writes `47_THRESHOLD_Robustness_NEP_ZSCORE.csv`;
+script 55 renders that file as the table and the figure, so the two cannot disagree.
 
 | Group | Tests |
 |---|---|
-| Soil water depth | deepest available layer at all sites; the 128 matched sites on layer 1; the same sites on their deepest layer; the 59 sites with five or more soil water depths, on layer 1 and on their deep layer |
-| Model fitting | air temperature dropped from the predictor set; blocked cross-validation; ALE instead of SHAP; the threshold estimator across 23 settings |
-| Site set | any one site removed; Europe removed; North America removed; both removed; records of at least 3, 5 and 10 years |
+| Soil water depth | deepest usable layer at all sites; the 128 sites with a deeper layer at their shallowest and deepest; the 59 sites with five or more layers at their shallowest and deepest |
+| Model fitting | TA dropped; blocked cross-validation; mean instead of median per bin; penalized spline instead of the polynomial; ALE instead of SHAP; 23 estimator settings |
+| Site set | each site removed in turn; Europe, North America and both removed; records of at least 3, 5 and 10 years |
 
-Each row carries the test, the number of sites, the threshold in sigma and in kPa, and an
-interval. Both units, because every row converts sigma to kPa using its own site set: a row
-can move in kPa while standing still in sigma, and kPa alone hides that. Sigma is also what
-Figure 4 and the coefficient table report. The interval is the 95 % prediction band of the fitted polynomial, the same one
-Figure 4 and the coefficient table show, so the reference row reads 1.26 [1.16, 1.36] in all
-three places. Script 47 also writes a bootstrap over sites, about five times narrower, in
-`boot_lower` and `boot_upper`. That one is not shown here, because two intervals on the same
-number would confuse a reader.
+Each row gives the test, the number of sites, the threshold in σ and in kPa, and the
+95 percent prediction band of the fit; every row converts to kPa with its own site set.
+Three rows carry another interval and are marked with an asterisk: the estimator row the
+range across its 23 settings, the leave-one-site-out row the range across the 208
+removals, and the ALE row the confidence interval of the mean of the per-site crossings.
+The bootstrap over sites that script 47 also writes (`boot_lower`, `boot_upper`) is
+narrower than the prediction band in every test and is not shown.
 
-Three rows have no prediction band, and the figure and the table both say so rather than
-leaving it to the caption. The estimator row carries the spread across its 23 settings, and
-the leave-one-site-out row the spread across its 208 removals, which share 207 sites with each
-other and are not independent draws. The ALE row has no curve fitted here at all, since stage
-46 derives its value as a mean of per-site crossings, so it carries the 95 % confidence
-interval of that mean, the interval the Results quote for ALE (added 7 September 2026; fitting
-the Table 1 estimator to the cross-site ALE curve instead would give 1.20 kPa, a second ALE
-threshold, so that route was not taken). In the figure those rows are drawn with whiskers
-instead of a bar. In the value column they read `1.26 (1.23 to 1.30 range)` and
-`1.25 (1.21 to 1.29 CI)`, so square brackets mean a prediction band and round brackets mean
-anything else. The table marks them with an asterisk as well.
+`MAIN_ROWS` in script 55 selects the twelve rows of Table 1, one per kind of test with
+the depth rows as pairs; the figure shows all eighteen.
 
-**The main table takes eleven of the eighteen**, one per kind of challenge: the pair of rows for sites with five or more soil water depths,
-air temperature dropped, blocked cross-validation, the mean per bin, the GAM, ALE, any one site
-removed, North America removed, Europe and North America removed, and records of at least 10
-years. Depth is the one theme that takes two rows,
-because the pair is the comparison. `MAIN_ROWS` in script 55 holds that list. The rest
-are redundant in a main display item, since three record-length rows make one point, three
-region rows make one point, and each matched pair argues one comparison over two rows. Both
-largest movers stay in, so the selection cannot be read as flattering, and the estimator row
-goes out, which leaves the interval column with two meanings instead of three. The
-supplementary figure keeps all eighteen, and the table footnote points at it.
-
-**Row labels, 7 September 2026.** "Layer 5" was a FLUXNET variable index whose depth differs by
-site, so the rows are now named by their selection rule, sites with five or more soil water
-depths, at their shallowest and their deepest; the matched pair reads shallowest and deepest
-depth for the same reason.
-
-**The mean-per-bin row, added 6 September 2026.** Figure 4 fits the cross-site median of each
-bin, not the mean, and it does so because of a line in script 54 that tests the x variable
-rather than by a decision written down anywhere. Script 42 writes both aggregations, so script
-47 fits the mean as one more row under model fitting. The crossing moves by 0.007 kPa. The row
-is in the main table so that the choice stands beside the other tested settings instead of
-being found by reading the code.
-
-**The deepest-layer pair.** The matched rows use all 128 sites that moved down, and most moved
-one layer, so the depth contrast is small. The pair restricted to the 59 sites that reached
-five or more soil water depths holds the sites fixed and gives the largest contrast the network allows:
-1.195 kPa at their shallowest depth against 1.207 at their deepest, so depth moves the threshold by
-0.012 kPa. Both sit about 0.06 kPa below the published value, which is those 59 sites being a
-different sample rather than a depth effect. That is why the row is a pair.
-
-**Neither shows a shift column.** Rounded to two decimals several of the shifts read as +0.00
-or -0.00, and three decimals would claim a precision the interval does not support. An earlier
-version of the figure plotted the shift on an axis centred on the published value, which made
-agreement easy to see but hid the numbers a reader wants to quote. It now uses an absolute kPa
-axis with the value printed beside each row.
-
-**The figure is a table and a plot side by side**, the same rows in both halves: label, sites,
-threshold and interval on the left, bars on the right, one shared row grid. A rule sits under
-the reference row so the value being tested is separate from the tests. Everything is one
-blue. Colouring the two largest movers red made eighteen agreeing rows look like a list of
-passes and failures, which is the opposite of what the figure says.
-
-Output is one png, one xlsx for pasting into Word, and one csv of the same table.
-
-## Script 57: configuration
-
-The ALE response curve script has the most switches. Options at the top of the file:
+## Script 57 settings
 
 | Setting | Default | Effect |
 |---------|---------|--------|
-| `PLOT_FEATURE` | `VPD_ZSCORE` | Feature on the x axis |
+| `PLOT_FEATURE` | `VPD_ZSCORE` | Predictor on the x axis |
 | `FLUX` | `NEP_ZSCORE` | Target |
-| `USE_MEDIAN` | `False` | Mean aggregation across sites; `True` switches to median |
-| `USE_CI` | `True` | Labels show a 95 % interval; `False` shows the standard error |
-| `VARIANT` | `""` | Reads the matching run variant and writes beside it |
-
-Output is one figure: a large panel with every site curve in grey and a marker at the mean
-zero crossing, and four panels splitting the same data by IGBP type (ENF, DBF, MF, EBF).
-It writes nothing else. The curves and the threshold table come from script 46, which has
-to run first.
+| `USE_MEDIAN` | `False` | Mean across sites; `True` for the median |
+| `USE_CI` | `True` | 95 percent interval in the labels; `False` for the standard error |
+| `VARIANT` | `""` | Run variant to read |

@@ -2,58 +2,13 @@
 title: "Methods"
 ---
 
-Implementation notes for the parts of the analysis that are easy to misread from the
-code alone. The manuscript methods section is the authoritative description.
+Implementation notes for the choices that are hard to read from the code. The Methods
+section of the manuscript is the authoritative description.
 
 ## Model
 
 One XGBoost regressor per site, target `NEP_ZSCORE`, predictors `TA_ZSCORE`,
-`SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`. Settings live in `src/models.py`.
-
-## Flux targets
-
-The main analysis explains `NEP_ZSCORE`. The same models and the same settings
-also run for three other targets, which support the decomposition arguments in the
-revision rather than the headline result. All four use the full 208 sites.
-
-| Target | Source variable | What it is |
-|---|---|---|
-| `NEP_ZSCORE` | `NEE_VUT_50`, sign flipped | Measured, quality flag 0 only |
-| `GPP_ZSCORE` | `GPP_NT_VUT_50` | Partitioning product |
-| `RECO_ZSCORE` | `RECO_NT_VUT_50` | Partitioning product |
-| `ET_ZSCORE` | derived from `LE_F_MDS` | Includes gap-filled values |
-
-How well the four targets fit, measured as the out-of-sample global R2 per site and
-summarised over the 208 sites:
-
-| Target | Mean | Median | p10 | p90 | Min | Max | Sites below 0.40 |
-|---|---|---|---|---|---|---|---|
-| NEP | 0.622 | 0.643 | 0.43 | 0.77 | 0.232 | 0.855 | 17 |
-| GPP | 0.652 | 0.670 | 0.49 | 0.78 | 0.245 | 0.951 | 12 |
-| RECO | 0.579 | 0.584 | 0.34 | 0.77 | 0.111 | 0.980 | 27 |
-| ET | 0.652 | 0.668 | 0.52 | 0.78 | 0.273 | 0.872 | 6 |
-
-GPP fits better than NEP, which is expected, because NEP is the difference between two
-larger fluxes and carries the noise of both. ET fits about as well as GPP on average and
-is the most consistent of the four, with the highest p10 and only 6 sites below 0.40.
-Part of that consistency comes from the target itself rather than from the model, since
-ET is derived from gap-filled latent heat flux (see below).
-
-Two caveats matter when reading GPP or RECO results.
-
-`RECO_NT_VUT_50` comes from a temperature response fitted to night-time NEE and
-extrapolated into the day, and GPP is that RECO minus NEE. Both are therefore model
-products, and part of any temperature signal in their attribution belongs to the
-partitioning model rather than to the ecosystem. The effect is not uniform: RECO fits
-worse than NEP on average (mean global R2 0.579 against 0.622) but spans a much wider
-range, 0.111 to 0.980, with 27 sites below 0.40 and 2 above 0.90. So the partitioning
-shows through at a few sites, not everywhere. Use the decomposition to say which
-component drives a change in NEP, not to quantify the temperature sensitivity of RECO.
-
-`ET_ZSCORE` is derived from latent heat flux. The quality filter on `LE` is disabled
-in `src/files.py`, because the FLUXNET flag marks every LE record as gap-filled, so ET
-is not the quality-flag-0 product that NEP is.
-Fixed across SHAP, ALE and tuning:
+`SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`. Settings are in `src/models.py`:
 
 ```python
 tree_method='hist'
@@ -66,390 +21,212 @@ min_child_weight=5
 early_stopping_rounds=100
 ```
 
-### Cross-validation
+The hyperparameter search (`TUNE_HYPERPARAMETERS = True`) covers `n_estimators` 2000 to
+4000, `max_depth` 4 to 8 and `learning_rate` 0.01 to 0.1, 125 combinations per site.
 
-Two strategies, set by `CV_STRATEGY` in script `31`.
+## Flux targets
 
-`random`, the default and the one behind the published results, is a shuffled 5-fold
-split of the complete rows. It matches the task: a gap is predicted from driver values at
-its own timestamp, and gaps sit between observed records.
-
-`blocked` leaves one calendar year out at a time. Neighbouring half-hours are correlated,
-so a shuffled split can put a record and its neighbour on opposite sides and flatter the
-score. A year-wise split removes that. Sites with a single year are skipped.
-
-Measured over 206 sites: mean out-of-sample R2 falls from 0.622 to 0.510 and RMSE rises
-from 0.606 to 0.691, with a lower score at every site. The attribution barely moves. At
-the compound-extreme stage the VPD contribution is -0.4286 under random and -0.4287 under
-blocked, while the soil water contribution weakens from -0.0852 to -0.0638.
-
-Read them as answers to different questions. The random split says how well the model
-fills gaps inside the observed period, the blocked split says whether it transfers to an
-unseen year.
-
-### Predictor sets
-
-`FEATURE_SET` in script `31` selects the drivers. `full` is the submitted set of TA, SW,
-VPD and SM. `no_vpd` drops VPD and keeps TA, `no_ta` does the reverse. Both alternatives
-were run over all 208 sites.
-
-| set | mean R2 | median R2 |
+| Target | Source variable | Nature |
 |---|---|---|
-| full | 0.622 | 0.643 |
-| no VPD | 0.580 | 0.597 |
-| no TA | 0.590 | 0.608 |
+| `NEP_ZSCORE` | `NEE_VUT_50`, sign flipped | Measured, quality flag 0 only |
+| `GPP_ZSCORE` | `GPP_NT_VUT_50` | Partitioning product |
+| `RECO_ZSCORE` | `RECO_NT_VUT_50` | Partitioning product |
+| `ET_ZSCORE` | derived from `LE_F_MDS` | Includes gap-filled values |
 
-Dropping either variable lowers the score at 205 of the 208 sites, so neither is
-redundant. Dropping TA costs less than dropping VPD.
+Median out-of-sample R2 across the 208 sites: NEP 0.64, GPP 0.67, RECO 0.58, ET 0.67.
+RECO comes from a temperature response fitted to nighttime NEE and extrapolated into the
+day, and GPP is RECO minus NEE, so part of any temperature signal in their attribution
+belongs to the partitioning. The LE quality filter is disabled in `src/files.py`, because
+the FLUXNET flag marks every LE record as gap-filled.
 
-Each variable takes over part of the other's role when removed. The median mean absolute
-SHAP for TA goes from 0.106 to 0.194 without VPD, and VPD goes from 0.179 to 0.216
-without TA. Read the attributions in the full model as conditional on the other variable
-being present.
+## Cross-validation
 
-The `no_ta` run is carried through the aggregation as well, so the threshold can be
-re-estimated from models that never saw temperature. It comes out at 1.28 kPa, with a
-prediction band of 1.19 to 1.37 over the same 208 sites, against the published 1.26. That is
-one of the rows of Table 1. Air temperature still bins the grid there, as it does in every
-other row: the `no_ta` files keep the `TA_ZSCORE` data column and only lack
-`TA_ZSCORE_SHAPVALS`, so the estimator is unchanged and only the model behind the SHAP values
-differs.
+`random`, behind the published results, is a shuffled 5-fold split. `blocked` holds one
+calendar year out at a time and skips sites with a single year. Over 206 sites the median
+out-of-sample R2 falls from 0.64 to 0.54; the Stage 8 VPD contribution is unchanged
+(-0.429 against -0.429) and the soil water contribution weakens from -0.085 to -0.064.
 
-A third alternative, TA with a different humidity variable, is not available. No site in
-the analysis records RH, and humidity variables that could be derived from these data are
-exact functions of TA and VPD.
+## Predictor sets
 
-Searched during tuning:
-
-```python
-n_estimators  = [2000, 2500, 3000, 3500, 4000]
-max_depth     = [4, 5, 6, 7, 8]
-learning_rate = [0.01, 0.03, 0.05, 0.07, 0.1]
-```
-
-The grid is 125 combinations; with 5-fold cross-validation that is 625 fits per site,
-which is why tuning is a separate mode rather than part of every run. The
-regularisation parameters are held fixed so tuned and untuned runs stay comparable.
+`FEATURE_SET` in script 31: `full`, `no_vpd`, `no_ta`. Dropping either variable lowers
+the score at 205 of 208 sites (median R2 0.64, 0.60 and 0.61). Each variable takes over
+part of the other's role when removed, so the attributions in the full model are
+conditional on both being present. The `no_ta` run is carried through the aggregation:
+the threshold from models that never saw temperature is 1.28 kPa [1.19, 1.37] against
+1.26 kPa [1.16, 1.36], one row of Table 1. A model with TA and a different humidity
+variable is not possible, because every humidity variable derivable from these data is a
+function of TA and VPD.
 
 ## SHAP
 
-`TreeExplainer` with `feature_perturbation="tree_path_dependent"`. TA and VPD are
-strongly dependent, and breaking that dependence would ask the model about combinations
-of temperature and humidity that never occur. The tree-path-dependent variant keeps the
-observed joint distribution.
-
-What this gives is a conditional attribution: how the fitted model distributes its
-prediction among correlated predictors. It is not a separation of physiological causes.
-
-SHAP values are out-of-sample. Each fold explains only the 20 % that its model never
+`TreeExplainer` with `feature_perturbation="tree_path_dependent"`, which keeps the
+observed joint distribution of TA and VPD. The result is a conditional attribution of the
+fitted prediction among correlated predictors, not a separation of physiological causes.
+SHAP values are out-of-sample: each fold explains only the 20 percent its model never
 trained on.
 
 ## ALE
 
-`PyALE.ale`, 100 grid points per feature, one model per site fitted on 85 % of the
-records with 15 % held back for early stopping, then applied to all records of that
-site. Note this is a separate fit from the cross-validated models behind the SHAP
-values, so the two are not the same trees.
+`PyALE.ale`, 100 grid points per predictor, one model per site fitted on 85 percent of
+the records. These are separate fits from the cross-validated models behind the SHAP
+values. ALE and SHAP interrogate models of the same form on the same data, so agreement
+between them tests the interpretation method, not the physiology.
 
-ALE and SHAP interrogate the same fitted models on the same observations, so agreement
-between them says the reading is robust to the interpretation method. It is not
-independent validation of the underlying physiology.
+## Soil water layer {#soil-water-layer}
 
-## Soil water depth {#soil-water-depth}
+The published analysis uses `SWC_F_MDS_1`, the shallowest layer. With
+`SWC_LAYER = "deepest"`, script 21 takes at each site the deepest layer that holds at
+least 90 percent of the records of layer 1 within the peak months
+(`src/common.py::deepest_swc_per_site`). The coverage floor keeps the sample the same
+between the two runs; without it, 18 sites would have run on a much sparser layer.
 
-The submitted analysis uses `SWC_F_MDS_1`, the shallowest gap-filled soil water layer,
-because it is the one nearly every site records. Shallow soil dries faster than the soil
-trees actually draw from, which raises the question of whether atmospheric demand only
-looks dominant because the soil water proxy is too shallow.
+Under this rule 128 of 208 sites move to a deeper layer (layers 2 to 9) and 80 stay on
+layer 1, so a `deep-sm` run keeps all 208 sites and 80 of them are bit-identical to the
+shallow run. `SITE_SUBSET = "deeper-only"` restricts both runs to the 128 sites that
+moved, which is the matched pair. Depths in centimeters are not recoverable from the data
+products.
 
-`21_prepare_input_data.py` can therefore run on the deepest layer instead:
-
-```python
-SWC_LAYER = "shallow"   # SWC_F_MDS_1
-SWC_LAYER = "deepest"   # deepest usable layer per site
-```
-
-The rule is in `src/common.py::deepest_swc_per_site()`. For each site, take the deepest
-layer that still holds at least 90 % of layer 1's records within the four peak months.
-If no deeper layer clears that bar, the site keeps layer 1.
-
-The coverage floor is doing real work. Deeper sensors are often gappier, and a gappier
-predictor means fewer complete records, so a site could differ between the two runs
-because its sample shrank rather than because its soil water came from further down.
-Without the floor, 18 sites would have run on a much sparser layer. With it, no site
-keeps less than 90.6 % of its shallow records, and the median is 100 %.
-
-Under that rule 128 of 208 sites move to a deeper layer, spread across layers 2 to 9.
-The remaining 80 have no deeper layer, or only layers too sparse to use, and their
-results are unchanged by construction.
-
-Depths in centimetres cannot be recovered. Only three sites carry `GRP_SWC` depth
-metadata in the AmeriFlux BIF, so this is the deepest available layer, never the root
-zone at a stated depth.
-
-### What a deep run contains
-
-A deep run keeps all 208 sites. The 128 that have a usable deeper layer move to it, and
-the other 80 stay on layer 1, because dropping them would change the site set as well as
-the depth. So a deep-run figure shows the deepest available layer per site, not deep soil
-water everywhere, and roughly two fifths of the sites contribute exactly what they
-contribute to the shallow run. Their SHAP values come back bit-identical.
-
-That damps the difference between the two runs. To see the effect of depth on its own,
-most scripts from 41 onwards take a second switch:
-
-```python
-SITE_SUBSET = ""              # every site
-SITE_SUBSET = "deeper-only"   # the 128 sites below layer 1
-```
-
-Run it against both variants and the result is a matched pair: the same 128 sites, the
-same records, differing only in sensor depth. Output goes to its own folder, so the
-mixed run and the submitted run stay where they are.
-
-The 128 are the 127 sites the depth rule moves, plus CA-Obs, which already used layer 2
-in the submitted analysis because layer 1 was missing there.
-
-### What the comparison showed
-
-Soil water gains importance and VPD loses some, but the ordering does not change. Across all 208 sites the stage 8 ratio of VPD to soil water
-attribution goes from 5.03 to 4.86. Restricted to the 128 sites that actually moved, it
-goes from 4.22 to 4.00. Site-level importance shifts more where the layer swap goes
-deeper, from no change at layer 2 to roughly a quarter of the ratio at layers 7 to 9.
-
-Evergreen broadleaf sites are the weak spot: only 10 of 30 have a usable deeper layer,
-and those are the arid and seasonally dry forests where the question bites hardest.
+Stage 8 ratio of the VPD to the soil water attribution: 5.03 shallow and 4.86 deep over
+all 208 sites; 4.22 and 4.00 on the matched 128. Only 10 of 30 evergreen broadleaf sites
+have a usable deeper layer.
 
 ## Stress stages
 
-Nine subsets of the half-hourly records, defined on z-scores in `src/stages.py`. The
-cut-offs are standard-normal equivalents: 0.319 bounds the middle 25 %, 0.714 the next
-band, and 1.282 the upper or lower 10 %.
+Nine record subsets defined on z-scores in `src/stages.py`, with cut-offs at 0.319
+(middle 25 percent), 0.714 (next band) and 1.282 (outer 10 percent) of a standard normal.
 
 | Stage | Condition |
 |-------|-----------|
-| 0 | all data, unrestricted |
-| 1 | normal: TA, VPD and SWC all within the middle 25 % |
-| 2 | warm, soil moisture normal, no extreme VPD |
-| 3 | warm and dry soil, no extreme VPD |
-| 4 | hot, drier soil, no extreme VPD |
-| 5 | hot, very dry soil, no extreme VPD |
-| 6 | extremely hot, very dry soil, no extreme VPD |
-| 7 | extremely hot, extremely dry soil, no extreme VPD |
-| 8 | compound extreme: extremely hot, extremely dry soil and extremely dry air |
+| 0 | all records |
+| 1 | TA, VPD and SWC within the middle 25 percent |
+| 2 | warm, soil moisture normal, VPD not extreme |
+| 3 | warm, dry soil, VPD not extreme |
+| 4 | hot, dry soil, VPD not extreme |
+| 5 | hot, very dry soil, VPD not extreme |
+| 6 | extremely hot, very dry soil, VPD not extreme |
+| 7 | extremely hot, extremely dry soil, VPD not extreme |
+| 8 | extremely hot, extremely dry soil, extremely dry air |
 
-Stages 2 to 7 cap VPD at the 90th percentile so they do not overlap with the compound
-extreme in stage 8.
+Standardization does not make the drivers Gaussian; script 87 measures the empirical
+share of records below each cut-off (within five percentage points of the Gaussian share
+at the median site, within two at the Stage 8 cut-offs). Shortwave radiation is not
+constrained by the stages and rises from 0.34σ at Stage 1 to 0.65σ at Stage 8 (script
+45). The sequence is not a factorial design; two tests address that.
 
-Script `45` reports the driver distributions inside each stage, in standardized and in
-measured units, globally and per forest type. Median across sites of the site median:
+### Stage order
 
-| stage | TA sigma | VPD sigma | SM sigma | SW sigma | TA degC | VPD hPa | SW W/m2 |
-|---|---|---|---|---|---|---|---|
-| 0 all data | 0.05 | -0.12 | -0.11 | 0.01 | 20.8 | 9.8 | 492 |
-| 1 normal | 0.03 | -0.02 | -0.02 | 0.34 | 20.8 | 10.5 | 567 |
-| 4 hot and dry | 0.93 | 0.67 | -0.51 | 0.49 | 25.3 | 14.7 | 618 |
-| 8 compound | 1.69 | 2.15 | -1.54 | 0.65 | 28.9 | 23.4 | 634 |
+`mirror_1` to `mirror_8` in `src/stages.py` swap the roles of VPD and soil water: VPD
+escalates through the stages and extreme soil dryness is added last. Stage 8 is the same
+records in both orders. Script 88 compares them:
 
-No stage definition constrains shortwave radiation, but it rises across the stages
-anyway, from 0.01 to 0.65 sigma, or 492 to 634 W/m2, because hot dry days are sunny days.
-SW is the strongest positive contributor in the model, so the step from stage 1 to stage
-8 changes light as well as heat and dryness.
-
-Stage 1 already sits at 0.34 sigma of SW. The peak-season and daytime filters select
-bright records, so "normal conditions" means normal in heat and dryness, not in light.
-Stages 6 and 7 share a VPD of about 0.98 sigma and differ only in soil moisture.
-
-::: {.callout-note}
-The stages are not a balanced factorial design. VPD varies within stages where soil
-moisture is held near baseline, and there is no mirrored stage where soil moisture
-varies while VPD is held near baseline.
-:::
-
-### Is the threshold an artefact of standardization?
-
-A site with a narrow VPD range reaches +3 sigma at a modest absolute VPD, so a threshold
-in sigma could in principle come from the standardization rather than from a limit on the
-plant. Script `82` tests this.
-
-The direct test is not possible here. It would need sites whose VPD never exceeds about
-1.25 kPa, and no site in the analysis stays that low. The lowest site maximum is 1.69 kPa
-and the median is 3.86 kPa. Sites are therefore split into quartiles of their own maximum
-VPD.
-
-| quartile | n | median max VPD | threshold sigma | threshold kPa | sites with a crossing |
-|---|---|---|---|---|---|
-| lowest | 52 | 2.90 | 0.25 | 1.00 | 52 |
-| Q2 | 52 | 3.60 | 0.29 | 1.15 | 52 |
-| Q3 | 51 | 4.38 | 0.16 | 1.32 | 51 |
-| highest | 52 | 5.69 | 0.04 | 1.41 | 52 |
-
-Every site in every quartile produces a zero crossing, so the nonlinear response is not
-limited to sites that reach high absolute VPD.
-
-The absolute threshold is not constant. It rises with the site's VPD range, Spearman rho
-+0.47. From the lowest to the highest quartile the range grows 96 per cent while the
-threshold grows 41 per cent. Proportional growth would point to the standardization,
-no growth to a fixed physical limit, and the data sit between the two.
-
-The spread across VPD quartiles, 1.00 to 1.41 kPa, is wider than the spread across forest
-types, 1.22 to 1.32 kPa.
-
-### Does the network composition matter?
-
-Europe and North America hold 74 per cent of the sites, 56 and 98 of 208. Script `83`
-drops each region and recomputes, using the country prefix of the site code.
-
-| set | sites | threshold kPa | VPD/SM ratio |
+| Order | Second to last stage | Final stage | Cost of the last step |
 |---|---|---|---|
-| all sites | 207 | 1.19 | 5.03 |
-| minus Europe | 151 | 1.24 | 5.86 |
-| minus North America | 109 | 1.11 | 5.94 |
-| minus both | 53 | 1.12 | 60.56 |
+| published, extreme VPD last | -0.07 | -0.36 | -0.29 |
+| mirrored, extreme soil dryness last | -0.24 | -0.36 | -0.12 |
 
-The threshold moves by at most 0.08 kPa, even with three quarters of the network removed.
+The mirrored Stage 7 holds about twenty times more records than the published one,
+because capping soil dryness restricts less than capping VPD.
 
-The ratio does not behave. Outside Europe and North America it reads 60.6, because the
-mean soil water contribution there is -0.0049, near zero, and 24 of those 44 sites have a
-positive contribution. A ratio whose denominator straddles zero is not a usable quantity.
+### Record matching
 
-Note that 1.19 kPa is the median of the per-site thresholds, while the 1.26 kPa quoted
-earlier is the crossing of the aggregated curve. Two different quantities.
+Within the cut-offs, Stage 8 records are hotter, drier and brighter than Stage 7
+records. Script 89 pairs every Stage 8 record of a site with the closest Stage 7 record
+of the same site, with replacement, within 0.5σ in TA, SWC and SWIN; the strict variant
+also requires the same calendar month and the hour of day within one hour. Script 59
+writes the summary as part b of Supplementary Table 5.
 
-### Does record length matter?
-
-Fifteen sites keep fewer than three years, and two keep one year, although a three-year
-minimum is stated. The minimum is applied before the QC, daytime, peak-month and
-balancing filters, which then cut into the record. Script `84` checks whether those sites
-change anything.
-
-| minimum years | sites | records kept | threshold kPa |
+| | Strict | Covariates only | Unmatched, same sites |
 |---|---|---|---|
-| 1, all sites | 207 | 100.0 % | 1.19 |
-| 3 | 192 | 98.7 % | 1.19 |
-| 5 | 144 | 88.9 % | 1.16 |
-| 10 | 72 | 63.8 % | 1.10 |
+| Sites with pairs, of 145 with both stages | 140 | 144 | 145 |
+| Stage 8 records matched | 60 % | 81 % | |
+| Difference after matching, TA, SWC, SWIN, VPD (σ) | +0.15, -0.02, +0.04, +0.98 | +0.14, -0.01, +0.01, +1.09 | |
+| Net effect difference, median site (σ) | -0.26 | -0.31 | -0.27 (mean) |
+| Sites with a negative net difference | 91 % | 94 % | 83 % |
+| VPD contribution difference, median site (σ) | -0.21 | -0.23 | |
+| TA, SWC, SWIN contribution differences (σ) | -0.03, 0.00, -0.02 | -0.02, 0.00, -0.02 | |
 
-Enforcing the stated three-year minimum drops 15 sites and 1.3 per cent of the records,
-and leaves the threshold unchanged. Requiring ten years discards two thirds of the sites
-and moves it to 1.10 kPa.
+Shortwave radiation is balanced after matching. The residual TA imbalance of 0.15σ
+contributes 0.03σ through the TA attribution.
 
 ## Aggregation across sites
 
-Every site contributes one curve or one binned grid, regardless of how many records it
-has. Aggregated bins are kept only where at least half of the sites have data, which
-controls how sparsely a bin is covered across the network.
+Every site contributes one curve or one binned grid with equal weight. Aggregated bins
+are kept where at least half the sites have data. Spread across sites uses the law of
+total variance (`src/stages.py`); bars in the stage figures show the standard error of
+the site means.
 
-Site-level means are combined with the law of total variance in `src/stages.py`, so the
-reported spread carries both the within-site variance and the variance between site
-means. Bars in the stage figures use the standard error of the site means.
+## Threshold definition
 
-## Threshold detection
+The threshold is the highest VPD at which the fitted VPD contribution crosses from
+positive to negative. From SHAP (script 54): a fourth-order polynomial fitted to the
+cross-site median per bin of the TA by VPD grid, one point per bin. From ALE (script 46):
+a fourth-order polynomial fitted to each site curve, then the mean of the per-site zero
+crossings with a t-based 95 percent interval; the crossing of the pooled curve (0.107σ
+against 0.181σ) is written beside it. Both are zero crossings of a model attribution.
 
-Two independent routes to the VPD value where the effect on NEP turns negative.
+Script 81 separates the peak of the VPD contribution (0.47 kPa), its zero crossing
+(1.26 kPa) and its steepest decline (1.50 kPa), and flags points within 2 percent of the
+range edge. The minimum is flagged in every group, since the curve is still falling where
+the data end.
 
-From SHAP (script `54`): bin the aggregated SHAP values against VPD, fit a fourth-order
-polynomial, take the zero crossing.
+### Conversion to kPa
 
-From ALE (script `46`): fit a fourth-order polynomial to each site's ALE curve first,
-then average the fitted curves. The threshold is the mean of the zero crossings of the
-individual site curves, not the crossing of the averaged curve. Reported alongside it are
-the number of sites that cross and a 95 % interval on that mean, from the t distribution.
-The crossing of the pooled curve is a different number, 0.107 against 0.181 sigma, and it
-is written out beside the mean so the two cannot be confused.
+Per site, `VPD_kPa = (site mean VPD + z * site SD) / 10`, over the records the models
+saw, then averaged across sites with equal weight; a forest type value is the mean over
+its sites, and interval bounds go through the same conversion. CD-Ygb stores VPD in Pa
+and is divided by 100 first; unconverted it moves the all-sites threshold from 1.26 to
+2.19 kPa.
 
-Smoothing before averaging keeps the shape of individual curves from cancelling out.
-Both values are zero crossings of a model attribution, not measured physiological
-breakpoints.
+### Estimator sensitivity
 
-### From sigma to kPa
+Script 47 re-estimates the threshold under 23 settings: polynomial degrees 2 to 6,
+LOWESS at five bandwidths, smoothing splines over two orders of magnitude, four bin widths
+and five fitting ranges. All fall between 1.23 and 1.29 kPa; the published fit sits at
+the median. LOWESS runs lowest, 0.155 to 0.174σ.
 
-Each site standardizes VPD against its own mean and standard deviation, so a threshold
-in sigma is a different absolute VPD at every site. Script `54` converts it, in the same
-script that fits the curve, and writes the supplementary table of coefficients:
+### Leave-one-site-out
 
-1. per site, `VPD_abs = site mean VPD + z * site SD`, both in hPa over the records the
-   models saw, then divided by 10 for kPa
-2. sites averaged with equal weight, the same one vote per site used elsewhere, and the
-   biome value is the mean over that biome's sites
-3. the interval bounds come from putting the sigma interval through the same conversion,
-   not from a separate calculation
-4. CD-Ygb is converted, because it records VPD in Pa where every other site uses hPa.
-   The factor is exactly 100. Feeding the raw values in without converting moves the
-   global threshold from 1.26 to 2.19 kPa, so the site must never be used unconverted
+Script 47 drops each site in turn and refits: 1.253 to 1.268 kPa, median 1.264, largest
+shift 0.010 kPa (US-CMW). Table 1 reports the range, since the 208 values share 207 sites
+each and are not independent.
 
-The biome range is the span of the four biome means. It is not a confidence interval,
-and the biome intervals overlap heavily, EBF [1.00, 1.43] against DBF [1.21, 1.43].
+### Site VPD range
 
-### How much does the estimator matter?
+A site with a narrow VPD range reaches +3σ at a modest absolute VPD. No site stays below
+1.25 kPa (lowest site maximum 1.69 kPa), so script 82 splits the sites into quartiles of
+their maximum VPD:
 
-The threshold is a zero crossing of a fitted curve, so the fit is not a detail. Script
-`47` re-estimates it from the same data under 23 choices: polynomial degrees 2 to 6,
-LOWESS at five bandwidths, smoothing splines over two orders of magnitude, four bin
-widths and five fitting ranges.
+| Quartile | n | Median max VPD (kPa) | Threshold (σ) | Threshold (kPa) | Sites with a crossing |
+|---|---|---|---|---|---|
+| lowest | 52 | 2.90 | 0.25 | 1.00 | 52 |
+| Q2 | 52 | 3.60 | 0.29 | 1.15 | 52 |
+| Q3 | 52 | 4.37 | 0.16 | 1.33 | 52 |
+| highest | 52 | 5.69 | 0.04 | 1.41 | 52 |
 
-All 23 fall between 0.155 and 0.247 sigma, which is 1.23 to 1.29 kPa, and the published
-fourth-order polynomial sits at the median. For comparison, the biome differences span
-1.22 to 1.32 kPa and the reported fit interval spans 1.16 to 1.36 kPa. The estimator
-matters less than either.
+Every site crosses. From the lowest to the highest quartile the VPD range grows by
+96 percent and the threshold by 41 percent, so the threshold is neither fixed nor
+proportional to the range.
 
-Bin width barely registers, 0.008 sigma across a fivefold change. LOWESS runs
-systematically lowest, 0.155 to 0.174, so the non-polynomial estimate sits slightly below
-the polynomial rather than centred on it.
+### Forest type comparison
 
-### Does any single site carry it?
+The intervals in Figure 4 are prediction bands of the aggregated curve. Script 49 fits
+one threshold per site and compares the distributions: Kruskal-Wallis H = 12.17,
+p = 0.007; after Holm correction only ENF against DBF and DBF against MF differ. The
+range of forest type medians is 0.19σ, the widest within-type interquartile range 0.52σ.
 
-Script `47` drops each of the 208 sites in turn, re-aggregates the remaining curves and
-refits. The 208 thresholds run from 1.253 to 1.268 kPa with a median of 1.264, which is the
-published value. The largest shift is 0.010 kPa, when US-CMW is dropped.
+### Regional subsets and record length
 
-Table 1 shows that range rather than an interval. Any two of the 208 values share 207 sites,
-so they are not independent draws, and a percentile over them would not mean what an interval
-means. The per-site values are written to
-`47_THRESHOLD_LeaveOneSiteOut_NEP_ZSCORE.csv`.
-
-### Three points, not one
-
-Script `81` separates quantities that a single "threshold" conflates. Across all sites
-the VPD effect peaks at 0.47 kPa, crosses zero at 1.26 kPa and falls fastest at 1.50 kPa.
-Only the zero crossing is the published threshold.
-
-The script also flags any point landing within 2 % of the edge of the observed range. The
-minimum does so in every group, because the fitted curve is still falling where the data
-stop, so the effect does not bottom out within the observed VPD range.
-
-### Do the biomes differ?
-
-The intervals on Figure 4 come from the polynomial's prediction band on the aggregated
-curve, so they describe how well the curve is pinned down, not how much sites differ.
-Script `49` answers the other question by fitting one threshold per site and comparing
-the distributions.
-
-Kruskal-Wallis gives H = 12.17, p = 0.0068, so the four biomes are not one distribution.
-Of the six pairs, only ENF against DBF and DBF against MF survive a Holm correction.
-Every comparison involving EBF is indistinguishable.
-
-Worth more than the tests: the range of biome medians is 0.189 sigma while the widest
-within-biome IQR is 0.523 sigma. Sites within a biome differ nearly three times more than
-the biomes differ from each other.
+Scripts 83 and 84 recompute the threshold with Europe, North America or both removed,
+and under minimum record lengths of 3, 5 and 10 years, from the median of the per-site
+thresholds. The same tests on the aggregated curve are rows of Table 1 (script 47), which
+is the estimator the manuscript reports.
 
 ## ERA5 climate normals {#era5-climate-normals}
 
-`17_add_era5_info.py` produces one 30-year (1991-2020) mean annual temperature and
-precipitation per site from three possible sources: the ERA5 fields embedded in the
-FLUXNET files, the Copernicus CDS API, and Google Earth Engine. Temperature and
-precipitation always come from the same source for a given site, and the choice is
-driven by precipitation.
-
-Below 2000 mm per year, FLUXNET wins if it is available. Above that the value is
-checked against the other two:
-
-- Copernicus within 300 mm of FLUXNET: keep FLUXNET
-- Copernicus higher than FLUXNET: keep FLUXNET
-- Copernicus lower and further than 300 mm away: use Copernicus
-- Copernicus exactly zero: reject it as a failed download, then compare Earth Engine
-  against FLUXNET and take the lower of the two
-
-Sites without FLUXNET ERA5 fall back to Copernicus if non-zero, otherwise Earth Engine.
-Every decision, with the values behind it, is written to a timestamped log next to the
-output.
+Script 17 gives each site one 1991 to 2020 mean annual temperature and precipitation
+from the ERA5 fields in the FLUXNET files, the Copernicus CDS or Google Earth Engine.
+Temperature and precipitation come from the same source, chosen on precipitation: below
+2000 mm per year FLUXNET is used where available; above that, Copernicus replaces it
+only when it is lower by more than 300 mm; a Copernicus value of zero is treated as a
+failed download and Earth Engine is compared instead. Sites without FLUXNET ERA5 fall
+back to Copernicus, then Earth Engine. Every decision is logged next to the output.
