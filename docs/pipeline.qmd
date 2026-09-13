@@ -297,6 +297,7 @@ blocked cross-validation variant.
 | `86_site_skill.py` | Site-level R2, RMSE, MAE and bias over all records, in Stage 8 and in the high-VPD tail, under both cross-validation splits |
 | `87_stage_cutoff_percentiles.py` | Where the fixed stage cut-offs fall in each site's empirical distribution, against the Gaussian share |
 | `88_stage_order_test.py` | The net effect along the published and the mirrored stage order: the cost of the last step and the two second-to-last stages that isolate one extreme each |
+| `89_stage_matching.py` | Stage 7 against Stage 8 on matched records: every Stage 8 record paired with the closest Stage 7 record of the same site in TA, SWC and SWIN (and month and hour of day), and the differences of the attributed effects across the pairs, per site and across sites |
 
 Scripts 83 and 84 answer the same two questions as two rows of Table 1, but from the median
 of the per-site thresholds rather than from the aggregated curve. The two estimators differ
