@@ -349,8 +349,8 @@ wheels = [
 
 [[package]]
 name = "diive"
-version = "0.91.0"
-source = { editable = "../../diive" }
+version = "0.91.1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bokeh" },
     { name = "matplotlib" },
@@ -367,49 +367,9 @@ dependencies = [
     { name = "xgboost" },
     { name = "yellowbrick" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "bokeh", specifier = ">=3.7.1,<4.0.0" },
-    { name = "influxdb-client", marker = "extra == 'db'", specifier = ">=1.37.0" },
-    { name = "matplotlib", specifier = ">=3.10.0,<4.0.0" },
-    { name = "numpy", specifier = ">=2.2.4,<3.0.0" },
-    { name = "pandas", specifier = ">=3.0.0,<4.0.0" },
-    { name = "pyarrow", specifier = ">=19.0.1,<20.0.0" },
-    { name = "pyside6", marker = "extra == 'gui'", specifier = ">=6.8,<7.0" },
-    { name = "pyvista", marker = "extra == 'gui3d'", specifier = ">=0.44" },
-    { name = "pyvistaqt", marker = "extra == 'gui3d'", specifier = ">=0.11" },
-    { name = "pyyaml", specifier = ">=6.0.2,<7.0.0" },
-    { name = "rich", specifier = ">=15.0.0" },
-    { name = "scikit-learn", specifier = ">=1.6.1,<2.0.0" },
-    { name = "seaborn", specifier = ">=0.13.2,<0.14.0" },
-    { name = "shap", specifier = ">=0.50.0,<1.0.0" },
-    { name = "statsmodels", specifier = ">=0.14.4,<0.15.0" },
-    { name = "trimesh", marker = "extra == 'gui3d'", specifier = ">=4.0" },
-    { name = "uncertainties", specifier = ">=3.2.2,<4.0.0" },
-    { name = "xgboost", specifier = ">=3.0.0,<4.0.0" },
-    { name = "yellowbrick", specifier = ">=1.5,<2.0" },
-]
-provides-extras = ["gui", "gui3d", "db"]
-
-[package.metadata.requires-dev]
-build = [{ name = "pyinstaller", specifier = ">=6.10" }]
-db = [{ name = "diive", extras = ["db"] }]
-dev = [
-    { name = "autopep8", specifier = ">=2.3.2" },
-    { name = "furo", specifier = ">=2025.12.19" },
-    { name = "ipykernel", specifier = ">=7.2.0" },
-    { name = "ipywidgets", specifier = ">=8.1.5" },
-    { name = "jupyterlab", specifier = ">=4.3.6,<5.0.0" },
-    { name = "myst-parser", specifier = ">=5.0.0" },
-    { name = "pandas-stubs", specifier = ">=3.0.0,<4.0.0" },
-    { name = "pytest", specifier = ">=8.0.0" },
-    { name = "pytest-cov", specifier = ">=7.1.0" },
-    { name = "ruff", specifier = ">=0.11.2" },
-    { name = "sphinx", specifier = ">=9.1.0" },
-    { name = "sphinx-autodoc-typehints", specifier = ">=3.10.2" },
-    { name = "sphinx-basic-ng", specifier = ">=1.0.0b2" },
-    { name = "sphinx-gallery", specifier = ">=0.21.0" },
+sdist = { url = "https://files.pythonhosted.org/packages/a3/0a/7e4b2fb299e6ac374d5e0fcdac2cfaee91704a73d7d4b687db97238f91ef/diive-0.91.1.tar.gz", hash = "sha256:b73855824cc6a4a45cf94de8f79ff1f6417c9f8f0e06c94c6df95088918f0e29", size = 35313313, upload-time = "2026-09-19T13:34:54.793Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/f5/9ae1c106a6ccd0b69e62abc17077a8e4d464b3501efdf9837d08e99ea1ed/diive-0.91.1-py3-none-any.whl", hash = "sha256:90eb7bbc52ee9c1c7f59c1a0cbbf1449a76f237167e78ac6fa818594ec0bc526", size = 34439925, upload-time = "2026-09-19T13:34:47.797Z" },
 ]
 
 [[package]]
@@ -1271,6 +1231,7 @@ dependencies = [
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "shap" },
+    { name = "statsmodels" },
     { name = "xgboost" },
 ]
 
@@ -1291,18 +1252,19 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "cdsapi", marker = "extra == 'era5'", specifier = ">=0.7.7,<1.0.0" },
-    { name = "diive", editable = "../../diive" },
+    { name = "diive", specifier = "==0.91.1" },
     { name = "earthengine-api", marker = "extra == 'era5'", specifier = ">=1.7.15,<2.0.0" },
-    { name = "geopandas", specifier = ">=1.1.1,<2.0.0" },
-    { name = "matplotlib", specifier = ">=3.10.0,<4.0.0" },
-    { name = "numpy", specifier = ">=2.2.4,<2.5" },
-    { name = "openpyxl", specifier = ">=3.1.5,<4.0.0" },
-    { name = "pandas", specifier = ">=3.0.0,<4.0.0" },
-    { name = "pyale", specifier = ">=1.2.0,<2.0.0" },
-    { name = "pyyaml", specifier = ">=6.0.2,<7.0.0" },
-    { name = "scikit-learn", specifier = ">=1.6.1,<2.0.0" },
-    { name = "scipy", specifier = ">=1.15.0,<2.0.0" },
-    { name = "shap", specifier = ">=0.50.0,<1.0.0" },
+    { name = "geopandas", specifier = "==1.1.4" },
+    { name = "matplotlib", specifier = "==3.11.1" },
+    { name = "numpy", specifier = "==2.4.6" },
+    { name = "openpyxl", specifier = "==3.1.5" },
+    { name = "pandas", specifier = "==3.0.5" },
+    { name = "pyale", specifier = "==1.2.0" },
+    { name = "pyyaml", specifier = "==6.0.3" },
+    { name = "scikit-learn", specifier = "==1.9.0" },
+    { name = "scipy", specifier = "==1.18.0" },
+    { name = "shap", specifier = "==0.52.0" },
+    { name = "statsmodels", specifier = "==0.14.6" },
     { name = "xgboost", specifier = "==3.0.5" },
 ]
 provides-extras = ["era5"]

@@ -34,7 +34,7 @@ Transitive versions are in `uv.lock`.
 
 | Package | Version |
 |---------|---------|
-| `diive` | 0.91.0 |
+| `diive` | 0.91.1 |
 | `pandas` | 3.0.5 |
 | `numpy` | 2.4.6 |
 | `scipy` | 1.18.0 |

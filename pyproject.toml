@@ -23,7 +23,7 @@ authors = [{ name = "Lukas Hörtnagl", email = "lukas.hoertnagl@usys.ethz.ch" }]
 # exactly. numpy stays below 2.5 because numba, pulled in by shap, supports
 # no more, and numba 0.53 does not build on Python 3.12.
 dependencies = [
-    "diive==0.91.0",
+    "diive==0.91.1",
     "pandas==3.0.5",
     "numpy==2.4.6",
     "scipy==1.18.0",
@@ -56,14 +56,6 @@ dev = [
     "quarto-cli>=1.10,<2.0",
     "ghp-import>=2.1.0,<3.0",
 ]
-
-# TEMPORARY, remove before publication.
-# diive 0.91.0 is not on PyPI yet, so it is resolved from a local checkout.
-# Once it is published: delete this block, run `uv lock`, commit the lockfile,
-# and confirm `uv sync` works in a clean clone. The dependency itself already
-# reads `diive==0.91.0` and does not change.
-[tool.uv.sources]
-diive = { path = "../../diive", editable = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
