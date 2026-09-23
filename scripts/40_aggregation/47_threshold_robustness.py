@@ -60,11 +60,22 @@ CURVE_FILE = (f'41_SHAPVALUES-{shap_type}_meanAggregatedPerSite'
 # 31.8 hPa. The z-scores are per site and therefore unaffected by the unit, so the
 # conversion only touches the mapping back to kPa.
 PA_UNIT_SITES = ['CD-Ygb']
-subsets = pd.read_csv(data_path('data/outputs/20_subsets/'
-                                '21_SUBSETS_parquet_vars_stats_subsets.csv'))
-is_pa = subsets['SITE'].isin(PA_UNIT_SITES)
-subsets.loc[is_pa, ['VPD_Z0', 'VPD_SD']] /= 100
-subsets = subsets.set_index('SITE')
+
+
+def site_stats(variant=''):
+    """Stage 21 site table of one run, with VPD mean and SD per site for the kPa conversion.
+
+    A run converts with its own table, because the sigma threshold refers to the records that
+    run z-scored. The deep-sm run drops records without a deeper soil water value, so at some
+    sites its VPD mean and SD differ from the main run.
+    """
+    t = pd.read_csv(data_path('data/outputs/20_subsets', variant,
+                              '21_SUBSETS_parquet_vars_stats_subsets.csv'))
+    t.loc[t['SITE'].isin(PA_UNIT_SITES), ['VPD_Z0', 'VPD_SD']] /= 100
+    return t.set_index('SITE')
+
+
+subsets = site_stats()
 
 
 # ---------------------------------------------------------------------------
@@ -95,9 +106,10 @@ def crossing(x, y):
     return max(roots)
 
 
-def to_kpa(z, sites):
-    """Sigma to kPa for one site set."""
-    use = subsets.loc[subsets.index.isin(sites)]
+def to_kpa(z, sites, stats=None):
+    """Sigma to kPa for one site set, with the site table of the run (main run by default)."""
+    stats = subsets if stats is None else stats
+    use = stats.loc[stats.index.isin(sites)]
     return (use['VPD_Z0'].mean() + z * use['VPD_SD'].mean()) / 10
 
 
@@ -225,7 +237,7 @@ def aggregate(M, x, min_sites, stat='median'):
     return x[keep], y
 
 
-def threshold_with_ci(piv, seed=0, stat='median'):
+def threshold_with_ci(piv, seed=0, stat='median', stats=None):
     """Crossing of the aggregated curve with two intervals.
 
     Returns the threshold in sigma and kPa, the prediction band from `src.fit` in kPa (how
@@ -241,12 +253,12 @@ def threshold_with_ci(piv, seed=0, stat='median'):
 
     xk, yk = aggregate(M, x, min_sites, stat)
     point_z = crossing(xk, yk)
-    point = to_kpa(point_z, sites)
+    point = to_kpa(point_z, sites, stats)
 
     # The prediction band: the same routine script 54 uses for Figure 4.
     _, _, x_fit, y_fit, _, pi_upper, pi_lower = fit.fit_polynomial(xk, yk)
     band = fit.calc_threshold(x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper)
-    band_lo, band_hi = to_kpa(band[1], sites), to_kpa(band[2], sites)
+    band_lo, band_hi = to_kpa(band[1], sites, stats), to_kpa(band[2], sites, stats)
 
     rng = np.random.default_rng(seed)
     boot = np.empty(N_BOOT)
@@ -258,7 +270,7 @@ def threshold_with_ci(piv, seed=0, stat='median'):
     # The band in sigma travels with the row as well, so Table 1 can print both units with
     # their intervals without inverting the kPa mapping per site set.
     return (float(point_z), float(point), float(band_lo), float(band_hi),
-            float(to_kpa(lo, sites)), float(to_kpa(hi, sites)), n,
+            float(to_kpa(lo, sites, stats)), float(to_kpa(hi, sites, stats)), n,
             float(band[1]), float(band[2]))
 
 
@@ -388,11 +400,13 @@ def robustness_rows(sweep):
      pub_boot_lo, pub_boot_hi, n_base, pub_lo_z, pub_hi_z) = threshold_with_ci(base)
 
     # --- soil water depth -------------------------------------------------------
+    deep_stats = site_stats('deep-sm')
     for label, sub in [('Deepest available layer, all sites', ('deep-sm',)),
                        ('Matched sites, shallowest depth', ('', 'deeper-only')),
                        ('Matched sites, deepest depth', ('deep-sm', 'deeper-only'))]:
         piv = site_curves(*[p for p in sub if p])
-        rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=1), None))
+        stats = deep_stats if sub[0] == 'deep-sm' else None
+        rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=1, stats=stats), None))
 
     # The deepest layers on their own. The matched pair above uses all 128 sites that moved
     # down, and most of them moved one layer, so the depth contrast is diluted. These are the
@@ -409,7 +423,8 @@ def robustness_rows(sweep):
                        (f'Sites with {DEEP_LAYER_MIN}+ SM depths, deepest', ('deep-sm',))]:
         piv = site_curves(*[p for p in sub if p])
         piv = piv.loc[piv.index.isin(deep_sites)]
-        rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=3), None))
+        stats = deep_stats if sub[0] == 'deep-sm' else None
+        rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=3, stats=stats), None))
 
     # --- model fitting ----------------------------------------------------------
     # Air temperature dropped from the predictor set. Every other row varies a setting, while
@@ -419,15 +434,14 @@ def robustness_rows(sweep):
     # and only the model behind the SHAP values differs.
     piv = site_curves('no_ta')
     rows.append(('Model fitting', 'Air temperature dropped from the model',
-                 *threshold_with_ci(piv, seed=3), None))
+                 *threshold_with_ci(piv, seed=3, stats=site_stats('no_ta')), None))
 
     piv = site_curves('blocked-cv')
     rows.append(('Model fitting', 'Blocked cross-validation',
-                 *threshold_with_ci(piv, seed=2), None))
+                 *threshold_with_ci(piv, seed=2, stats=site_stats('blocked-cv')), None))
 
-    # The cross-site mean per bin instead of the median. Figure 4 fits the median because
-    # of a line in script 54 that tests the x variable, not by a decision written down
-    # anywhere, so the alternative is put here on the same footing as the other choices.
+    # The cross-site mean per bin instead of the median that Figure 4 fits (script 54),
+    # put here on the same footing as the other choices.
     # Same sites, same cells, same fit; only the aggregation across sites differs.
     rows.append(('Model fitting', 'Mean instead of median per bin',
                  *threshold_with_ci(base, seed=5, stat='mean'), None))
