@@ -46,9 +46,9 @@ XMAX = 4.0
 SITE_LINE = '#6b7280'
 MEDIAN = '#000000'
 BAND = '#9ca3af'
-THRESHOLD = '#d55e00'
-# Okabe and Ito, as in Figures 1 and 3.
-IGBP_COLORS = {'ENF': '#0072B2', 'DBF': '#009E73', 'MF': '#E69F00', 'EBF': '#CC79A7'}
+THRESHOLD = '#000000'   # black dashed, as in Supplementary Fig. 8; orange is DBF
+# Okabe and Ito, the forest type colors of Figure 1 and Supplementary Fig. 8.
+IGBP_COLORS = {'ENF': '#009E73', 'DBF': '#D55E00', 'MF': '#E69F00', 'EBF': '#56B4E9'}
 IGBP_ORDER = ['ENF', 'DBF', 'MF', 'EBF']
 AX_LABELS_FONTSIZE = 12
 
