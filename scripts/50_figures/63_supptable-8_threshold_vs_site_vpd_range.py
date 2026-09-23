@@ -1,20 +1,15 @@
 """
 Supplementary Table 8: the per-site threshold against the VPD range of the site.
 
-Sites are split into quartiles of their own maximum peak-season daytime VPD. For each
-quartile the table gives the number of sites, the median site maximum, the median per-site
-threshold in the site's own standard deviations and in kPa, and how many sites have a zero
-crossing at all. If the standardisation had made the threshold, the value in kPa would
-rise in proportion to the site's range; if the threshold were a fixed physical limit, it
-would not move. The table shows neither.
-
-It lays out the summary written by `scripts/80_info/82_threshold_vs_site_vpd_range.py`;
-nothing is recomputed here.
+Sites are split into quartiles of their maximum peak-season daytime VPD. Per quartile: the
+number of sites, the median site maximum, the median per-site threshold in site standard
+deviations and in kPa, and the number of sites with a zero crossing. A threshold produced by
+the standardization would rise in kPa with the site range; a fixed physical limit would not.
 
 Reads:
-    80_info/<FLUX>/conditional/82_INFO_ThresholdVsSiteVPDRange.csv
+    80_info/<FLUX>/conditional/82_INFO_ThresholdVsSiteVPDRange.csv   from script 82 of 80_info
 
-Writes, into the plot folder next to the other supplementary tables:
+Writes, into the plot folder:
     63_SUPPTABLE-8_ThresholdVsSiteVPDRange_<FLUX>.csv | .xlsx
 """
 from pathlib import Path

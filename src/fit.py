@@ -6,8 +6,10 @@ import numpy as np
 
 def calc_threshold(x_fit, y_fit, pi_lower, pi_upper):
     """
-    Calculate threshold and 95% ci from polynomial bands.
-    If multiple zero-crossings exist, it strictly returns the highest x-value crossing.
+    Find the threshold and its 95% interval as zero crossings of the fit and its bands.
+
+    Each crossing is linearly interpolated. With several crossings, the highest
+    x value is returned. Returns (threshold, from pi_lower, from pi_upper).
     """
 
     def find_highest_zero_crossing(x, y):

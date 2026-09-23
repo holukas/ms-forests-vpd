@@ -1,3 +1,11 @@
+"""
+Find which of NEE, LE, GPP, RECO, TA, VPD, SWIN and SWC each site provides, and under which name.
+
+Redundant: `13b_check_available_vars_SWC.py` writes the same file and more, and is the one
+behind the main analysis.
+
+Reads `12_datasets_info_parquet.csv`. Writes `13_datasets_info_parquet_vars.csv`.
+"""
 from pathlib import Path
 
 import pandas as pd

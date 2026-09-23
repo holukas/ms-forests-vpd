@@ -1,39 +1,20 @@
 """
-Two supplementary tables about the stress stages.
+Supplementary Tables 4 and 5: driver distributions per stage and the Stage 8 record minimum.
 
-Table A shows what the drivers look like inside each stage, for all forests together and
-for each forest type, with the number of sites and records. Shortwave radiation is the
-one driver the stage definitions never constrain, so its distribution says whether the
-stages also differ in light and not only in heat and dryness. Both the standardized
-values the stages are defined on and the measured values are given, since a fixed sigma
-cut-off lands at a different absolute value in every site. The numbers are read from the
-three CSVs written by `scripts/40_aggregation/45_stage_distributions.py`; nothing is
-recomputed here.
+Supplementary Table 4 gives, per stage, for all forests and each forest type, the sites,
+records and TA, VPD, SM and SW distributions, standardized and in measured units, as
+written by script 45.
 
-Table B asks whether the Stage 8 result depends on sites that contribute only a handful
-of compound-extreme records. No minimum was imposed. The table raises a minimum from 1 to
-100 records per site and reports, at each step, how many sites and how many Stage 8
-records survive, how many of the surviving sites still show a negative VPD effect, the
-three effects Figure 3 reports, and the ratio of the VPD effect to the soil water effect
-with a bootstrap interval over sites. This part reads the per-site SHAP files, because the
-count of Stage 8 records per site is not in any aggregated file.
+Supplementary Table 5, block a, raises a minimum number of Stage 8 records per site
+(MIN_RECORDS_STEPS; the main analysis has none) and reports the sites, records and effects
+that remain, with a bootstrap interval over sites for the VPD to SM ratio (fixed SEED). It
+reads the per-site SHAP files, since no aggregated file counts Stage 8 records per site.
+Block b compares Stage 7 and Stage 8 on matched records; run script 89 first.
 
-The bootstrap uses a fixed seed, so the interval is reproducible.
-
-Table B carries a second block: Stage 7 against Stage 8 on matched records, from the
-summary that `scripts/80_info/89_stage_matching.py` writes. Run 89 first.
-
-Reads:
-    40_aggregation/<FLUX>/conditional/45_StageDistributions_overall.csv
-    40_aggregation/<FLUX>/conditional/45_StageDistributions_byIGBP.csv
-    30_shap/<FLUX>/conditional/{site}_shap-conditional_<FLUX>.parquet
-    80_info/<FLUX>/conditional/89_INFO_StageMatching_<FLUX>_SUMMARY.csv
-
-Writes, into the plot folder next to the other supplementary tables:
-    59_SUPPTABLE-4_StageDistributions_<FLUX>.csv | .xlsx
-    59_SUPPTABLE-5_Stage8MinRecords_<FLUX>.csv | .xlsx   block one, one column per minimum;
-                                                          block two, the matched comparison
-    59_SUPPTABLE-5_Stage8MinRecords_<FLUX>_DATA.csv      block one, one row per minimum, unrounded
+Writes to the plot folder:
+- 59_SUPPTABLE-4_StageDistributions_<FLUX>.csv and .xlsx
+- 59_SUPPTABLE-5_Stage8MinRecords_<FLUX>.csv and .xlsx, both blocks
+- 59_SUPPTABLE-5_Stage8MinRecords_<FLUX>_DATA.csv, block a unrounded
 """
 import glob
 from pathlib import Path

@@ -1,44 +1,18 @@
 """
-Parallel ERA5 batch manager for distributed climate data downloads.
+Run script 16d in parallel batches to download ERA5-Land data from Copernicus CDS.
 
-This script orchestrates multiple parallel downloads of ERA5 climate data
-for FLUXNET sites by dividing the full site list into batches and spawning
-separate processes (via 16d_download_era5_mat_map.py) for each batch.
+Splits the site list into NUM_BATCHES equal batches, starts one 16d process
+per batch, waits for all of them and reports which batches failed.
 
-Purpose:
-    - Parallelize ERA5 downloads across multiple CPU cores
-    - Enable resumable downloads (each batch tracks its own progress)
-    - Provide progress monitoring and batch-level error reporting
+Settings:
+- NUM_BATCHES = 3
 
-Features:
-    - Configurable number of parallel batches (default: 6)
-    - Automatic batch sizing based on total sites
-    - Per-batch log files for troubleshooting
-    - Progress tracking with success/failure reporting
-    - Graceful handling of partial failures
+Run it from scripts/10_datasets, because 16d is called by its file name.
 
-Usage:
-    Simply run this file in PyCharm. The script will:
-    1. Calculate batch size based on NUM_BATCHES
-    2. Spawn N parallel download processes
-    3. Monitor each batch for completion
-    4. Report success/failure status
-    5. Display batch-specific log file locations
-
-Configuration:
-    - NUM_BATCHES: Change this value to adjust parallelism
-      - 4 batches: ~52 sites each (lighter CPU/network load)
-      - 6 batches: ~35 sites each (balanced, default)
-      - 8 batches: ~26 sites each (aggressive parallelism)
-
-Output:
-    - Log files: 16_download_era5_log_batch_X-Y_*.txt
-    - Data: data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus/{SITE}/
-
-Dependencies:
-    - 16d_download_era5_mat_map.py (spawned for each batch)
-    - cdsapi (Copernicus CDS API client)
-    - pandas
+Reads: data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv
+Writes (through 16d), in data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus/:
+per-site folders, per-batch logs (16_download_era5_log_batch_*.txt) and the
+shared ERRORS, WARNINGS and NO_DATA_SITES logs.
 """
 
 import subprocess

@@ -1,17 +1,14 @@
 """
-Supplementary Data 1: the record losses per site, from delivered half-hours to the
-modelled records.
+Supplementary Data 1: the record losses per site, from delivered half-hours to the modeled
+records.
 
-Lays out `22_data_flow.csv` from stage 20 as the table that goes to the journal as a
-Supplementary Data file (it has one row per site and exceeds an A4 page, so it cannot be a
-Supplementary Table). One row per site, the six steps of Supplementary Fig. 10 as columns
-in reading order, the soil water layer the site used, and a last row with the totals.
-Nothing is recomputed here.
+One row per site, the six steps of Supplementary Fig. 10 as columns in order, the soil water
+layer the site used, and a last row with the totals.
 
 Reads:
     20_subsets/<VARIANT>/22_data_flow.csv
 
-Writes, into the plot folder next to the other supplementary items:
+Writes, into the plot folder:
     67_SUPPDATA-1_DataFlowPerSite.xlsx | .csv
 """
 from pathlib import Path

@@ -1,15 +1,17 @@
 """
-Do the headline numbers survive dropping a continent?
+Test whether the Stage 8 attribution and the VPD threshold hold when Europe, North America or both are left out.
 
-Reviewer 2 asked for leave-Europe-out and leave-North-America-out re-aggregation.
-Between them the two regions hold about three quarters of the sites, so a result
-that depends on them is a result about them rather than about forests in general.
+For each site set, reports the ratio of the mean VPD to the mean soil water SHAP
+contribution at Stage 8, and the median per-site threshold in sigma and kPa. This
+threshold is the median of the per-site thresholds of script 49, not the crossing of the
+aggregated curve that Table 1 reports. Nothing is refitted.
 
-Recomputes two things per region set: the stage 8 attribution of VPD against soil
-water, and the median per-site VPD threshold. Both read files that already exist, so
-nothing is refitted.
+Region comes from the country prefix of the site code. An unmapped prefix stops the
+script; add it to REGIONS.
 
-Region comes from the country prefix of the FLUXNET site code.
+Reads: 21_SUBSETS_parquet_vars_stats_subsets.csv,
+44_SHAPVALUES-conditional_AggregatedAcrossScenarios_NEP_ZSCORE.parquet, 49_SiteThresholds.csv.
+Writes: 83_INFO_LeaveRegionOut.csv.
 """
 from pathlib import Path
 

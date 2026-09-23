@@ -1,81 +1,25 @@
 """
-Add ERA5 Climate Data to FLUXNET Site Information
+Add 1991-2020 ERA5 mean annual temperature (MAT) and precipitation (MAP) to the site table.
 
-This script aggregates 30-year average (1991-2020) Mean Annual Temperature (MAT)
-and Mean Annual Precipitation (MAP) from ERA5 reanalysis data for each FLUXNET site.
+Each site gets 30-year means from three ERA5 sources: the GEE and Copernicus
+yearly files from scripts 16a-16d (required for every site), and the ERA5
+file shipped with the flux data for SHUTTLE-CLI and AMERIFLUX sites
+(TA_ERA, P_ERA). Each source must cover all 30 years.
 
-UNIFIED SOURCE SELECTION LOGIC:
-    Both temperature and precipitation use the SAME data source per site.
-    The source is determined by analyzing PRECIPITATION with multi-tiered validation:
+One source is chosen per site from precipitation and then used for both MAT
+and MAP:
+- FLUXNET data available, MAP <= 2000 mm/year: FLUXNET.
+- FLUXNET MAP > 2000 mm/year: FLUXNET if Copernicus is within 300 mm or
+  higher; otherwise Copernicus; if Copernicus is zero, the lower of GEE and
+  FLUXNET.
+- No FLUXNET data: Copernicus if nonzero, else GEE.
 
-    1. PRECIPITATION SOURCE SELECTION (primary driver):
-       - Default: Use FLUXNET if available
-       - High-precip (>2000 mm/year): Validate FLUXNET against Copernicus/CDS and GEE
-         * Similar sources (±300mm): Use FLUXNET
-         * Copernicus higher than FLUXNET: Use FLUXNET (prefer lower)
-         * Copernicus lower & dissimilar: Use Copernicus
-         * Copernicus zero (invalid): Compare GEE vs FLUXNET, use lower value
-       - No FLUXNET available: Fallback to Copernicus (if non-zero), then GEE
-
-    2. TEMPERATURE SOURCE SELECTION:
-       - Use the SAME source determined for precipitation
-       - Extract temperature from the selected source
-       - Ensures consistency between variables
-
-Data Source Strategy:
-    - Primary: Google Earth Engine (GEE) ERA5 (available for all sites)
-    - Override: FLUXNET embedded ERA5 (when available for SHUTTLE-CLI & AMERIFLUX)
-    - Fallback: Copernicus/CDS API (when FLUXNET unavailable or fails validation)
-    - Source choice: Unified based on precipitation validation
-
-Input:
-    - 15_datasets_info_parquet_vars_stats_usedsites.csv
-      Contains site metadata including SITE, DOWNLOADED_VIA, and _DIRPATH
-
-Output:
-    - 17_datasets_info_parquet_vars_stats_usedsites_era5.csv
-      Original site info plus:
-      * ERA5_MAT_1991_2020: Mean Annual Temperature (°C)
-      * ERA5_MAP_1991_2020: Mean Annual Precipitation (mm/year)
-      * ERA5_MAT_SOURCE: Data source for temperature ('GEE' or 'FLUXNET')
-      * ERA5_MAP_SOURCE: Data source for precipitation ('GEE' or 'FLUXNET')
-    - 17_add_era5_info_YYYYMMDD_HHMMSS.log
-      Complete execution log with all processing details
-
-ERA5 Data Sources:
-    1. Google Earth Engine (GEE) - AVAILABLE FOR ALL SITES:
-       - Path: data/outputs/10_datasets/16_ERA5_climate_1991-2020/{SITE}/
-       - File: {SITE}_era5_1991-2020_yearly.csv
-       - Columns: MAT_degC (temperature), PRECIP_TOT_mm (precipitation)
-       - Data range: 1991-2020 (pre-filtered)
-
-    2. FLUXNET Files (SHUTTLE-CLI & AMERIFLUX) - OPTIONAL OVERRIDE:
-       - ERA5 data embedded in downloaded FLUXNET files
-       - Pattern: *_{SITE}_FLUXNET_ERA5_YY_*.csv
-       - Columns: TA_ERA (temperature), P_ERA (precipitation)
-       - Data range: 1981-2024, filtered to 1991-2020
-       - Used only if available AND preferred for that variable
-
-Configuration:
-    - PREF_SOURCE_MAT: Set to 'FLUXNET' to prefer FLUXNET temp data, 'GEE' to always use GEE
-    - PREF_SOURCE_MAP: Set to 'FLUXNET' to prefer FLUXNET precip data, 'GEE' to always use GEE
-    - Default: Both set to 'FLUXNET' (prefer FLUXNET when available)
-
-Precipitation Source Selection Logic:
-    - Default (precip ≤ 2000 mm/year): Use FLUXNET if available
-    - High precipitation (> 2000 mm/year): Validate FLUXNET against Copernicus
-      * Use FLUXNET if Copernicus is within ±300mm of FLUXNET (similar)
-      * Use FLUXNET if Copernicus is HIGHER than FLUXNET (prefer lower value)
-      * Use Copernicus if it's lower AND differs by >300mm (fallback, but reject if zero)
-      * Use GEE if Copernicus is zero (unrealistic) or unavailable
-    - No FLUXNET available: Fallback to Copernicus (if non-zero), then GEE
-
-Validation:
-    - Each source must have exactly 30 years of data (1991-2020)
-    - All sites must have ERA5 data (from either GEE or FLUXNET)
-    - Source selection follows preferences (or falls back to GEE if not available)
-    - Detailed error messages if data is missing or incomplete
-    - All output logged to file for audit trail
+Reads: data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv
+Writes, in data/outputs/10_datasets/:
+- 17_datasets_info_parquet_vars_stats_usedsites_era5.csv, with the added
+  columns ERA5_MAT_1991_2020, ERA5_MAP_1991_2020, ERA5_MAT_SOURCE and
+  ERA5_MAP_SOURCE
+- a time-stamped log 17_add_era5_info_*.log with source comparison tables
 """
 
 import sys

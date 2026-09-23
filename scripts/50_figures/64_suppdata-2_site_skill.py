@@ -1,18 +1,14 @@
 """
 Supplementary Data 2: the skill of every site model under both cross-validation splits.
 
-Lays out what `scripts/80_info/86_site_skill.py` writes as the file that goes to the
-journal as a Supplementary Data file (two rows per site, so it exceeds an A4 page and
-cannot be a Supplementary Table). One row per site and split, the forest type, and for
-all records, the compound-extreme stage (Stage 8) and the high-VPD tail the number of
-records, R2, RMSE, MAE and bias of the out-of-sample prediction. Nothing is recomputed
-here.
+One row per site and split, with the forest type and, for all records, Stage 8 and the
+high-VPD tail: number of records, R2, RMSE, MAE and bias of the out-of-sample prediction.
 
 Reads:
-    80_info/<FLUX>/86_INFO_SiteSkill_<FLUX>.csv
+    80_info/<FLUX>/86_INFO_SiteSkill_<FLUX>.csv                        from script 86 of 80_info
     20_subsets/<VARIANT>/21_SUBSETS_parquet_vars_stats_subsets.csv   for the forest type
 
-Writes, into the plot folder next to the other supplementary items:
+Writes, into the plot folder:
     64_SUPPDATA-2_SiteSkill_<FLUX>.xlsx | .csv
 """
 from pathlib import Path

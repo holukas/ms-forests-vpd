@@ -1,10 +1,13 @@
 """
-Find overlapping folder names between AmeriFlux and FLUXNET-Shuttle data sources.
+Find dataset folders present in both the AmeriFlux and FLUXNET-Shuttle raw data.
 
-This script identifies datasets that exist in both the AmeriFlux and FLUXNET-Shuttle
-directories, which could indicate duplicate or redundant data sources.
+WARNING: with DELETE_OVERLAPPING_FOLDERS = True (the default), the script
+deletes every overlapping folder from the AmeriFlux directory after you type
+'DELETE' at the prompt. FLUXNET-Shuttle is kept as the primary source.
 
-Optional: Delete overlapping folders from AmeriFlux directory (keeping FLUXNET-Shuttle as primary).
+Writes to data/outputs/10_datasets: 00_overlap_summary.csv,
+00_overlapping_datasets.csv, 00_only_in_ameriflux.csv, 00_only_in_shuttle.csv
+and, after a deletion, a time-stamped 00_deletion_log_*.csv.
 """
 
 from pathlib import Path

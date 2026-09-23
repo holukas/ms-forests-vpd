@@ -1,52 +1,22 @@
 """
-Threshold robustness: main-text Table 1 and the matching supplementary figure.
+Table 1 and Supplementary Fig. 4: robustness of the VPD threshold.
 
-One script, because both display items show the same eighteen tests. Rendering them from two
-scripts is how a table and a figure drift apart.
+Both display items show the same robustness tests, so one script draws both from the
+same rows. It computes nothing: 40_aggregation/47_threshold_robustness.py builds the
+rows, and this script reads and draws them.
 
-**It computes nothing.** `40_aggregation/47_threshold_robustness.py` builds the rows and
-writes them to file, which is where the two-minute bootstrap belongs. This script reads that
-file and draws. It runs in about a second, which is what every script under `50_figures`
-should do, because they become notebooks under S10.
+The interval is the 95% prediction band of the fitted curve, as in Figure 4. Rows
+flagged in the `note` column carry a different interval (a spread across settings or
+removals, or for ALE a confidence interval) and get an asterisk and whiskers. The figure
+shows all tests, Table 1 only those in MAIN_ROWS. The split by site VPD quartile is not a
+robustness test; see 80_info/82_threshold_vs_site_vpd_range.py.
 
-**The table is the main-text item, the figure is supplementary.** Decided 31 August 2026.
-The differences between tests are at most 0.08 kPa on a threshold of 1.26, so a figure
-either magnifies them by zooming the axis or hides them by not zooming. The table states
-the numbers exactly. The figure keeps the shape of the result for readers who want it.
+Reads:
+- 47_THRESHOLD_Robustness_<FLUX>.csv from the aggregation folder
 
-**The interval is the prediction band of the fitted curve**, the same one Figure 4 and the
-coefficient table show, so the reference row reads 1.26 [1.16, 1.36] in both places. Script
-47 also writes a bootstrap over sites, about five times narrower, which answers how much the
-threshold depends on which sites are in the network. That one is not shown here, because two
-different intervals on the same number would confuse a reader. Use it in the response letter.
-
-**Three rows carry something other than a prediction band**, and both display items say so
-with an asterisk and whiskers instead of a bar. The estimator row shows the spread across its
-23 settings, the leave-one-site-out row the spread across its 208 removals, which are not
-independent of each other, and the ALE row the 95 % confidence interval of the mean of the
-per-site crossings, the interval the Results quote for ALE, since no curve is fitted for that
-row here. Script 47 flags all three in the `note` column.
-
-**No shift column in the table.** Rounded to two decimals several of the shifts read as +0.00
-or -0.00, and three decimals would imply a precision the bootstrap interval, about plus or
-minus 0.02, does not support. The threshold column read against the reference row says the
-same thing. The figure plots the shift, because there an axis centred on the published value
-is what makes agreement visible.
-
-**Why the VPD quartile split is not here.** It used to be the last row. It does not belong:
-the other rows ask whether the number survives a different analytical choice, while that one
-asks whether the threshold varies with site climate, and the answer is yes. Its range, 1.00
-to 1.41 kPa, was the widest bar in the figure, so a reader scanning for robustness saw the
-largest apparent instability where there was actually signal. Most of that signal is also
-mechanical: the threshold is estimated in sigma and converted per site, and drier sites have
-a larger mean and spread, so a constant sigma threshold already yields a higher kPa value in
-the drier quartiles. It belongs in its own supplementary analysis with that caveat stated,
-`80_info/82_threshold_vs_site_vpd_range.py`.
-
-Writes:
-  png    the supplementary figure
-  xlsx   Table 1, for pasting into Word, which keeps the table structure
-  csv    Table 1 for the repository and the data deposit
+Writes to the plot folder:
+- 55_SUPPFIG-4_ThresholdRobustness_<FLUX>.png
+- 55_TABLE-1_ThresholdRobustness_<FLUX>.xlsx (with the footnote) and .csv
 """
 import sys
 from pathlib import Path
@@ -105,13 +75,11 @@ outfile = folder / f'55_SUPPFIG-4_ThresholdRobustness_{FLUX}.png'
 # ---------------------------------------------------------------------------
 # Layout
 # ---------------------------------------------------------------------------
-# A table on the left and the bars on the right, sharing one row grid. The earlier version
-# plotted the shift from the published value on a centred axis, which made agreement easy to
-# see but hid the numbers the reader wants. Here the axis carries absolute kPa, the value and
-# its interval are printed, and the table half mirrors main-text Table 1 so the two read as
-# one argument.
+# A table on the left and the bars on the right, sharing one row grid. The axis carries
+# absolute kPa, the value and its interval are printed, and the table half mirrors
+# main-text Table 1 so the two read as one argument.
 #
-# One blue throughout. Colouring the movers red made the eye go to two rows out of eighteen
+# One blue throughout. Coloring the movers red made the eye go to two rows out of eighteen
 # and read them as failures, which is the opposite of what the figure says.
 
 SHORT = {
@@ -159,9 +127,7 @@ COL_LABEL, COL_N, COL_SIGMA, COL_VALUE = 0.00, 0.545, 0.655, 0.70
 
 
 def value_text(mid, lo, hi, note):
-    """What the value column prints. It has to say which kind of interval each row carries,
-    so the word travels with the number rather than sitting in a column of its own where the
-    neighbouring axes would cover it."""
+    """Return the value column text, which names the kind of interval each row carries."""
     if hi <= lo:
         return f'{mid:.2f}   (no band)'
     if note and 'confidence' in note:
@@ -226,10 +192,9 @@ ax.text(published, 1.01, f'  main analysis {published:.2f} kPa',
         transform=ax.get_xaxis_transform(), ha='left', va='bottom', color=COLOR_REF,
         fontweight='bold', fontsize=AX_LABELS_FONTSIZE * 0.85, clip_on=False)
 
-# No caption text inside the image. The journal wants the legend as text beside the
-# display item, not baked into the png, so both the summary line and the explanation
-# live in the caption drafted in the revision notes. The numbers behind the summary
-# line are printed below instead, so a rerun still reports them.
+# No caption text inside the image. The legend goes in the caption beside the display
+# item, not into the png. The numbers behind the summary line are printed below instead,
+# so a rerun still reports them.
 _points = [r[2] for r in rows if r[1] != 'Main analysis']
 _inside = sum(pub_lo <= v <= pub_hi for v in _points)
 print(f'{_inside} of {len(_points)} tests fall inside the band of the main '
@@ -257,7 +222,7 @@ tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 # layer each site has, which is the test the text names first; it mixes the 80 sites that
 # never moved with 128 that did, most of them by one layer, so its shift is small. The
 # five-or-more-depths pair holds 59 sites fixed and swaps their shallowest depth for their
-# deepest, which is the largest departure from the shallow selection the published number
+# deepest, which is the largest departure from the shallow selection the main analysis
 # rests on. The pair answers whether depth moves the threshold, the all-sites row whether
 # the main analysis survives the deepest layer the network offers.
 MAIN_ROWS = [
@@ -315,12 +280,10 @@ WHAT_IT_VARIES = {
 
 
 def cell(value, lo, hi, note):
-    """A value with its interval in brackets, in one unit.
+    """Format a value with its interval in brackets.
 
-    Script 47 writes equal bounds for a row with no fitted curve, which is the case for ALE.
-    Printing "1.25 [1.25, 1.25]" would read as a precision claim, so the cell carries the
-    value and the asterisk alone, and the footnote says why. Rows whose bracket is a spread
-    rather than a band keep the bracket and take the asterisk.
+    A row with equal bounds (ALE, which has no fitted curve) prints the value and an
+    asterisk only. A row with a note keeps the bracket and takes an asterisk.
     """
     # Rounding first and adding zero keeps a bound like -0.004 from printing as -0.00.
     value, lo, hi = (round(v, 2) + 0.0 for v in (value, lo, hi))

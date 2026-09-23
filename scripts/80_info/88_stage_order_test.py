@@ -1,35 +1,24 @@
 """
-Does the stage order manufacture the result?
+Test whether the stage order drives the Stage 8 result by swapping the roles of VPD and soil water.
 
-Reviewer objection: the published stage sequence is not a balanced design. It lets
-temperature rise and soil water fall step by step while holding VPD below its extreme
-cut-off, and only adds extreme VPD at the last stage. Any driver held back to the finale
-will look dramatic when it finally arrives, so the sequence may favour VPD.
+The main stage order adds extreme VPD only at Stage 8; the mirrored order in
+`src/stages.py` escalates VPD and adds extreme soil dryness last. Cutoffs, the temperature
+ladder and the final stage are the same. Compares:
 
-The mirrored sequence in `src/stages.py` swaps the two roles: VPD escalates through the
-stages and extreme soil dryness is added last. Cut-offs and the temperature ladder are
-unchanged, so the two sequences differ only in which driver comes last, and they end at
-the identical final stage.
+1. the final step, the change in net effect from Stage 7 to Stage 8, in each order
+2. the two Stage 7 conditions: extreme VPD without extreme soil dryness (mirrored) against
+   extreme soil dryness without extreme VPD (main)
 
-This script reads the two stage 44 outputs and compares them. Two numbers answer the
-objection:
-
-  1. what the final step contributes in each sequence, that is the drop from the second
-     to last stage to the last one
-  2. the second to last stages themselves, which isolate one extreme driver each: extreme
-     VPD without extreme soil dryness against extreme soil dryness without extreme VPD
-
-Run `44_agg_per_scenario.py` twice first, once with STAGE_SEQUENCE = "published" and once
-with "mirrored". Nothing is recomputed here. The mirrored sequence is drawn as
-Supplementary Fig. 3 by script 53 with VARIANT = "mirrored-stages".
+Prerequisite: run `44_agg_per_scenario.py` with STAGE_SEQUENCE = `"published"` and again
+with `"mirrored"`. Script 53 with VARIANT = "mirrored-stages" draws the mirrored order.
 
 Reads:
-    40_aggregation/<FLUX>/conditional/44_SHAPVALUES-conditional_AggregatedAcrossScenarios_<FLUX>.parquet
-    40_aggregation/<FLUX>/conditional/mirrored-stages/44_SHAPVALUES-conditional_AggregatedAcrossScenarios_<FLUX>.parquet
+- 40_aggregation/<FLUX>/conditional/44_SHAPVALUES-conditional_AggregatedAcrossScenarios_<FLUX>.parquet
+- the same file under conditional/mirrored-stages/
 
 Writes:
-    80_info/<FLUX>/conditional/88_INFO_StageOrderTest_<FLUX>.csv          per stage and sequence
-    80_info/<FLUX>/conditional/88_INFO_StageOrderTest_<FLUX>_VERDICT.csv  the two comparisons
+- 80_info/<FLUX>/conditional/88_INFO_StageOrderTest_<FLUX>.csv: per stage and order
+- 80_info/<FLUX>/conditional/88_INFO_StageOrderTest_<FLUX>_VERDICT.csv: the two comparisons
 """
 from pathlib import Path
 

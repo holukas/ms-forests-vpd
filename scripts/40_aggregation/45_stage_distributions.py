@@ -1,17 +1,16 @@
 """
 Driver distributions within each stress stage.
 
-Reviewer 2 asked what the drivers actually look like inside each stage, globally and
-by forest type, with medians, quartiles and sample sizes. Shortwave radiation
-matters here because it is the one driver the stage definitions never constrain,
-and it contributes positively, so its distribution says whether the stages differ
-in light as well as in heat and dryness.
+Takes the median of TA, VPD, SWC and SWIN per site and stage, then summarizes these
+site medians (median, quartiles, site and record counts) globally and per forest type.
+SWIN is the one driver no stage definition constrains, so its distribution shows
+whether the stages also differ in light. Values are reported standardized, as the
+stages are defined, and in measured units, since a fixed sigma cut-off falls at a
+different absolute value at every site.
 
-Reports both the standardized values, which the stages are defined on, and the
-measured values in their own units, since a fixed sigma cut-off lands at a
-different absolute value in every site.
-
-Reads the per-site SHAP files, which carry the drivers alongside the attributions.
+Reads the per-site SHAP files, which carry the drivers next to the attributions.
+Writes 45_StageDistributions_perSite.csv, 45_StageDistributions_overall.csv and
+45_StageDistributions_byIGBP.csv.
 """
 from pathlib import Path
 

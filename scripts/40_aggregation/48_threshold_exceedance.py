@@ -1,59 +1,19 @@
 """
-How often forests sit past the threshold.
+How often peak-season daytime VPD exceeds the threshold, per site and per forest type.
 
-The paper reports a VPD threshold of 1.26 kPa and says it limits the carbon sink, but it
-never says how often the air is drier than that. Without a frequency the threshold has no
-size. A limit crossed in one half-hour out of a hundred means something different from one
-crossed in one out of three, and a reader cannot tell which from anything in the manuscript.
+Counts stage 21 subset half-hours; no model or SHAP value is involved. Runs after
+scripts 47 and 49. Four measures, each the share of half-hours with VPD above:
+- the script 47 reference threshold in kPa
+- the same threshold in sigma, the units the models saw
+- the site's own crossing from script 49, in the site's sigma
+- the median crossing of the site's forest type from script 49, in the site's sigma
 
-Counts the peak-season daytime half-hours above the threshold, per site and per forest type.
-Reads the stage 21 subsets, the records every later stage was built on, so the counts add up
-to the record total the manuscript reports. No model is refitted and no SHAP value is read.
+The forest type table gives the record-weighted share and the site median. They differ,
+so the text has to say which one it quotes. CD-Ygb VPD is in Pa and is divided by 100.
 
-**Why this sits in stage 40 and not in `80_info`.** It reads 208 parquet files and
-`50_figures/60_suppfig-8_threshold_exceedance.py` draws what it writes. Scripts under
-`50_figures` display, they do not compute, and `80_info` is for numbers that back a sentence
-and are read by no figure. Script 49 moved here for the same reason on 31 August 2026.
-
-Four exceedance measures, because they answer different questions:
-
-    published, kPa      VPD above 1.26 kPa. This is exposure: how much of the peak-season
-                        daylight a site spends in air drier than the crossing. It is the
-                        number a reader wants, and it varies several fold between sites
-                        because site climates do.
-    published, sigma    VPD above 0.20 standard deviations of the site's own distribution,
-                        the same threshold in the units the models saw. Almost the same
-                        fraction at every site by construction, which is the point: it shows
-                        that the spread in the first measure comes from the site climates and
-                        not from the threshold.
-    site's own          VPD above that site's own zero crossing from script 49, in that
-                        site's sigma. Asks how often a site is past its own limit rather
-                        than the global one.
-    forest type's own   VPD above the median crossing of the site's forest type from script
-                        49, in the site's sigma. Sits between the two above: one threshold
-                        per type, not one for the network and not one per site. The four
-                        types differ, 0.14 to 0.33 sigma, so the same site gets a different
-                        fraction depending on which type it belongs to.
-
-Two ways to average, both reported, because they disagree. The record-weighted fraction pools
-every half-hour and answers "what share of the observations", so a long record counts more
-than a short one. The site median gives every site one vote and answers "what does a typical
-forest see". The text has to say which one it quotes.
-
-CD-Ygb records VPD in Pa where every other site uses hPa, so its records are divided by 100,
-the same conversion as in stages 47 and 55. It matters more here than anywhere else, because
-this is the one analysis that compares raw VPD against an absolute value.
-
-Reads:
-    20_subsets/21_subsets_parquet/{SITE}_subset_GPPhighest4_qc0_daytime.parquet
-    20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv        the site list and IGBP class
-    40_aggregation/47_THRESHOLD_Robustness_{FLUX}.csv           the published threshold
-    40_aggregation/49_SiteThresholds.csv                        the per-site crossings
-    40_aggregation/49_BiomeThresholds_Summary.csv               the per-forest-type crossings
-
-Writes, into the aggregation folder:
-    48_EXCEEDANCE_PerSite_{FLUX}.csv     one row per site
-    48_EXCEEDANCE_PerBiome_{FLUX}.csv    one row per forest type, plus an all-sites row
+Reads the stage 21 subsets, 47_THRESHOLD_Robustness_{FLUX}.csv, 49_SiteThresholds.csv
+and 49_BiomeThresholds_Summary.csv. Writes 48_EXCEEDANCE_PerSite_{FLUX}.csv and
+48_EXCEEDANCE_PerBiome_{FLUX}.csv.
 """
 from pathlib import Path
 
@@ -125,7 +85,7 @@ def main():
     biome_thresholds = pd.read_csv(agg / "49_BiomeThresholds_Summary.csv") \
         .set_index('IGBP')['median']
 
-    print(f"published threshold: {threshold_kpa:.3f} kPa, {threshold_z:.3f} sigma, "
+    print(f"threshold of the main analysis: {threshold_kpa:.3f} kPa, {threshold_z:.3f} sigma, "
           f"{int(ref['n_sites'])} sites")
     print(f"per-site crossings available for {len(own)} sites\n")
 

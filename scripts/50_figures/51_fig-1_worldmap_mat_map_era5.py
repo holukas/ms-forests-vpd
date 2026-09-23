@@ -1,3 +1,10 @@
+"""
+Figure 1: site map and the climate space of the sites.
+
+Reads `17_datasets_info_parquet_vars_stats_usedsites_era5.csv` for the ERA5 mean annual
+temperature and precipitation and the stage 21 subsets table for the site counts.
+Writes `51_FIG-1_WorldMap_MAT_MAP_ERA5.png`.
+"""
 from pathlib import Path
 
 import geopandas as gpd
@@ -58,7 +65,7 @@ gdf = gpd.GeoDataFrame(
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = ['Arial', 'Helvetica', 'DejaVu Sans']
 
-# Map background colours
+# Map background colors
 OCEAN_COL = '#d4e8f5'
 LAND_COL = '#f0ede8'
 BORDER_COL = '#b8b4ad'

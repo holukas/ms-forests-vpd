@@ -1,26 +1,17 @@
 """
-Does the threshold survive at low-VPD sites, and does it scale with the site's climate?
+Test whether the per-site VPD threshold is an artifact of standardization by relating it to each site's maximum VPD.
 
-Reviewer 3 pointed out that a site with a narrow absolute VPD range reaches +3 sigma
-at a modest absolute VPD, so part of the nonlinearity might come from the
-standardization rather than from a physiological limit. The suggested test was to
-stratify sites at an absolute maximum VPD of 1.25 kPa and look for the same
-response in the low-VPD group.
+A site with a narrow VPD range reaches +3 sigma at a modest absolute VPD, so part of the
+nonlinearity could come from the standardization. The script prints how many sites never
+exceed 1.25 kPa, then groups sites into quartiles of their maximum VPD and reports per
+quartile the median threshold in sigma and kPa and the number of sites with a zero
+crossing, plus Spearman correlations of the threshold with the site maximum VPD. A
+threshold produced by the standardization would grow in kPa in proportion to the site's
+range; a fixed physical limit would not move.
 
-That split cannot be made here. No site in the analysis stays below 1.25 kPa, the
-lowest site maximum being 1.69 kPa, so the low-VPD group is empty. This script
-answers the underlying question instead, by splitting sites into quartiles of their
-own maximum VPD and asking two things:
-
-  does a zero crossing still appear in the narrowest-VPD sites
-  does the absolute threshold track the site's VPD range
-
-If the standardization manufactured the threshold, the value in kPa would rise in
-proportion to the site's range. If the threshold were purely physical, it would not
-move at all.
-
-Uses the per-site thresholds from script 49 and the per-site VPD statistics from
-stage 21.
+Reads: 49_SiteThresholds.csv (script 49), 21_SUBSETS_parquet_vars_stats_subsets.csv.
+Writes: 82_INFO_ThresholdVsSiteVPDRange.csv (per quartile) and
+82_INFO_ThresholdVsSiteVPDRange_perSite.csv.
 """
 from pathlib import Path
 
@@ -32,7 +23,7 @@ from src.paths import load_settings
 VARIANT = ""
 SITE_SUBSET = ""
 FLUX = 'NEP_ZSCORE'
-REVIEWER_CUTOFF_KPA = 1.25
+CUTOFF_KPA = 1.25
 
 # CD-Ygb records VPD in Pa where every other site uses hPa. Other scripts drop it for that
 # reason. It is converted here instead, which keeps all 208 sites: dividing by 100 gives a
@@ -59,11 +50,11 @@ def main():
     d['vpd_max_kpa'] = d['VPD_MAX'] / 10
     d['threshold_kpa'] = (d['VPD_Z0'] + d['threshold_z'] * d['VPD_SD']) / 10
 
-    below = int((d['vpd_max_kpa'] <= REVIEWER_CUTOFF_KPA).sum())
-    print(f"Sites never exceeding {REVIEWER_CUTOFF_KPA} kPa: {below} of {len(d)}")
+    below = int((d['vpd_max_kpa'] <= CUTOFF_KPA).sum())
+    print(f"Sites never exceeding {CUTOFF_KPA} kPa: {below} of {len(d)}")
     print(f"Lowest site maximum: {d['vpd_max_kpa'].min():.2f} kPa, median {d['vpd_max_kpa'].median():.2f} kPa")
     if below == 0:
-        print("The split the reviewer suggested leaves an empty group, so quartiles are used instead.\n")
+        print("A split at the cutoff leaves an empty group, so quartiles are used instead.\n")
 
     d['stratum'] = pd.qcut(d['vpd_max_kpa'], 4, labels=['Q1 lowest max VPD', 'Q2', 'Q3', 'Q4 highest max VPD'])
     g = d.groupby('stratum', observed=True).agg(

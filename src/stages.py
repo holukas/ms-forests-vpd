@@ -126,8 +126,7 @@ def stage_0(df):
 
 
 def stage_1(df, a: float = 0.31863936):
-    """Normal conditions, 0 = normal conditions, +/-a = middle 25%"""
-    # 50% of data (z-score = +/- 0.6745)
+    """Stage 1, normal conditions: TA, VPD and SWC all within the middle 25% (|z| <= a)."""
     mask_ta = (df['TA_ZSCORE'] >= -a) & (df['TA_ZSCORE'] <= a)
     mask_vpd = (df['VPD_ZSCORE'] >= -a) & (df['VPD_ZSCORE'] <= a)
     mask_swc = (df['SWC_ZSCORE'] >= -a) & (df['SWC_ZSCORE'] <= a)
@@ -140,10 +139,10 @@ def stage_1(df, a: float = 0.31863936):
 def stage_2(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
     # def stage_2(df, a: float = 0.31863936, b: float = 0.93458929, c: float = 1.2815515655446):
     """Warmer conditions, soil moisture normal, NO extreme VPD
+
     z-score +/- 0.31863936 = middle 25%
     z-score +/- 0.714367440280187 = next 13.75% above or below middle 25%
     z-score +/- 1.2815515655446 = upper 10% (90th percentile) or lower 10% (10th percentile)
-
     """
     mask_ta = (df['TA_ZSCORE'] > a) & (df['TA_ZSCORE'] <= b)
     mask_swc = (df['SWC_ZSCORE'] >= -a) & (df['SWC_ZSCORE'] <= a)
@@ -229,10 +228,10 @@ def stage_8(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 
 # ---------------------------------------------------------------------------
 # Mirrored stage sequence
 # ---------------------------------------------------------------------------
-# The published sequence lets temperature rise and soil water fall step by step
+# The main sequence lets temperature rise and soil water fall step by step
 # while holding VPD below the extreme cut-off, and only adds extreme VPD at the
-# last stage. Reviewer 2 objected that any driver held back to the finale will
-# look dramatic when it finally arrives, so the sequence may favour VPD.
+# last stage. Any driver held back to the last stage can look dramatic when it
+# finally arrives, so that sequence may favor VPD.
 #
 # These stages swap the two roles. VPD escalates through the sequence and soil
 # water is kept off its extreme until the last stage, where extreme dryness is
@@ -240,7 +239,7 @@ def stage_8(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 
 # unchanged, so the two sequences differ only in which driver comes last.
 #
 # Read them against the originals: mirror_2 is stage_2 with VPD and SWC swapped,
-# and so on. A comparison of the two final stages answers the objection.
+# and so on. A comparison of the two final stages shows whether the order matters.
 
 
 def mirror_1(df, a: float = 0.31863936):

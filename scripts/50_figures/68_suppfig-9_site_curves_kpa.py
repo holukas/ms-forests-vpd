@@ -1,39 +1,24 @@
 """
 Supplementary Fig. 9: the per-site VPD responses of NEP on one kPa axis.
 
-Figure 4 shows one fitted curve for all sites and four for the forest types, in sigma.
-This figure shows every site: its own fitted VPD response of NEP, mapped from its own sigma
-onto kPa with its own mean and standard deviation, all 208 drawn as thin lines on one kPa
-axis, with the median across sites as the heavy line, the published 1.26 kPa as the
-vertical, and each site's own crossing as a mark on the zero line. The strip above the plot
-shows the crossings by forest type.
+Panel a: each site's fitted response as a thin line, the median and interquartile range
+across sites where at least MIN_SITES_PER_KPA sites have data, PUBLISHED_KPA (the all-sites
+threshold) as the vertical line, and each site's crossing on the zero line. Panel b: the
+crossings by forest type.
 
-**It draws the numbers the paper already has.** The per-site crossings are the stage 49
-thresholds, one fourth-order polynomial per site over its VPD bins, highest zero crossing,
-which is what the biome tests rest on. The per-site lines here are the same fits, redrawn in
-kPa. The kPa mapping is the one script 54 uses for its table, VPD = mean + z * sd per site,
-with CD-Ygb converted from Pa. The published 1.26 kPa is the site-wise mean of the mapped
-all-sites crossing. The per-site crossings average 1.27 kPa with a median of 1.19 and an
-interquartile range of 1.02 to 1.48; those numbers go in the caption, not on the figure.
-
-**Supplementary, decided 5 September 2026.** It began as an extra figure for a poster with
-a title and prose on the panel; the author kept the plot and moved the words to the caption.
-Started as `68_extrafig_site_curves_kpa.py`.
-
-**One version to avoid.** A first pass built the per-site curves by collapsing the TA axis
-with a rolling mean and took the first positive-to-negative crossing. Its median crossing
-came out at 1.12 kPa, which is the shift script 47 warns about when TA is collapsed, so it was
-replaced by the stage 49 fits. Nothing on the figure is a new estimate.
+The lines repeat the stage 49 per-site fit (POLY_DEGREE, at least MIN_BINS VPD bins) on the
+stage 41 cells; the crossings come from stage 49. kPa = site mean + z * sd, as in script 54.
+Do not collapse the TA axis with a rolling mean instead: it shifts the crossing (script 47).
 
 Reads:
     40_aggregation/NEP_ZSCORE/conditional/41_SHAPVALUES-conditional_meanAggregatedPerSite
-        _BIN-TA_ZSCORE+BIN-VPD_ZSCORE+NEP_ZSCORE.parquet     the per-site cells
-    40_aggregation/NEP_ZSCORE/conditional/49_SiteThresholds.csv   the per-site crossings, sigma
-    20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv          the kPa mapping
+        _BIN-TA_ZSCORE+BIN-VPD_ZSCORE+NEP_ZSCORE.parquet
+    40_aggregation/NEP_ZSCORE/conditional/49_SiteThresholds.csv
+    20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv          site mean and sd for kPa
 
-Writes, into the NEP plot folder. X stands in until the figure number is assigned:
+Writes, into the plot folder:
     68_SUPPFIG-9_SiteCurvesKpa_NEP_ZSCORE.png
-    68_SUPPFIG-9_SiteCurvesKpa_Crossings_NEP_ZSCORE.csv   per site: crossing in sigma and kPa, IGBP
+    68_SUPPFIG-9_SiteCurvesKpa_Crossings_NEP_ZSCORE.csv   per site: IGBP, crossing in sigma and kPa
 """
 from pathlib import Path
 
@@ -96,7 +81,7 @@ curves = d.groupby(['SITE', 'BIN_VPD_ZSCORE'])['VPD_ZSCORE_SHAPVALS'].mean()
 
 fig = plt.figure(figsize=(11, 7.6), dpi=150, facecolor='white')
 # The curves sit on top as panel a and the strip of crossings underneath as panel b, because
-# the crossings are read off the curves; the x axis is shared and labelled once, under the strip.
+# the crossings are read off the curves; the x axis is shared and labeled once, under the strip.
 gs = fig.add_gridspec(2, 1, height_ratios=[1.0, 0.16], left=0.09, right=0.98, top=0.97, bottom=0.10, hspace=0.06)
 ax = fig.add_subplot(gs[0, 0])
 ax_strip = fig.add_subplot(gs[1, 0], sharex=ax)

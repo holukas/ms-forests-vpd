@@ -16,12 +16,10 @@ from src.common import findpoi
 
 def heatmap_style(**overrides) -> dv.plotting.FormatStyle:
     """
-    diive's built-in heatmap chrome, with room for per-plot changes.
+    diive's default heatmap style, with optional per-plot overrides.
 
     Passing a `format_style` to a diive heatmap replaces its default style
-    entirely, so the defaults are restated here and `overrides` are merged on
-    top. Without this the flameplots would come back with grid lines and thin
-    grey spines.
+    entirely, so the defaults are restated here and `overrides` are merged on top.
     """
     style = dv.plotting.FormatStyle(
         show_grid=False, show_legend=False, show_zeroline=False,
@@ -37,7 +35,7 @@ def create_colormap(fig, ax, cmap, label, absmax, labelsize):
     # Tick spacing follows the range, so a colorbar for a small effect still carries
     # ticks. A fixed 0.2 left the soil water effect, about 0.1 sigma, with a bare
     # zero. The factor 1.5 is set by the three cases drawn so far: 0.66 keeps the
-    # published 0.2, and 0.31 and 0.10 get a single tick each side, at 0.2 and 0.05.
+    # main-analysis 0.2, and 0.31 and 0.10 get a single tick each side, at 0.2 and 0.05.
     step = next(s for s in (0.5, 0.2, 0.1, 0.05, 0.02, 0.01) if absmax / s >= 1.5)
     cb.ax.yaxis.set_major_locator(ticker.MultipleLocator(step))
     cb.ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: cb_formatter(x, pos, step)))
@@ -46,7 +44,7 @@ def create_colormap(fig, ax, cmap, label, absmax, labelsize):
 
 
 def cb_formatter(x, pos, step: float = 0.2):
-    """Custom format: 0 as '0', others with as many decimals as the tick step needs"""
+    """Tick label: 0 as '0', other values with as many decimals as the tick step needs."""
     if np.isclose(x, 0, atol=1e-5):
         return "0"
     decimals = max(1, -int(np.floor(np.log10(step))))
@@ -118,8 +116,8 @@ def sigmoid(x, x_start, x_end, y_start, y_end):
 
 # What each stage holds, as printed above the bars of the stage figures. One entry per
 # stage sequence of src/stages.py. "non-extreme" marks the driver that is only kept off
-# its extreme cut-off until the last stage: VPD in the published order, soil water in
-# the mirrored one.
+# its extreme cut-off until the last stage: VPD in the main order ('published'), soil
+# water in the mirrored one.
 STAGE_CONDITIONS = {
     'published': {
         'VPD_ZSCORE':
@@ -152,8 +150,10 @@ STAGE_CONDITIONS = {
 
 def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stage_labels,
                stage_ids, shap_suffix_avg, fontsize, is_small=False, stage_conditions=None):
-    """stage_conditions: the labels printed above the bars, one list per driver, see
-    STAGE_CONDITIONS. Defaults to the published sequence."""
+    """Draw one stage bar panel.
+
+    stage_conditions: labels printed above the bars, one list per driver (see
+    STAGE_CONDITIONS). Defaults to STAGE_CONDITIONS['published'], the main sequence."""
     x_centers = [x for x in range(0, len(stage_ids))]
     bar_width = 0.55 if not is_small else 0.4
     x_centers_shifted_left = np.array(x_centers) - bar_width / 3
@@ -256,7 +256,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
             box_height = y_range * 0.035  # Slightly thinner to fit everything
             box_width = bar_width * 0.8
 
-            # 1. Scenario Name (S1, S2...)
+            # 1. Scenario Name (stage_labels, e.g. "Stage 1")
             y_scen_label = fixed_ylim[1] - (y_range * 0.01)
             ax.text(cx, y_scen_label, stage_labels[i],
                     ha='center', va='top', fontsize=fs_tick, fontweight='bold')
@@ -404,10 +404,9 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_
                          label_neg: str = "Suppression"):
     """Draw the zero crossing, the extremes and the two zone labels.
 
-    label_pos and label_neg name the zones above and below zero. The defaults suit a
-    carbon uptake flux, where a positive SHAP value means more uptake. For RECO a
-    positive value means more respiration, and for ET more water loss, so the caller
-    passes neutral wording such as "Increase" and "Decrease" instead.
+    label_pos and label_neg name the zones above and below zero. The defaults fit a
+    carbon uptake flux (positive SHAP means more uptake). For RECO and ET, pass
+    neutral labels such as "Increase" and "Decrease".
     """
     color_limzone = '#d6604d'
     color_facilzone = '#4393c3'
@@ -650,10 +649,7 @@ def add_fit(ax, x_fit, y_fit, pi_lower, pi_upper, poly_func, r_squared,
 
 
 def layout_1row_5panels(figsize, add_colorbar_ax: bool = False):
-    """
-    Creates a figure with 5 panels arranged in a single row.
-    Optionally adds a 6th narrow column for a colorbar.
-    """
+    """Create a figure with 5 panels in one row and, optionally, a narrow colorbar axis."""
     fig = plt.figure(figsize=figsize, dpi=150, facecolor="white")
     ncols = 6
     width_ratios = [1, 1, 1, 1, 1, 0.1]
@@ -687,7 +683,7 @@ def layout_5panels(figsize, add_colorbar_ax: bool = False):
 
 def plot_markers(ax, df, xvals, yvals, zvals, flux_txt, ax_labels_fontsize, area_size, annotate=False,
                  show_only_max_marker: bool = False):
-    """Finds min/max regions, plots markers, and optionally adds arrows."""
+    """Find the max (and min) regions with `findpoi`, mark them, and optionally add arrows."""
     piv = df.pivot(index=xvals, columns=yvals, values=zvals)
 
     _showaggs = ['max', 'min'] if not show_only_max_marker else ['max']

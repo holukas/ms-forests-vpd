@@ -1,26 +1,21 @@
 """
-ALE (Accumulated Local Effects) Validation for SHAP Results
+Compute ALE (accumulated local effects) curves per site as a check on the SHAP results.
 
-## Purpose
-Calculate ALE curves as an independent validation method for SHAP feature importance.
-ALE plots show how features affect model predictions in isolation, accounting for
-feature correlations—complementary to SHAP value interpretations.
+For each site, `train_xgboost_models_and_ale` (src/models.py) fits one XGBoost
+model (85/15 split for early stopping, same hyperparameters as script 31) and
+computes an ALE curve per feature (grid_size=100). Partial correlations, path
+analysis and a combined summary are available in src/models.py and are
+commented out in the main loop.
 
-## Why ALE Validates SHAP?
-- SHAP: Feature importance from model explanations (per-sample contributions)
-- ALE: Isolated feature effects on predictions (across the feature range)
-- Agreement: If SHAP and ALE agree on effect direction/strength → high confidence
-- Disagreement: Suggests complex interactions or data-specific patterns
+Settings at the top of the file: FLUX, FEATURES, VARIANT, SITES, MAX_SITES.
+Script 21 must have run with the same VARIANT, and 31 should have too.
 
-## Output Per Site
-- {SITE}_ale_curves_{TARGET}.csv — ALE curve data (100 grid points per feature)
-- {SITE}_ale_combined_{TARGET}.png — 2x2 subplot with all 4 features
-- {SITE}_ale_{TARGET}.parquet/csv — Full dataset with predictions
-
-## Future Extensions (commented out)
-- Partial Correlations: Statistical feature importance (correlation after removing confounders)
-- Path Analysis: Direct vs indirect causal effects
-These can be enabled by uncommenting imports and function calls in the main loop.
+Writes to 30_shap/<FLUX>/ale/<VARIANT>/:
+    <SITE>_ale_curves_<FLUX>.csv, .parquet   ALE curves
+    <SITE>_ale_combined_<FLUX>.png           one panel per feature
+    <SITE>_ale_<FLUX>.parquet, .csv          data with predictions
+    1_ale_analysis_<FLUX>.txt                run log
+    0_ale_validation_sites_<FLUX>.csv        fit metrics, one row per site
 """
 
 import time
@@ -43,7 +38,7 @@ FLUX = 'NEP_ZSCORE'
 FEATURES = ['TA_ZSCORE', 'SWIN_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE']
 
 # Run variant. An empty string reads the baseline subsets and overwrites the
-# submitted results. Any other value adds a folder level on both sides, so the
+# main-analysis results. Any other value adds a folder level on both sides, so the
 # subsets come from 20_subsets/<VARIANT>/ and the curves go to
 # 30_shap/<FLUX>/ale/<VARIANT>/. Stage 21 must have run with the same value,
 # and 31 should have run with it too, since the two are read side by side.

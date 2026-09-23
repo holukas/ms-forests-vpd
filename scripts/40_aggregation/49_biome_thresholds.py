@@ -1,19 +1,16 @@
 """
 Test whether the VPD threshold differs between forest types.
 
-Reviewer 1 asked whether the biome differences are significant. The threshold
-intervals printed on Figure 4 cannot answer that: they come from the polynomial's
-prediction band on the aggregated curve, so they describe fit uncertainty, not the
-spread between sites.
+One threshold per site, from the stage 41 TA by VPD file: VPD SHAP averaged per VPD bin,
+a fourth-order polynomial fitted, and the highest zero crossing taken, as in
+`src.fit.calc_threshold`. Sites with fewer than MIN_BINS filled bins are skipped. The
+per-site values feed a Kruskal-Wallis test across forest types, pairwise Mann-Whitney
+tests with Holm correction, and a bootstrap interval for each forest type median. Rank
+tests are used because the per-site thresholds are skewed. The Figure 4 intervals cannot
+answer this: they describe fit uncertainty, not the spread between sites.
 
-This computes one threshold per site instead. Each site's SHAP values are averaged
-per VPD bin, the same fourth-order polynomial is fitted, and the highest zero
-crossing is taken, matching `src.fit.calc_threshold`. The per-site values then feed
-a Kruskal-Wallis test across the four biomes and pairwise Mann-Whitney tests with a
-Holm correction, plus a bootstrap interval for each biome median.
-
-Rank tests rather than ANOVA, because the per-site thresholds are skewed and EBF in
-particular has a long tail.
+Writes 49_SiteThresholds.csv, 49_BiomeThresholds_Summary.csv and
+49_BiomeThresholds_PairwiseTests.csv.
 """
 from itertools import combinations
 from pathlib import Path

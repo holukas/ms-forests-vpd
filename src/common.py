@@ -6,13 +6,10 @@ from scipy.spatial import cKDTree
 def peak_season_months(sitedata, gpp_col: str, n_months: int = 4) -> list:
     """Find the calendar months with the highest mean GPP at a site.
 
-    This is the peak-season definition used throughout the analysis. It is applied
-    to the full record, before any quality-control or daytime filtering, so the
-    season does not move when those filters change.
-
-    An earlier version picked the warmest months by mean air temperature instead.
-    Some comments and file names elsewhere still say "warmest" for that reason;
-    the selection has been GPP-based since the subsets were built.
+    This is the peak-season definition of the analysis. It is applied to the full
+    record, before quality-control or daytime filtering, so the season does not
+    move when those filters change. Comments that say "warmest months" refer to
+    these months.
 
     Args:
         sitedata: Site data with a DatetimeIndex.
@@ -105,27 +102,16 @@ DEEPEST_SWC_MIN_PEAK_RATIO = 0.90
 
 def deepest_swc_per_site(min_peak_ratio: float = DEEPEST_SWC_MIN_PEAK_RATIO) -> dict:
     """
-    Pick the deepest usable soil water layer for every site.
+    Pick the deepest usable soil water layer for every site (deep SWC sensitivity run).
 
-    Reviewers 2 and 3 and the editor all ask whether the results depend on
-    soil moisture being measured near the surface. `SWC_F_MDS_1` is the
-    shallowest layer and is what the submitted analysis used, so the
-    sensitivity run needs the deepest layer instead.
+    The main analysis mostly uses `SWC_F_MDS_1`, the shallowest layer. A deeper layer
+    must keep at least `min_peak_ratio` of layer 1's records within the four
+    peak months, so that a change in results is not caused by a smaller sample.
+    The deepest layer that passes is chosen; sites where none passes stay on
+    layer 1. Depths in cm are not known, so this is the deepest available
+    layer, not a fixed rooting depth.
 
-    Deepest alone is not enough. A deeper layer is often gappier, and a gappier
-    driver means the subset keeps fewer records, so a difference in the results
-    could come from the change in sample rather than from the change in depth.
-    The layer therefore has to keep at least `min_peak_ratio` of layer 1's
-    records within the four peak months. The deepest layer that clears that bar
-    wins, and a site where none of them does stays on layer 1.
-
-    Depths in cm are not recoverable, only 3 sites carry `GRP_SWC` metadata in
-    the AmeriFlux BIF, so this is "the deepest available layer", never "the
-    root zone at X cm".
-
-    Coverage comes from `13b_variables_per_site.csv`, written by
-    `13b_check_available_vars_SWC.py`, so nothing in the 13 to 17 chain needs
-    rerunning.
+    Reads `13b_variables_per_site.csv` (from `13b_check_available_vars_SWC.py`).
 
     Args:
         min_peak_ratio: Records the deeper layer must keep within the peak
@@ -159,25 +145,17 @@ def deepest_swc_per_site(min_peak_ratio: float = DEEPEST_SWC_MIN_PEAK_RATIO) -> 
 
 def deeper_swc_sites() -> set:
     """
-    Sites that do not use the shallowest soil water layer in a deep run.
+    Sites that do not use the shallowest soil water layer in the deep run.
 
-    The deep run keeps every site, because a site with no usable deeper layer
-    still contributes on layer 1. Roughly two fifths of the network ends up in
-    that group, so aggregated deep results are a mixture and the difference
-    against the shallow run is damped by sites that cannot move.
+    The deep run keeps every site, and sites without a usable deeper layer stay
+    on layer 1. This set is for the unmixed comparison: run it through both the
+    shallow and the deep variant, and only the sensor depth differs.
 
-    This is the set for the unmixed comparison: sites whose soil water comes
-    from below layer 1. Run the same set through both the shallow and the deep
-    variant and the two are directly comparable, same sites, same records, only
-    the sensor depth differs.
-
-    Two sources, because two different things can put a site here. Most come
-    from `deepest_swc_per_site()`, which is the rule the deep run applies. One
-    more already used `SWC_F_MDS_2` in the submitted analysis, since layer 1 was
-    missing there, so it never was a shallow site to begin with.
+    Includes the sites from `deepest_swc_per_site()` plus sites whose `SWC_VAR`
+    in the main analysis is already not layer 1.
 
     Returns:
-        set: Site names, 128 of the 208 analysed sites.
+        set: Site names.
     """
     from src.paths import data_path
 
@@ -192,13 +170,10 @@ def deeper_swc_sites() -> set:
 
 def get_variable_names(siteconfig: pd.Series):
     """
-    Get variable names for this site.
-
-    Args:
-        siteconfig (dict): A dictionary containing site configuration.
+    Get the variable names for a site from its configuration row.
 
     Returns:
-        dict: A dictionary of variable names.
+        dict: Role (e.g. `nee_var`) to column name.
     """
     return {
         'nee_var': str(siteconfig['NEE_VAR']),

@@ -2,23 +2,18 @@
 Supplementary Table 3: the stage definitions, and where the fixed cut-offs fall in the site
 distributions.
 
-Upper part: the eight stages as conditions on the site-standardised drivers, one row per
-stage, one column per driver. The rules are written out here as text and checked against
-the stage functions in `src/stages.py` on random z-values before anything is written, so
-the table cannot drift from the code that selects the records.
+Upper part: the eight stages as conditions on the site-standardized drivers. The text rules
+are checked against the stage functions in `src/stages.py` on random z-values, and the script
+stops before writing if they disagree.
 
-Lower part: the stages are defined by fixed z-values, the same at every site, and not by
-the empirical percentiles of each site. Standardisation does not make the drivers Gaussian,
-so the share of records below a cut-off differs from the share a standard normal
-distribution would give. One row per cut-off, with the percentile it corresponds to under
-a standard normal distribution and, for each driver, the median across sites of the share
-of peak-season daytime records at or below it. Laid out from the summary written by
-`scripts/80_info/87_stage_cutoff_percentiles.py`; nothing is recomputed here.
+Lower part: the cut-offs are fixed z-values, and standardizing does not make the drivers
+Gaussian. One row per cut-off, with its standard normal percentile and, per driver, the
+median across sites of the share of peak-season daytime records at or below it.
 
 Reads:
-    80_info/<FLUX>/87_INFO_StageCutoffPercentiles_summary.csv
+    80_info/<FLUX>/87_INFO_StageCutoffPercentiles_summary.csv   from script 87 of 80_info
 
-Writes, into the plot folder next to the other supplementary tables:
+Writes, into the plot folder:
     61_SUPPTABLE-3_StageDefinitions_<FLUX>.xlsx          both parts on one sheet, for Word
     61_SUPPTABLE-3_StageDefinitions_<FLUX>.csv           the upper part
     61_SUPPTABLE-3_StageCutoffPercentiles_<FLUX>.csv     the lower part

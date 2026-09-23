@@ -1,3 +1,17 @@
+"""
+Find the available variables per site and the coverage of every soil water layer.
+
+Coverage is counted within the peak season and against layer 1. Use this script rather than
+script 13: it writes the same variables table.
+
+Reads `12_datasets_info_parquet.csv`, and `15_..._usedsites.csv` if present to restrict the
+summary to the sites in the analysis.
+
+Writes:
+- `13_datasets_info_parquet_vars.csv`
+- `13b_variables_per_site.csv`
+- `13b_variables_coverage_summary.csv`
+"""
 from pathlib import Path
 
 import pandas as pd

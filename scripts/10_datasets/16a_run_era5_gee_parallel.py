@@ -1,58 +1,21 @@
 """
-Parallel ERA5 batch manager for Google Earth Engine downloads.
+Run script 16b in parallel batches to download ERA5 data from Google Earth Engine.
 
-PRIMARY ERA5 DOWNLOAD SCRIPT
-This script orchestrates multiple parallel downloads of ERA5 climate data
-for FLUXNET sites using Google Earth Engine (GEE) by dividing the full site
-list into batches and spawning separate processes.
+This is the main ERA5 download script. It splits the site list into
+NUM_BATCHES equal batches, starts one 16b process per batch, waits for all of
+them and reports which batches failed.
 
-Purpose:
-    - Parallelize GEE ERA5 downloads across multiple CPU cores
-    - Enable resumable downloads (each batch tracks its own progress)
-    - Provide progress monitoring and batch-level error reporting
-    - Cloud-based processing (no massive local file downloads)
+Settings:
+- NUM_BATCHES = 4. GEE has per-project rate limits; use 2 or 3 batches if
+  quota errors appear.
 
-Features:
-    - Configurable number of parallel batches (default: 4)
-    - Automatic batch sizing based on total sites
-    - Per-batch log files for troubleshooting
-    - Centralized error/warning/no-data logs (shared across batches)
-    - Progress tracking with success/failure reporting
-    - Graceful handling of partial failures
-    - 30-year validation (1991-2020 with no gaps)
+Run it from scripts/10_datasets, because 16b is called by its file name.
 
-Usage:
-    Simply run this file in PyCharm. The script will:
-    1. Calculate batch size based on NUM_BATCHES
-    2. Spawn N parallel download processes
-    3. Monitor each batch for completion
-    4. Report success/failure status
-    5. Display batch-specific and centralized log file locations
-
-Configuration:
-    - NUM_BATCHES: Change this value to adjust parallelism
-      - 2 batches: ~105 sites each (light load, GEE quota friendly)
-      - 4 batches: ~52 sites each (balanced, default)
-      - 6 batches: ~35 sites each (aggressive parallelism)
-
-WARNING:
-    - Google Earth Engine has API rate limits per project
-    - Running too many parallel batches may trigger rate limits
-    - Start with 2-3 batches if experiencing GEE quota errors
-    - Batch log files show which sites completed vs. failed
-
-Output:
-    - Batch logs: 16_download_era5_gee_log_YYYYMMDD_HHMMSS.txt
-    - Centralized logs:
-      - 16_download_era5_ERRORS.log
-      - 16_download_era5_WARNINGS.log
-      - 16_download_era5_NO_DATA_SITES.log
-    - Data: <DATA_ROOT>/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine/{SITE}/
-
-Dependencies:
-    - 16b_download_era5_mat_map_GoogleEarthEngine.py
-    - ee (earthengine-api)
-    - pandas
+Reads: data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv
+Writes (through 16b), in data/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine/:
+one {SITE}_era5_1991-2020_yearly.csv per site, per-batch logs (16_download_era5_gee_log_*.txt) and the
+shared logs 16_download_era5_ERRORS.log, 16_download_era5_WARNINGS.log and
+16_download_era5_NO_DATA_SITES.log.
 """
 
 import subprocess

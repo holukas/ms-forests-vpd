@@ -1,72 +1,18 @@
 """
-Supplementary Fig. 6: the VPD response of NEP, GPP and ET on one axis, with RECO as the control.
+Supplementary Fig. 6: the VPD response of NEP, GPP and ET on one axis, with RECO as a control.
 
-Figure 4 shows the VPD response of NEP. This figure puts the same curve beside the ones for
-GPP and ET, fitted the same way from the same sites, months, hours and model settings, so a
-reader sees what the NEP threshold is made of. GPP turns over where NEP does, and ET keeps
-responding to VPD long after carbon uptake has stopped benefiting. The threshold is therefore
-a limit on photosynthesis, and water loss continues past it.
+Each curve is the all-sites output of script 42 for its flux, read and fitted as in script
+54, so the NEP curve is the Figure 4 curve. Only NEP is measured; the legend gives the
+source of the other fluxes. SHOW_RECO = False leaves out RECO. Fluxes in NO_THRESHOLD get
+an open marker and no interval. There is no split by forest type, because the per-biome ET
+fits are not constrained. The top axis converts sigma to kPa with the mean over sites of
+the site VPD means and standard deviations, as script 54 does.
 
-**Supplementary, decided 5 September 2026.** Only NEP is measured. GPP and RECO are
-partitioned from the night-time NEE with a temperature model, and ET comes from gap-filled LE,
-so the figure rests on modelled quantities except for its black curve. A main-text figure
-built on them would widen the paper past the measured net flux it is about. The legend says
-where each flux comes from, and the caption has to say it again.
-
-**RECO is drawn on the same axis as the control, decided 8 September 2026.** The claim is
-that the NEP threshold is a GPP threshold, and the question a reader asks next is whether the
-NEP decline could instead be respiration rising with VPD. The RECO curve answers it: RECO does
-not rise, it falls, gently and monotonically, to about a quarter of the GPP decline at 3 sigma.
-Its central curve does cross zero, at -0.18 sigma, so the crossing is drawn as an open marker,
-but the interval the band gives it is open on the low side, so the crossing is not resolved and
-no interval bar is drawn; the caption says so. An earlier two-panel version with the interval
-bar was folded into one panel on 8 September. The fit is the weakest of the four, R2 about
-0.75.
-
-Why RECO falls with VPD is not a stomatal effect, because respiration has no stomatal pathway.
-Two things are in play and this figure cannot separate them. Daytime RECO is not measured: it
-is the night-time temperature model extrapolated into the day with a reference respiration
-refitted in moving windows, so a conditional VPD effect on it, with temperature held, can only
-enter through those windows, and dry spells, which are high-VPD periods, carry lower
-respiration because soil respiration falls as soil dries and substrate supply falls with GPP.
-The remainder is credit shared with temperature, which correlates with VPD at 0.78. The
-substrate pathway is the one real physiological route, less assimilate under high VPD means
-less growth and maintenance respiration, and it is lagged, so it is weak at half-hourly
-resolution, which is what a gentle decline looks like. Set SHOW_RECO = False for the
-three-curve version without RECO.
-
-**The top axis is in kPa.** Each site standardises VPD against its own mean and standard
-deviation, so a sigma value is a different absolute VPD at every site. The axis uses the
-mean over the sites of the site means and of the site standard deviations, equal weight per site,
-which is the same mapping script 54 uses for the kPa column of the coefficient table: the
-site-wise conversion averaged with equal weight over the sites is a straight line with the
-mean site mean and the mean site standard deviation, so the axis reproduces the published
-1.26 kPa exactly for the all-sites curve.
-
-**It computes nothing new.** Each curve is the stage 42 output for its flux, read through
-`src.files.load_data` exactly as script 54 reads it for Figure 4, and fitted with
-`src.fit.fit_polynomial`, so the NEP curve here is the Figure 4 curve and the thresholds
-match the coefficient table script 54 writes.
-
-**All sites only.** The per-biome ET fits return reversed intervals for DBF and MF, meaning the
-fit did not constrain them, so this figure does not split by forest type.
-
-**Two things the caption has to say.** The peak season is the four highest-GPP months for
-every flux, so RECO and ET are shown in a window defined by carbon uptake rather than by
-their own seasonality. And a positive value means more of the flux, which is more uptake for
-NEP and GPP but more water loss for ET and more release for RECO; the zone labels are
-neutral for that reason.
-
-Reads, for each of the four fluxes:
-    40_aggregation/{FLUX}/conditional/42_SHAPVALUES-conditional_meanAggregatedAcrossSites
-        _BIN-TA_ZSCORE+BIN-VPD_ZSCORE+{FLUX}.parquet
-and the stage 21 subsets table for the kPa axis.
-
-Writes, into the NEP plot folder, since this is a display item of the NEP paper. The fluxes
-shown are in the file name, so the version without RECO cannot overwrite the one with it.
-    58_SUPPFIG-6_VpdResponseByFlux_NEP+GPP+RECO+ET.png
-    58_SUPPFIG-6_VpdResponseByFlux_NEP+GPP+RECO+ET_CURVES.csv      fitted curve and band per flux
-    58_SUPPFIG-6_VpdResponseByFlux_NEP+GPP+RECO+ET_THRESHOLDS.csv  crossing per flux, sigma and kPa
+Reads the script 42 output of each flux on the TA by VPD grid and the stage 21 subsets
+table. Writes to the NEP plot folder, with the fluxes shown in the file name:
+- 58_SUPPFIG-6_VpdResponseByFlux_NEP+GPP+RECO+ET.png
+- the same name with _CURVES.csv (fitted curve and band per flux) and _THRESHOLDS.csv
+  (crossing per flux in sigma and kPa)
 """
 from pathlib import Path
 
@@ -95,7 +41,7 @@ NAMES = {'NEP_ZSCORE': 'NEP', 'GPP_ZSCORE': 'GPP', 'RECO_ZSCORE': 'RECO', 'ET_ZS
 # Where each flux comes from. Only NEP is a measurement, and the legend says so.
 SOURCE = {'NEP_ZSCORE': 'measured', 'GPP_ZSCORE': 'partitioned',
           'RECO_ZSCORE': 'partitioned', 'ET_ZSCORE': 'from gap-filled LE'}
-# Okabe and Ito, distinguishable for every common colour vision deficiency.
+# Okabe and Ito, distinguishable for every common color vision deficiency.
 COLORS = {'NEP_ZSCORE': '#000000', 'GPP_ZSCORE': '#009E73',
           'RECO_ZSCORE': '#D55E00', 'ET_ZSCORE': '#0072B2'}
 # Fluxes whose crossing interval is not resolved. Drawn with an open marker and no band.
@@ -104,7 +50,7 @@ NO_THRESHOLD = {'RECO_ZSCORE'}
 # crossing, because the curves are steep where they cross and a label at the marker prints
 # on top of them. NEP and GPP cross 0.02 sigma apart, so their labels stack.
 LABEL_ROW = {'NEP_ZSCORE': 0, 'GPP_ZSCORE': 1, 'RECO_ZSCORE': 2, 'ET_ZSCORE': 0}
-# Labels that end at their guide rather than sitting centred on it, so that the two
+# Labels that end at their guide rather than sitting centered on it, so that the two
 # labels near 0 sigma do not collide with the NEP label above them.
 LABEL_HA = {'GPP_ZSCORE': 'right', 'RECO_ZSCORE': 'right'}
 

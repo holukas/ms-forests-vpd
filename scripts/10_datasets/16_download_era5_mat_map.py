@@ -1,35 +1,19 @@
 """
-Download ERA5-Land hourly climate data from CDS and aggregate to yearly values.
+Download hourly ERA5-Land temperature and precipitation from CDS and aggregate to yearly values.
 
-This is done for sites with older data only (FLUXNET2015) because they do not
-have ERA5 data for 1991-2020 in their datasets.
+Only sites downloaded via FLUXNET_ORG (FLUXNET2015) are processed, because their
+files lack ERA5 data for 1991-2020. Per site, the script converts temperature to
+degC (TA_degC) and precipitation to mm (PRECIP_TOT_mm), shifts the timestamps
+back 1 hour so they mark the start of the ERA5 averaging period, keeps
+1991-2020, and computes the annual mean temperature and annual precipitation sum.
 
-Workflow:
-1. Load site coordinates from configuration CSV
-2. Download ERA5-Land timeseries data for each site (2m temperature, total precipitation)
-3. Extract and merge variable files
-4. Remove duplicate lat/lon columns and rename to LAT, LON
-5. Convert temperature from K to °C and rename to TA_degC
-6. Convert precipitation from m to mm and rename to PRECIP_TOT_mm
-7. Shift timestamps back 1 hour (represent START of averaging period, not END)
-8. Filter to complete calendar years (1991-2020)
-9. Save shifted hourly data
-10. Aggregate to yearly values:
-    - TA_degC: annual mean temperature (°C)
-    - PRECIP_TOT_mm: annual total precipitation (mm)
-
-Output structure per site:
-  {SITE}/
-  ├── raw/                                # Original downloaded hourly CSV files
-  ├── {SITE}_era5_1991-2020_shifted.csv   # Shifted hourly data (1991-2020)
-  └── {SITE}_era5_1991-2020_yearly.csv    # Yearly aggregated data
-
-Notes:
-- ERA5 timestamps mark the END of the averaging period (e.g., 12:00 = hour from 11:00-12:00)
-- Timestamps are shifted back 1 hour for intuitive filtering by calendar year
-- Data spans 1991-01-01 00:00 to 2020-12-31 23:00 (shifted coordinates)
-- Skips sites if yearly file already exists (resumable)
-- All processing logged to timestamped log file in output directory
+Reads: data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv
+Writes, in data/outputs/10_datasets/16_ERA5_climate_1991-2020/{SITE}/:
+- {SITE}_era5_1991-2020_shifted.csv (hourly)
+- {SITE}_era5_1991-2020_yearly.csv
+- raw/ (the downloaded CSV files)
+plus a time-stamped log file in the output directory. Sites that already have
+a yearly file are skipped, so the script can be resumed.
 """
 
 import zipfile

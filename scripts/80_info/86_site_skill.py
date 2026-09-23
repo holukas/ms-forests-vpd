@@ -1,30 +1,21 @@
 """
-Site-level model skill, whole record and the compound-extreme tail.
+Per-site model skill (n, R2, RMSE, MAE, bias) for all records, Stage 8 and the high-VPD tail.
 
-The cross-validation table of stage 31 carries R2 and RMSE per fold and over all folds. What it
-does not carry is the mean absolute error, the bias, and how the models do inside the part of
-the record the claims rest on, Stage 8 and the high-VPD tail, where records are few and the
-attribution is largest. All of that can be read off the per-site SHAP files without a rerun,
-because stage 31 stores the out-of-sample prediction for every record (`NEP_ZSCORE_PRED`, the
-five folds concatenated) next to the observation and the driver z-scores.
+Uses the out-of-sample predictions that stage 31 stores in the per-site SHAP files
+(`NEP_ZSCORE_PRED`, the five folds concatenated), so nothing is refitted. Runs for each
+entry of VARIANTS: the main analysis with random folds and the leave-one-year-out
+cross-validation (`blocked-cv`).
 
-Bias is prediction minus observation, so a negative bias in Stage 8 means the model predicts
-NEP lower than observed there. The tail R2 is computed against the tail's own mean, so it can
-be low or negative even where the RMSE is modest: inside Stage 8 the variance of NEP is small
-and a model that gets the level right but not the scatter scores poorly on R2 while being
-useful. Both numbers are reported so that neither is read alone.
+- Bias is prediction minus observation.
+- The VPD tail is VPD_ZSCORE above the Stage 8 VPD cutoff.
+- Subsets with fewer than MIN_RECORDS records get no skill numbers.
+- R2 in Stage 8 and the tail is computed against the subset's own mean, where the NEP
+  variance is small, so R2 can be low or negative while RMSE is modest. Read both together.
 
-The same is done for any run variant that has the per-site files, which for the submitted
-paper means the blocked cross-validation (`blocked-cv`), so the random-fold and
-leave-one-year-out skill sit in one table.
-
-Reads, per variant:
-    30_shap/NEP_ZSCORE/conditional/{variant}/{site}_shap-conditional_NEP_ZSCORE.parquet
-
+Reads, per variant: 30_shap/NEP_ZSCORE/conditional/{variant}/{site}_shap-conditional_NEP_ZSCORE.parquet
 Writes:
-    80_info/NEP_ZSCORE/86_INFO_SiteSkill_NEP_ZSCORE.csv     one row per site and variant: n, r2, rmse,
-                                                            mae, bias for all records, Stage 8, VPD tail
-    80_info/NEP_ZSCORE/86_INFO_SiteSkill_summary.csv        median and quartiles across sites
+- 80_info/NEP_ZSCORE/86_INFO_SiteSkill_NEP_ZSCORE.csv: one row per site and variant
+- 80_info/NEP_ZSCORE/86_INFO_SiteSkill_summary.csv: median and quartiles across sites
 """
 import glob
 from pathlib import Path

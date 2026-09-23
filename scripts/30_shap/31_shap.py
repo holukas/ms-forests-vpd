@@ -1,147 +1,22 @@
 """
-XGBoost SHAP Analysis & Hyperparameter Tuning Pipeline
+Train XGBoost per site and compute out-of-sample SHAP values, or tune hyperparameters.
 
-## Overview
-Trains XGBoost models per site and calculates out-of-sample SHAP values for feature importance.
-Alternatively, can run hyperparameter tuning mode to optimize model parameters.
+Runs `train_xgboost_models_and_shap` (src/models.py) for every site in
+21_SUBSETS_parquet_vars_stats_subsets.csv. With TUNE_HYPERPARAMETERS = True it
+runs `tune_xgboost_hyperparameters` instead, testing TUNE_N_ITER combinations
+per site (about 2 to 3 min per site at 25).
 
-## Dual-Mode Design
+Settings at the top of the file: FLUX, FEATURE_SET, CONDITIONAL, CV_STRATEGY,
+TUNE_HYPERPARAMETERS, TUNE_N_ITER, VARIANT, SITES, MAX_SITES. Set VARIANT for
+any run other than the main analysis, or the main results are overwritten.
+Script 21 must have run with the same VARIANT.
 
-### Mode 1: SHAP Analysis (default, TUNE_HYPERPARAMETERS=False)
-**Purpose**: Calculate unbiased feature importance via SHAP values
-- Each site gets 5 models (5-fold CV)
-- Every data point gets SHAP values from a model that never trained on it
-- Per-fold performance metrics (R², RMSE) show generalization
-- Global out-of-sample metrics aggregate across all folds
-- Output: Parquet/CSV with features, SHAP values, predictions, and metrics
-
-**Workflow:**
-1. Load site configuration and data
-2. For each site:
-   - Run 5-fold cross-validation
-   - Per fold: train on 68%, use 12% for early stopping, explain 20%
-     (80% fold further split 85/15 for training vs validation)
-   - Collect per-fold metrics and SHAP values
-   - Reassemble in original order
-3. Aggregate CV metrics across all sites to CSV
-
-**Output Files:**
-- `1_models_xgboost_shap-{TYPE}_{FLUX}.txt` — Per-site fold metrics and logs
-- `{SITE}_shap-{TYPE}_{FLUX}.parquet/csv` — Full results per site
-- `2_cv_results_all_sites-{TYPE}_{FLUX}.csv` — Aggregated metrics (all sites, one row per site)
-
-### Mode 2: Hyperparameter Tuning (TUNE_HYPERPARAMETERS=True)
-**Purpose**: Find optimal n_estimators, max_depth, learning_rate per site
-- Tests {n_iter} parameter combinations per site (default: 25)
-- Uses 5-fold CV to score each combination
-- Fixed regularization (reg_lambda, reg_alpha, gamma, etc.) for consistency
-- Output: Best parameters and CV R² score per site
-
-**Workflow:**
-1. Load site configuration and data
-2. For each site:
-   - Run RandomizedSearchCV with 5-fold CV
-   - Test 25 random parameter combinations
-   - Track best parameters and best CV R²
-3. Aggregate best parameters across all sites to CSV
-
-**Output Files:**
-- `1_models_xgboost_shap-{TYPE}_{FLUX}.txt` — Tuning mode indicator
-- `{SITE}_hyperparameter_tuning_{FLUX}.txt` — Best params per site
-- `0_hyperparameter_tuning_results_{FLUX}.csv` — Aggregated best params (all sites)
-
-## Configuration Variables
-
-FLUX : str
-    Target variable to analyze (options: NEP_ZSCORE, ET_ZSCORE, GPP_ZSCORE, RECO_ZSCORE)
-    Default: NEP_ZSCORE
-
-FEATURES : list
-    Feature variables to use as predictors
-    Default: ['TA_ZSCORE', 'SWIN_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE']
-
-CONDITIONAL : bool
-    If True: Calculate conditional SHAP (respects feature correlations) — RECOMMENDED
-    If False: Calculate standard/marginal SHAP (assumes independence)
-    Default: True
-
-TUNE_HYPERPARAMETERS : bool
-    If False (default): Run SHAP analysis
-    If True: Run hyperparameter tuning instead
-    Default: False
-
-TUNE_N_ITER : int
-    Number of parameter combinations to test in tuning mode (default: 25)
-    Higher = more thorough but slower (~25 fits × 5 folds × 100+ sites = hours)
-
-VARIANT : str
-    Run variant. Empty reads the baseline subsets and writes the baseline
-    results, which are the ones behind the submitted figures. Any other value
-    reads 20_subsets/<VARIANT>/ and writes 30_shap/<FLUX>/<TYPE>/<VARIANT>/.
-    Stage 21 must have run with the same value.
-    Default: ''
-
-SITES, MAX_SITES : list, int
-    Limit the run to a few sites for a timing test. SITES names them and wins
-    if it is not empty, MAX_SITES takes the first n rows, 0 means all sites.
-    Each site prints how long it took and the end of the run prints the total
-    and what it means for the full site list.
-    Default: [], 0
-
-## How to Use
-
-**For SHAP Analysis (default):**
-```bash
-python scripts/30_shap/31_shap.py
-```
-Generates feature importance explanations. Check output for:
-- Per-site fold metrics: data/outputs/50_shap_analysis/{FLUX}/{TYPE}/
-- Aggregated CSV with global R² per site
-
-**For Hyperparameter Tuning:**
-Edit the script:
-```python
-TUNE_HYPERPARAMETERS = True
-TUNE_N_ITER = 25  # Adjust if needed (25 = ~2-3 mins per site)
-```
-Then run:
-```bash
-python scripts/30_shap/31_shap.py
-```
-Check output for best parameters per site and aggregated results.
-
-**For a Short Test Run:**
-Set at the top of the script:
-```python
-SITES = ['CH-Dav']  # these sites only
-MAX_SITES = 2       # or the first n sites, if SITES is empty
-```
-
-## Key Design Decisions
-
-1. **Fixed Regularization Parameters**: Keep reg_lambda=1, reg_alpha=0.1, gamma=0.2, etc.
-   - Prevents overfitting consistently across sites
-   - Tuning only core capacity (n_estimators, max_depth, learning_rate)
-   - Faster, more stable results
-
-2. **5-Fold CV for SHAP**: Each data point gets out-of-sample explanations
-   - In-sample SHAP can be misleading (model may have memorized)
-   - Out-of-sample SHAP is unbiased: high value = feature truly predicts target
-
-3. **Per-Fold + Global Metrics**: Show both generalization and overall performance
-   - Per-fold: How model performs on unseen data (5 estimates)
-   - Global: Single R²/RMSE across all 5 folds combined
-
-4. **Aggregation to CSV**: Easy cross-site analysis
-   - One row per site (SHAP mode) or per site (tuning mode)
-   - Supports weighting by N_RECORDS in meta-analysis
-
-## Performance Tips
-
-- **Faster runs**: Set TUNE_HYPERPARAMETERS=True and TUNE_N_ITER=10 for quick tests
-- **Single site**: SITES = ['CH-Dav']
-- **Different flux**: Change FLUX to ET_ZSCORE, GPP_ZSCORE, or RECO_ZSCORE
-- **Memory**: Results are modest (~50-100 MB per site for SHAP)
+Writes to 30_shap/<FLUX>/<TYPE>/<VARIANT>/ (TYPE: conditional or interventional):
+    1_models_xgboost_shap-<TYPE>_<FLUX>.txt    run log and fold metrics
+    <SITE>_shap-<TYPE>_<FLUX>.parquet, .csv    SHAP values and predictions
+    2_cv_results_all_sites-<TYPE>_<FLUX>.csv   CV metrics, one row per site
+In tuning mode: <SITE>_hyperparameter_tuning_<FLUX>.txt and
+0_hyperparameter_tuning_results_<FLUX>.csv.
 """
 
 import time
@@ -159,19 +34,19 @@ FLUX = 'NEP_ZSCORE'
 # FLUX = 'ET_ZSCORE'
 # FLUX = 'GPP_ZSCORE'
 # FLUX = 'RECO_ZSCORE'
-# Predictor set. Reviewer 2 asked whether TA and VPD can be told apart, given how
-# strongly they covary, and wanted runs with one of them dropped.
+# Predictor set. The reduced sets test whether TA and VPD can be told apart,
+# given how strongly they covary, by dropping one of them.
 #
-#   full     the submitted set, all four drivers
+#   full     the main-analysis set, all four drivers
 #   no_vpd   TA kept, VPD dropped
 #   no_ta    VPD kept, TA dropped
 #
 # A third variant, TA plus an alternative humidity variable, is not reachable. No
 # site in the analysis carries RH, and any humidity variable that could be derived
 # here is an exact function of TA and VPD, so it would add nothing that separates
-# them. Say so rather than substituting something that looks independent.
+# them.
 #
-# Set VARIANT as well, or the results overwrite the submitted ones.
+# Set VARIANT as well, or the results overwrite the main-analysis ones.
 FEATURE_SETS = {
     'full': ['TA_ZSCORE', 'SWIN_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE'],
     'no_vpd': ['TA_ZSCORE', 'SWIN_ZSCORE', 'SWC_ZSCORE'],
@@ -186,7 +61,7 @@ TUNE_HYPERPARAMETERS = False  # Set to True to run hyperparameter tuning
 TUNE_N_ITER = 25  # Number of parameter combinations to test (default: 25)
 
 # Run variant. An empty string reads the baseline subsets and overwrites the
-# submitted results. Any other value adds a folder level on both sides, so the
+# main-analysis results. Any other value adds a folder level on both sides, so the
 # subsets come from 20_subsets/<VARIANT>/ and the results go to
 # 30_shap/<FLUX>/<shap_type>/<VARIANT>/. Stage 21 must have run with the same
 # value, otherwise there are no subsets to read.
@@ -200,14 +75,14 @@ VARIANT = ""
 SITES = []
 MAX_SITES = 0
 
-# Cross-validation strategy. "random" is the submitted setting, a shuffled 5-fold
-# split of the complete rows. "blocked" leaves one calendar year out at a time,
-# which Reviewer 2 asked for: neighbouring half-hours are correlated, so a
-# shuffled split can put a record and its neighbour on opposite sides and flatter
+# Cross-validation strategy. "random" is the main-analysis setting, a shuffled 5-fold
+# split of the complete rows. "blocked" leaves one calendar year out at a time:
+# neighboring half-hours are correlated, so a
+# shuffled split can put a record and its neighbor on opposite sides and flatter
 # the score. Expect lower scores under "blocked". The drop is the size of the
 # leakage, not a fault. Sites with a single year are skipped, since a year-wise
 # split needs at least two. Set VARIANT as well, or the results overwrite the
-# submitted ones.
+# main-analysis ones.
 CV_STRATEGY = "random"
 
 # ------------------------------

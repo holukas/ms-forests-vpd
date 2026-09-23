@@ -1,12 +1,11 @@
 """
 Figure 3 and Supplementary Fig. 3: the driver effects along the eight stress stages.
 
-The published stage order (Figure 3) lets temperature rise and soil water fall step by
-step while VPD is held below its extreme cut-off, and adds extreme VPD at Stage 8. The
-mirrored order (Supplementary Fig. 3) lets VPD rise instead and adds extreme soil
-dryness at Stage 8. Both end at the same Stage 8. The figure is the same for both; the
-variant decides which aggregation is read, which condition labels are printed above the
-bars and which number the output carries.
+The main stage order (Figure 3) lets temperature rise and soil water fall step by step
+while VPD stays below its extreme cutoff, and adds extreme VPD at Stage 8. The mirrored
+order (Supplementary Fig. 3, VARIANT = "mirrored-stages") lets VPD rise instead and adds
+extreme soil dryness at Stage 8. VARIANT sets which aggregation is read, the condition
+labels above the bars and the figure number in the output name.
 
 Reads:
     40_aggregation/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/44_SHAPVALUES-conditional_AggregatedAcrossScenarios_<FLUX>.parquet
@@ -39,10 +38,10 @@ SHOW_PLOT = False
 # ==========================================
 FLUX = 'NEP_ZSCORE'
 
-# Run variant. An empty string reads the results behind the submitted figures and
+# Run variant. An empty string reads the results of the main analysis and
 # writes to the baseline plot folder. Any other value reads the matching variant
 # folder and writes the figures next to it, so a sensitivity run cannot overwrite a
-# published figure. The aggregation must have run with the same value.
+# figure of the main analysis. The aggregation must have run with the same value.
 VARIANT = ""
 # Site subset. An empty string reads the aggregation over every site.
 # "deeper-only" reads the run restricted to the 128 sites whose soil water comes

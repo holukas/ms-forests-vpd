@@ -1,3 +1,8 @@
+"""
+Collect one row per dataset found in the five raw data sources.
+
+Writes `10_datasets/11_datasets_info.csv`.
+"""
 from pathlib import Path
 
 import pandas as pd

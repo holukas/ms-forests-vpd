@@ -1,3 +1,8 @@
+"""
+Record counts, date ranges and basic statistics per site and variable.
+
+Reads `13_datasets_info_parquet_vars.csv`. Writes `14_datasets_info_parquet_vars_stats.csv`.
+"""
 from pathlib import Path
 
 import pandas as pd

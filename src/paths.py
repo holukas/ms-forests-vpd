@@ -9,10 +9,8 @@ which is resolved in this order:
 2. key ``DATA_ROOT`` in ``config/settings.local.yaml`` (not under version control)
 3. key ``DATA_ROOT`` in ``config/settings.yaml``
 
-The data folder is expected to contain ``00_raw/`` and ``outputs/``; see
-``docs/data.qmd`` for the full layout.
-
-Scripts can be run from anywhere, e.g. from the repository root:
+The data folder contains ``00_raw/`` and ``outputs/`` (layout in
+``docs/data.qmd``). Scripts can be run from any directory, e.g. the repository root:
 
     python scripts/30_shap/31_shap.py
 """
@@ -71,22 +69,14 @@ def repo_path(*parts: str) -> Path:
 
 def resolve_stored_path(stored) -> Path:
     """
-    Resolve a file path that was persisted in one of the dataset info CSVs.
+    Resolve a file path stored in one of the dataset info CSVs.
 
-    The path columns in those files (``_FILEPATH``, ``_FILEPATH_PARQUET``,
-    ``_FILEPATH_PARQUET_SUBSET``) were written before the scripts moved to
-    `data_path()`, so they hold values such as
+    The path columns (``_FILEPATH``, ``_FILEPATH_PARQUET``,
+    ``_FILEPATH_PARQUET_SUBSET``) hold relative values such as
     ``..\\..\\data\\outputs\\10_datasets\\12_parquet_merged\\AR-SLu_MF_FLX_2009-2011.parquet``.
-    Those only resolve when the working directory happens to be the script's own
-    folder, which is the cwd assumption the rest of the code no longer makes.
-
-    Drop the leading parent parts and re-anchor the remainder on `DATA_ROOT`.
-    Values that are already absolute are returned unchanged, so the function
-    stays correct once the CSVs are regenerated.
-
-    Parsing goes through `PureWindowsPath` because the stored values use
-    backslashes; it accepts forward slashes too, so this works whichever
-    platform wrote the file.
+    The leading parent parts are dropped and the rest is placed under
+    `DATA_ROOT`. Absolute values are returned unchanged. Parsed with
+    `PureWindowsPath`, which accepts both backslashes and forward slashes.
     """
     path = PureWindowsPath(str(stored))
     if path.is_absolute():

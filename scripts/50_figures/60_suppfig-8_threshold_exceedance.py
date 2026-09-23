@@ -1,34 +1,22 @@
 """
-How often each site sits above the VPD threshold.
+Supplementary Fig. 8: how often each site is above the VPD threshold.
 
-The threshold is one number for all sites, but the air at one site is past it in
-one half-hour of fifty and at another in nine of ten. That spread is what this figure shows,
-and it is the part a sentence in the text cannot carry.
+- Panel a: all sites ranked by the share of peak-season daytime half-hours above the
+  threshold of the main analysis, in kPa.
+- Panel b: the same share against the site's mean VPD.
+- Panel c: the share above the crossing of the site's own forest type (script 49), in site
+  standard deviations. The dashed line is the site median against the all-sites crossing.
 
-Panel a ranks the 208 sites by the share of peak-season daytime half-hours above 1.26 kPa.
-Panel b puts the same share against the site's own mean VPD, which is where the spread comes
-from: a site whose mean already sits near the threshold is above it half the time. In each
-site's own standard deviations the share is close to 38 % everywhere, so the ranking in
-panel a is a ranking of climates, not of responses.
+The share above each site's own crossing is in the stage 48 file but not drawn, because
+flat curves without a real crossing cannot be told apart from dry sites.
 
-Panel c changes the threshold instead of the site. Each site is counted against the crossing
-of its own forest type, from script 49, in the site's own standard deviations. The four
-crossings differ, so the panel shows what that difference costs in exposure. The dashed line
-is the same set of sites counted against the one all-sites crossing, which is the comparison
-that makes the four groups readable. The count against each site's own crossing is in the
-stage 48 file but not drawn: its tails run from almost never to almost always, and they mix
-dry sites whose crossing sits far below their mean with flat curves where the polynomial has
-no real crossing, which a reader cannot tell apart in a column of points.
-
-Reads what `40_aggregation/48_threshold_exceedance.py` writes and draws it. Nothing is
-computed here.
-
-Reads:
+Reads, from the aggregation folder (written by stages 47 and 48):
     48_EXCEEDANCE_PerSite_{FLUX}.csv       one row per site
     48_EXCEEDANCE_PerBiome_{FLUX}.csv      one row per forest type, plus an all-sites row
-    47_THRESHOLD_Robustness_{FLUX}.csv     the published threshold, for the axis labels
+    47_THRESHOLD_Robustness_{FLUX}.csv     the threshold of the main analysis, for the labels
 
-Supplementary Fig. 8.
+Writes, into the plot folder:
+    60_SUPPFIG-8_ThresholdExceedance_{FLUX}.png
 """
 from pathlib import Path
 
@@ -111,7 +99,7 @@ axs[2].axhline(global_sigma_median, color='black', lw=1.2, linestyle='--', zorde
 axs[2].text(3.55, global_sigma_median + 1.5, f'all sites\ncrossing\n{global_sigma_median:.0f} %',
             fontsize=AX_LABELS_FONTSIZE * 0.85, va='bottom')
 
-# The median bar and its number take the colour of the group, so each group reads against
+# The median bar and its number take the color of the group, so each group reads against
 # the black all-sites line the way its number does.
 tick_labels = []
 for pos, igbp in enumerate(IGBP_ORDER):

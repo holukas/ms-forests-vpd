@@ -1,23 +1,17 @@
 """
-Supplementary Table 9: three readings of the fitted VPD response that one word,
-threshold, could conflate.
+Supplementary Table 9: three readings of the fitted VPD response, for all sites and per
+forest type.
 
-The fitted curve of Fig. 4 has a peak, where the VPD effect on NEP is most positive, a
-steepest decline, and a zero crossing, where the effect changes sign. The manuscript
-reports the zero crossing as the threshold and this table gives the other two beside it,
-in the site-standardised units of the fit and in kPa, for all sites and per forest type.
-A value that sits on the edge of the fitted range is not an interior feature of the
-curve, only the last point fitted, and is flagged as such. The minimum of the effect is
-left out because it sits on the range edge for every group, which the Methods say in
-words.
-
-It lays out what `scripts/80_info/81_threshold_definitions.py` writes; nothing is
-recomputed here.
+The fitted curve of Fig. 4 has a peak (the most positive VPD effect on NEP), a steepest
+decline and a zero crossing, which the manuscript reports as the threshold. The table gives
+all three in site-standardized units and in kPa. A value on the edge of the fitted range is
+the last point fitted, not a feature of the curve, and is marked "(range edge)". The minimum
+of the effect is left out because it sits on the range edge for every group.
 
 Reads:
-    80_info/<FLUX>/conditional/81_INFO_ThresholdDefinitions.csv
+    80_info/<FLUX>/conditional/81_INFO_ThresholdDefinitions.csv   from script 81 of 80_info
 
-Writes, into the plot folder next to the other supplementary tables:
+Writes, into the plot folder:
     62_SUPPTABLE-9_ThresholdDefinitions_<FLUX>.csv | .xlsx
 """
 from pathlib import Path

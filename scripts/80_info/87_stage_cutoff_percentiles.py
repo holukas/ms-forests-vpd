@@ -1,27 +1,18 @@
 """
-Where the fixed stage cut-offs fall in each site's empirical distribution.
+Where the fixed stage cutoffs fall in each site's empirical distribution of the drivers.
 
-The eight stress stages are defined on site-standardised drivers with three fixed cut-offs,
-a, b and c in `src/stages.py`, chosen as the standard-normal quantiles that mark the middle
-25 %, the middle 52.5 % and the outer 10 % of a Gaussian. Standardising a skewed variable
-does not make it Gaussian, so the cut-offs need not land on those percentiles at a given
-site. This script measures where they do land: for every site and driver, the share of
-records at or below each of the six cut-off values -c, -b, -a, a, b, c, against the share a
-Gaussian would give. The stage definitions themselves are not touched; the numbers say how
-far the stages are from the intended percentiles, which is what the Methods sentence and
-the caveats paragraph quote.
+The stages use three cutoffs a, b and c on site-standardized drivers, the standard-normal
+quantiles that mark the middle 25 %, the middle 52.5 % and the outer 10 % of a Gaussian.
+Standardizing a skewed variable does not make it Gaussian, so at a given site the cutoffs
+need not land on those percentiles. For every site and driver, the script reports the share
+of records at or below -c, -b, -a, a, b and c next to the Gaussian share. The cutoffs are
+read from the defaults of `src.stages.stage_2`, so they follow the stage definitions.
 
-The cut-offs are read from the defaults of `src.stages.stage_2`, so this file cannot drift
-from the stage definitions.
-
-Reads:
-    30_shap/NEP_ZSCORE/conditional/{site}_shap-conditional_NEP_ZSCORE.parquet
-
+Reads: 30_shap/NEP_ZSCORE/conditional/{site}_shap-conditional_NEP_ZSCORE.parquet
 Writes:
-    80_info/NEP_ZSCORE/87_INFO_StageCutoffPercentiles_NEP_ZSCORE.csv   one row per site and driver
-    80_info/NEP_ZSCORE/87_INFO_StageCutoffPercentiles_summary.csv      median and quartiles across
-                                                                       sites per driver and cut-off,
-                                                                       beside the Gaussian share
+- 80_info/NEP_ZSCORE/87_INFO_StageCutoffPercentiles_NEP_ZSCORE.csv: one row per site and driver
+- 80_info/NEP_ZSCORE/87_INFO_StageCutoffPercentiles_summary.csv: median and quartiles across
+  sites per driver and cutoff, with the Gaussian share
 """
 import glob
 import inspect

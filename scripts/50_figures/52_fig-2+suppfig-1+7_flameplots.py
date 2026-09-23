@@ -1,3 +1,13 @@
+"""
+Binned grid figures of SHAP effects and fluxes, three display items from one switch.
+
+FIGURE at the top of the file selects the output:
+- `"fig2"`: Figure 2, the VPD effect on NEP over the TA, SM and ET grids
+- `"driver-effects"`: Supplementary Fig. 1, the TA and SM effects on the same grids
+- `"fluxes"` (default): Supplementary Fig. 7, NEP, GPP, RECO and ET over the SM by VPD grid
+
+Reads the stage 42 aggregation. VARIANT and SITE_SUBSET select a sensitivity run.
+"""
 import string
 from pathlib import Path
 
@@ -18,10 +28,10 @@ from src.paths import load_settings
 SHOW_PLOT = False
 
 # --- SETTINGS ---
-# Run variant. An empty string reads the results behind the submitted figures and
+# Run variant. An empty string reads the results of the main analysis and
 # writes to the baseline plot folder. Any other value reads the matching variant
 # folder and writes the figures next to it, so a sensitivity run cannot overwrite a
-# published figure. The aggregation must have run with the same value.
+# figure of the main analysis. The aggregation must have run with the same value.
 VARIANT = ""
 # Site subset. An empty string reads the aggregation over every site.
 # "deeper-only" reads the run restricted to the 128 sites whose soil water comes
@@ -30,7 +40,7 @@ VARIANT = ""
 SITE_SUBSET = ""
 
 # Which figure to draw. The three share every line of plotting code below and
-# differ only in what colours the grid, so one script draws all of them.
+# differ only in what colors the grid, so one script draws all of them.
 #   "fig2"            Figure 2: the VPD effect on NEP, mapped on TA, SM and ET.
 #   "fluxes"          Supplementary Fig. 7: the fluxes themselves on the SM by VPD grid.
 #   "driver-effects"  Supplementary Fig. 1: the TA effect on the TA by VPD grid and the

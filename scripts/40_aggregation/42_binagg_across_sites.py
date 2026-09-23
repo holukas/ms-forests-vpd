@@ -1,17 +1,13 @@
 """
-Aggregation of SHAP Values across sites
+Aggregate the per-site binned SHAP values across all sites.
 
-    This script aggregates **SHAP (SHapley Additive exPlanations) values** from multiple
-    sites to create a consolidated dataset. It iterates through a collection of individual
-    site data files, which contain SHAP values for each data point. For each site, it bins
-    the SHAP values based on two key variables, `xvar` and `yvar`, and then calculates the
-    median (or aggregation function defined in `aggfunc`) SHAP value for each bin.
+For each pair in VAR_PAIRS, reads the stage 41 file and computes, per cell of the
+two-variable bin grid, the mean, median, min, max, standard deviation, standard error
+and count of the per-site values. DNF sites are excluded. VARIANT and SITE_SUBSET must
+match the values stage 41 ran with.
 
-    After processing all sites, the script combines the binned data and performs a final
-    aggregation to calculate the median, 25th percentile, 75th percentile, and the total
-    count of SHAP values for each unique bin combination across all sites. The final output
-    is saved to both a Parquet and a CSV file, providing a summary of how the variables'
-    contributions, as measured by SHAP values, are distributed across the predefined bins.
+Writes 42_SHAPVALUES-{shap_type}_{aggfunc}AggregatedAcrossSites_BIN-{xvar}+BIN-{yvar}+{FLUX}
+as parquet and csv.
 """
 from pathlib import Path
 

@@ -1,3 +1,9 @@
+"""
+Average the per-site SHAP grids of stage 41 across the sites of each forest type.
+
+The per-type counterpart of script 42: every site carries equal weight. Settings: FLUX,
+CONDITIONAL, VARIANT, SITE_SUBSET and VAR_PAIRS at the top of the file.
+"""
 from pathlib import Path
 
 import diive as dv

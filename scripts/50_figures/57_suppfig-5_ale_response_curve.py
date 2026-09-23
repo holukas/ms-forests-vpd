@@ -1,91 +1,21 @@
 """
-ALE (Accumulated Local Effects) response curves with ecosystem-specific aggregation and threshold detection.
+Supplementary Fig. 5: ALE response curves of NEP to VPD and the ALE threshold.
 
-## Overview
+Panel a shows the per-site curves of all sites, panels b to e those of one forest type
+each. Each site curve is smoothed with a fourth-order polynomial, and the threshold is the
+mean of the sites' first positive-to-negative zero crossings. Sites without a crossing do
+not enter the threshold, and the panel title then gives both counts.
 
-Generates ALE curves showing how NEP responds to changes in a single feature (e.g., VPD).
-Loads pre-calculated per-site ALE curves from script 32, aggregates them via equal weighting,
-fits 4th-order polynomials for smoothing, and detects response thresholds via zero-crossing analysis.
+Settings:
+- PLOT_FEATURE = 'VPD_ZSCORE', FLUX = 'NEP_ZSCORE'
+- VARIANT: empty for the main analysis, otherwise the value script 46 ran with
+- USE_MEDIAN: aggregate the site curves by median instead of mean
+- USE_CI: label the threshold with its 95% confidence interval (True) or its SEM (False)
 
-## Data Pipeline
-
-1. **Load per-site ALE curves** from script 32 (pre-calculated, no recalculation)
-2. **Equal weighting aggregation**: Each site contributes one curve regardless of record count
-3. **Polynomial pre-fitting**: Fit 4th-order polynomial to each site's curve individually
-4. **Aggregate smoothed curves**: Average polynomial-fitted curves across sites
-5. **Calculate confidence intervals**: 95% CI or SEM from distribution of individual thresholds
-6. **Threshold detection**: Find positive-to-negative zero crossings in individual curves
-7. **Ecosystem-specific aggregation**: Separate aggregation by IGBP type (ENF, DBF, MF, EBF)
-
-## Key Features
-
-### Aggregation Methods
-- `USE_MEDIAN=False` (default): Mean aggregation - equal weighting, traditional approach
-- `USE_MEDIAN=True`: Median aggregation - robust to outlier sites with extreme curves
-
-### Uncertainty Quantification
-- `USE_CI=True` (default): 95% Confidence Interval for mean threshold (t-distribution based)
-- `USE_CI=False`: Standard Error of Mean (SEM) - shows precision of mean estimate
-
-### Threshold Detection
-- Finds individual zero-crossings in each site's poly-fitted curve
-- Only includes curves that actually cross zero (positive → negative transition)
-- Consensus threshold = mean of individual crossing points
-- Reports: threshold ± SEM, or threshold [CI_lower, CI_upper]
-- Includes: number of sites with crossing, total sites, range of thresholds
-
-### Visualization
-- **Main panel (a)**: Global curve + per-site background curves (gray, alpha=0.15)
-- **Subplots (b-e)**: Same data separated by IGBP ecosystem
-- **Threshold markers**: Open circle at zero-crossing point
-- **Threshold labels**: Show value ± uncertainty (SEM or 95% CI)
-- **Zero-crossing line**: Dashed line at y=0 for reference
-- **Axis styling**: Matches script 54 (black spines, solid lines, xtickdigits=0)
-
-## Comparison to Script 54 (SHAP)
-
-**Script 54:**
-- X-axis: Binned feature values
-- Y-axis: Per-sample SHAP values (feature importance)
-- Interpretation: How much features contribute to NEP variation
-
-**Script 57:**
-- X-axis: Continuous feature values
-- Y-axis: Isolated feature effects on predictions
-- Interpretation: How NEP responds to feature changes
-
-**Together**: Validate findings across different explanation methods
-
-## Configuration Options
-
-```python
-PLOT_FEATURE = 'VPD_ZSCORE'        # Feature to analyze
-FLUX = 'NEP_ZSCORE'                # Target variable
-
-USE_MEDIAN = False                  # True: median aggregation (robust to outliers)
-USE_CI = True                       # True: show 95% CI, False: show SEM
-```
-
-## Output
-
-**Console:**
-- THRESHOLD SUMMARY table showing all results:
-  - Global threshold for all sites combined
-  - Per-IGBP thresholds with uncertainty quantification
-  - Number of sites with zero-crossings per group
-  - Header indicates which uncertainty metric is displayed
-
-**Figure:**
-- 5-panel layout (1 main + 4 IGBP subplots)
-- Threshold markers and labels on each panel
-- Consistent axis styling across all panels
-- Per-site background curves for context
-
-**Interpretation:**
-- Threshold value: Where ALE curve crosses zero (NEP switches from stimulation to suppression)
-- Uncertainty: ±SEM shows precision; 95% CI shows likely range of true threshold
-- Site count: Shows robustness of threshold estimate (more sites = more confidence)
-- IGBP subplots: Show ecosystem-specific response patterns
+Reads 46_ALE_SiteCurves_<PLOT_FEATURE>_<FLUX>.parquet, written by
+40_aggregation/46_ale_thresholds.py. Writes
+57_SUPPFIG-5_ALE_ResponseCurve_<PLOT_FEATURE>_<FLUX>.png and prints a threshold summary;
+the threshold table itself comes from script 46.
 """
 from pathlib import Path
 
@@ -154,10 +84,10 @@ def calc_ci_95(values):
 
 FLUX = 'NEP_ZSCORE'
 
-# Run variant. An empty string reads the results behind the submitted figures and
+# Run variant. An empty string reads the results of the main analysis and
 # writes to the baseline plot folder. Any other value reads the matching variant
 # folder and writes the figures next to it, so a sensitivity run cannot overwrite a
-# published figure. The aggregation must have run with the same value.
+# figure of the main analysis. The aggregation must have run with the same value.
 VARIANT = ""
 PLOT_FEATURE = 'VPD_ZSCORE'
 USE_MEDIAN = False
@@ -508,12 +438,7 @@ if mean_effect is not None and std_effect is not None:
     if SHOW_PLOT:
 
         fig.show()
-    # Save figure. Commented out on 25 April 2026, in the same commit that changed the
-    # layout, so the PNG on disk kept the old layout while the code moved on.
-    #
-    # The number is a placeholder. This was Extended Data Fig. 2 in the submitted
-    # version, Extended Data is not a Nature Communications category (T26), so it
-    # becomes a supplementary figure and X stands in until the number is assigned.
+    # Save figure.
     outfilepath = dir_out / f'57_SUPPFIG-5_ALE_ResponseCurve_{PLOT_FEATURE}_{FLUX}.png'
     fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
     print(f"Saved figure to: {outfilepath}\n")

@@ -1,18 +1,19 @@
 """
-Per-site VPD thresholds by forest type, with the significance test drawn on.
+Per-site VPD thresholds by forest type, with the significant pairwise tests. Not in the
+manuscript.
 
-Figure 4 prints one threshold per forest type, taken from the polynomial fitted to the
-aggregated curve, so its interval describes the fit rather than the spread between sites.
-The question of whether the forest types differ needs the per-site thresholds instead,
-which is what `40_aggregation/49_biome_thresholds.py` computes. This script only plots what
-that script wrote, it does not recompute anything.
+Fig. 4 gives one threshold per forest type from a polynomial fitted to the aggregated curve;
+this figure shows the spread between sites instead. Every site is a point, the median has its
+bootstrap interval, and only pairs that remain significant after Holm correction get a
+bracket. Draws what `40_aggregation/49_biome_thresholds.py` writes.
 
-Reads from the plot folder:
-    49_SiteThresholds.csv              one threshold per site
-    49_BiomeThresholds_Summary.csv     median, IQR and bootstrap CI per forest type
+Reads, from the aggregation folder:
+    49_SiteThresholds.csv                  one threshold per site
+    49_BiomeThresholds_Summary.csv         median, IQR and bootstrap CI per forest type
     49_BiomeThresholds_PairwiseTests.csv   Holm-corrected pairwise tests
 
-Supplementary figure, not a main display item.
+Writes, into the plot folder:
+    65_SUPPFIG-X_BiomeThresholdDistributions_<FLUX>.png
 """
 from pathlib import Path
 

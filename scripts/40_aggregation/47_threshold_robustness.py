@@ -1,56 +1,20 @@
 """
-Every robustness test of the VPD threshold, computed once and written to file.
+Robustness tests of the VPD threshold.
 
-This is the heavy half of what used to live in `50_figures`. Scripts under `50_figures`
-draw, they do not compute, because they become notebooks under S10 and a notebook must not
-aggregate a campaign. The bootstrap here refits a polynomial 2000 times for every test that
-carries an interval, and the leave-one-site-out row refits it once per site, together about
-two minutes, which is exactly the kind of work that belongs at this stage. `55_table-1+suppfig-5_threshold_robustness.py` reads what this writes and renders it
-as Table 1 and the matching supplementary figure.
+The estimator is the highest zero crossing of a fourth-order polynomial fitted to the
+cross-site median VPD SHAP per bin of the TA by VPD grid. Each row has two kPa intervals:
+the prediction band of the fit (`lower`, `upper`), shown in the display items, and a site
+bootstrap with 2000 resamples (`boot_lower`, `boot_upper`). Three rows put another
+interval in both, flagged in `note`: estimator sweep (spread across 23 settings),
+leave-one-site-out (range across removals) and ALE (95% interval from stage 46).
 
-It also absorbs the estimator sweep that was `50_figures/60_threshold_method_sensitivity.py`.
-That script read the CSV that figure script 54 writes, so a numbers script depended on a
-figure script having run first. Here the same curve comes from the stage 42 output through
-`src.files.load_data`, which is what script 54 itself plots, so the numbers are identical
-and the dependency points the right way.
+Runs after stages 42 and 46 and after the deep-sm, deeper-only, blocked-cv and no_ta runs
+reached stage 41. Takes about two minutes.
 
-**The estimator is the published one.** The threshold is the highest zero crossing of a
-fourth-order polynomial fitted to the VPD SHAP values averaged across sites, which is what
-Figure 4 shows and what the abstract reports. An earlier version used the median of per-site
-thresholds instead. That is a different quantity, it sat 0.07 kPa lower, and it silently
-drops any site whose own curve never crosses zero.
-
-**Two intervals per row, and they answer different questions.** Both are written out.
-
-The **prediction band** comes from the polynomial fit, through `src.fit`, the same routine
-Figure 4 and the coefficient table use. It says how well the curve is pinned down. This is
-the one the display items show, so the global row reads 1.26 [1.16, 1.36], the same as the
-coefficient table. Publishing two different intervals for one number would confuse a reader.
-
-The **bootstrap over sites** resamples sites with replacement, re-aggregates and refits. It
-says how much the threshold depends on which sites are in the network, which is the question
-a robustness test is really asked, and it is about five times narrower. It stays in the file,
-in `boot_lower` and `boot_upper`, because it is the stronger answer for the response letter,
-and it is the point A13 makes.
-
-**Three rows carry neither interval.** The estimator row varies how the curve is fitted rather
-than which sites are included, so both columns carry the spread across its 23 settings. The
-leave-one-site-out row carries the spread across its 208 removals for the same reason: those
-values share 207 sites with each other, so they are not independent draws. The ALE row has no
-curve fitted here at all, since stage 46 derives its value as a mean of per-site crossings, so
-both columns carry the 95 % confidence interval of that mean, which is what the Results quote
-for ALE. All three are flagged in the `note` column, and the display items mark them.
-
-Reads: stage 41 per-site curves for the baseline and the deep-sm, deeper-only, blocked-cv
-and no_ta variants, stage 42 for the aggregated curve, the stage 21 subsets table, and the ALE
-thresholds written by stage 46.
-
-Writes, into the aggregation folder:
-    47_THRESHOLD_EstimatorSweep_{FLUX}.csv    23 estimator settings, thresholds in sigma
-    47_THRESHOLD_Robustness_{FLUX}.csv        eighteen tests plus the published reference, kPa,
-                                              with both intervals per row
-    47_THRESHOLD_LeaveOneSiteOut_{FLUX}.csv   the threshold with each site dropped in turn,
-                                              one row per site, kPa
+Writes (rendered by script 55):
+- 47_THRESHOLD_EstimatorSweep_{FLUX}.csv, 23 settings, in sigma
+- 47_THRESHOLD_Robustness_{FLUX}.csv, all tests plus the reference row
+- 47_THRESHOLD_LeaveOneSiteOut_{FLUX}.csv, one row per dropped site, in kPa
 """
 from pathlib import Path
 
@@ -76,7 +40,7 @@ SITE_SUBSET = ""
 
 N_BOOT = 2000
 DEEP_LAYER_MIN = 5       # the deepest-layer rows use sites at this layer or below
-POLY_DEGREE = 4          # the published choice
+POLY_DEGREE = 4          # as in the main analysis
 
 shap_type = 'conditional' if CONDITIONAL else 'interventional'
 settings = load_settings()
@@ -177,11 +141,9 @@ def rebin(x, y, width):
 
 
 def aggregated_curve():
-    """The all-sites curve Figure 4 plots, straight from the stage 42 output.
+    """The all-sites curve Figure 4 plots, loaded from the stage 42 output.
 
-    Script 54 writes exactly this frame to `54_FIG-4_..._ALLSITES_DATA.csv`, which is what
-    the estimator sweep used to read. Calling `load_data` here gives the same numbers
-    without needing a figure script to have run.
+    Uses `files.load_data` as script 54 does, so no figure script needs to have run.
     """
     xvar, yvar, zvar = 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE'
     aggfunc = 'mean'
@@ -236,10 +198,8 @@ def site_curves(*subfolders):
     """Per-site VPD SHAP for every TA by VPD cell, as a site by cell matrix.
 
     Figure 4 fits the polynomial to the two-dimensional grid of TA and VPD bins, not to a
-    curve collapsed over TA, and it keeps only cells held by at least half the sites
-    (`src/files.py::load_data`). Both matter: collapsing over TA and keeping every sparse
-    edge cell moves the crossing by more than 0.2 kPa, so the reference would not reproduce
-    the published value.
+    curve collapsed over TA, and keeps only cells held by at least half the sites
+    (`src/files.py::load_data`). Both are needed to reproduce the main analysis.
     """
     path = agg_base.joinpath(*subfolders) / CURVE_FILE
     d = pd.read_parquet(path, columns=['SITE', 'BIN_TA_ZSCORE', 'BIN_VPD_ZSCORE',
@@ -251,14 +211,10 @@ def site_curves(*subfolders):
 
 
 def aggregate(M, x, min_sites, stat='median'):
-    """Cross-site value per cell, keeping only cells held by enough sites.
+    """Cross-site value per cell, keeping only cells held by at least `min_sites` sites.
 
-    Median by default, because that is what Figure 4 fits: script 42 writes several
-    aggregations per bin and script 54 reads the median column (its `yagg` line tests the
-    x variable, which is a bin, so the median is always chosen). The mean is the other
-    aggregation script 42 writes, and the "Mean instead of median per bin" row asks for it,
-    so that the choice between the two stands in Table 1 as a tested setting rather than a
-    line of code. The mean reproduces about 1.25 kPa against the published 1.26.
+    The median by default, which is what Figure 4 fits (script 54 reads the median column
+    of the stage 42 output). `stat='mean'` gives the "Mean instead of median per bin" row.
     """
     counts = np.isfinite(M).sum(axis=0)
     keep = counts >= min_sites
@@ -270,20 +226,12 @@ def aggregate(M, x, min_sites, stat='median'):
 
 
 def threshold_with_ci(piv, seed=0, stat='median'):
-    """Crossing of the aggregated curve, with two intervals, all in kPa.
+    """Crossing of the aggregated curve with two intervals.
 
-    Returns the point value, the prediction band bounds, the bootstrap bounds and the site
-    count. The two intervals answer different questions and are not interchangeable:
-
-    - **The prediction band** is what Figure 4 and the coefficient table show. It comes from
-      the polynomial fit itself, through `src.fit`, and says how well the curve is pinned
-      down. This is the interval the manuscript publishes, so Table 1 uses it and the global
-      row reads the same as the coefficient table, 1.26 [1.16, 1.36].
-    - **The bootstrap over sites** resamples sites, re-aggregates and refits. It says how
-      much the threshold depends on which sites are in the network, which is the question a
-      robustness test is really asked. It is about five times narrower. It is written to
-      file for the response letter but not shown in the display items, because two
-      different intervals on the same number in one paper would confuse a reader.
+    Returns the threshold in sigma and kPa, the prediction band from `src.fit` in kPa (how
+    well the curve is pinned down; shown in the display items), the bootstrap over sites in
+    kPa (how much the threshold depends on which sites are included; written to file
+    only), the site count, and the prediction band in sigma.
     """
     x = piv.columns.get_level_values('BIN_VPD_ZSCORE').to_numpy(dtype=float)
     M = piv.to_numpy(dtype=float)
@@ -295,7 +243,7 @@ def threshold_with_ci(piv, seed=0, stat='median'):
     point_z = crossing(xk, yk)
     point = to_kpa(point_z, sites)
 
-    # The published interval: the same routine script 54 uses for Figure 4.
+    # The prediction band: the same routine script 54 uses for Figure 4.
     _, _, x_fit, y_fit, _, pi_upper, pi_lower = fit.fit_polynomial(xk, yk)
     band = fit.calc_threshold(x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper)
     band_lo, band_hi = to_kpa(band[1], sites), to_kpa(band[2], sites)
@@ -315,17 +263,13 @@ def threshold_with_ci(piv, seed=0, stat='median'):
 
 
 # --- the GAM row ------------------------------------------------------------------
-# A penalised cubic regression spline instead of the quartic. Every other estimator in this
+# A penalized cubic regression spline instead of the quartic. Every other estimator in this
 # script fixes the shape of the curve in advance, and a fourth-order polynomial can only make
-# certain shapes, so the published threshold can be said to carry the shape that was assumed.
-# A spline assumes none of it: the curve is built from local pieces and the data decide where
-# it bends. This is the alternative breakpoint method R2 asked for by name.
+# certain shapes. A spline assumes none of it: the curve is built from local pieces and the
+# data decide where it bends. This is the alternative breakpoint method.
 #
-# **The smoothing is not tuned, and it does not need to be.** Generalised cross-validation
-# drives the penalty to zero at every basis size tried, 8 to 20 degrees of freedom, so the
-# selected fit is effectively the unpenalised spline. The crossing barely notices: it lands
-# between 0.171 and 0.177 sigma across that whole range, about 0.005 kPa. The grid is kept and
-# the selected value is printed, so this can be checked rather than trusted.
+# The penalty is selected by generalized cross-validation over GAM_ALPHA_GRID, and the
+# selected value is printed, so the fit can be checked.
 GAM_DF = 12
 GAM_ALPHA_GRID = np.logspace(-8, 4, 49)
 
@@ -333,9 +277,8 @@ GAM_ALPHA_GRID = np.logspace(-8, 4, 49)
 def gam_curve(x, y, alpha=None):
     """Fitted spline on a fine grid, its prediction band, and the penalty used.
 
-    The band is built exactly as `src.fit.fit_polynomial` builds the polynomial one: standard
-    error of the fitted curve from the coefficient covariance, plus the residual variance, times
-    t. So the GAM row's interval is the same kind of statement as every other row's.
+    The band is built as `src.fit.fit_polynomial` builds the polynomial one: standard error of
+    the fitted curve from the coefficient covariance, plus the residual variance, times t.
     """
     order = np.argsort(x)
     xs, ys = x[order], y[order]
@@ -369,9 +312,8 @@ def gam_curve(x, y, alpha=None):
 def gam_threshold_with_ci(piv, seed=0):
     """The GAM row, returning the same tuple as `threshold_with_ci`.
 
-    The bootstrap refits the spline on resampled sites, at the penalty selected on the full
-    curve rather than reselected each time, so the interval measures the site set and not the
-    tuning. One fit takes about 3 ms, so 2000 of them cost seconds.
+    The bootstrap refits the spline on resampled sites at the penalty selected on the full
+    curve, so the interval measures the site set and not the tuning.
     """
     x = piv.columns.get_level_values('BIN_VPD_ZSCORE').to_numpy(dtype=float)
     M = piv.to_numpy(dtype=float)
@@ -407,11 +349,7 @@ def gam_threshold_with_ci(piv, seed=0):
 
 
 def point_threshold(piv):
-    """Crossing of the aggregated curve in kPa, without either interval.
-
-    The cheap half of `threshold_with_ci`, for the leave-one-site-out row, which needs 208
-    point values and no bootstrap.
-    """
+    """Crossing of the aggregated curve in kPa, without intervals, for leave-one-site-out."""
     x = piv.columns.get_level_values('BIN_VPD_ZSCORE').to_numpy(dtype=float)
     M = piv.to_numpy(dtype=float)
     xk, yk = aggregate(M, x, np.ceil(len(M) / 2))
@@ -427,10 +365,9 @@ def leave_one_site_out(piv):
 
 
 def deepest_layer_sites(min_layer):
-    """Sites whose deep-sm run sits at `min_layer` or below.
+    """Sites whose deep-sm run uses soil water layer `min_layer` or deeper.
 
-    Stage 21 records the layer it chose per site, so the list costs nothing. 80 sites stay on
-    layer 1, and the 128 that move spread over layers 2 to 9.
+    Read from the SWC_LAYER column of the deep-sm stage 21 subsets table.
     """
     path = (Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / 'deep-sm'
             / '21_SUBSETS_parquet_vars_stats_subsets.csv')
@@ -445,7 +382,7 @@ def robustness_rows(sweep):
     #  band_lo_sigma, band_hi_sigma, note)
     rows = []
 
-    # Reference: the published run, same estimator.
+    # Reference: the main analysis, same estimator.
     base = site_curves()
     (published_z, published, pub_lo, pub_hi,
      pub_boot_lo, pub_boot_hi, n_base, pub_lo_z, pub_hi_z) = threshold_with_ci(base)
@@ -460,14 +397,14 @@ def robustness_rows(sweep):
     # The deepest layers on their own. The matched pair above uses all 128 sites that moved
     # down, and most of them moved one layer, so the depth contrast is diluted. These are the
     # sites that reached layer 5 or below, held fixed across both rows, so only the depth
-    # changes and the contrast is the largest the network allows. This is where R3's objection
-    # bites hardest: surface soil water is not the water a tree reaches.
+    # changes and the contrast is the largest the network allows. Surface soil water is not
+    # the water a tree reaches.
     deep_sites = deepest_layer_sites(DEEP_LAYER_MIN)
     # Named by the selection rule, sites with five or more soil water depths, since "layer 5"
     # is a FLUXNET variable index whose depth differs by site and means nothing to a reader.
     # Named as a pair, because the two rows are read against each other and not against the
-    # published reference. Both sit about 0.06 kPa below it, which is these 59 sites being a
-    # different sample, not a depth effect.
+    # reference row: a shift of both against it reflects a different sample of sites, not a
+    # depth effect.
     for label, sub in [(f'Sites with {DEEP_LAYER_MIN}+ SM depths, shallowest', ('',)),
                        (f'Sites with {DEEP_LAYER_MIN}+ SM depths, deepest', ('deep-sm',))]:
         piv = site_curves(*[p for p in sub if p])
@@ -476,11 +413,10 @@ def robustness_rows(sweep):
 
     # --- model fitting ----------------------------------------------------------
     # Air temperature dropped from the predictor set. Every other row varies a setting, while
-    # this one removes the driver R3 says VPD may be standing in for: the two correlate at
-    # 0.78, so if the threshold survives a model that never sees temperature, the leakage
-    # objection is answered with a number rather than an argument. Temperature still bins the
-    # grid, as in every other row, so the estimator is unchanged and only the model behind the
-    # SHAP values differs.
+    # this one removes the driver VPD may be standing in for, since the two are correlated. A
+    # model that never sees temperature tests whether the threshold is leaked from it.
+    # Temperature still bins the grid, as in every other row, so the estimator is unchanged
+    # and only the model behind the SHAP values differs.
     piv = site_curves('no_ta')
     rows.append(('Model fitting', 'Air temperature dropped from the model',
                  *threshold_with_ci(piv, seed=3), None))
@@ -497,21 +433,20 @@ def robustness_rows(sweep):
                  *threshold_with_ci(base, seed=5, stat='mean'), None))
 
     # A spline instead of the quartic, on the same curve. It is the only row that changes how
-    # the shape of the response is estimated rather than which data go in, so it answers the
-    # objection that the published number carries the shape that was assumed.
+    # the shape of the response is estimated rather than which data go in, so it tests
+    # whether the threshold depends on the assumed shape.
     rows.append(('Model fitting', 'GAM instead of a polynomial',
                  *gam_threshold_with_ci(base, seed=4), None))
 
     # Accumulated local effects instead of SHAP. A different attribution method
-    # altogether, so this is the row that shares least machinery with the published
+    # altogether, so this is the row that shares least machinery with the main
     # analysis. Stage 46 writes the all-sites value as the mean of the per-site
     # crossings, with a 95 % confidence interval of that mean over the sites. The row
     # carries that interval in the band columns, flagged in the note, since it is the
     # interval the Results quote for ALE and not a prediction band; the display scripts
     # mark it as they mark the two range rows. Fitting the Table 1 estimator to the
-    # cross-site ALE curve instead would give 1.20 kPa [1.17, 1.24], a second ALE
-    # threshold 0.05 kPa below the published one, which is why that route was not taken
-    # (checked 7 September 2026).
+    # cross-site ALE curve instead would give a second, different ALE threshold, which is
+    # why that route was not taken.
     ale_dir = Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / 'ale' / VARIANT
     ale = pd.read_csv(ale_dir / f'46_ALE_Thresholds_VPD_ZSCORE_{FLUX}.csv')
     ale_row = ale.loc[ale['group'] == 'ALL SITES'].iloc[0]
@@ -538,7 +473,7 @@ def robustness_rows(sweep):
     # over the removals rather than an interval, because any two of those values share 207
     # sites and are not independent draws.
     loo = leave_one_site_out(base).dropna()
-    # The sigma value is the published one: every removal refits the same estimator on almost
+    # The sigma value is the reference row's: every removal refits the same estimator on almost
     # the same sites, and the row's spread is in kPa.
     rows.append(('Site set', 'Any one site removed', published_z, float(loo.median()),
                  float(loo.min()), float(loo.max()), float(loo.min()), float(loo.max()),

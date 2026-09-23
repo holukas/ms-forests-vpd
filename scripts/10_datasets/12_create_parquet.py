@@ -1,3 +1,8 @@
+"""
+Merge the datasets of each site into one parquet file, by source priority.
+
+Reads `11_datasets_info.csv`. Writes `12_parquet_merged/` and `12_datasets_info_parquet.csv`.
+"""
 from pathlib import Path
 
 import numpy as np

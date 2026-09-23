@@ -1,51 +1,22 @@
 """
-Water use efficiency against VPD, the test of the stomatal reading of the by-flux figure.
+Water use efficiency (GPP/ET) against VPD, a check of the stomatal reading of the by-flux figure (script 58).
 
-The supplementary by-flux figure (script 58) shows GPP turning over at 0.18 sigma while ET
-keeps rising to 1.66. Stomatal control
-predicts exactly that: transpiration is conductance times VPD, and VPD rises faster than
-conductance falls, so water loss keeps increasing through partial closure while photosynthesis
-loses carbon from the first increment of closure. If that is the mechanism, then GPP per unit
-ET has to fall across the whole VPD range, not only past the GPP turnover. This script measures
-whether it does.
+If stomatal closure drives the GPP turnover, GPP per unit ET should fall across the whole
+VPD range. This is the measured relationship, not a SHAP attribution, so it cannot separate
+stomatal control from anything that covaries with VPD.
 
-**A falling curve is not by itself evidence of closure.** Transpiration is conductance times
-VPD, so water use efficiency falls as 1/VPD even if conductance never changes. The exponent is
-what separates the cases, so this script also fits log water use efficiency against log VPD per
-site: -1 means the CO2 drawdown does not adjust and the decline is purely the vapour gradient,
-about -0.5 is what optimal stomatal theory predicts, and shallower still means the plant
-compensates more than that, or something that covaries with VPD is raising GPP.
+- Per VPD bin, mean GPP over mean ET (per-record ratios explode where ET is near zero),
+  in micromol CO2 per mmol H2O.
+- Each site is scaled by its own overall value; sites are weighted equally and bins need
+  half the sites, as in stages 41 and 42.
+- Per site, the slope of log water use efficiency on log VPD: -1 means no stomatal
+  adjustment, about -0.5 matches optimal stomatal theory.
+- The printed split at the GPP turnover uses a hard-coded 0.18 sigma.
 
-**It is not an attribution.** Every other curve in this analysis is a SHAP effect, conditional
-on temperature, radiation and soil water. This one is the raw relationship between measured
-GPP, measured ET and VPD, so it cannot separate the stomatal signal from anything that
-covaries with VPD. It answers "is the decline there at all", which is option 2 of A21 in the
-plan. If it is there, option 3 runs GPP/ET as its own flux target and that is what a sentence
-in the paper would rest on.
-
-**Ratio of bin means, not mean of record ratios.** ET passes through zero at 480 of 20,001
-records at US-Me2, so a per-record GPP/ET has a heavy tail on both sides and its mean is
-meaningless. Within each VPD bin the mean GPP and the mean ET are formed first and divided
-after, which is how ecosystem water use efficiency is normally computed.
-
-**Units.** GPP is micromol CO2 m-2 s-1, ET is mm H2O h-1 (diive `et_from_le`). 1 mm h-1 is
-15.42 mmol H2O m-2 s-1, so the ratio is reported as micromol CO2 per mmol H2O, which is the
-usual unit and lands where the literature does, a few units for forests.
-
-**Per site, then across sites.** Each site is divided by its own overall water use efficiency
-before aggregation, because the absolute value differs several fold between sites and the
-question is about shape. Equal weighting per site and the half-of-sites bin rule, as in stages
-41 and 42.
-
-Reads:
-    30_shap/NEP_ZSCORE/conditional/{SITE}_shap-conditional_NEP_ZSCORE.parquet, for GPP, ET
-    and VPD_ZSCORE per record, the peak-season daytime records the models were fitted on
-    20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv, for the site list
-
-Writes:
-    80_info/NEP_ZSCORE/85_INFO_WueVsVpd_perSite.csv   one row per site and VPD bin
-    80_info/NEP_ZSCORE/85_INFO_WueVsVpd_acrossSites.csv   one row per VPD bin
-    80_info/NEP_ZSCORE/85_INFO_WueVsVpd_exponents.csv     one row per site, the log-log slope
+Reads: 30_shap/NEP_ZSCORE/conditional/{SITE}_shap-conditional_NEP_ZSCORE.parquet,
+21_SUBSETS_parquet_vars_stats_subsets.csv.
+Writes to 80_info/NEP_ZSCORE/: 85_INFO_WueVsVpd_perSite.csv,
+85_INFO_WueVsVpd_acrossSites.csv, 85_INFO_WueVsVpd_exponents.csv.
 """
 from pathlib import Path
 
@@ -144,7 +115,7 @@ for label, mask in [('below the GPP turnover, up to 0.18 sigma', below),
               f"slope {slope:+.3f} per sigma")
 
 # The exponent, fitted per site in physical units. The bins are in sigma, so each site's bin
-# centre goes back to its own absolute VPD with that site's mean and standard deviation.
+# center goes back to its own absolute VPD with that site's mean and standard deviation.
 # CD-Ygb records VPD in Pa where every other site uses hPa, the same conversion as in stage 47.
 z0, sd = subsets.set_index('SITE')['VPD_Z0'].copy(), subsets.set_index('SITE')['VPD_SD'].copy()
 z0.loc['CD-Ygb'] /= 100

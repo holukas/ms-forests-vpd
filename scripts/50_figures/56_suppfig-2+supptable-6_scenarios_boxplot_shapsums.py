@@ -3,9 +3,9 @@ Supplementary Fig. 2 and Supplementary Table 6: the driver effects across the ei
 
 The figure shows the per-site effects of VPD, TA, SM and SW on the flux at each stage,
 for all sites and per forest type. The table gives the cross-site mean, its standard
-deviation and the range per driver and stage, in the same groups, plus one extra block
-for all sites with the deepest available soil water layer (the deep-sm run), so the
-Stage 8 effects under the deeper layer stand next to the published ones.
+deviation and the range per driver and stage in the same groups, plus one block for all
+sites with the deepest available soil water layer (DEEP_SM_VARIANT, the deep-sm run).
+The block is skipped if that aggregation does not exist.
 
 Reads:
     40_aggregation/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/44_SHAPVALUES-conditional_AggregatedAcrossScenarios_<FLUX>.parquet
@@ -38,17 +38,17 @@ SHOW_PLOT = False
 # ==========================================
 FLUX = 'NEP_ZSCORE'
 
-# Run variant. An empty string reads the results behind the submitted figures and
+# Run variant. An empty string reads the results of the main analysis and
 # writes to the baseline plot folder. Any other value reads the matching variant
 # folder and writes the figures next to it, so a sensitivity run cannot overwrite a
-# published figure. The aggregation must have run with the same value.
+# figure of the main analysis. The aggregation must have run with the same value.
 VARIANT = ""
 # Site subset. An empty string reads the aggregation over every site.
 # "deeper-only" reads the run restricted to the 128 sites whose soil water comes
 # from below layer 1, and writes the figures next to it. The value has to match
 # the one the aggregation ran with.
 SITE_SUBSET = ""
-# Variant whose all-sites block is added to the table below the published one. The
+# Variant whose all-sites block is added to the table below the main one. The
 # deep-sm run uses the deepest soil water layer that keeps at least 90 % of the layer 1
 # records at each site, 128 sites on a deeper layer and 80 on layer 1. Empty skips the block.
 DEEP_SM_VARIANT = "deep-sm"

@@ -1,67 +1,22 @@
 """
-Download and process ERA5-Land climate reanalysis data for FLUXNET sites.
+Download hourly ERA5-Land temperature and precipitation from Copernicus CDS and aggregate to yearly values.
 
-This script downloads ERA5-Land hourly climate data from the Copernicus Climate
-Data Store (CDS) for FLUXNET sites lacking 1991-2020 ERA5 data, then processes
-and aggregates the data to derive 30-year mean annual temperature (MAT) and
-mean annual precipitation (MAP).
+Per site, the script merges the two variables, drops duplicate timestamps,
+converts to degC (TA_degC) and mm (PRECIP_TOT_mm), shifts the timestamps back
+1 hour to the start of the ERA5 averaging period, keeps 1991-2020, and computes
+the annual mean temperature and precipitation sum. A yearly file is saved only
+if all 30 years are present. Sites with a valid yearly file are skipped.
 
-Purpose:
-    - Acquire historical climate data for older FLUXNET sites (e.g., FLUXNET2015)
-    - Standardize temporal coverage to 1991-2020 (key analysis period)
-    - Enable cross-site climate comparisons and analysis
+Usually started by 16c with a site index range (`... 0 35`); without arguments
+it processes all sites. Needs a configured cdsapi client.
 
-Processing Steps:
-    1. Load site coordinates from configuration CSV
-    2. Download ERA5-Land hourly data via CDS API
-       - Variables: 2m temperature (K), total precipitation (m)
-       - Date range: 1991-01-01 to 2021-01-01
-    3. Extract ZIP archives and merge temperature + precipitation CSVs
-    4. Validate merged data (check for duplicate timestamps)
-    5. Standardize column names: t2m→TA_degC, tp→PRECIP_TOT_mm
-    6. Unit conversion: K→°C, m→mm
-    7. Timestamp adjustment: shift back 1 hour to represent START of averaging period
-    8. Filter to complete calendar years: 1991-2020
-    9. Save shifted hourly timeseries (for reference)
-    10. Aggregate to yearly values:
-        - TA_degC: annual mean temperature (°C)
-        - PRECIP_TOT_mm: annual total precipitation (mm)
-
-Usage:
-    Run directly or via 16a_run_era5_parallel.py for batch processing.
-
-    Direct usage (single site range):
-        python 16b_download_era5_mat_map.py [start_index] [end_index]
-
-    Examples:
-        python 16b_download_era5_mat_map.py 0 35    # Sites 0-34
-        python 16b_download_era5_mat_map.py 35 70   # Sites 35-69
-
-    Via parallel manager:
-        python 16a_run_era5_parallel.py              # Spawns 6 batches
-
-Output Structure per Site:
-    {SITE}/
-    ├── raw/                                  # Original downloaded CSV files
-    ├── {SITE}_era5_1991-2020_shifted.csv     # Hourly data (shifted, 1991-2020)
-    └── {SITE}_era5_1991-2020_yearly.csv      # Yearly aggregated MAT & MAP
-
-Technical Notes:
-    - ERA5 timestamps represent END of averaging period (12:00 = 11:00-12:00)
-    - Shifted back 1 hour for calendar year filtering consistency
-    - Data range: 1991-01-01 00:00 to 2020-12-31 23:00 (shifted)
-    - Resumable: skips sites with existing yearly files
-    - All operations logged to batch-specific log file
-
-Validation:
-    - Checks for duplicate timestamps after merge
-    - Validates 30 years of data per site
-    - Ensures UTC timezone consistency
-
-Dependencies:
-    - cdsapi: Copernicus Climate Data Store API client
-    - pandas: Data manipulation and I/O
-    - Python 3.7+
+Reads: data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv
+Writes, in data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus/:
+- {SITE}/{SITE}_era5_1991-2020_shifted.csv (hourly)
+- {SITE}/{SITE}_era5_1991-2020_yearly.csv
+- {SITE}/raw/ (the downloaded CSV files)
+- a batch log 16_download_era5_log_*.txt and the shared ERRORS, WARNINGS
+  and NO_DATA_SITES logs
 """
 
 import os

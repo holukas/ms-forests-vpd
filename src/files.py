@@ -16,8 +16,16 @@ from src.common import peak_season_months
 def load_data(suffix, shap_type, dir_res, flux, aggfunc, subsetcols: list,
               x_in_filename: str, y_in_filename: str, count_vals_col: tuple[str, str] = False, site_filter=None):
     """
-    Loads parquet, flattens cols, optionally filters by index.
-    suffix: 'Sites' (for main plot, prefix 42) or 'IGBP-X' (for subplots, prefix 43)
+    Load aggregated SHAP values for one plot.
+
+    Reads `42_SHAPVALUES-...AggregatedAcrossSites...parquet` (suffix 'Sites') or
+    `43_SHAPVALUES-...AggregatedAcrossIGBP-X...parquet` (suffix 'IGBP-X'),
+    optionally keeps only the sites in `site_filter`, and drops bins that have
+    fewer than half of `N_SITES` sites in `count_vals_col`.
+
+    Returns:
+        filedf, subsetdf (`subsetcols` with flattened names), [min, max] nonzero
+        site count per bin, n_sites.
     """
     # Select 42 for 'Sites' (AggregatedAcrossSites) and 43 for IGBP (AggregatedAcrossIGBP)
     prefix = "42" if suffix == 'Sites' else "43"
@@ -63,47 +71,28 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
                                  igbp: str, origin: str, variant: str = "", showplot: bool = True,
                                  logging=logging) -> dict:
     """
-    Processes the full flux data for a specific site to create a quality-controlled,
-    seasonally-filtered, and year-balanced subset for subsequent analysis.
+    Build the peak-season subset for one site and write it to parquet.
 
-    The function performs a sequence of steps: loads data, selects required variables,
-    filters for QC-flag 0 (measured data) and daytime records, identifies the 4 months with
-    the highest mean GPP, balances the data across available years for these months,
-    calculates derived variables (ET, NEP), converts all measured variables to Z-scores,
-    saves the final subset to a Parquet file, generates a heatmap visualization, and
-    returns comprehensive summary statistics.
+    Steps: keep measured NEE (QC flag 0) and daytime records (SW_IN_POT > 20);
+    keep the 4 months with the highest mean GPP, chosen on the full record;
+    give each of these months the same number of years, keeping the latest;
+    drop records with any missing variable; add ET and NEP; add z-scores
+    (suffix `_ZSCORE`) computed within the subset.
 
-    The core filtering step ensures that all 4 peak-GPP months included in the subset
-    have the *exact same number of available years* of data, using the latest years
-    available to achieve this balance, which prevents monthly bias in long-term statistics.
+    Writes, under `DIR_DATA_PROC_SUBSETS_BASE/<variant>/`:
+        21_subsets_parquet/<site>_subset_GPPhighest4_qc0_daytime.parquet
+        21_subsets_parquet_plots/<site>_<igbp>_<origin>_SUBSET_<start>-<end>
 
     Args:
-        settings (dict): A dictionary containing global settings, including output directory paths
-                         (e.g., 'DIR_DATA_PROC_SUBSETS_BASE').
-        filepath_parquet_fullset (str): The file path to the complete, raw site dataset (Parquet format).
-        ix (int): The index of the current site being processed (used for console logging).
-        varnames (dict): A mapping dictionary where keys are generic variable types (e.g., 'nee_var',
-                         'ta_var') and values are the specific column names in the input dataset.
-                         (Variables must be present: NEE, LE, SWIN_POT, TA, VPD, SWC, and corresponding QC flags).
-        site (str): The unique identifier for the flux tower site (e.g., 'AU-Cum'). This is used
-                    in naming the output file.
-        igbp (str): The IGBP classification code for the site (e.g., 'ENF'). Used for plot title/metadata.
-        origin (str): The source of the data (e.g., 'FLUXNET', 'OZFLUX'). Used for plot title/metadata.
-        variant (str): Name of the run variant. An empty string writes to the baseline
-                       paths. Any other value adds a folder level, e.g. 'multilayer'.
-        showplot (bool): Show the heatmap plot on screen. The plot file is written
-                         either way. Must be False in a worker process, where no
-                         window can open.
+        varnames: Column names by role, from `get_variable_names()`.
+        variant: Run variant. An empty string writes to the main-analysis
+            paths, any other value (e.g. 'multilayer') adds a folder level.
+        showplot: Show the heatmap on screen. Must be False in a worker process.
 
     Returns:
-        dict: A dictionary containing comprehensive metadata and summary statistics for the
-              generated subset, including date ranges, record counts, and min/max/mean/SD
-              for both measured and Z-score variables. The dictionary also includes the
-              file path to the generated Parquet subset.
-
-    Raises:
-        KeyError: If a required variable name from `varnames` is not found in the dataset
-                  when loading or selecting columns.
+        dict: Dates, record and year counts, min and max of every column, mean
+        and SD of each measured variable, and `_FILEPATH_PARQUET_SUBSET`. Empty
+        if no records remain.
     """
     print(f"\nLoading data for site #{ix + 1} {site} ...")
 
@@ -352,7 +341,11 @@ import pandas as pd
 
 def _compare_years(primary_df, secondary_df, fluxvar):
     """
-    Reconciles two pandas DataFrames by adjusting them based on a common year.
+    Resolve the overlap between two datasets of the same site.
+
+    In the first year of `primary_df`, the dataset with fewer measured flux
+    records (QC 0) drops that year. The dataset that ends later becomes primary,
+    and the other is cut to end before primary starts.
     """
     # 1. Check types FIRST before trying to access .year
     if not isinstance(primary_df.index, pd.DatetimeIndex) or not isinstance(secondary_df.index, pd.DatetimeIndex):
@@ -605,7 +598,7 @@ def save_heatmap_plot(df: pd.DataFrame, outpath: str, outname: str, site: str,
 
 
 def read_settings_file(filepath_settings) -> dict:
-    """Read start values from settings file as strings into dict, with same variable names as in file"""
+    """Read a YAML settings file into a dict, keys as in the file."""
     with open(filepath_settings, 'r', encoding='utf-8') as f:
         settings_dict = yaml.safe_load(f)
     return settings_dict

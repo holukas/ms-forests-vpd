@@ -1,38 +1,22 @@
 """
-Does adding extreme VPD still cost net uptake when the other conditions are matched?
+Test whether extreme VPD still lowers net uptake once Stage 8 records are matched to Stage 7 records on the other drivers.
 
-The Results compare Stage 7 (hot, driest soil, VPD not extreme) with Stage 8 (the
-same plus extreme VPD) as cross-site means of the site means, and as the share of the
-common sites at which the net effect is more negative at Stage 8. Both comparisons use
-whatever records fall into each stage, so the two stages can differ in more than VPD:
-within the cut-offs Stage 8 records are hotter and drier than Stage 7 records, and they
-carry more light, since shortwave radiation is not constrained by the stages.
+Unmatched, Stage 8 records are hotter and drier than Stage 7 records and get more
+shortwave radiation, which the stages do not constrain. Each Stage 8 record is matched to
+the nearest Stage 7 record of the same site, with replacement:
 
-This script matches every Stage 8 record of a site to the closest Stage 7 record of
-the same site, with replacement, and reads the difference in the attributed effects
-across the matched pairs. Two matchings, so the price of the time constraint is visible:
+- strict: same calendar month, hour of day within HOUR_WINDOW (1 h), and TA, SWC and SWIN
+  (site-standardized) each within CALIPER (0.5 sigma)
+- covariate: caliper only, any month and hour
 
-  strict     same calendar month, hour of day within one hour, and every covariate
-             (TA, SWC, SWIN in site-standardized units) within CALIPER
-  covariate  every covariate within CALIPER, any month and hour
+Reports per site the matched share, covariate balance and the mean Stage 8 minus Stage 7
+difference of the net effect and each driver contribution, and across sites the median,
+mean and share of negative differences, beside the unmatched comparison. Nothing is refitted.
 
-Per site the script reports how many Stage 8 records found a partner, the covariate
-balance after matching, and the mean difference (Stage 8 minus Stage 7) of the net
-effect and of the four driver contributions over the matched pairs. Across sites it
-reports the median and mean of those site differences, the share of sites at which the
-matched net difference is negative, and the unmatched comparison on the same sites for
-reference.
-
-Nothing is refitted. Reads the per-site SHAP files of stage 31 and applies the stage
-masks of `src/stages.py`, as stage 44 does.
-
-Reads:
-    20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv
-    30_shap/<FLUX>/conditional/<SITE>_shap-conditional_<FLUX>.parquet
-
-Writes:
-    80_info/<FLUX>/conditional/89_INFO_StageMatching_<FLUX>.csv          per site and matching
-    80_info/<FLUX>/conditional/89_INFO_StageMatching_<FLUX>_SUMMARY.csv  across sites
+Reads: 21_SUBSETS_parquet_vars_stats_subsets.csv,
+30_shap/<FLUX>/conditional/<SITE>_shap-conditional_<FLUX>.parquet
+Writes to 80_info/<FLUX>/conditional/: 89_INFO_StageMatching_<FLUX>.csv (per site and
+matching), 89_INFO_StageMatching_<FLUX>_SUMMARY.csv (across sites)
 """
 from pathlib import Path
 
@@ -60,8 +44,8 @@ sites = pd.read_csv(Path(settings['DIR_DATA_PROC_SUBSETS_BASE']) / VARIANT
 
 
 def match(s8, s7, strict):
-    """Index of the closest Stage 7 record for every Stage 8 record, or -1 if none is
-    within the caliper (and, when strict, within the same month and hour window)."""
+    """Position of the nearest Stage 7 record for each Stage 8 record, or -1 if none is
+    within the caliper (and, when strict, the same month and hour window)."""
     x8 = s8[COVARIATES].to_numpy()
     x7 = s7[COVARIATES].to_numpy()
     # squared distance, n8 by n7

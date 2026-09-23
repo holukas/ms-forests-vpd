@@ -129,79 +129,34 @@ def train_xgboost_models_and_shap(target: str, features: list,
                                   siteconfig, ix, modelstxt, results_outdir: Path, conditional=False,
                                   cv_strategy: str = 'random') -> dict:
     """
-    Train XGBoost models with 5-fold cross-validation and compute out-of-sample SHAP values.
+    Train XGBoost per site with cross-validation and compute out-of-sample SHAP values.
 
-    ## Logic: Out-of-Sample SHAP Values via 5-Fold CV
+    Each record gets its SHAP values and prediction from the fold model that did
+    not see it in training. Within each fold, the training part is split again:
+    85% to fit, 15% for early stopping (100 rounds). Hyperparameters are the same
+    for all sites (n_estimators=3000, max_depth=6, learning_rate=0.05,
+    subsample=0.8, colsample_bytree=0.8, reg_lambda=1, reg_alpha=0.1, gamma=0.2,
+    min_child_weight=5, random_state=42).
 
-    **Why 5-fold CV?**
-    - Standard SHAP calculation trains on 85% of data, then explains the ENTIRE dataset
-    - This means SHAP values for training data (in-sample) reflect patterns the model learned
-    - In-sample SHAP can be misleading: high values don't prove causality (model memorized)
-    - Out-of-sample SHAP ensures each data point is explained by a model that never saw it
-    - This gives unbiased feature importance: high SHAP = the feature truly predicts the target
+    Args:
+        conditional: False (default) gives interventional SHAP with up to 300
+            background records sampled from the fold's training part. True gives
+            tree-path-dependent (conditional) SHAP.
+        cv_strategy: 'random' is a shuffled 5-fold KFold (main analysis).
+            'blocked' leaves one calendar year out; sites with fewer than two
+            years are skipped.
 
-    **Per-Fold Workflow:**
-    1. KFold splits data into 5 folds:
-       - Train fold (80% of total): 4 folds combined
-       - Test fold (20% of total): 1 fold held out
-    2. For each fold:
-       a) Train fold (80%): further split into training and validation
-          - 68% (85% of 80%): trains the model
-          - 12% (15% of 80%): guides early stopping (prevents overfitting)
-       b) Test fold (20%): held out completely, used for:
-          - Model evaluation (R², RMSE)
-          - SHAP calculation (out-of-sample explanations)
-    3. All 5 folds combined = full dataset coverage with unbiased explanations
+    Reads the subset parquet in `siteconfig['_FILEPATH_PARQUET_SUBSET']`.
 
-    **SHAP Calculation:**
-    - Conditional SHAP (default): Respects feature correlations (realistic effects)
-    - Standard SHAP: Marginal effects (what if features were independent?)
-    - Background data for standard SHAP: sampled from training set only (avoids data leakage)
+    Writes:
+        <site>_shap-<interventional|conditional>_<target>.parquet and .csv in
+        `results_outdir` (features, SHAP values, SUM, EXPECTED, target,
+        prediction, other subset columns); fold and global metrics appended
+        to `modelstxt`.
 
-    **Output:**
-    - Per-fold metrics: R² and RMSE for each fold (shows generalization)
-    - Global metrics: Out-of-sample R² and RMSE across all 5 folds (overall model quality)
-    - SHAP values: One per sample, from a model that never saw that sample
-    - Predictions: Out-of-sample predictions for the entire dataset
-
-    Parameters
-    ----------
-    target : str
-        Target variable name (e.g., 'NEP_ZSCORE')
-    features : list
-        List of feature column names (e.g., ['TA_ZSCORE', 'SWIN_ZSCORE', ...])
-    siteconfig : dict
-        Row from site configuration CSV, containing 'SITE', '_FILEPATH_PARQUET_SUBSET', etc.
-    ix : int
-        Site index (for logging/progress)
-    modelstxt : Path
-        Path to text file for logging model metrics and performance
-    results_outdir : Path
-        Directory to save SHAP results (parquet + CSV)
-    conditional : bool, default=False
-        If True: Calculate conditional SHAP (respects correlations)
-        If False: Calculate standard/marginal SHAP (assumes independence)
-
-    Returns
-    -------
-    dict
-        Dictionary with CV results for aggregation:
-        {
-            'site': str (site name),
-            'target': str (target variable),
-            'fold_1_r2': float, 'fold_1_rmse': float,
-            'fold_2_r2': float, 'fold_2_rmse': float,
-            ...,
-            'fold_5_r2': float, 'fold_5_rmse': float,
-            'global_r2': float, 'global_rmse': float
-        }
-
-    Notes
-    -----
-    - Fixed hyperparameters (reg_lambda=1, reg_alpha=0.1, gamma=0.2, etc.)
-      ensure consistent model behavior across sites
-    - Early stopping on validation set prevents overfitting within each fold
-    - Output files include all features, SHAP values, predictions, and original measurements
+    Returns:
+        dict: site, target, fold_<i>_r2 and fold_<i>_rmse per fold, global_r2,
+        global_rmse. Empty if the site has no subset or too few years.
     """
 
     print(f"\nLoading data for site #{ix + 1} {siteconfig['SITE']} ...")
@@ -237,13 +192,13 @@ def train_xgboost_models_and_shap(target: str, features: list,
 
     # Cross-validation strategy.
     #
-    # 'random' is the submitted setting: a shuffled 5-fold split of the complete
+    # 'random' is the main-analysis setting: a shuffled 5-fold split of the complete
     # rows. It matches the task, since a gap is predicted from driver values at its
     # own timestamp and gaps sit between observed records.
     #
-    # 'blocked' leaves one calendar year out at a time, which Reviewer 2 asked for.
-    # Neighbouring half-hours are correlated, so a shuffled split can put a record
-    # and its neighbour on opposite sides of the split and flatter the score. A
+    # 'blocked' leaves one calendar year out at a time.
+    # Neighboring half-hours are correlated, so a shuffled split can put a record
+    # and its neighbor on opposite sides of the split and flatter the score. A
     # year-wise split removes that and answers a different question, whether the
     # model carries to a period it never saw. Expect lower scores, and treat the
     # drop as the size of the leakage rather than as a fault.
@@ -629,11 +584,11 @@ def train_xgboost_models_and_ale(target: str, features: list,
 def calculate_partial_correlations(target: str, features: list,
                                    siteconfig, ix, modelstxt, results_outdir: Path) -> None:
     """
-    Calculate partial correlations between target and each feature,
-    controlling for all other features.
+    Partial correlation of the target with each feature, controlling for the other features.
 
-    This validates SHAP importance by showing the isolated effect of each
-    feature on the target, accounting for confounding variables.
+    Both target and feature are residualized on the other features by linear
+    regression, then correlated (Pearson). Writes
+    `<site>_partial_correlations_<target>.csv` and appends to `modelstxt`.
     """
     print(f"\nCalculating Partial Correlations for site #{ix + 1} {siteconfig['SITE']} ...")
 
@@ -719,12 +674,11 @@ def calculate_partial_correlations(target: str, features: list,
 def calculate_path_analysis(target: str, features: list,
                            siteconfig, ix, modelstxt, results_outdir: Path) -> None:
     """
-    Calculate path coefficients (standardized regression coefficients) to test
-    direct and indirect effects of predictors on target.
+    Simplified path analysis: standardized regression coefficients and feature intercorrelations.
 
-    This implements a simplified path analysis where we calculate how much each
-    feature directly predicts the target (path coefficient) and the strength of
-    correlations between features (mediator paths).
+    Direct paths are the coefficients of a linear regression on standardized
+    variables; mediation paths are the Pearson correlations between feature
+    pairs. Writes `<site>_path_analysis_<target>.csv` and appends to `modelstxt`.
     """
     print(f"\nCalculating Path Analysis for site #{ix + 1} {siteconfig['SITE']} ...")
 
@@ -818,12 +772,11 @@ def calculate_path_analysis(target: str, features: list,
 def create_validation_summary(target: str, features: list,
                              siteconfig, ix, results_outdir: Path) -> None:
     """
-    Create a comprehensive summary integrating ALE, Partial Correlations, and Path Analysis.
+    Write a text summary of the ALE, partial correlation and path analysis results for one site.
 
-    Combines all three validation methods to:
-    1. Identify which variables are most important
-    2. Interpret what each variable shows
-    3. Check agreement between methods
+    Reads the three per-site CSVs from `results_outdir`, ranks features by the
+    mean of ALE range, |partial r| and |path coefficient|, and checks whether the
+    methods agree on the effect direction. Writes `<site>_summary_<target>.txt`.
     """
     site = siteconfig['SITE']
 
@@ -1005,18 +958,15 @@ def create_validation_summary(target: str, features: list,
 def tune_xgboost_hyperparameters(target: str, features: list,
                                  siteconfig, ix, results_outdir: Path, n_iter: int = 25) -> dict:
     """
-    Hyperparameter tuning for XGBoost using RandomizedSearchCV with 5-fold CV.
+    Tune XGBoost for one site with RandomizedSearchCV and 5-fold CV (scoring R2).
 
-    Tunes only the core model complexity parameters (n_estimators, max_depth, learning_rate)
-    while keeping regularization and feature subsampling fixed at well-tested values.
-
-    Useful for validating or optimizing model performance.
-
-    Parameters:
-    - n_iter: Number of parameter combinations to test (default: 25)
+    Searches n_estimators, max_depth and learning_rate; the other
+    hyperparameters are fixed as in `train_xgboost_models_and_shap`.
+    `n_iter` sets the number of combinations tested. Writes
+    `<site>_hyperparameter_tuning_<target>.txt`.
 
     Returns:
-    - Dictionary with best parameters and best CV score
+        dict: Best parameters, best CV score, n_iter and record count.
     """
     print(f"\nHyperparameter Tuning for site #{ix + 1} {siteconfig['SITE']} ...")
 

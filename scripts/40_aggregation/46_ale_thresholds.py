@@ -1,38 +1,19 @@
 """
-ALE curves on a common grid, and the thresholds that come out of them.
+Put the per-site ALE curves on a common grid and derive VPD thresholds from them.
 
-The heavy half of what used to be the ALE figure script. Reading 208 per-site ALE files is
-aggregation, not drawing, so it belongs at this stage. Script 57 reads what this writes
-and draws the five-panel figure, and script 47 reads the threshold
-table for the ALE row of the robustness analysis. Before this split, a stage 40 script had
-to read a file that a figure script wrote, which is backwards.
+Each site's curve is interpolated to the grid and smoothed with a fourth-order polynomial;
+its threshold is the first positive to negative crossing. A group's threshold (`ALL SITES`,
+then one row per forest type) is the mean of the per-site crossings, with a 95% interval
+from the t distribution; sites whose curve never crosses are left out. The
+`ALL SITES (pooled curve)` row is a different quantity: the crossing of the cross-site
+mean curve (median if USE_MEDIAN), kept where at least half the sites have data.
 
-**What a threshold is here.** Each site's ALE curve is interpolated to one grid, then
-smoothed with a fourth-order polynomial, and the threshold is the first positive to negative
-crossing of that smoothed curve. The number reported for a group is the mean of the per-site
-crossings, with a 95 % interval from the t distribution. Sites whose curve never crosses are
-left out of the mean, and the count of those that do cross is written next to it.
+Reads the stage 32 files `{site}_ale_{FLUX}.parquet` and `{site}_ale_curves_{FLUX}.csv`
+and the stage 21 subsets table.
 
-**The all-sites row is the same kind of number as the forest type rows**, and the file it
-replaces said otherwise. Script 70 labelled it "Direct zero-crossing" and "Single curve",
-but the value it wrote, 0.181, is the mean of the per-site crossings over the 207 sites whose
-curve crosses. The crossing of the pooled curve is 0.107, a different number that was never
-reported. Both are written here, the mean as `ALL SITES` and the pooled value as
-`ALL SITES (pooled curve)`, so the two can never be confused again. The mean also gets a
-95 % interval, which the old file left empty for no reason other than the wrong label.
-
-**Coverage mask.** A grid point is only kept where at least half the sites in the group have
-data, the same rule the SHAP route uses. Without it the ends of the curve rest on a handful
-of sites.
-
-Reads the per-site output of stage 32, `{site}_ale_{FLUX}.parquet` for the record check and
-`{site}_ale_curves_{FLUX}.csv` for the curves, plus the stage 21 subsets table for the site
-list and the forest type.
-
-Writes, into the aggregation folder:
-    46_ALE_SiteCurves_{FEATURE}_{FLUX}.parquet   one interpolated curve per site, plus IGBP
-    46_ALE_Thresholds_{FEATURE}_{FLUX}.csv       all sites, then one row per forest type,
-                                                 each with the spread and the interval
+Writes:
+- 46_ALE_SiteCurves_{FEATURE}_{FLUX}.parquet, one curve per site, drawn by script 57
+- 46_ALE_Thresholds_{FEATURE}_{FLUX}.csv, read by script 47 for its ALE row
 """
 from pathlib import Path
 
@@ -51,7 +32,7 @@ FEATURE = 'VPD_ZSCORE'
 # next to them. The ALE campaign must have run with the same value.
 VARIANT = ""
 
-USE_MEDIAN = False       # False: mean across sites, the published choice
+USE_MEDIAN = False       # False: mean across sites, as in the main analysis
 IGBPS = ['ENF', 'DBF', 'MF', 'EBF']
 GRID_POINTS = 50
 
@@ -109,9 +90,8 @@ def calc_ci_95(values):
 def load_site_curves():
     """One raw ALE curve per site, with its forest type.
 
-    The parquet is read first, as in the original script, because a site only counts if it
-    has more than 10 records for this feature and flux. The curve itself comes from the csv
-    that stage 32 writes beside it.
+    A site counts only if its parquet file has more than 10 records with both FEATURE and
+    FLUX. The curve itself comes from the csv that stage 32 writes next to it.
     """
     subsets_df = pd.read_csv(str(data_path(
         "data/outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv")))
@@ -173,12 +153,10 @@ def interpolate(curves):
 
 
 def group_threshold(curves_on_grid, grid):
-    """Mean of the per-site crossings for one group, with its spread and its interval.
+    """Mean of the per-site crossings for one group, with 95% interval, SD, SE and counts.
 
-    Three numbers, because they answer different questions and get confused for each other.
-    The standard deviation says how much sites differ. The standard error and the interval
-    say how well the mean is determined, and they are smaller by the square root of the site
-    count. For all sites that is 0.45 sigma against 0.03, a factor of fourteen.
+    The standard deviation describes how much sites differ; the standard error and the
+    interval describe how well the mean is determined.
     """
     fitted = fit_polynomial_to_curves(curves_on_grid, grid)
     crossings = np.array([find_zero_crossing(c, grid) for c in fitted])
@@ -202,8 +180,7 @@ def main():
     curves_file = dir_out / f'46_ALE_SiteCurves_{FEATURE}_{FLUX}.parquet'
     frame.to_parquet(curves_file)
 
-    # All sites, the published value: the mean of the per-site crossings. Script 70 wrote
-    # this number under a label saying it came from one pooled curve, which it does not.
+    # All sites: the mean of the per-site crossings, not the crossing of one pooled curve.
     fitted = fit_polynomial_to_curves(matrix, grid)
     mean, lo, hi, sd, se, n_cross, n_total = group_threshold(matrix, grid)
 

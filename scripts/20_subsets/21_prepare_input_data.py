@@ -1,24 +1,19 @@
 """
-Prepare input data for XGBoost models.
+Prepare the per-site input data for the XGBoost models.
 
-Writes one subset parquet file and one heatmap plot per site, plus an info CSV and
-a warnings log for the run. Everything goes under data/outputs/20_subsets/<VARIANT>/.
+Settings:
+- VARIANT = "": subfolder of data/outputs/20_subsets/. Empty overwrites the
+  main analysis subsets; set a name before rerunning with other settings.
+- SWC_LAYER = "shallow": soil water layer, "shallow" or "deepest".
+- N_WORKERS = 3: sites processed in parallel. With 1, the plots are shown.
 
-VARIANT is empty by default, so the output goes straight to 20_subsets/. That folder
-holds the subsets for the submitted figures. Set a name before you rerun with other
-settings, or you overwrite them.
+Reads: data/outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv
+Writes, per site, a subset parquet file and a heatmap plot, plus
+21_SUBSETS_parquet_vars_stats_subsets.csv and 21_warnings.log.
 
-Sites are independent, so N_WORKERS of them run at the same time. Set N_WORKERS to 1
-to run one site after the other and to see the plots on screen.
-
-Note:
-    One of the sites (CD-Ygb) had VPD in the wrong units. It seems that this site
-    was the only site that recorded VPD in Pa instead of hPa. I found this issue
-    after I ran the analyses. However, all analyses were run on the z-scores from
-    each site. Since VPD from CD-Ygb was also transformed to z-scores, results
-    are not affected by this issue. For the overview table in the Extended Data
-    I manually corrected the reported VPD mean by dividing by 100 (Pa --> hPa).
-
+CD-Ygb reports VPD in Pa instead of hPa. The models use per-site z-scores, so
+results are unaffected; its VPD mean in the Extended Data overview table was
+corrected by hand.
 """
 import logging
 import re
@@ -32,16 +27,15 @@ from src.common import deepest_swc_per_site, get_variable_names
 from src.paths import data_path, load_settings, resolve_stored_path
 
 # Run variant. An empty string writes to the baseline paths and overwrites the
-# submitted subsets. Any other value adds a folder level, e.g. "multilayer".
+# main analysis subsets. Any other value adds a folder level, e.g. "multilayer".
 VARIANT = ""
 
 # Which soil water layer to use. "shallow" keeps SWC_F_MDS_1, which is what the
-# submitted analysis used. "deepest" swaps in the deepest layer per site that
-# still holds at least 90 % of layer 1's records in the peak months, which is
-# the sensitivity run reviewers 2 and 3 and the editor asked for. 128 of 208
-# sites move, the rest have no deeper layer or only gappy ones and stay on
-# layer 1. Set VARIANT as well when using "deepest", or the deep subsets
-# overwrite the submitted ones.
+# main analysis used. "deepest" swaps in the deepest layer per site that
+# still holds at least 90 % of layer 1's records in the peak months, for the
+# soil water sensitivity run. 128 of 208 sites move, the rest have no deeper
+# layer or only gappy ones and stay on layer 1. Set VARIANT as well when using "deepest", or the deep subsets
+# overwrite the main analysis ones.
 SWC_LAYER = "shallow"
 
 # How many sites to process at the same time. Memory is the limit here, not the
@@ -54,11 +48,10 @@ N_WORKERS = 3
 
 
 class WarningCollector:
-    """Collects warnings inside a worker process.
+    """Collect warnings in a worker process.
 
-    Several processes cannot write to one log file safely. Each worker therefore
-    keeps its warnings, and the parent process writes them in site order once the
-    run is over. Stands in for the logging module, so files.py needs no change.
+    Stands in for the logging module; the parent process writes the messages
+    to the log in site order after the run.
     """
 
     def __init__(self):
@@ -77,9 +70,8 @@ def init_worker():
 def process_site(task: tuple) -> tuple:
     """Build the subset for one site.
 
-    Returns the site info, the collected warnings, and the site ID if the site
-    failed. A site that raises must not stop the other 200, so the error is
-    caught here and reported at the end of the run.
+    Returns the subset info, the collected warnings, and the site ID if the
+    site failed. Errors are caught so one failing site does not stop the run.
     """
     ix, siteconfig, settings, showplot, deep_swc = task
     site = str(siteconfig['SITE'])

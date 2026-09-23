@@ -1,8 +1,22 @@
 """
-VPD response curve
+Figure 4 and Supplementary Table 7: the VPD response curve of NEP.
 
-Colors: https://www.pinterest.com/pin/914862421161100/
-Colors: https://www.pinterest.com/pin/11118330331981167/
+Panel a plots the SHAP effect of VPD on NEP per VPD bin, aggregated across sites and
+colored by air temperature, with a fourth-order polynomial fit and its 95% prediction
+interval. Panels b to e show each forest type. The threshold is the highest zero crossing
+of the fit, bounded by the crossings of the interval. Supplementary Table 7 lists the
+coefficients, R2 and the threshold in sigma and in kPa; the kPa value uses each site's VPD
+mean and standard deviation, averaged over sites, with CD-Ygb converted from Pa first.
+VARIANT and SITE_SUBSET must match the values scripts 42 and 43 ran with.
+
+Reads the 42 and 43 aggregations on the TA by VPD grid and the stage 21 subsets table.
+Writes to the plot folder:
+- 54_FIG-4_ResponseCurve_ShapMeans_<FLUX>_<vars>.png, with _ALLSITES_DATA.csv,
+  _<IGBP>_DATA.csv and _DATA_COEFFICIENTS.csv
+- 54_SUPPTABLE-7_ThresholdPolynomials_<FLUX>.csv and .xlsx
+
+Colors: https://www.pinterest.com/pin/914862421161100/ and
+https://www.pinterest.com/pin/11118330331981167/
 """
 from pathlib import Path
 
@@ -42,10 +56,10 @@ ZONE_LABELS = {
 }
 LABEL_POS, LABEL_NEG = ZONE_LABELS[FLUX]
 
-# Run variant. An empty string reads the results behind the submitted figures and
+# Run variant. An empty string reads the results of the main analysis and
 # writes to the baseline plot folder. Any other value reads the matching variant
 # folder and writes the figures next to it, so a sensitivity run cannot overwrite a
-# published figure. The aggregation must have run with the same value.
+# figure of the main analysis. The aggregation must have run with the same value.
 VARIANT = ""
 # Site subset. An empty string reads the aggregation over every site.
 # "deeper-only" reads the run restricted to the 128 sites whose soil water comes
@@ -507,9 +521,8 @@ df_coeffs.to_csv(_outfilepath, index=False)
 # ---------------------------------------------------------------------------
 # Supplementary table: the same coefficients, with the threshold in kPa
 # ---------------------------------------------------------------------------
-# This table used to be assembled by hand from two csv files, which is what Reviewer 2
-# could not follow in the code. It is written here because the coefficients are fitted
-# here, so the table can never disagree with the figure.
+# The table is written here because the coefficients are fitted here, so the table can
+# never disagree with the figure.
 #
 # Each site standardizes VPD against its own mean and standard deviation, so a threshold
 # in sigma means a different absolute VPD at every site:
@@ -520,7 +533,7 @@ df_coeffs.to_csv(_outfilepath, index=False)
 # Divide by 10 for kPa, then average sites with equal weight, the aggregation used
 # everywhere else. The biome value is the mean over the sites of that biome.
 #
-# The published range of 1.22 to 1.32 kPa is the span of the four biome means. It is not
+# The biome range given in the manuscript is the span of the four biome means. It is not
 # a confidence interval, and the biome intervals overlap heavily.
 #
 # CD-Ygb records VPD in Pa where every other site uses hPa. The factor is exactly 100:

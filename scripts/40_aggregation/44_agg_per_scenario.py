@@ -1,3 +1,14 @@
+"""
+Mean SHAP values within each stress stage, per site and across sites.
+
+Stages are defined in `src/stages.py`. Settings at the top of the file:
+- FLUX, CONDITIONAL, VARIANT, SITE_SUBSET
+- STAGE_SEQUENCE: `"published"` for the main stage order, `"mirrored"` for the order in
+  which VPD escalates and extreme soil dryness comes last; the mirrored run writes to its
+  own folder
+
+Can run any time after stage 31.
+"""
 from pathlib import Path
 
 import diive as dv
@@ -36,9 +47,8 @@ SITE_SUBSET = ""
 settings = load_settings()
 # Which stage sequence to apply. "published" lets temperature rise and soil water fall
 # while holding VPD below its extreme, and adds extreme VPD last. "mirrored" swaps the two
-# roles, escalating VPD and adding extreme soil dryness last, which is the symmetric
-# control Reviewer 2 asked for. The mirrored run writes to its own folder, so it cannot
-# overwrite the published stage output.
+# roles, escalating VPD and adding extreme soil dryness last, as a symmetric control.
+# The mirrored run writes to its own folder, so it cannot overwrite the main stage output.
 STAGE_SEQUENCE = "published"
 
 shap_type = 'conditional' if CONDITIONAL else 'interventional'

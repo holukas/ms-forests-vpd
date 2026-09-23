@@ -1,40 +1,24 @@
 """
 Build the zip archives of the pipeline outputs for the data deposit.
 
-One archive per output stage, with the paths inside each archive relative to
-``data/outputs/``, so that unpacking all archives into ``data/outputs/`` restores the
-layout every script expects and the pipeline runs from stage 31 onward without the
-flux products.
+One uncompressed zip per output stage, with paths relative to ``data/outputs/``.
+Unpacked there, the archives let the pipeline run from stage 31 onward
+without the flux products.
 
-What goes in, per stage:
+Contents per stage:
+- 10_datasets: the top-level csv and log files of scripts 11-17 and the Google
+  Earth Engine ERA5 folder
+- 30_shap, 40_aggregation: everything except csv files with a parquet file of
+  the same name in the same folder
+- 20_subsets, 50_plots, 80_info: everything
 
-    10_datasets     the site and variable tables the later stages read (the csv and log
-                    files at the top level and the small Google Earth Engine folder);
-                    not the merged flux products and not the ERA5 downloads
-    20_subsets      everything (per-site subsets as parquet, the subsets tables, plots)
-    30_shap         everything except csv files that have a parquet twin
-    40_aggregation  everything except csv files that have a parquet twin
-    50_plots        everything
-    80_info         everything
+It does not build if a file breaks the ETH Research Collection limits (ASCII
+names without blanks, paths under 200 characters, files up to 10 GB, 50 GB in
+total).
 
-A csv file is a twin when a file with the same name and the extension .parquet exists
-in the same folder; the pipeline reads the parquet, and the csv copy is five to ten
-times larger with the same numbers.
-
-The archives follow the rules of the ETH Research Collection: zip with compression
-level "store" (parquet is compressed already), no nested archives, ASCII names without
-blanks, paths shorter than 200 characters, single files of at most about 10 GB and at
-most 50 GB per entry. The script checks the names and the sizes and refuses to build
-when a rule is broken.
-
-Usage:
-    python scripts/90_deposit/91_build_deposit_archives.py            dry run: list what would be archived
-    python scripts/90_deposit/91_build_deposit_archives.py --build    write the archives
-
-Writes, into <DATA_ROOT>/deposit/:
-    ms-forests-vpd_outputs_<stage>.zip     one per stage
-    MANIFEST.csv                           every archived file: archive, path, bytes, sha256
-    ARCHIVES.csv                           every archive: name, files, bytes, sha256
+Without arguments it is a dry run. With ``--build`` it writes into
+<DATA_ROOT>/deposit/ the archives ms-forests-vpd_outputs_<stage>.zip
+(replacing existing ones), MANIFEST.csv (sha256 per file) and ARCHIVES.csv.
 """
 import csv
 import hashlib
@@ -61,7 +45,7 @@ NAME_OK = re.compile(r"^[A-Za-z0-9!$&'()+,\-.;=@_/]+$")
 
 
 def select(stage: str) -> list[Path]:
-    """The files of one stage that go into the deposit."""
+    """Return the files of one stage that go into the deposit."""
     root = OUTPUTS / stage
     if stage == "10_datasets":
         files = []

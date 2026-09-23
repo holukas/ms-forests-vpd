@@ -1,10 +1,11 @@
 """
-Supplementary Fig. 10: the record losses from raw half-hours to the modelled dataset.
+Supplementary Fig. 10: the record losses from raw half-hours to the modeled dataset.
 
-Reads `22_data_flow.csv` from stage 20 and draws one ribbon that narrows at each
-filtering step, with the removed share branching off below it, so the loss at each
-step is visible next to what remains. The per-site table behind it is Supplementary
-Data 1.
+One ribbon narrows at each filtering step, with the removed records branching off below it.
+The per-site numbers are Supplementary Data 1 (script 67).
+
+Reads:
+    20_subsets/<VARIANT>/22_data_flow.csv
 
 Writes, into the plot folder:
     66_SUPPFIG-10_DataFlow_Sankey.png | _DATA.csv
@@ -44,11 +45,11 @@ def ribbon(ax, x0, x1, top0, bot0, top1, bot1, color, alpha):
 
 
 def lost_flow(ax, x0, x1, top0, depth, shaft, head, shaft_w, head_w, color, alpha):
-    """The removed records: a ribbon that leaves the node to the right, bends down in a
-    rounded turn into a vertical shaft of width shaft_w ending at x1, and ends in an
-    arrowhead pointing down. top0 is the top of the removed slice at the node, its bottom
-    is 0. The outer edge of the turn is a quarter ellipse from the end of the ribbon to the
-    shaft; the inner edge gets a smaller one, so neither corner is a right angle."""
+    """Draw the removed records as a ribbon that turns down into a shaft ending at x1.
+
+    top0 is the top of the removed slice at the node, its bottom is 0. The shaft has width
+    shaft_w and ends in a downward arrowhead. Returns the (x, y) of the arrow tip.
+    """
     xe = x1 - shaft_w
     rx_in, ry_in = 0.06, 0.20 * depth          # inner rounding, x and y radii
     ry_out = 0.85 * depth                      # outer rounding: from -0.15 depth down to -depth
@@ -58,7 +59,7 @@ def lost_flow(ax, x0, x1, top0, depth, shaft, head, shaft_w, head_w, color, alph
     bot = sigmoid(x_bot, x0, xe - rx_in, 0.0, -depth)
     th = np.linspace(0, np.pi / 2, 30)
     outer = list(zip(xe + shaft_w * np.sin(th), -0.15 * depth - ry_out * (1 - np.cos(th))))
-    # Fillet of the re-entrant corner, centred outside the shape: from (xe, -d-ry) to (xe-rx, -d).
+    # Fillet of the re-entrant corner, centered outside the shape: from (xe, -d-ry) to (xe-rx, -d).
     inner = list(zip(xe - rx_in + rx_in * np.sin(th[::-1]), -depth - ry_in + ry_in * np.cos(th[::-1])))
     mid = (xe + x1) / 2
     y_base = -depth - shaft

@@ -1,13 +1,16 @@
 """
-Do the headline numbers depend on the sites with short records?
+Test whether the Stage 8 attribution and the VPD threshold depend on sites with short retained records.
 
-Reviewer 2 noticed that some sites keep fewer than three years even though a
-three-year minimum is stated. That is expected: the minimum is applied before the
-QC, daytime, peak-month and balancing filters, which then cut into the record. What
-the manuscript does not show is whether those sites matter.
+The three-year minimum is applied before the QC, daytime, peak-month and balancing
+filters, so some sites keep fewer than three years. For each minimum record length in
+MINIMA (years), reports the number of sites, the share of records kept, the median
+per-site threshold in sigma and kPa, and the Stage 8 VPD to soil water ratio. This
+threshold is the median of the per-site thresholds of script 49, not the crossing of the
+aggregated curve that Table 1 reports. Nothing is refitted.
 
-Recomputes the threshold and the stage 8 attribution while requiring progressively
-longer retained records. Reads existing files, nothing is refitted.
+Reads: 21_SUBSETS_parquet_vars_stats_subsets.csv,
+44_SHAPVALUES-conditional_AggregatedAcrossScenarios_NEP_ZSCORE.parquet, 49_SiteThresholds.csv.
+Writes: 84_INFO_ShortRecordSensitivity.csv.
 """
 from pathlib import Path
 

@@ -1,18 +1,18 @@
 """
-Report the distinct VPD points that a single "threshold" currently conflates.
+Report four distinct VPD points on the fitted response curve that a single threshold could refer to.
 
-Reviewer 2 pointed out that the VPD at maximum predicted NEP, the onset of decline
-and the zero crossing of the attribution are three different quantities, and that
-the manuscript reports one number for them. They answer different questions:
+Uses the quartic fit and data of Figure 4 (script 54), for all sites and per forest type:
 
-  peak            where the VPD effect on NEP is most positive, so where added
-                  atmospheric demand stops helping
-  steepest        where the effect falls fastest, the strongest onset of decline
-  zero crossing   where the effect changes sign, the published threshold
-  minimum         where the effect is most negative, inside the fitted range
+- peak: where the VPD effect on NEP is most positive
+- steepest decline: where the effect falls fastest after the peak
+- zero crossing: where the effect changes sign, the threshold of the main analysis
+- minimum: where the effect is most negative within the fitted range
 
-Same fitted curve as Figure 4, same data, four readings of it. Also converted to
-kPa the way script 54 does, since the manuscript quotes absolute values.
+Each point is given in sigma and in kPa, converted as in script 54. Points within 2 % of
+the edge of the observed range are flagged as marking where the data stop.
+
+Reads: the 54_FIG-4_ResponseCurve_..._DATA.csv files of script 54.
+Writes: 81_INFO_ThresholdDefinitions.csv.
 """
 from pathlib import Path
 
@@ -114,10 +114,10 @@ def main():
         print("  not bottom out within the observed range.")
 
     all_sites = out[out['group'] == 'ALL SITES'].iloc[0]
-    print(f"\nAcross all sites the three points R2 distinguishes are "
+    print(f"\nAcross all sites the three points on the curve are "
           f"{all_sites['peak_kPa']:.2f}, {all_sites['steepest_decline_kPa']:.2f} and "
           f"{all_sites['zero_crossing_kPa']:.2f} kPa.")
-    print("Only the third is the published threshold.")
+    print("Only the third is the threshold of the main analysis.")
 
     outfile = info / "81_INFO_ThresholdDefinitions.csv"
     out.to_csv(outfile, index=False)

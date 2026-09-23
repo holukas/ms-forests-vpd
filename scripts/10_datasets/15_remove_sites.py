@@ -1,12 +1,11 @@
 """
-Processes dataset information and filters it based on specific conditions, then saves the
-filtered data to a CSV file.
+Filter the site table down to the sites used in the analysis.
 
-This script is intended to load dataset information, filter rows based on specific
-criteria (e.g., availability of soil water content data, sufficient years of data,
-and exclusion of certain categories), and enrich it with additional information
-such as MAT (Mean Annual Temperature) and MAP (Mean Annual Precipitation). The
-filtered and enriched data is then written to an output file.
+Keeps sites that have SWC, GPP and RECO, are not IGBP class DNF, and have at
+least 3 years of data.
+
+Reads: data/outputs/10_datasets/14_datasets_info_parquet_vars_stats.csv
+Writes: data/outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv
 """
 from pathlib import Path
 

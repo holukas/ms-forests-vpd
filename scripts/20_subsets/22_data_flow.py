@@ -1,11 +1,10 @@
 """
-Count how many records each filtering step of stage 21 removes.
+Count how many records each filtering step of stage 21 removes, per site.
 
-Reviewer 2 asked for a transparent path from the records a site delivers to the
-records a model sees, with the losses named. The steps mirror
-`src.files.create_subsets_parquet_files` in the same order, so the number in the
-last column must equal `N_RECORDS` in the stage 21 summary. The script checks
-that per site and refuses to write a table that disagrees.
+The steps mirror `src.files.create_subsets_parquet_files` in the same order.
+The final count must equal `N_RECORDS` in the stage 21 summary; the script
+checks this per site and writes nothing if any site disagrees. Run it after
+21_prepare_input_data.py with the same VARIANT.
 
 Writes `22_data_flow.csv`, one row per site, into the stage 20 folder of the
 run variant.
