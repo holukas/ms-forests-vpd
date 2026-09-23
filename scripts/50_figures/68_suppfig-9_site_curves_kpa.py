@@ -49,6 +49,9 @@ BAND = '#9ca3af'
 THRESHOLD = '#000000'   # black dashed, as in Supplementary Fig. 8; orange is DBF
 # Okabe and Ito, the forest type colors of Figure 1 and Supplementary Fig. 8.
 IGBP_COLORS = {'ENF': '#009E73', 'DBF': '#D55E00', 'MF': '#E69F00', 'EBF': '#56B4E9'}
+# Marker shapes of Figure 1, so forest types differ by shape as well as color.
+MARKERS = {'ENF': '^', 'DBF': 'o', 'MF': 'v', 'EBF': 's'}
+MARKER_SIZE = {'ENF': 1.2, 'DBF': 1.0, 'MF': 1.2, 'EBF': 0.85}   # equal visual weight
 IGBP_ORDER = ['ENF', 'DBF', 'MF', 'EBF']
 AX_LABELS_FONTSIZE = 12
 
@@ -140,7 +143,8 @@ ylev = {igbp: 3 - i for i, igbp in enumerate(IGBP_ORDER)}
 for igbp in IGBP_ORDER:
     sub = ok[ok['IGBP'] == igbp]
     yy = ylev[igbp] + rng.uniform(-0.28, 0.28, len(sub))
-    ax_strip.scatter(sub['crossing_kpa'], yy, s=16, color=IGBP_COLORS[igbp], alpha=0.85, lw=0, zorder=3)
+    ax_strip.scatter(sub['crossing_kpa'], yy, s=20 * MARKER_SIZE[igbp], marker=MARKERS[igbp],
+                     color=IGBP_COLORS[igbp], alpha=0.85, lw=0, zorder=3)
 ax_strip.axvline(THRESHOLD_KPA, color=THRESHOLD, lw=1.5, ls=(0, (5, 4)), zorder=2)
 ax_strip.set_ylim(-0.7, 3.7)
 ax_strip.set_yticks(list(ylev.values()))

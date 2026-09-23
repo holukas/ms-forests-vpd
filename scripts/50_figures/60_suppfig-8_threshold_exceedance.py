@@ -42,6 +42,9 @@ IGBP_NAMES = {'ENF': 'Evergreen needleleaf', 'DBF': 'Deciduous broadleaf',
               'EBF': 'Evergreen broadleaf', 'MF': 'Mixed'}
 # Okabe-Ito, the same palette as the other figures
 COLORS = {'ENF': '#009E73', 'DBF': '#D55E00', 'EBF': '#56B4E9', 'MF': '#E69F00'}
+# Marker shapes of Figure 1, so forest types differ by shape as well as color.
+MARKERS = {'ENF': '^', 'DBF': 'o', 'MF': 'v', 'EBF': 's'}
+MARKER_SIZE = {'ENF': 1.2, 'DBF': 1.0, 'MF': 1.2, 'EBF': 0.85}   # equal visual weight
 
 AX_LABELS_FONTSIZE = 12
 
@@ -79,7 +82,8 @@ axs[0].set_ylabel(f'Half-hours above {threshold_kpa:.2f} kPa (%)', fontsize=AX_L
 # threshold, so a site to the right of it spends more than half its records past the limit.
 for igbp in IGBP_ORDER:
     g = per_site.loc[per_site['IGBP'] == igbp]
-    axs[1].scatter(g['vpd_mean_kpa'], g['above_published_kpa_pct'], s=22, alpha=0.8,
+    axs[1].scatter(g['vpd_mean_kpa'], g['above_published_kpa_pct'], s=26 * MARKER_SIZE[igbp], alpha=0.8,
+                   marker=MARKERS[igbp],
                    color=COLORS[igbp], linewidths=0,
                    label=f'{IGBP_NAMES[igbp]} (n = {counts[igbp]})')
 axs[1].axvline(threshold_kpa, color='black', lw=1.2, linestyle='--', zorder=1)
@@ -105,8 +109,8 @@ axs[2].text(3.55, global_sigma_median + 1.5, f'all sites\ncrossing\n{global_sigm
 tick_labels = []
 for pos, igbp in enumerate(IGBP_ORDER):
     g = per_site.loc[per_site['IGBP'] == igbp, 'above_biome_threshold_pct'].dropna()
-    axs[2].scatter(pos + rng.uniform(-0.22, 0.22, len(g)), g, s=22, alpha=0.8,
-                   color=COLORS[igbp], linewidths=0, zorder=2)
+    axs[2].scatter(pos + rng.uniform(-0.22, 0.22, len(g)), g, s=26 * MARKER_SIZE[igbp], alpha=0.8,
+                   marker=MARKERS[igbp], color=COLORS[igbp], linewidths=0, zorder=2)
     axs[2].plot([pos - 0.32, pos + 0.32], [g.median()] * 2, color=COLORS[igbp], lw=1.8,
                 zorder=3)
     axs[2].text(pos, g.max() + 1.5, f'{g.median():.0f} %', color=COLORS[igbp], ha='center',
