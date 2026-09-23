@@ -9,13 +9,14 @@ not enter the threshold, and the panel title then gives both counts.
 Settings:
 - PLOT_FEATURE = 'VPD_ZSCORE', FLUX = 'NEP_ZSCORE'
 - VARIANT: empty for the main analysis, otherwise the value script 46 ran with
-- USE_MEDIAN: aggregate the site curves by median instead of mean
+- USE_MEDIAN: median instead of mean for the aggregate curve, which is not drawn and
+  only sets the axis ranges
 - USE_CI: label the threshold with its 95% confidence interval (True) or its SEM (False)
 
 Reads 46_ALE_SiteCurves_<PLOT_FEATURE>_<FLUX>.parquet, written by
 40_aggregation/46_ale_thresholds.py. Writes
-57_SUPPFIG-5_ALE_ResponseCurve_<PLOT_FEATURE>_<FLUX>.png with `_DATA.csv` (the site
-curves as drawn in each panel) and `_DATA_Thresholds.csv` (the threshold markers), and
+57_SUPPFIG-5_ALE_ResponseCurve_<PLOT_FEATURE>_<FLUX>.png with `_DATA.csv` (the smoothed
+site curves of each panel) and `_DATA_Thresholds.csv` (the threshold markers), and
 prints a threshold summary. The threshold table of record comes from script 46.
 """
 from pathlib import Path
@@ -281,13 +282,15 @@ if mean_effect is not None and std_effect is not None:
         x_max = common_grid[valid_indices[-1]]
         ax_all.set_xlim(x_min, x_max)
 
-    # Reduce x-axis ticks for cleaner appearance
-    from matplotlib.ticker import MaxNLocator
+    # Ticks on whole sigma values. The labels carry no decimals, so ticks at 1.5 or -1.5
+    # would read as 2 and -2.
+    from matplotlib.ticker import MultipleLocator
 
-    ax_all.xaxis.set_major_locator(MaxNLocator(nbins=6))
+    ax_all.xaxis.set_major_locator(MultipleLocator(1.0))
 
     # IGBP subplots (simplified: same data for all)
     igbp_threshold_data = []  # Collect threshold data for table output
+    igbp_smoothed = {}        # the curves drawn in panels b to e, for the data file
 
     configs = zip(
         axes_sub, IGBPS,
@@ -300,18 +303,18 @@ if mean_effect is not None and std_effect is not None:
 
     for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
         if igbp in ale_interpolated:
-            # Plot individual IGBP site curves in background
-            if igbp in igbp_ale_interpolated:
-                for site_curve in igbp_ale_interpolated[igbp]:
-                    ax.plot(common_grid, site_curve, color='gray', alpha=0.15, linewidth=0.8, zorder=1)
-
-            y_igbp = ale_interpolated[igbp]
-
+            # The smoothed site curves of this forest type, drawn and used for the threshold,
+            # as in panel a.
             igbp_individual_thresholds = np.array([])
             if igbp in igbp_ale_interpolated:
                 igbp_poly_fitted = fit_polynomial_to_curves(igbp_ale_interpolated[igbp], common_grid)
+                igbp_smoothed[igbp] = igbp_poly_fitted
+                for site_curve in igbp_poly_fitted:
+                    ax.plot(common_grid, site_curve, color='gray', alpha=0.15, linewidth=0.8, zorder=1)
                 igbp_individual_thresholds = np.array([find_zero_crossing(c, common_grid) for c in igbp_poly_fitted])
                 igbp_individual_thresholds = igbp_individual_thresholds[~np.isnan(igbp_individual_thresholds)]
+
+            y_igbp = ale_interpolated[igbp]
 
             # Auto-scale to own data range
             y_min_sub, y_max_sub = np.nanpercentile(y_igbp, [5, 95])
@@ -390,8 +393,7 @@ if mean_effect is not None and std_effect is not None:
         # Set x-axis to data range for subplots
         ax.set_xlim(x_min, x_max)
 
-        # Reduce x-axis ticks for subplots too
-        ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
+        ax.xaxis.set_major_locator(MultipleLocator(1.0))
 
     # Print comprehensive threshold summary table
     print("\n" + "=" * 95)
@@ -446,15 +448,14 @@ if mean_effect is not None and std_effect is not None:
     fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
     print(f"Saved figure to: {outfilepath}\n")
 
-    # The plotted values. Panel a draws the polynomial-smoothed site curves, panels b to e
-    # the stored site curves of one forest type; both are written as drawn.
+    # The plotted values: the polynomial-smoothed site curves of every panel, as drawn.
     _curves = [pd.DataFrame({'panel': 'a', 'group': 'Global forests', 'SITE': site,
                              'IGBP': site_igbp_map.get(site), 'x': common_grid, 'ale_effect': curve})
                for site, curve in zip(stored.index, site_ale_interpolated_array)]
     for letter, igbp in zip(['b', 'c', 'd', 'e'], IGBPS):
         _curves += [pd.DataFrame({'panel': letter, 'group': igbp, 'SITE': site, 'IGBP': igbp,
                                   'x': common_grid, 'ale_effect': curve})
-                    for site, curve in zip(igbp_sites[igbp], igbp_ale_interpolated[igbp])]
+                    for site, curve in zip(igbp_sites[igbp], igbp_smoothed.get(igbp, []))]
     pd.concat(_curves).dropna(subset=['ale_effect']).to_csv(
         outfilepath.with_name(outfilepath.stem + '_DATA.csv'), index=False)
     # The threshold markers and their labels.
