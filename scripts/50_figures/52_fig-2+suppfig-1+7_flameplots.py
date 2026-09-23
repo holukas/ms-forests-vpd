@@ -7,6 +7,7 @@ FIGURE at the top of the file selects the output:
 - `"fluxes"` (default): Supplementary Fig. 7, NEP, GPP, RECO and ET over the SM by VPD grid
 
 Reads the stage 42 aggregation. VARIANT and SITE_SUBSET select a sensitivity run.
+Writes the figure and `<figure name>_DATA.csv`, one row per grid cell and panel.
 """
 import string
 from pathlib import Path
@@ -16,6 +17,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 import numpy as np
+import pandas as pd
 from matplotlib import ticker
 
 import src.files as files
@@ -150,6 +152,7 @@ axes_grid = [[fig.add_subplot(gs[r, c]) for c in range(5)] for r in range(n_rows
 show_row_colormap = False
 
 # Main loop (rows)
+plotted = []   # the values of every panel, for the data file
 for row_idx, plotvars in enumerate(plotvars_rows):
     # Extract variables for this row
     FLUX = plotvars[0]
@@ -163,9 +166,10 @@ for row_idx, plotvars in enumerate(plotvars_rows):
     ylabel = rf'{beautify[yvar]} ($\sigma$)'
     zlabel = rf'{beautify[zvar]} effect on NEP ($\sigma$)' if '_SHAPVALS' in zvar else rf'{beautify[zvar]} ($\sigma$)'
 
-    # Bins always use 'median', b/c using 'mean' results in floating point errors
+    # Bin coordinates are read as the median, which is exact; a mean of equal values
+    # carries floating point noise into the labels. Both axes are always bin columns here.
     xagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
-    yagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
+    yagg = 'median' if str(yvar).startswith('BIN_') else aggfunc
     xcol, ycol, zcol = (f"{xvar}", xagg), (f"{yvar}", yagg), (f"{zvar}", aggfunc)
     count_vals_col = (f"{zvar}", "count")
 
@@ -226,6 +230,14 @@ for row_idx, plotvars in enumerate(plotvars_rows):
         # Panel letters
         letter_idx = row_idx * 5 + col_idx
         letter = string.ascii_lowercase[letter_idx]
+        _p = df_to_plot.iloc[:, :3].copy()
+        _p.columns = ['x', 'y', 'z']
+        _p.insert(0, 'panel', letter)
+        _p.insert(1, 'group', igbp or 'Global forests')
+        _p.insert(2, 'x_var', xvar)
+        _p.insert(3, 'y_var', yvar)
+        _p.insert(4, 'z_var', f'{zvar}_{aggfunc}')
+        plotted.append(_p)
         ax.text(0.05, 1.05, f"{letter}", transform=ax.transAxes, zorder=99,
                 size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
 
@@ -293,6 +305,8 @@ dir_out.mkdir(parents=True, exist_ok=True)
 outfilepath = dir_out / f'52_{figure_info[0]}_FlamePlots{figure_info[1]}_{FLUX}.png'
 print(f"Saved to {outfilepath}")
 plt.savefig(outfilepath, bbox_inches='tight', dpi=300)
+# The plotted values, one row per grid cell and panel.
+pd.concat(plotted).to_csv(outfilepath.with_name(outfilepath.stem + '_DATA.csv'), index=False)
 
 if SHOW_PLOT:
 

@@ -17,6 +17,7 @@ Reads, from the aggregation folder (written by stages 47 and 48):
 
 Writes, into the plot folder:
     60_SUPPFIG-8_ThresholdExceedance_{FLUX}.png
+    60_SUPPFIG-8_ThresholdExceedance_{FLUX}_DATA.csv   the plotted values, one row per site
 """
 from pathlib import Path
 
@@ -136,6 +137,10 @@ fig.tight_layout()
 
 outfile = folder / f'60_SUPPFIG-8_ThresholdExceedance_{FLUX}.png'
 fig.savefig(outfile, dpi=300, facecolor='white', bbox_inches='tight')
+# The plotted values, one row per site: panel a and b (share above the all-sites threshold,
+# site mean VPD) and panel c (share above the crossing of the forest type).
+per_site[['SITE', 'IGBP', 'vpd_mean_kpa', 'above_published_kpa_pct', 'above_biome_threshold_pct']].to_csv(
+    outfile.with_name(outfile.stem + '_DATA.csv'), index=False)
 
 # The numbers a caption would quote, so they can be checked without opening the figure.
 print(f"{len(per_site)} sites, {per_site['n_records'].sum():,} half-hours")

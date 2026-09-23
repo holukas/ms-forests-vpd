@@ -14,8 +14,9 @@ Settings:
 
 Reads 46_ALE_SiteCurves_<PLOT_FEATURE>_<FLUX>.parquet, written by
 40_aggregation/46_ale_thresholds.py. Writes
-57_SUPPFIG-5_ALE_ResponseCurve_<PLOT_FEATURE>_<FLUX>.png and prints a threshold summary;
-the threshold table itself comes from script 46.
+57_SUPPFIG-5_ALE_ResponseCurve_<PLOT_FEATURE>_<FLUX>.png with `_DATA.csv` (the site
+curves as drawn in each panel) and `_DATA_Thresholds.csv` (the threshold markers), and
+prints a threshold summary. The threshold table of record comes from script 46.
 """
 from pathlib import Path
 
@@ -128,10 +129,12 @@ all_site_ale_curves = list(stored.index)          # only the count is used below
 
 site_ale_interpolated = [row for row in stored.drop(columns='IGBP').to_numpy(float)]
 igbp_ale_interpolated = {igbp: [] for igbp in IGBPS}
+igbp_sites = {igbp: [] for igbp in IGBPS}   # site names in the order of the curves, for the data file
 for site, curve in zip(stored.index, site_ale_interpolated):
     igbp = site_igbp_map.get(site)
     if igbp in igbp_ale_interpolated:
         igbp_ale_interpolated[igbp].append(curve)
+        igbp_sites[igbp].append(site)
 
 print(f"{len(site_ale_interpolated)} site curves on a grid of {len(common_grid)} points")
 
@@ -442,6 +445,27 @@ if mean_effect is not None and std_effect is not None:
     outfilepath = dir_out / f'57_SUPPFIG-5_ALE_ResponseCurve_{PLOT_FEATURE}_{FLUX}.png'
     fig.savefig(outfilepath, dpi=300, bbox_inches='tight')
     print(f"Saved figure to: {outfilepath}\n")
+
+    # The plotted values. Panel a draws the polynomial-smoothed site curves, panels b to e
+    # the stored site curves of one forest type; both are written as drawn.
+    _curves = [pd.DataFrame({'panel': 'a', 'group': 'Global forests', 'SITE': site,
+                             'IGBP': site_igbp_map.get(site), 'x': common_grid, 'ale_effect': curve})
+               for site, curve in zip(stored.index, site_ale_interpolated_array)]
+    for letter, igbp in zip(['b', 'c', 'd', 'e'], IGBPS):
+        _curves += [pd.DataFrame({'panel': letter, 'group': igbp, 'SITE': site, 'IGBP': igbp,
+                                  'x': common_grid, 'ale_effect': curve})
+                    for site, curve in zip(igbp_sites[igbp], igbp_ale_interpolated[igbp])]
+    pd.concat(_curves).dropna(subset=['ale_effect']).to_csv(
+        outfilepath.with_name(outfilepath.stem + '_DATA.csv'), index=False)
+    # The threshold markers and their labels.
+    _thr = [{'group': 'Global forests', 'threshold': threshold_main,
+             'n_crossing': n_curves_crossing, 'n_total': n_curves_total}]
+    _thr += [{'group': d['IGBP'], 'threshold': d['Threshold'],
+              'n_crossing': d['N_crossing'], 'n_total': d['N_total']} for d in igbp_threshold_data]
+    for row, values in zip(_thr, [individual_thresholds] + [d['individual_thresholds'] for d in igbp_threshold_data]):
+        if len(values) > 1:
+            _, row['ci95_lower'], row['ci95_upper'] = calc_ci_95(values)
+    pd.DataFrame(_thr).to_csv(outfilepath.with_name(outfilepath.stem + '_DATA_Thresholds.csv'), index=False)
 
     # The threshold table is not written here any more. Stage 46 owns it, and two
     # scripts writing the same numbers is how they drift apart.

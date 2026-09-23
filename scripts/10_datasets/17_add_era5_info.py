@@ -145,7 +145,7 @@ for index, row in datasets_df.iterrows():
     # ------------------------------------
     # Available for all sites
     # Files already have the correct range 1991-2020
-    dir_era5 = rf"..\..\data\outputs\10_datasets\16_ERA5_climate_1991-2020_GoogleEarthEngine"
+    dir_era5 = data_path("data/outputs/10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine")
     file_era5 = f"{site_id}_era5_1991-2020_yearly.csv"
     filepath_era5 = Path(dir_era5) / file_era5
     if not filepath_era5.is_file():
@@ -164,7 +164,7 @@ for index, row in datasets_df.iterrows():
     # ------------------------------------
     # Available for all sites
     # Files already have the correct range 1991-2020
-    dir_era5 = rf"..\..\data\outputs\10_datasets\16_ERA5_climate_1991-2020_Copernicus\{site_id}"
+    dir_era5 = data_path("data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus") / site_id
     file_era5 = f"{site_id}_era5_1991-2020_yearly.csv"
     filepath_era5 = Path(dir_era5) / file_era5
     if not filepath_era5.is_file():

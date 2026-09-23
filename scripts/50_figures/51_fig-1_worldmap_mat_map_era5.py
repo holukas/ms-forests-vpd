@@ -3,7 +3,7 @@ Figure 1: site map and the climate space of the sites.
 
 Reads `17_datasets_info_parquet_vars_stats_usedsites_era5.csv` for the ERA5 mean annual
 temperature and precipitation and the stage 21 subsets table for the site counts.
-Writes `51_FIG-1_WorldMap_MAT_MAP_ERA5.png`.
+Writes `51_FIG-1_WorldMap_MAT_MAP_ERA5.png` and `_DATA.csv` with site, forest type, position and climate.
 """
 from pathlib import Path
 
@@ -242,6 +242,9 @@ out_plot = data_path("data/outputs/50_plots/NEP_ZSCORE/conditional/51_FIG-1_Worl
 out_plot.parent.mkdir(parents=True, exist_ok=True)
 
 plt.savefig(out_plot, dpi=300, bbox_inches='tight', facecolor='white')
+# The plotted values: position, forest type and climate of every site.
+datasets_df[['SITE', 'IGBP', 'LAT', 'LON', 'ERA5_MAT_1991_2020', 'ERA5_MAP_1991_2020']].to_csv(
+    out_plot.with_name(out_plot.stem + '_DATA.csv'), index=False)
 print(f"Plot saved successfully to {out_plot}")
 if SHOW_PLOT:
     plt.show()

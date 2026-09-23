@@ -143,9 +143,10 @@ AX_LABELS_FONTSIZE = 12
 xlabel = rf'{beautify[xvar]} ($\sigma$)'
 ylabel = rf'{beautify[yvar]} effect on daytime {beautify[FLUX]} ($\sigma$)'
 
-# Bins always use 'median', b/c using 'mean' results in floating point errors
+# x is the VPD bin, read as the median, which is exact for a bin coordinate.
+# y is the VPD SHAP value, read as the cross-site median per bin: the Figure 4 estimator.
 xagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
-yagg = 'median' if str(xvar).startswith('BIN_') else aggfunc
+yagg = 'median'
 xcol, ycol, zcol = (f"{xvar}", xagg), (f"{yvar}", yagg), (f"{zvar}", aggfunc)
 count_vals_col = (f"{zvar}", "count")
 ycol_sem = (f"{yvar}", "sem")

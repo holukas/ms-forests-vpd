@@ -141,7 +141,7 @@ if TUNE_HYPERPARAMETERS:
     print(f"{'=' * 80}\n")
 else:
     print(f"\n{'=' * 80}")
-    print(f"SHAP ANALYSIS MODE - 5-Fold Cross-Validation")
+    print(f"SHAP ANALYSIS MODE - {'5-fold' if CV_STRATEGY == 'random' else 'leave-one-year-out'} cross-validation")
     print(f"{'=' * 80}\n")
 
 print(f"Subsets:  {infile}")

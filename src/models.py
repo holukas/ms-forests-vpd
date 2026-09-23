@@ -185,7 +185,7 @@ def train_xgboost_models_and_shap(target: str, features: list,
     # )
 
     # ---------------------------------------------------------
-    # 5-FOLD CROSS-VALIDATION for OUT-OF-SAMPLE SHAP VALUES
+    # CROSS-VALIDATION for OUT-OF-SAMPLE SHAP VALUES
     # ---------------------------------------------------------
     # Each data point gets SHAP values from a model that never saw it during training.
     # This ensures unbiased feature importance explanations.
@@ -295,7 +295,8 @@ def train_xgboost_models_and_shap(target: str, features: list,
     # Log per-fold metrics
     print(f"\n=== CV FOLD METRICS ===")
     with open(modelstxt, 'a', encoding='utf-8') as file:
-        file.write(f"\nSITE: {siteconfig['SITE']} / TARGET: {target} / METHOD: 5-FOLD CV\n")
+        method = '5-FOLD CV' if cv_strategy == 'random' else 'LEAVE-ONE-YEAR-OUT CV'
+        file.write(f"\nSITE: {siteconfig['SITE']} / TARGET: {target} / METHOD: {method}\n")
         for metrics in fold_metrics:
             log_line = f"  FOLD {metrics['fold']}: R2={metrics['r2']:.4f} / RMSE={metrics['rmse']:.2f}\n"
             file.write(log_line)
@@ -924,7 +925,9 @@ def create_validation_summary(target: str, features: list,
             pc_positive = pc_r > 0 if len(pc_feature) > 0 else None
             pa_positive = pa_coef > 0 if len(pa_feature) > 0 else None
 
-            direction_agreement = sum([ale_positive == True, pc_positive == True, pa_positive == True])
+            # Agreement counts in both directions: three negative signs agree as much as three positive.
+            signs = [d for d in (ale_positive, pc_positive, pa_positive) if d is not None]
+            direction_agreement = max(signs.count(True), signs.count(False))
             if direction_agreement == 3:
                 f.write(f"   STRONG AGREEMENT: All three methods agree on effect direction.\n")
             elif direction_agreement == 2:
