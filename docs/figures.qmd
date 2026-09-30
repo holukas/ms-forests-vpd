@@ -26,6 +26,7 @@ model. Output file names carry the display item (`FIG-N`, `SUPPFIG-N`, `SUPPTABL
 | `66_suppfig-10_data_flow_sankey.py` | Supplementary Fig. 10, records retained at each filter | `20_subsets/22_data_flow.csv` |
 | `67_suppdata-1_data_flow_per_site.py` | Supplementary Data 1, record losses per site | `20_subsets/22_data_flow.csv` |
 | `68_suppfig-9_site_curves_kpa.py` | Supplementary Fig. 9, every site's VPD response on one kPa axis with the per-site crossings | `40_aggregation/41_...`, `20_subsets/` |
+| `69_supptable-10_factorial_sm_vpd.py` | Supplementary Table 10, SM and VPD effects in four soil water classes by four VPD classes | `40_aggregation/.../factorial-cells/44_...csv` |
 
 ## Figure 4 aggregation
 
