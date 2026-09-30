@@ -212,21 +212,27 @@ tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 
 # Seven tests for the main table, one per kind of challenge. The figure keeps all of them.
 # The full set is too many for a main display item, and the reason is redundancy: three
-# record-length rows make one point, three region rows make one point, and each matched pair
-# is a two-row argument about one comparison. Both largest movers stay, North America and the
-# ten-year records, so the selection cannot be read as flattering. The estimator row is left
+# record-length rows make one point, and each matched pair is a two-row argument about one
+# comparison. Both largest movers stay, North America and the ten-year records, so the
+# selection cannot be read as flattering. All three region rows stay: Europe removed gives the
+# highest threshold of all tests, so without it the table would show the low end of the
+# region effect and not the high end. The estimator row is left
 # out on purpose: dropping it removes one of the three things the interval column means, so
 # the main table carries two instead of three.
 #
-# Depth takes three rows. The all-sites row is the main analysis rerun on the deepest
+# Depth takes five rows. The all-sites row is the main analysis rerun on the deepest
 # layer each site has, which is the test the text names first; it mixes the 80 sites that
 # never moved with 128 that did, most of them by one layer, so its shift is small. The
-# five-or-more-depths pair holds 59 sites fixed and swaps their shallowest depth for their
-# deepest, which is the largest departure from the shallow selection the main analysis
-# rests on. The pair answers whether depth moves the threshold, the all-sites row whether
-# the main analysis survives the deepest layer the network offers.
+# matched pair holds the 128 sites that have a deeper layer fixed and changes only the
+# layer, which is the clean read on depth. The five-or-more-depths pair holds 59 sites
+# fixed and swaps their shallowest depth for their deepest, which is the largest departure
+# from the shallow selection the main analysis rests on. The pairs answer whether depth
+# moves the threshold, the all-sites row whether the main analysis survives the deepest
+# layer the network offers.
 MAIN_ROWS = [
     'Deepest available layer, all sites',
+    'Matched sites, shallowest depth',
+    'Matched sites, deepest depth',
     'Sites with 5+ SM depths, shallowest',
     'Sites with 5+ SM depths, deepest',
     'Air temperature dropped from the model',
@@ -235,6 +241,7 @@ MAIN_ROWS = [
     'GAM instead of a polynomial',
     'ALE instead of SHAP',
     'Any one site removed',
+    'Europe removed',
     'North America removed',
     'Europe and North America removed',
     'Records of at least 10 years',
@@ -335,13 +342,14 @@ mover_text = '; '.join(f"{SHORT.get(r['test'], r['test']).lower()} at "
                        f"{r['threshold_kpa']:.2f} kPa" for _, r in movers.iterrows())
 footnote = (
     "The threshold is the highest zero crossing of a fourth-order polynomial fitted to the "
-    "cross-site median VPD effect per bin, and the brackets give its 95% prediction band, "
-    "both as in Fig. 4. Rows marked with an asterisk carry a different interval: the "
-    f"leave-one-site-out row the range across the {int(ref['n_sites'])} removals, the ALE "
-    "row the 95% confidence interval of the mean of the per-site crossings. The two rows for "
-    "sites with five or more soil water depths use the same 59 sites and are compared with "
-    "each other; their offset from the main analysis reflects the smaller site set. The tests "
-    f"are described in Methods; all {len(tests)} are shown in Supplementary Fig. 4."
+    "cross-site median VPD effect per bin; brackets give its 95% prediction band, as in "
+    "Fig. 4. Rows marked with an asterisk have a different interval: for the "
+    f"leave-one-site-out row it is the range across the {int(ref['n_sites'])} removals, and "
+    "for the ALE row the 95% confidence interval of the mean per-site crossing. The two "
+    "matched rows use the 128 sites that have a deeper soil water layer, and the two rows for "
+    "sites with five or more soil water depths use the same 59 sites. Within each pair the "
+    f"rows differ only in the soil water layer. All {len(tests)} tests, described in Methods, "
+    "are shown in Supplementary Fig. 4."
 )
 
 stem = folder / f'55_TABLE-1_ThresholdRobustness_{FLUX}'

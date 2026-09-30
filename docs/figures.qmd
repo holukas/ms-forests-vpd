@@ -12,7 +12,7 @@ model. Output file names carry the display item (`FIG-N`, `SUPPFIG-N`, `SUPPTABL
 | `52_fig-2+suppfig-1+7_flameplots.py` | Fig. 2, the VPD effect on TA, SM and ET grids; Supplementary Fig. 1, the TA and SM effects; Supplementary Fig. 7, the flux maps; selected with `FIGURE` | `40_aggregation/` |
 | `53_fig-3+suppfig-3_sankeyplot_shapvalues_8stages.py` | Fig. 3, driver effects across the stages; Supplementary Fig. 3 with `VARIANT = "mirrored-stages"` | `40_aggregation/` |
 | `54_fig-4+supptable-7_vpd_response_curve_shap_agg.py` | Fig. 4, the VPD response curve; Supplementary Table 7, coefficients and thresholds in σ and kPa | `40_aggregation/`, `20_subsets/` |
-| `55_table-1+suppfig-4_threshold_robustness.py` | Table 1, twelve of the eighteen tests; Supplementary Fig. 4, all eighteen | `40_aggregation/47_...csv` |
+| `55_table-1+suppfig-4_threshold_robustness.py` | Table 1, fifteen of the eighteen tests; Supplementary Fig. 4, all eighteen | `40_aggregation/47_...csv` |
 | `56_suppfig-2+supptable-6_scenarios_boxplot_shapsums.py` | Supplementary Fig. 2, per-site effects across the stages; Supplementary Table 6, stage means and SD | `40_aggregation/` |
 | `57_suppfig-5_ale_response_curve.py` | Supplementary Fig. 5, ALE curves | `40_aggregation/46_...` |
 | `58_suppfig-6_vpd_response_by_flux.py` | Supplementary Fig. 6, the VPD response of NEP, GPP, RECO and ET | `40_aggregation/` per flux |
@@ -54,7 +54,7 @@ removals, and the ALE row the confidence interval of the mean of the per-site cr
 The bootstrap over sites that script 47 also writes (`boot_lower`, `boot_upper`) is
 narrower than the prediction band in every test and is not shown.
 
-`MAIN_ROWS` in script 55 selects the twelve rows of Table 1, one per kind of test with
+`MAIN_ROWS` in script 55 selects the fifteen rows of Table 1, one per kind of test with
 the depth rows as pairs; the figure shows all eighteen.
 
 ## Script 57 settings
