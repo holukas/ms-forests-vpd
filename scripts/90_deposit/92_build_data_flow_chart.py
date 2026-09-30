@@ -15,16 +15,15 @@ Reads:
     <DATA_ROOT>/deposit/MANIFEST.csv, if it exists: archive, count and size of the deposited
     files of each output.
     <DATA_ROOT>/data/outputs/: every glob is checked against the files on disk.
-    docs/_quarto.yml and docs/pipeline.qmd: address of the documentation site and the
-    section anchors the links point to.
 
 Writes:
     <DATA_ROOT>/deposit/DATA_FLOW.html
     docs/data_flow.html, the same page for the documentation site. Written only together
     with the deposit copy, so a test run that sends OUT elsewhere leaves docs/ alone.
 
-Prints a warning for every output with no file on disk and for deposited files that no
-glob matches. The warnings are also listed on the page.
+The chart shows only what exists: an output with no file on disk is left out. Deposited
+files that no glob matches are printed, so the graph can be brought up to date; the page
+itself shows no check results and links to nothing outside it.
 """
 import csv
 import datetime
@@ -35,8 +34,6 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-import yaml
-
 from src.paths import DATA_ROOT, REPO_ROOT
 
 GRAPH = Path(__file__).with_name("92_data_flow_graph.json")
@@ -44,8 +41,6 @@ OUT = DATA_ROOT / "deposit" / "DATA_FLOW.html"
 DOCS_OUT = REPO_ROOT / "docs" / "data_flow.html"
 OUTPUTS = DATA_ROOT / "data" / "outputs"
 MANIFEST = DATA_ROOT / "deposit" / "MANIFEST.csv"
-REPO_URL = "https://github.com/holukas/ms-forests-vpd"
-SITE_URL = "https://holukas.github.io/ms-forests-vpd/"     # used if _quarto.yml has no site-url
 
 # Run variants: folder names of the sensitivity runs and the three other fluxes. The
 # descriptions follow the "Run variants" table in docs/pipeline.qmd.
@@ -137,6 +132,7 @@ warnings = []
 
 
 def warn(text):
+    """Printed for the maintainer only; the page shows no check results."""
     warnings.append(text)
     print("warning:", text)
 
@@ -171,7 +167,7 @@ for n, d in nodes.items():
     hits = [p for p in disk if any(x.match(p) for x in rx)]
     d.update(on_disk=bool(hits), disk_files=len(hits))
     if not hits:
-        warn(f"not on disk: {d['id']}")
+        print(f"left out, no file on disk: {d['id']}")
     found = {VARIANT_FOLDER[s] for p in hits for s in p.split("/")[:-1] if s in VARIANT_FOLDER}
     extra = sorted(found - set(d.get("variants", [])))
     if extra and not d.get("group_end"):
@@ -192,39 +188,15 @@ for stage, k in sorted(Counter(p.split("/")[0] for p in unmatched).items()):
 for p in unmatched[:20]:
     warn(f"no glob matches: {p}")
 
-# Links: the script on GitHub and its section of the documentation site
-quarto_yml = REPO_ROOT / "docs" / "_quarto.yml"
-quarto = yaml.safe_load(quarto_yml.read_text(encoding="utf8")) if quarto_yml.exists() else {}
-site = ((quarto.get("website") or {}).get("site-url") or SITE_URL).rstrip("/") + "/"
-
-
-def heading_id(text):
-    """Id that Pandoc, and so Quarto, gives a heading: no punctuation, hyphens, lowercase,
-    nothing before the first letter."""
-    s = re.sub(r"[^\w\s.-]", "", text)
-    s = re.sub(r"\s+", "-", s.strip()).lower()
-    return re.sub(r"^[^a-z]+", "", s) or "section"
-
-
-stage_anchor = {}
-pipeline_qmd = REPO_ROOT / "docs" / "pipeline.qmd"
-if pipeline_qmd.exists():
-    for line in pipeline_qmd.read_text(encoding="utf8").splitlines():
-        m = re.match(r"##\s+((\d\d_[a-z]+)\b.*)$", line)
-        if m:
-            stage_anchor.setdefault(m.group(2), heading_id(m.group(1)))
-
-for n, d in nodes.items():
-    d["url"] = f"{REPO_URL}/blob/main/{d['path']}" if d["kind"] == "script" and d.get("path") else None
-    if d["kind"] == "product" and d["id"].startswith("scripts/"):
-        d["url"] = f"{REPO_URL}/blob/main/{d['id']}"
-    d["docs_url"] = None
-    if d["kind"] == "script":
-        stage = d.get("stage", "")
-        if stage == "50_figures":
-            d["docs_url"] = site + "figures.html"
-        else:
-            d["docs_url"] = site + "pipeline.html" + (f"#{stage_anchor[stage]}" if stage in stage_anchor else "")
+# Only what exists goes into the chart: drop outputs with no file on disk and their edges
+absent = {n for n, d in nodes.items() if d.get("on_disk") is False}
+for n in absent:
+    del nodes[n]
+edges = [(a, b) for a, b in edges if a not in absent and b not in absent]
+preds, succs = defaultdict(list), defaultdict(list)
+for a, b in edges:
+    succs[a].append(b)
+    preds[b].append(a)
 
 # Block layout: a file sits in the column of the script that writes it, under that script.
 # A script sits one column right of the latest writer of its inputs. Raw inputs are column 0.
@@ -516,8 +488,7 @@ for n, (x0, y0, w, h) in geom.items():
                   f'class="badge badge-{badge.rstrip('.').lower()}"/>'
                   f'<text x="{x0 + w - bw / 2 - 6:.1f}" y="{y0 + h / 2 + 3.5:.1f}" class="badget">{badge}</text>')
         text_x = x0 + 22 + (w - 22 - bw - 6) / 2
-    missing = " missing" if d.get("on_disk") is False else ""
-    svg.append(f'<g class="n {d["kind"]}{missing}" data-id="{esc(n)}"><title>{esc(tip)}</title>{shape}'
+    svg.append(f'<g class="n {d["kind"]}" data-id="{esc(n)}"><title>{esc(tip)}</title>{shape}'
                f'<text x="{text_x:.1f}" y="{y0 + h / 2 + 4:.1f}"{fill_text}>{esc(label)}</text></g>')
 
 legend_items = [(k, v) for k, v in STAGE_LABEL.items()
@@ -527,23 +498,18 @@ node_data = {}
 for n, (x0, y0, w, h) in geom.items():
     d = nodes[n]
     item = display_item(n)
-    docs_url = d["docs_url"]
-    if item and item[1] in ("Main", "Suppl.") and n in writer:     # a display item links like its script
-        docs_url = nodes[writer[n]]["docs_url"]
     node_data[n] = {
         "id": d["id"], "kind": d["kind"], "label": label_of(n), "stage": d.get("stage", ""),
         "path": d.get("path", ""), "note": d.get("note", ""), "icon": node_icon(n),
         "badge": item[1] if item else "", "rank": rank[n],
         "x": round(x0, 1), "y": round(y0, 1), "w": w, "h": h,
         "glob": globs_of(d), "archives": d["archives"], "files": d["files"], "bytes": d["bytes"],
-        "on_disk": d["on_disk"], "disk_files": d["disk_files"], "variants": d.get("variants", []),
-        "url": d["url"], "docs_url": docs_url,
+        "disk_files": d["disk_files"], "variants": d.get("variants", []),
     }
 data = {
     "succs": succs, "preds": preds, "nodes": node_data, "lanes": lanes,
     "variants": [{"id": v, "label": label, "description": text} for v, label, text in VARIANTS],
-    "meta": {"repo_url": REPO_URL, "docs_url": site, "built": datetime.date.today().isoformat(),
-             "warnings": warnings},
+    "meta": {"built": datetime.date.today().isoformat()},
 }
 
 ICON_LEGEND = [("input", "input data"), ("generated", "generated data"), ("fig", "figure"),
@@ -572,4 +538,4 @@ print(f"wrote {OUT}: {len(nodes)} nodes, {len(edges)} edges, {maxr + 1} columns,
 if OUT.parent == DATA_ROOT / "deposit":
     DOCS_OUT.write_text(page, encoding="utf8")
     print(f"wrote {DOCS_OUT}")
-print(f"{len(warnings)} warnings")
+print(f"{len(warnings)} warnings for the maintainer (not shown on the page)")

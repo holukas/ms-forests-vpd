@@ -3,8 +3,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ms-forests-vpd data flow</title>
 <style id="pagecss">
-:root { --bg:#ffffff; --fg:#1a1a1a; --muted:#666; --edge:#b9b9b9; --script:#ffffff; --hl:#111; --lane:#f3f4f6; --panel:#fafafa; --minibg:rgba(255,255,255,.85); --warn:#d62728; --link:#0b5cad; --hh:44px; }
-@media (prefers-color-scheme: dark) { :root { --bg:#16181c; --fg:#e8e8e8; --muted:#9aa; --edge:#4a4f57; --script:#23262c; --hl:#fff; --lane:#1d2025; --panel:#1b1e23; --minibg:rgba(22,24,28,.85); --warn:#ff6b6b; --link:#7fb6ff; } }
+:root { --bg:#ffffff; --fg:#1a1a1a; --muted:#666; --edge:#b9b9b9; --script:#ffffff; --hl:#111; --lane:#f3f4f6; --panel:#fafafa; --minibg:rgba(255,255,255,.85); --link:#0b5cad; --hh:44px; }
+@media (prefers-color-scheme: dark) { :root { --bg:#16181c; --fg:#e8e8e8; --muted:#9aa; --edge:#4a4f57; --script:#23262c; --hl:#fff; --lane:#1d2025; --panel:#1b1e23; --minibg:rgba(22,24,28,.85); --link:#7fb6ff; } }
 html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:13px system-ui,-apple-system,Segoe UI,sans-serif; }
 header { position:fixed; top:0; left:0; right:0; padding:6px 12px; background:var(--bg); border-bottom:1px solid var(--edge); z-index:4; display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; }
 header h1 { font-size:14px; margin:0 6px 0 0; white-space:nowrap; }
@@ -19,7 +19,6 @@ button.on { background:var(--fg); color:var(--bg); border-color:var(--fg); }
 .legend span { display:inline-flex; align-items:center; gap:4px; margin-right:10px; color:var(--muted); }
 .legend i { width:12px; height:12px; border-radius:6px; display:inline-block; }
 .hint { color:var(--muted); font-size:12px; display:block; margin-top:4px; }
-.warnlist { color:var(--warn); font-size:12px; margin:4px 0 0; padding-left:18px; }
 svg#c { position:fixed; top:0; left:0; width:100%; height:100%; cursor:grab; }
 svg#c.drag { cursor:grabbing; }
 .legend svg { position:static; width:auto; height:auto; cursor:default; vertical-align:middle; }
@@ -42,9 +41,7 @@ svg#c.drag { cursor:grabbing; }
 #pbody p { margin:4px 0; }
 #pbody a { color:var(--link); }
 #pbody .muted { color:var(--muted); }
-#pbody .links a { margin-right:14px; }
 #pbody code { font-size:12px; overflow-wrap:anywhere; }
-.flag { display:inline-block; color:#fff; background:var(--warn); border-radius:3px; padding:0 5px; font-size:11px; font-weight:700; cursor:help; }
 /* minimap */
 #mini { position:fixed; right:12px; bottom:12px; width:220px; height:80px; background:var(--minibg); border:1px solid var(--edge); border-radius:4px; z-index:2; }
 #mini canvas { display:block; width:220px; height:80px; cursor:crosshair; touch-action:none; }
@@ -62,14 +59,13 @@ rect.script { fill:var(--script); stroke-width:2.2; }
 .n text.badget { font-size:9px; font-weight:700; fill:#111111; pointer-events:none; }
 .badge-main + text.badget { fill:#ffffff; }
 rect.product { stroke:none; opacity:.85; }
-.n.missing > rect.script, .n.missing > rect.product { stroke:#d62728 !important; stroke-width:2 !important; stroke-dasharray:4 3; }
 .dim .e { opacity:.12; } .dim .n { opacity:.18; }
 .dim .e.on { opacity:1; stroke:var(--hl); stroke-width:2; } .dim .n.on { opacity:1; }
 .n { cursor:pointer; }
 </style></head><body>
 <header>
 <h1 title="Scripts and the files they read and write">Data flow</h1>
-<span class="grp"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">&minus;</button><button id="fit" title="Fit to the visible nodes">Fit</button></span>
+<span class="grp"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">&minus;</button><button id="fit" title="Fit to the visible nodes">Fit</button><button id="reset" title="Clear all highlighting, the search and the variant, and close the panel">Reset</button></span>
 <input id="q" placeholder="Search a script or file">
 <span class="grp">
 <label><input type="checkbox" id="fman"> Manuscript items only</label>
@@ -153,7 +149,6 @@ function stageKey(id) {
   const k = parseInt(n.id, 10);
   return isNaN(k) ? '99' : String(Math.floor(k / 10) * 10).padStart(2, '0');
 }
-function safeUrl(u) { return typeof u === 'string' && /^https?:\/\//i.test(u) ? u : null; }
 function humanSize(b) {
   if (!Number.isFinite(b)) return '';
   const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0;
@@ -294,6 +289,10 @@ qEl.addEventListener('input', () => {
   if (query) { active = 'search'; setVariant(''); } else active = pinned ? 'pin' : null;
   render();
 });
+// Reset: no highlight, no search, no variant, panel closed
+$('reset').onclick = () => {
+  closePanel(); query = ''; qEl.value = ''; setVariant(''); active = null; render();
+};
 window.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (pinned) { closePanel(); active = query ? 'search' : null; }
@@ -329,33 +328,13 @@ $('legbtn').onclick = () => {
   setHeaderHeight();
 };
 (function buildInfo() {
-  const el = $('built'), parts = [];
-  if (META.built) parts.push('Built ' + META.built + '.');
-  const repo = safeUrl(META.repo_url), docs = safeUrl(META.docs_url);
-  el.textContent = parts.join(' ') + (parts.length ? ' ' : '');
-  const addLink = (u, t) => { const a = document.createElement('a'); a.href = u; a.textContent = t; a.target = '_blank'; a.rel = 'noopener'; el.appendChild(a); el.appendChild(document.createTextNode(' ')); };
-  if (repo) addLink(repo, 'Code repository');
-  if (docs) addLink(docs, 'Documentation');
-  const w = Array.isArray(META.warnings) ? META.warnings : [];
-  if (w.length) {
-    const ul = document.createElement('ul'); ul.className = 'warnlist';
-    w.forEach(t => { const li = document.createElement('li'); li.textContent = String(t); ul.appendChild(li); });
-    el.after(ul);
-  }
-  if (!el.textContent.trim() && !repo && !docs) el.hidden = true;
+  const el = $('built');
+  if (META.built) el.textContent = 'Built ' + META.built + '.'; else el.hidden = true;
 })();
 
 // ---------- recipe panel ----------
 const panel = $('panel'), pbody = $('pbody');
 function mk(tag, text, cls) { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
-function link(url, text) {
-  const u = safeUrl(url); if (!u) return mk('span', text);
-  const a = mk('a', text); a.href = u; a.target = '_blank'; a.rel = 'noopener'; return a;
-}
-function missingFlag() {
-  const f = mk('span', 'missing', 'flag');
-  f.title = 'This item was not found on disk when the chart was built.'; return f;
-}
 // Scripts as lists grouped by stage, in run order
 function scriptList(ids) {
   const frag = document.createDocumentFragment(), groups = {};
@@ -363,23 +342,16 @@ function scriptList(ids) {
   Object.keys(groups).sort().forEach(k => {
     frag.appendChild(mk('h4', GROUP_LABEL[k] || k));
     const ol = mk('ol');
-    groups[k].forEach(id => { const n = nd(id), li = mk('li'); li.appendChild(link(n.url, n.id + ' ' + n.label)); ol.appendChild(li); });
+    groups[k].forEach(id => { const n = nd(id), li = mk('li'); li.textContent = n.id + ' ' + n.label; ol.appendChild(li); });
     frag.appendChild(ol);
   });
   return frag;
 }
 function openPanel(id) {
   const n = nd(id), el = nodesEl.find(e => e.dataset.id === id);
-  const missing = n.on_disk === false || (el && el.classList.contains('missing'));
   $('ptitle').textContent = (n.kind === 'script' ? 'Script ' + n.id : 'File');
   pbody.textContent = '';
-  const h2 = mk('h2', n.label); if (missing) { h2.appendChild(document.createTextNode(' ')); h2.appendChild(missingFlag()); }
-  pbody.appendChild(h2);
-  // links
-  const lk = mk('p', null, 'links');
-  if (safeUrl(n.url)) lk.appendChild(link(n.url, n.kind === 'script' ? 'Open script on GitHub' : 'Open on GitHub'));
-  if (safeUrl(n.docs_url)) lk.appendChild(link(n.docs_url, 'Documentation'));
-  if (lk.childNodes.length) pbody.appendChild(lk);
+  pbody.appendChild(mk('h2', n.label));
   // facts
   const dl = mk('dl');
   const row = (k, v) => { if (v == null || v === '') return; dl.appendChild(mk('dt', k)); const dd = mk('dd'); if (v instanceof Node) dd.appendChild(v); else dd.textContent = v; dl.appendChild(dd); };
@@ -398,7 +370,6 @@ function openPanel(id) {
     if (Number.isFinite(n.bytes)) c.push(humanSize(n.bytes));
     row('Content', c.join(', '));
   }
-  if (missing) { const s = mk('span'); s.appendChild(missingFlag()); s.appendChild(document.createTextNode(' not found on disk')); row('Status', s); }
   pbody.appendChild(dl);
 
   // How to reproduce: all upstream scripts (for a script: itself too)
