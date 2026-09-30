@@ -185,6 +185,8 @@ for minimum in MIN_RECORDS_STEPS:
     vpd = kept['vpd'].to_numpy(float)
     sm = kept['sm'].to_numpy(float)
     ratio, lower, upper = ratio_interval(vpd, sm)
+    # The two effects paired at each site, beside the ratio of their means
+    paired = vpd - sm
     table_b_rows.append({
         'Minimum Stage 8 records per site': minimum,
         'Sites kept': len(kept),
@@ -197,6 +199,8 @@ for minimum in MIN_RECORDS_STEPS:
         'SM effect (sigma)': sm.mean(),
         'VPD to SM ratio': ratio,
         'VPD to SM ratio, 95% bootstrap': f"[{lower:.2f}, {upper:.2f}]",
+        'Share of kept sites with VPD below SM (%)': 100 * (paired < 0).mean(),
+        'VPD minus SM effect, median across sites (sigma)': np.median(paired),
     })
 
 table_b = pd.DataFrame(table_b_rows)
@@ -222,6 +226,10 @@ display_rows = [
     ('SM effect (σ)', lambda r: _fmt(r['SM effect (sigma)'], 2)),
     ('VPD to SM ratio [95% bootstrap interval]',
      lambda r: f"{r['VPD to SM ratio']:.2f} {r['VPD to SM ratio, 95% bootstrap']}"),
+    ('Sites with a VPD effect more negative than the SM effect (%)',
+     lambda r: _fmt(r['Share of kept sites with VPD below SM (%)'], 1)),
+    ('VPD minus SM effect, median across sites (σ)',
+     lambda r: _fmt(r['VPD minus SM effect, median across sites (sigma)'], 2)),
 ]
 table_b_display = pd.DataFrame(
     {str(int(r['Minimum Stage 8 records per site'])): [f(r) for _, f in display_rows]
