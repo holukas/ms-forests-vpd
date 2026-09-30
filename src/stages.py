@@ -304,3 +304,51 @@ def mirror_7(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float =
 def mirror_8(df, a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
     """Compound extreme. Same records as stage_8, reached in the opposite order."""
     return stage_8(df, a=a, b=b, c=c)
+
+
+# ---------------------------------------------------------------------------
+# Factorial cells
+# ---------------------------------------------------------------------------
+# Neither stage sequence is a factorial design: each one escalates one driver while
+# the other is only kept off its extreme. These cells cross four soil water classes
+# with four VPD classes at the stage cut-offs and leave temperature free, so every
+# combination is present and no driver comes first. The cells at central VPD hold
+# VPD near its baseline while soil water falls, and the cells at central soil water
+# do the same for VPD.
+#
+# Class 0 is the middle 25% (|z| <= a), classes 1 to 3 step away from it at b and c
+# in the direction of stress: upward for VPD, downward for soil water. Records with
+# wet soil or low VPD fall in no cell.
+
+SWC_CLASS_NAMES = ('central', 'dry', 'very dry', 'extreme')
+VPD_CLASS_NAMES = ('central', 'higher', 'high', 'extreme')
+
+
+def _stress_class_mask(z, k, a, b, c):
+    """Records in class k of a driver, with z already signed so that stress is positive."""
+    if k == 0:
+        return (z >= -a) & (z <= a)
+    if k == 1:
+        return (z > a) & (z <= b)
+    if k == 2:
+        return (z > b) & (z <= c)
+    return z > c
+
+
+def factorial_cell(swc_k: int, vpd_k: int,
+                   a: float = 0.31863936, b: float = 0.714367440280187, c: float = 1.2815515655446):
+    """Stage-like function for one cell: soil water class swc_k, VPD class vpd_k, TA free."""
+
+    def cell(df):
+        mask_swc = _stress_class_mask(-df['SWC_ZSCORE'], swc_k, a, b, c)
+        mask_vpd = _stress_class_mask(df['VPD_ZSCORE'], vpd_k, a, b, c)
+        df = df.loc[mask_swc & mask_vpd].copy()
+        condition = f"SM {SWC_CLASS_NAMES[swc_k]}, VPD {VPD_CLASS_NAMES[vpd_k]}"
+        return df, -1, vpd_k, swc_k, condition
+
+    cell.__name__ = f"factorial_swc{swc_k}_vpd{vpd_k}"
+    return cell
+
+
+# Sixteen cells, soil water class first, so cells 0 to 3 are central soil water
+FACTORIAL_CELLS = [factorial_cell(swc_k, vpd_k) for swc_k in range(4) for vpd_k in range(4)]

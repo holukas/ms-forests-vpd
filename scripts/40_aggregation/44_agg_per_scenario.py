@@ -4,8 +4,9 @@ Mean SHAP values within each stress stage, per site and across sites.
 Stages are defined in `src/stages.py`. Settings at the top of the file:
 - FLUX, CONDITIONAL, VARIANT, SITE_SUBSET
 - STAGE_SEQUENCE: `"published"` for the main stage order, `"mirrored"` for the order in
-  which VPD escalates and extreme soil dryness comes last; the mirrored run writes to its
-  own folder
+  which VPD escalates and extreme soil dryness comes last, `"factorial"` for the sixteen
+  cells of four soil water classes by four VPD classes; the mirrored and factorial runs
+  write to their own folders
 
 Can run any time after stage 31.
 """
@@ -48,7 +49,10 @@ settings = load_settings()
 # Which stage sequence to apply. "published" lets temperature rise and soil water fall
 # while holding VPD below its extreme, and adds extreme VPD last. "mirrored" swaps the two
 # roles, escalating VPD and adding extreme soil dryness last, as a symmetric control.
-# The mirrored run writes to its own folder, so it cannot overwrite the main stage output.
+# "factorial" is no sequence: it crosses four soil water classes with four VPD classes,
+# temperature free, so each driver can be read while the other stays near its baseline.
+# The mirrored and factorial runs write to their own folders, so they cannot overwrite
+# the main stage output.
 STAGE_SEQUENCE = "published"
 
 shap_type = 'conditional' if CONDITIONAL else 'interventional'
@@ -61,12 +65,16 @@ if STAGE_SEQUENCE == "published":
 elif STAGE_SEQUENCE == "mirrored":
     SCENARIOS = [s.stage_0, s.mirror_1, s.mirror_2, s.mirror_3,
                  s.mirror_4, s.mirror_5, s.mirror_6, s.mirror_7, s.mirror_8]
+elif STAGE_SEQUENCE == "factorial":
+    # SCENARIO is the cell number, 0 to 15; VPD_CLASS and SWC_CLASS name the cell
+    SCENARIOS = s.FACTORIAL_CELLS
 else:
-    raise ValueError(f"STAGE_SEQUENCE must be 'published' or 'mirrored', "
+    raise ValueError(f"STAGE_SEQUENCE must be 'published', 'mirrored' or 'factorial', "
                      f"not {STAGE_SEQUENCE!r}")
 
+SEQUENCE_FOLDER = {"published": "", "mirrored": "mirrored-stages", "factorial": "factorial-cells"}
 dir_out = (Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / VARIANT
-           / SITE_SUBSET / ("" if STAGE_SEQUENCE == "published" else "mirrored-stages"))
+           / SITE_SUBSET / SEQUENCE_FOLDER[STAGE_SEQUENCE])
 # parents=True: Creates any necessary parent directories that don't exist.
 # exist_ok=True: Prevents an error if the directory already exists.
 dir_out.mkdir(parents=True, exist_ok=True)

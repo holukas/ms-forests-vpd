@@ -27,6 +27,7 @@ a stage fails on a missing file if its predecessor has not run with the same var
 | `no_ta` | air temperature dropped from the predictors | stage 41 |
 | `no_vpd` | VPD dropped from the predictors | stage 31 |
 | `mirrored-stages` | stage 44 only, VPD escalates and extreme soil dryness is added last | stage 44 |
+| `factorial-cells` | stage 44 only, four soil water classes by four VPD classes, temperature free | stage 44 |
 
 Scripts from 41 onward also take `SITE_SUBSET`, `""` for all sites or `"deeper-only"`
 for the 128 sites with a soil water layer below layer 1. Run against the empty variant
@@ -101,7 +102,7 @@ curves on 100 grid points per predictor. Writes `{SITE}_ale_curves_{TARGET}.csv`
 | `41_binagg_per_site.py` | Bins each site's SHAP values on a two-variable grid with shared edges, for five variable pairs (TA-VPD, SWC-VPD, TA-SWC, ET-VPD, ET-SWC) |
 | `42_binagg_across_sites.py` | Averages the site grids, one vote per site |
 | `43_binagg_across_igbp.py` | Same, per forest type |
-| `44_agg_per_scenario.py` | SHAP means within the stress stages, per site and across sites; `STAGE_SEQUENCE = "published"` or `"mirrored"` |
+| `44_agg_per_scenario.py` | SHAP means within the stress stages, per site and across sites; `STAGE_SEQUENCE = "published"`, `"mirrored"` or `"factorial"` |
 | `45_stage_distributions.py` | Driver medians and quartiles within each stage, in standardized and measured units |
 | `46_ale_thresholds.py` | Per-site ALE curves on one grid and their thresholds, overall and per forest type |
 | `47_threshold_robustness.py` | Eighteen re-estimations of the VPD threshold with a bootstrap over sites, the 23-setting estimator sweep and leave-one-site-out; feeds Table 1 |
