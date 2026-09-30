@@ -11,6 +11,13 @@ type.
 - Target: `NEP_ZSCORE`, half-hourly, daytime, four months of highest GPP per site
 - Features: `TA_ZSCORE`, `SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`
 
+**Data flow chart.** Every script of the pipeline with the files it reads and writes, from
+the flux data to each figure and table, as one interactive page:
+[`docs/data_flow.html`](docs/data_flow.html) (download and open it in a browser, or see
+<https://holukas.github.io/ms-forests-vpd/data_flow.html> once the repository is
+public). The same page is `DATA_FLOW.html` in the data deposit, where it also shows the
+archive each file is deposited in.
+
 Full documentation is a Quarto site under [`docs/`](docs/). Preview it locally with:
 
 ```powershell
@@ -66,6 +73,26 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"   # Windows
 curl -LsSf https://astral.sh/uv/install.sh | sh              # macOS / Linux
 ```
 
+Tested on Windows 11 with Python 3.12. No special hardware is needed.
+[INSTALL TIME PENDING: measure `uv sync` in a clean clone with an empty uv cache]
+
+## Demo
+
+The data deposit (see Data) contains `ms-forests-vpd_demo.zip`, 10 MB: the model input
+of one site, CH-Dav, and the published model output of that site.
+
+1. Create an empty data folder, point `MS_FORESTS_VPD_DATA` at it (see Data), and unpack
+   the archive into `<data folder>/data/outputs/`.
+2. Run `uv run python scripts/30_shap/31_shap.py`.
+
+The script fits the XGBoost model of the site in five-fold cross-validation and computes
+the out-of-sample SHAP values; this took 7 seconds on a 24-thread desktop computer. It
+writes `CH-Dav_shap-conditional_NEP_ZSCORE.parquet`, a run log and the cross-validation
+results to `data/outputs/30_shap/NEP_ZSCORE/conditional/`. With xgboost 3.0.5 on 24
+threads the parquet file equals `expected_output/CH-Dav_shap-conditional_NEP_ZSCORE.parquet`
+from the archive; with other thread counts the values differ by up to a few percent
+(`docs/installation.qmd`, Reproducibility).
+
 ## Data
 
 Source files and analysis outputs are about 185 GB and are not part of this repository.
@@ -84,6 +111,9 @@ The per-site subsets and the aggregated outputs behind every figure and table ar
 deposited in the ETH Research Collection: <https://doi.org/10.3929/ethz-c-000798579>
 [DEPOSIT PENDING: link goes live with the final upload]. Unpack them into
 `data/outputs/` to run everything from `30_shap` onward without the raw source files.
+The data behind each figure and table are also in the archive
+`ms-forests-vpd_SourceData.zip` of the same deposit, one file per display item, named
+after it (`Fig4_all_sites.csv`, `SupplementaryTable6.xlsx`).
 
 ## Running
 
@@ -121,7 +151,7 @@ and read by no figure.
 | `scripts/40_aggregation/` | Aggregation per site, across sites, by IGBP, by stress stage |
 | `scripts/50_figures/` | Manuscript figures, tables and data files, one script per display item |
 | `scripts/80_info/` | Checks whose numbers are quoted in the text, read by no figure |
-| `scripts/90_deposit/` | Archives for the data deposit and the data flow chart |
+| `scripts/90_deposit/` | Archives for the data deposit, the data flow chart, the Source Data and the demo data |
 | `src/` | Shared code: models, aggregation, plotting, statistics, I/O, paths |
 | `config/` | `settings.yaml` and FLUXNET site metadata |
 | `data/worldmap/` | Natural Earth country outlines for the site map |
