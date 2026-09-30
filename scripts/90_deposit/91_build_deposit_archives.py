@@ -17,8 +17,11 @@ names without blanks, paths under 200 characters, files up to 10 GB, 50 GB in
 total).
 
 Without arguments it is a dry run. With ``--build`` it writes into
-<DATA_ROOT>/deposit/ the archives ms-forests-vpd_outputs_<stage>.zip
-(replacing existing ones), MANIFEST.csv (sha256 per file) and ARCHIVES.csv.
+<DATA_ROOT>/deposit_eth_research_collection/ the archives
+ms-forests-vpd_outputs_<stage>.zip (replacing existing ones), MANIFEST.csv
+(sha256 per file) and ARCHIVES.csv. Other zip archives already in that folder,
+the Source Data of script 93, are listed in both files as they are, so run 93
+first.
 """
 import csv
 import hashlib
@@ -27,10 +30,10 @@ import sys
 import zipfile
 from pathlib import Path
 
-from src.paths import DATA_ROOT
+from src.paths import DATA_ROOT, DEPOSIT_DIR
 
 OUTPUTS = DATA_ROOT / "data" / "outputs"
-DEPOSIT = DATA_ROOT / "deposit"
+DEPOSIT = DEPOSIT_DIR
 PREFIX = "ms-forests-vpd_outputs_"
 
 STAGES = ["10_datasets", "20_subsets", "30_shap", "40_aggregation", "50_plots", "80_info"]
@@ -114,6 +117,18 @@ def main(build: bool) -> None:
                 manifest_rows.append([out.name, rel, p.stat().st_size, sha256(p)])
         archive_rows.append([out.name, len(files), out.stat().st_size, sha256(out)])
         print(f"written {out.name}: {len(files)} files, {out.stat().st_size / 1024**3:.2f} GB")
+
+    # Archives written by other scripts, paths relative to the archive root
+    for out in sorted(DEPOSIT.glob("*.zip")):
+        if out.name.startswith(PREFIX):
+            continue
+        with zipfile.ZipFile(out) as z:
+            members = [i for i in z.infolist() if not i.is_dir()]
+            for i in members:
+                manifest_rows.append([out.name, i.filename, i.file_size,
+                                      hashlib.sha256(z.read(i.filename)).hexdigest()])
+        archive_rows.append([out.name, len(members), out.stat().st_size, sha256(out)])
+        print(f"listed {out.name}: {len(members)} files")
 
     with open(DEPOSIT / "MANIFEST.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)

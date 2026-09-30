@@ -143,12 +143,17 @@ below the crossing of the aggregated curve; Table 1 reports the latter.
 
 ## 90_deposit: data deposit
 
-Both scripts write into `<DATA_ROOT>/deposit/`.
+The scripts write into `<DATA_ROOT>/deposit_eth_research_collection/`, the files for the
+ETH Research Collection. Script 93 also writes the Source Data for the journal into
+`<DATA_ROOT>/submission_nature_communications/`. Run 93 and 94 before 91, which lists
+their archives in `MANIFEST.csv` and `ARCHIVES.csv`.
 
 | Script | Function |
 |--------|----------|
 | `91_build_deposit_archives.py` | One uncompressed zip per output stage, with `MANIFEST.csv` and `ARCHIVES.csv`; dry run by default, `--build` writes |
 | `92_build_data_flow_chart.py` | `DATA_FLOW.html`, a zoomable chart of every script with the files it reads and writes, drawn from `92_data_flow_graph.json` |
+| `93_build_source_data.py` | The Source Data: the data file of every figure, table and Supplementary Data file of the main analysis, copied under a plain name (`Fig4_all_sites.csv`, `SupplementaryTable6.xlsx`) with a README; dry run by default, `--build` writes |
+| `94_build_demo_data.py` | `ms-forests-vpd_demo.zip`: the model input of one site (CH-Dav) with its published output, so that script 31 can be tried without the full deposit (README, Demo); dry run by default, `--build` writes |
 
 The reads and writes in `92_data_flow_graph.json` were taken from the code by hand. When a
 script starts reading or writing a different file, update its entry there and rerun

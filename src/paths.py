@@ -56,6 +56,11 @@ def _resolve_data_root() -> Path:
 
 DATA_ROOT = _resolve_data_root()
 
+# Output folders of scripts/90_deposit: the files for the ETH Research Collection, and the
+# files uploaded to the journal with the manuscript.
+DEPOSIT_DIR = DATA_ROOT / "deposit_eth_research_collection"
+SUBMISSION_DIR = DATA_ROOT / "submission_nature_communications"
+
 
 def data_path(*parts: str) -> Path:
     """Path inside the external data folder, e.g. ``data_path('data/outputs/30_shap')``."""

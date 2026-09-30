@@ -12,12 +12,12 @@ Reads:
     taken from the code by hand and are kept in this file, with the run variants of every
     script and file and, for every output file, a glob relative to data/outputs/. When a
     script starts reading or writing a different file, update its entry here and rerun.
-    <DATA_ROOT>/deposit/MANIFEST.csv, if it exists: archive, count and size of the deposited
-    files of each output.
+    <DATA_ROOT>/deposit_eth_research_collection/MANIFEST.csv, if it exists: archive, count
+    and size of the deposited files of each output.
     <DATA_ROOT>/data/outputs/: every glob is checked against the files on disk.
 
 Writes:
-    <DATA_ROOT>/deposit/DATA_FLOW.html
+    <DATA_ROOT>/deposit_eth_research_collection/DATA_FLOW.html
     docs/data_flow.html, the same page for the documentation site. Written only together
     with the deposit copy, so a test run that sends OUT elsewhere leaves docs/ alone.
 
@@ -34,13 +34,13 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from src.paths import DATA_ROOT, REPO_ROOT
+from src.paths import DATA_ROOT, DEPOSIT_DIR, REPO_ROOT
 
 GRAPH = Path(__file__).with_name("92_data_flow_graph.json")
-OUT = DATA_ROOT / "deposit" / "DATA_FLOW.html"
+OUT = DEPOSIT_DIR / "DATA_FLOW.html"
 DOCS_OUT = REPO_ROOT / "docs" / "data_flow.html"
 OUTPUTS = DATA_ROOT / "data" / "outputs"
-MANIFEST = DATA_ROOT / "deposit" / "MANIFEST.csv"
+MANIFEST = DEPOSIT_DIR / "MANIFEST.csv"
 
 # Run variants: folder names of the sensitivity runs and the three other fluxes. The
 # descriptions follow the "Run variants" table in docs/pipeline.qmd.
@@ -140,7 +140,9 @@ def warn(text):
 manifest = []
 if MANIFEST.exists():
     with open(MANIFEST, newline="", encoding="utf8") as f:
-        manifest = list(csv.DictReader(f))
+        # Only the stage archives of script 91; the Source Data archive of script 93 holds
+        # renamed copies, whose paths are not relative to data/outputs/
+        manifest = [r for r in csv.DictReader(f) if r["archive"].startswith("ms-forests-vpd_outputs_")]
 disk = None
 if OUTPUTS.is_dir():
     disk = []
@@ -535,7 +537,7 @@ page = (TEMPLATE.read_text(encoding="utf8")
 OUT.parent.mkdir(parents=True, exist_ok=True)
 OUT.write_text(page, encoding="utf8")
 print(f"wrote {OUT}: {len(nodes)} nodes, {len(edges)} edges, {maxr + 1} columns, {total_w}x{total_h:.0f}")
-if OUT.parent == DATA_ROOT / "deposit":
+if OUT.parent == DEPOSIT_DIR:
     DOCS_OUT.write_text(page, encoding="utf8")
     print(f"wrote {DOCS_OUT}")
 print(f"{len(warnings)} warnings for the maintainer (not shown on the page)")

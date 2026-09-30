@@ -918,7 +918,7 @@
     "outputs/80_info/ (whole folder)"
    ],
    "writes": [
-    "deposit/"
+    "deposit_eth_research_collection/"
    ],
    "note": "Dry run by default; --build writes the archives.",
    "variants": [],
@@ -933,9 +933,44 @@
     "scripts/90_deposit/92_data_flow_graph.json"
    ],
    "writes": [
-    "deposit/DATA_FLOW.html"
+    "deposit_eth_research_collection/DATA_FLOW.html"
    ],
    "note": "Draws this chart.",
+   "variants": [],
+   "group_end": true
+  },
+  {
+   "id": "93",
+   "path": "scripts/90_deposit/93_build_source_data.py",
+   "label": "93 build source data",
+   "stage": "90_deposit",
+   "reads": [
+    "outputs/10_datasets/ (whole folder)",
+    "outputs/20_subsets/ (whole folder)",
+    "outputs/40_aggregation/ (whole folder)",
+    "outputs/50_plots/ (whole folder)"
+   ],
+   "writes": [
+    "deposit_eth_research_collection/ms-forests-vpd_SourceData.zip",
+    "submission_nature_communications/Source Data.zip"
+   ],
+   "note": "Copies the data file of every display item under a plain name; nothing is recomputed. Dry run by default; --build writes.",
+   "variants": [],
+   "group_end": true
+  },
+  {
+   "id": "94",
+   "path": "scripts/90_deposit/94_build_demo_data.py",
+   "label": "94 build demo data",
+   "stage": "90_deposit",
+   "reads": [
+    "outputs/20_subsets/ (whole folder)",
+    "outputs/30_shap/ (whole folder)"
+   ],
+   "writes": [
+    "deposit_eth_research_collection/ms-forests-vpd_demo.zip"
+   ],
+   "note": "Model input of one site (CH-Dav) with its published output, to try script 31 without the full deposit. Dry run by default; --build writes.",
    "variants": [],
    "group_end": true
   }
@@ -1662,10 +1697,10 @@
    "group_end": true
   },
   {
-   "id": "deposit/",
+   "id": "deposit_eth_research_collection/",
    "label": "deposit: 6 zips + MANIFEST + ARCHIVES",
    "stage": "deposit",
-   "note": "<DATA_ROOT>/deposit/",
+   "note": "<DATA_ROOT>/deposit_eth_research_collection/",
    "variants": [],
    "group_end": true
   },
@@ -1678,10 +1713,34 @@
    "group_end": true
   },
   {
-   "id": "deposit/DATA_FLOW.html",
+   "id": "deposit_eth_research_collection/DATA_FLOW.html",
    "label": "DATA_FLOW.html (this chart)",
    "stage": "deposit",
-   "note": "<DATA_ROOT>/deposit/DATA_FLOW.html",
+   "note": "<DATA_ROOT>/deposit_eth_research_collection/DATA_FLOW.html",
+   "variants": [],
+   "group_end": true
+  },
+  {
+   "id": "deposit_eth_research_collection/ms-forests-vpd_SourceData.zip",
+   "label": "ms-forests-vpd_SourceData.zip",
+   "stage": "deposit",
+   "note": "<DATA_ROOT>/deposit_eth_research_collection/ms-forests-vpd_SourceData.zip, one file per display item with README.txt",
+   "variants": [],
+   "group_end": true
+  },
+  {
+   "id": "submission_nature_communications/Source Data.zip",
+   "label": "Source Data.zip (journal upload)",
+   "stage": "deposit",
+   "note": "<DATA_ROOT>/submission_nature_communications/Source Data.zip, the same archive for the journal",
+   "variants": [],
+   "group_end": true
+  },
+  {
+   "id": "deposit_eth_research_collection/ms-forests-vpd_demo.zip",
+   "label": "ms-forests-vpd_demo.zip",
+   "stage": "deposit",
+   "note": "<DATA_ROOT>/deposit_eth_research_collection/ms-forests-vpd_demo.zip, site table, model input and expected output of one site",
    "variants": [],
    "group_end": true
   }
