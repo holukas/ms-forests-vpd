@@ -121,6 +121,7 @@ and read by no figure.
 | `scripts/40_aggregation/` | Aggregation per site, across sites, by IGBP, by stress stage |
 | `scripts/50_figures/` | Manuscript figures, tables and data files, one script per display item |
 | `scripts/80_info/` | Checks whose numbers are quoted in the text, read by no figure |
+| `scripts/90_deposit/` | Archives for the data deposit and the data flow chart |
 | `src/` | Shared code: models, aggregation, plotting, statistics, I/O, paths |
 | `config/` | `settings.yaml` and FLUXNET site metadata |
 | `data/worldmap/` | Natural Earth country outlines for the site map |

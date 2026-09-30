@@ -140,3 +140,16 @@ the same numbers, a script of the 50s lays the INFO file out.
 
 Scripts 83 and 84 use the median of the per-site thresholds, which sits about 0.07 kPa
 below the crossing of the aggregated curve; Table 1 reports the latter.
+
+## 90_deposit: data deposit
+
+Both scripts write into `<DATA_ROOT>/deposit/`.
+
+| Script | Function |
+|--------|----------|
+| `91_build_deposit_archives.py` | One uncompressed zip per output stage, with `MANIFEST.csv` and `ARCHIVES.csv`; dry run by default, `--build` writes |
+| `92_build_data_flow_chart.py` | `DATA_FLOW.html`, a zoomable chart of every script with the files it reads and writes, drawn from `92_data_flow_graph.json` |
+
+The reads and writes in `92_data_flow_graph.json` were taken from the code by hand. When a
+script starts reading or writing a different file, update its entry there and rerun
+script 92.
