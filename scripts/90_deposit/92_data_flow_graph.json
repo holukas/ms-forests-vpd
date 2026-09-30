@@ -11,7 +11,8 @@
    "writes": [
     "outputs/10_datasets/00_overlap_*.csv"
    ],
-   "note": "Lists folder names in 00_raw/ameriflux and 00_raw/from-fluxnet-shuttle; after typing DELETE it deletes overlapping AmeriFlux folders from 00_raw. Never run it."
+   "note": "Lists folder names in 00_raw/ameriflux and 00_raw/from-fluxnet-shuttle; after typing DELETE it deletes overlapping AmeriFlux folders from 00_raw. Never run it.",
+   "variants": []
   },
   {
    "id": "11",
@@ -25,7 +26,8 @@
    "writes": [
     "outputs/10_datasets/11_datasets_info.csv"
    ],
-   "note": "Globs the raw folders for half-hourly files and reads the five INFOFILE_* metadata lists."
+   "note": "Globs the raw folders for half-hourly files and reads the five INFOFILE_* metadata lists.",
+   "variants": []
   },
   {
    "id": "12",
@@ -41,7 +43,8 @@
     "outputs/10_datasets/12_parquet_merged_plots/ (per site)",
     "outputs/10_datasets/12_datasets_info_parquet.csv"
    ],
-   "note": "Merges the files of one site by PRIORITY."
+   "note": "Merges the files of one site by PRIORITY.",
+   "variants": []
   },
   {
    "id": "13",
@@ -55,7 +58,8 @@
    "writes": [
     "outputs/10_datasets/13_datasets_info_parquet_vars.csv"
    ],
-   "note": "Redundant: 13b writes the same file and more."
+   "note": "Redundant: 13b writes the same file and more.",
+   "variants": []
   },
   {
    "id": "13b",
@@ -71,7 +75,8 @@
     "outputs/10_datasets/13b_variables_per_site.csv",
     "outputs/10_datasets/13b_variables_coverage_summary.csv"
    ],
-   "note": "Also reads 15_..._usedsites.csv from an earlier pass, if it exists, to set USED_SITE (not drawn, it would close a loop)."
+   "note": "Also reads 15_..._usedsites.csv from an earlier pass, if it exists, to set USED_SITE (not drawn, it would close a loop).",
+   "variants": []
   },
   {
    "id": "14",
@@ -84,7 +89,8 @@
    ],
    "writes": [
     "outputs/10_datasets/14_datasets_info_parquet_vars_stats.csv"
-   ]
+   ],
+   "variants": []
   },
   {
    "id": "15",
@@ -97,7 +103,8 @@
    "writes": [
     "outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv"
    ],
-   "note": "Keeps sites with SWC, GPP and RECO, not DNF, and at least 3 years."
+   "note": "Keeps sites with SWC, GPP and RECO, not DNF, and at least 3 years.",
+   "variants": []
   },
   {
    "id": "16",
@@ -110,7 +117,8 @@
    "writes": [
     "outputs/10_datasets/16_ERA5_climate_1991-2020/ (per site, legacy)"
    ],
-   "note": "Legacy download of ERA5-Land from the Copernicus CDS; script 17 does not read its output."
+   "note": "Legacy download of ERA5-Land from the Copernicus CDS; script 17 does not read its output.",
+   "variants": []
   },
   {
    "id": "16a",
@@ -123,7 +131,8 @@
    "writes": [
     "outputs/10_datasets/16_ERA5_..._GoogleEarthEngine/ (per site)"
    ],
-   "note": "Launcher: starts 16b as subprocesses."
+   "note": "Launcher: starts 16b as subprocesses.",
+   "variants": []
   },
   {
    "id": "16b",
@@ -136,7 +145,8 @@
    "writes": [
     "outputs/10_datasets/16_ERA5_..._GoogleEarthEngine/ (per site)"
    ],
-   "note": "External source: GEE ECMWF/ERA5/DAILY."
+   "note": "External source: GEE ECMWF/ERA5/DAILY.",
+   "variants": []
   },
   {
    "id": "16c",
@@ -149,7 +159,8 @@
    "writes": [
     "outputs/10_datasets/16_ERA5_..._Copernicus/ (per site)"
    ],
-   "note": "Launcher: starts 16d as subprocesses."
+   "note": "Launcher: starts 16d as subprocesses.",
+   "variants": []
   },
   {
    "id": "16d",
@@ -162,7 +173,8 @@
    "writes": [
     "outputs/10_datasets/16_ERA5_..._Copernicus/ (per site)"
    ],
-   "note": "External source: CDS ERA5-Land time series."
+   "note": "External source: CDS ERA5-Land time series.",
+   "variants": []
   },
   {
    "id": "17",
@@ -178,7 +190,8 @@
    "writes": [
     "outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv"
    ],
-   "note": "Reads the raw FLUXNET ERA5 yearly file for Shuttle and AmeriFlux sites."
+   "note": "Reads the raw FLUXNET ERA5 yearly file for Shuttle and AmeriFlux sites.",
+   "variants": []
   },
   {
    "id": "21",
@@ -195,7 +208,13 @@
     "outputs/20_subsets/21_subsets_parquet_plots/ (per site)",
     "outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv"
    ],
-   "note": "Reads 13b_variables_per_site.csv only with SWC_LAYER = deepest. Variants go to 20_subsets/<VARIANT>/."
+   "note": "Reads 13b_variables_per_site.csv only with SWC_LAYER = deepest. Variants go to 20_subsets/<VARIANT>/.",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "no_ta",
+    "no_vpd"
+   ]
   },
   {
    "id": "22",
@@ -209,7 +228,8 @@
    ],
    "writes": [
     "outputs/20_subsets/22_data_flow.csv"
-   ]
+   ],
+   "variants": []
   },
   {
    "id": "31",
@@ -224,7 +244,16 @@
     "outputs/30_shap/<FLUX>/conditional/<SITE>_shap-conditional_<FLUX>.parquet (per site)",
     "outputs/30_shap/<FLUX>/conditional/2_cv_results_all_sites.csv"
    ],
-   "note": "Fluxes NEP, GPP, RECO, ET; variants blocked-cv, deep-sm, no_ta, no_vpd. Writes hyperparameter tuning results only in tuning mode."
+   "note": "Fluxes NEP, GPP, RECO, ET; variants blocked-cv, deep-sm, no_ta, no_vpd. Writes hyperparameter tuning results only in tuning mode.",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "no_ta",
+    "no_vpd",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "32",
@@ -239,6 +268,9 @@
     "outputs/30_shap/<FLUX>/ale/<SITE>_ale_curves (per site)",
     "outputs/30_shap/<FLUX>/ale/<SITE>_ale parquet (per site)",
     "outputs/30_shap/<FLUX>/ale/0_ale_validation_sites.csv"
+   ],
+   "variants": [
+    "deep-sm"
    ]
   },
   {
@@ -255,7 +287,16 @@
    "writes": [
     "outputs/40_aggregation/41_SHAPVALUES meanAggregatedPerSite (per grid)"
    ],
-   "note": "Reads 13b and 15 only with SITE_SUBSET = deeper-only. Grids TA+VPD, SWC+VPD, TA+SWC, ET+VPD, ET+SWC."
+   "note": "Reads 13b and 15 only with SITE_SUBSET = deeper-only. Grids TA+VPD, SWC+VPD, TA+SWC, ET+VPD, ET+SWC.",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "no_ta",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "42",
@@ -267,6 +308,14 @@
    ],
    "writes": [
     "outputs/40_aggregation/42_SHAPVALUES AggregatedAcrossSites (per grid)"
+   ],
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
    ]
   },
   {
@@ -279,6 +328,14 @@
    ],
    "writes": [
     "outputs/40_aggregation/43_SHAPVALUES AcrossIGBP (per forest type, grid)"
+   ],
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
    ]
   },
   {
@@ -295,7 +352,17 @@
    "writes": [
     "outputs/40_aggregation/44_SHAPVALUES AggregatedAcrossScenarios"
    ],
-   "note": "STAGE_SEQUENCE mirrored or factorial writes to mirrored-stages/ or factorial-cells/."
+   "note": "STAGE_SEQUENCE mirrored or factorial writes to mirrored-stages/ or factorial-cells/.",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "deeper-only",
+    "mirrored-stages",
+    "factorial-cells",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "45",
@@ -308,7 +375,8 @@
    ],
    "writes": [
     "outputs/40_aggregation/45_StageDistributions"
-   ]
+   ],
+   "variants": []
   },
   {
    "id": "46",
@@ -323,6 +391,9 @@
    "writes": [
     "outputs/40_aggregation/46_ALE_SiteCurves",
     "outputs/40_aggregation/46_ALE_Thresholds"
+   ],
+   "variants": [
+    "deep-sm"
    ]
   },
   {
@@ -340,7 +411,13 @@
     "outputs/40_aggregation/47_THRESHOLD_Robustness",
     "outputs/40_aggregation/47_THRESHOLD_EstimatorSweep + LeaveOneSiteOut"
    ],
-   "note": "Reads the 21 table and the 41 TA+VPD grid of the main, deep-sm, deeper-only, no_ta and blocked-cv runs."
+   "note": "Reads the 21 table and the 41 TA+VPD grid of the main, deep-sm, deeper-only, no_ta and blocked-cv runs.",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "no_ta",
+    "deeper-only"
+   ]
   },
   {
    "id": "48",
@@ -355,7 +432,8 @@
    ],
    "writes": [
     "outputs/40_aggregation/48_EXCEEDANCE"
-   ]
+   ],
+   "variants": []
   },
   {
    "id": "49",
@@ -367,6 +445,11 @@
    ],
    "writes": [
     "outputs/40_aggregation/49_SiteThresholds + BiomeThresholds"
+   ],
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "deeper-only"
    ]
   },
   {
@@ -381,7 +464,8 @@
    "writes": [
     "outputs/50_plots/51_FIG-1"
    ],
-   "note": "Also reads the world map shapefile in the repository."
+   "note": "Also reads the world map shapefile in the repository.",
+   "variants": []
   },
   {
    "id": "52",
@@ -397,7 +481,11 @@
     "outputs/50_plots/52_SUPPFIG-1",
     "outputs/50_plots/52_SUPPFIG-7"
    ],
-   "note": "The FIGURE switch selects one figure per run."
+   "note": "The FIGURE switch selects one figure per run.",
+   "variants": [
+    "deep-sm",
+    "deeper-only"
+   ]
   },
   {
    "id": "53",
@@ -411,7 +499,15 @@
     "outputs/50_plots/53_FIG-3",
     "outputs/50_plots/53_SUPPFIG-3"
    ],
-   "note": "VARIANT mirrored-stages reads 44 from mirrored-stages/ and writes Suppl. Fig. 3."
+   "note": "VARIANT mirrored-stages reads 44 from mirrored-stages/ and writes Suppl. Fig. 3.",
+   "variants": [
+    "deep-sm",
+    "deeper-only",
+    "mirrored-stages",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "54",
@@ -427,7 +523,15 @@
     "outputs/50_plots/54_FIG-4",
     "outputs/50_plots/54_SUPPTABLE-7"
    ],
-   "note": "TA x VPD grid only."
+   "note": "TA x VPD grid only.",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "55",
@@ -441,7 +545,8 @@
     "outputs/50_plots/55_TABLE-1",
     "outputs/50_plots/55_SUPPFIG-4"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "56",
@@ -455,7 +560,14 @@
     "outputs/50_plots/56_SUPPFIG-2",
     "outputs/50_plots/56_SUPPTABLE-6"
    ],
-   "note": "Also reads 44 of the deep-sm variant for the last block of the table."
+   "note": "Also reads 44 of the deep-sm variant for the last block of the table.",
+   "variants": [
+    "deep-sm",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "57",
@@ -468,7 +580,8 @@
    "writes": [
     "outputs/50_plots/57_SUPPFIG-5"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "58",
@@ -482,7 +595,12 @@
    "writes": [
     "outputs/50_plots/58_SUPPFIG-6"
    ],
-   "note": "Reads 42 of NEP, GPP, RECO and ET."
+   "note": "Reads 42 of NEP, GPP, RECO and ET.",
+   "variants": [
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "59",
@@ -498,7 +616,8 @@
     "outputs/50_plots/59_SUPPTABLE-4",
     "outputs/50_plots/59_SUPPTABLE-5"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "60",
@@ -512,7 +631,8 @@
    "writes": [
     "outputs/50_plots/60_SUPPFIG-8"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "61",
@@ -525,7 +645,8 @@
    "writes": [
     "outputs/50_plots/61_SUPPTABLE-3"
    ],
-   "note": "The stage rules are checked against src/stages.py."
+   "note": "The stage rules are checked against src/stages.py.",
+   "variants": []
   },
   {
    "id": "62",
@@ -538,7 +659,8 @@
    "writes": [
     "outputs/50_plots/62_SUPPTABLE-9"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "63",
@@ -551,7 +673,8 @@
    "writes": [
     "outputs/50_plots/63_SUPPTABLE-8"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "64",
@@ -565,7 +688,8 @@
    "writes": [
     "outputs/50_plots/64_SUPPDATA-2"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "65",
@@ -578,7 +702,8 @@
    "writes": [
     "outputs/50_plots/65_SUPPFIG-X"
    ],
-   "note": "Not in the manuscript."
+   "note": "Not in the manuscript.",
+   "variants": []
   },
   {
    "id": "66",
@@ -591,7 +716,8 @@
    "writes": [
     "outputs/50_plots/66_SUPPFIG-10"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "67",
@@ -604,7 +730,8 @@
    "writes": [
     "outputs/50_plots/67_SUPPDATA-1"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "68",
@@ -620,7 +747,8 @@
    "writes": [
     "outputs/50_plots/68_SUPPFIG-9"
    ],
-   "note": "TA x VPD grid only; 49_SiteThresholds only."
+   "note": "TA x VPD grid only; 49_SiteThresholds only.",
+   "variants": []
   },
   {
    "id": "69",
@@ -633,7 +761,10 @@
    "writes": [
     "outputs/50_plots/69_SUPPTABLE-10"
    ],
-   "note": "Reads 44 from factorial-cells/."
+   "note": "Reads 44 from factorial-cells/.",
+   "variants": [
+    "factorial-cells"
+   ]
   },
   {
    "id": "81",
@@ -647,7 +778,8 @@
    "writes": [
     "outputs/80_info/81_INFO_ThresholdDefinitions"
    ],
-   "note": "Refits the quartic to the Fig. 4 data files."
+   "note": "Refits the quartic to the Fig. 4 data files.",
+   "variants": []
   },
   {
    "id": "82",
@@ -661,7 +793,8 @@
    "writes": [
     "outputs/80_info/82_INFO_ThresholdVsSiteVPDRange"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "83",
@@ -676,7 +809,8 @@
    "writes": [
     "outputs/80_info/83_INFO_LeaveRegionOut"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "84",
@@ -691,7 +825,8 @@
    "writes": [
     "outputs/80_info/84_INFO_ShortRecordSensitivity"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "85",
@@ -705,7 +840,8 @@
    "writes": [
     "outputs/80_info/85_INFO_WueVsVpd"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "86",
@@ -718,7 +854,10 @@
    "writes": [
     "outputs/80_info/86_INFO_SiteSkill"
    ],
-   "note": "Main run and blocked-cv."
+   "note": "Main run and blocked-cv.",
+   "variants": [
+    "blocked-cv"
+   ]
   },
   {
    "id": "87",
@@ -731,7 +870,8 @@
    "writes": [
     "outputs/80_info/87_INFO_StageCutoffPercentiles"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "88",
@@ -744,7 +884,10 @@
    "writes": [
     "outputs/80_info/88_INFO_StageOrderTest"
    ],
-   "note": "Published and mirrored-stages 44."
+   "note": "Published and mirrored-stages 44.",
+   "variants": [
+    "mirrored-stages"
+   ]
   },
   {
    "id": "89",
@@ -758,7 +901,8 @@
    "writes": [
     "outputs/80_info/89_INFO_StageMatching_SUMMARY"
    ],
-   "note": ""
+   "note": "",
+   "variants": []
   },
   {
    "id": "91",
@@ -777,6 +921,7 @@
     "deposit/"
    ],
    "note": "Dry run by default; --build writes the archives.",
+   "variants": [],
    "group_end": true
   },
   {
@@ -791,6 +936,7 @@
     "deposit/DATA_FLOW.html"
    ],
    "note": "Draws this chart.",
+   "variants": [],
    "group_end": true
   }
  ],
@@ -799,409 +945,675 @@
    "id": "00_raw/ flux products",
    "label": "raw half-hourly flux files",
    "stage": "00_raw",
-   "note": "FLUXNET Shuttle (incl. ICOS, TERN, JapanFlux, KoFlux, ChinaFlux hubs), FLUXNET2015 from the ICOS Carbon Portal and fluxnet.org, AmeriFlux FLUXNET, JapanFlux2024"
+   "note": "FLUXNET Shuttle (incl. ICOS, TERN, JapanFlux, KoFlux, ChinaFlux hubs), FLUXNET2015 from the ICOS Carbon Portal and fluxnet.org, AmeriFlux FLUXNET, JapanFlux2024",
+   "variants": []
   },
   {
    "id": "00_raw/<source>/0-info/ site metadata lists",
    "label": "raw site metadata lists",
-   "stage": "00_raw"
+   "stage": "00_raw",
+   "variants": []
   },
   {
    "id": "00_raw/ FLUXNET ERA5 yearly files",
    "label": "raw FLUXNET ERA5 yearly files",
-   "stage": "00_raw"
+   "stage": "00_raw",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/00_overlap_*.csv",
    "label": "00 overlap lists",
    "stage": "10_datasets",
-   "note": "Not on disk; no script reads it."
+   "note": "Not on disk; no script reads it.",
+   "glob": "10_datasets/00_overlap_*.csv",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/11_datasets_info.csv",
    "label": "11_datasets_info.csv",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/11_datasets_info.csv",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/12_parquet_merged/<SITE> (per site)",
    "label": "12 merged parquet (per site)",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/12_parquet_merged/*",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/12_parquet_merged_plots/ (per site)",
    "label": "12 heatmaps (per site)",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/12_parquet_merged_plots/*",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/12_datasets_info_parquet.csv",
    "label": "12_datasets_info_parquet.csv",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/12_datasets_info_parquet.csv",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/13_datasets_info_parquet_vars.csv",
    "label": "13_datasets_info_parquet_vars.csv",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/13_datasets_info_parquet_vars.csv",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/13b_variables_per_site.csv",
    "label": "13b_variables_per_site.csv",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/13b_variables_per_site.csv",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/13b_variables_coverage_summary.csv",
    "label": "13b_variables_coverage_summary.csv",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/13b_variables_coverage_summary.csv",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/14_datasets_info_parquet_vars_stats.csv",
    "label": "14_..._vars_stats.csv",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/14_datasets_info_parquet_vars_stats.csv",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv",
    "label": "15_..._usedsites.csv",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/16_ERA5_climate_1991-2020/ (per site, legacy)",
    "label": "16 ERA5 CDS (legacy, unused)",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/16_ERA5_climate_1991-2020/**",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/16_ERA5_..._GoogleEarthEngine/ (per site)",
    "label": "16 ERA5 yearly, Earth Engine",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/16_ERA5_climate_1991-2020_GoogleEarthEngine/**",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/16_ERA5_..._Copernicus/ (per site)",
    "label": "16 ERA5 yearly, Copernicus",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/16_ERA5_climate_1991-2020_Copernicus/**",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv",
    "label": "17_..._usedsites_era5.csv",
-   "stage": "10_datasets"
+   "stage": "10_datasets",
+   "glob": "10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv",
+   "variants": []
   },
   {
    "id": "outputs/20_subsets/<SITE> subset parquet (per site)",
    "label": "21 subset parquet (per site)",
    "stage": "20_subsets",
-   "note": "21_subsets_parquet/<SITE>_subset_GPPhighest4_qc0_daytime.parquet; variants deep-sm, blocked-cv, no_ta, no_vpd"
+   "note": "21_subsets_parquet/<SITE>_subset_GPPhighest4_qc0_daytime.parquet; variants deep-sm, blocked-cv, no_ta, no_vpd",
+   "glob": "20_subsets/**/21_subsets_parquet/*",
+   "variants": [
+    "deep-sm"
+   ]
   },
   {
    "id": "outputs/20_subsets/21_subsets_parquet_plots/ (per site)",
    "label": "21 heatmaps (per site)",
-   "stage": "20_subsets"
+   "stage": "20_subsets",
+   "glob": "20_subsets/**/21_subsets_parquet_plots/*",
+   "variants": [
+    "deep-sm"
+   ]
   },
   {
    "id": "outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv",
    "label": "21_SUBSETS_..._subsets.csv",
    "stage": "20_subsets",
-   "note": "Per variant; holds the subset paths and the VPD mean and SD per site."
+   "note": "Per variant; holds the subset paths and the VPD mean and SD per site.",
+   "glob": "20_subsets/**/21_SUBSETS_parquet_vars_stats_subsets.csv",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "no_ta",
+    "no_vpd"
+   ]
   },
   {
    "id": "outputs/20_subsets/22_data_flow.csv",
    "label": "22_data_flow.csv",
-   "stage": "20_subsets"
+   "stage": "20_subsets",
+   "glob": "20_subsets/**/22_data_flow.csv",
+   "variants": []
   },
   {
    "id": "outputs/30_shap/<FLUX>/conditional/<SITE>_shap-conditional_<FLUX>.parquet (per site)",
    "label": "31 SHAP values (per site)",
    "stage": "30_shap",
-   "note": "Fluxes NEP, GPP, RECO, ET; variants blocked-cv, deep-sm, no_ta, no_vpd"
+   "note": "Fluxes NEP, GPP, RECO, ET; variants blocked-cv, deep-sm, no_ta, no_vpd",
+   "glob": "30_shap/*/conditional/**/??-???_shap-conditional_*",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "no_ta",
+    "no_vpd",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "outputs/30_shap/<FLUX>/conditional/2_cv_results_all_sites.csv",
    "label": "31 cross-validation results",
-   "stage": "30_shap"
+   "stage": "30_shap",
+   "glob": "30_shap/*/conditional/**/2_cv_results_all_sites-conditional_*",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "no_ta",
+    "no_vpd",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "outputs/30_shap/<FLUX>/ale/<SITE>_ale_curves (per site)",
    "label": "32 ALE curves (per site)",
-   "stage": "30_shap"
+   "stage": "30_shap",
+   "glob": [
+    "30_shap/*/ale/**/??-???_ale_curves_*",
+    "30_shap/*/ale/**/??-???_ale_combined_*"
+   ],
+   "variants": [
+    "deep-sm"
+   ]
   },
   {
    "id": "outputs/30_shap/<FLUX>/ale/<SITE>_ale parquet (per site)",
    "label": "32 ALE data (per site)",
-   "stage": "30_shap"
+   "stage": "30_shap",
+   "glob": "30_shap/*/ale/**/??-???_ale_[A-Z]*",
+   "variants": [
+    "deep-sm"
+   ]
   },
   {
    "id": "outputs/30_shap/<FLUX>/ale/0_ale_validation_sites.csv",
    "label": "32 ALE fit metrics",
-   "stage": "30_shap"
+   "stage": "30_shap",
+   "glob": "30_shap/*/ale/**/0_ale_validation_sites_*",
+   "variants": [
+    "deep-sm"
+   ]
   },
   {
    "id": "outputs/40_aggregation/41_SHAPVALUES meanAggregatedPerSite (per grid)",
    "label": "41 binned SHAP per site (grids)",
    "stage": "40_aggregation",
-   "note": "Grids TA+VPD, SWC+VPD, TA+SWC, ET+VPD, ET+SWC; variants and deeper-only"
+   "note": "Grids TA+VPD, SWC+VPD, TA+SWC, ET+VPD, ET+SWC; variants and deeper-only",
+   "glob": "40_aggregation/*/conditional/**/41_SHAPVALUES-conditional_meanAggregatedPerSite_*",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "no_ta",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "outputs/40_aggregation/42_SHAPVALUES AggregatedAcrossSites (per grid)",
    "label": "42 binned SHAP across sites",
-   "stage": "40_aggregation"
+   "stage": "40_aggregation",
+   "glob": "40_aggregation/*/conditional/**/42_SHAPVALUES-conditional_meanAggregatedAcrossSites_*",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "outputs/40_aggregation/43_SHAPVALUES AcrossIGBP (per forest type, grid)",
    "label": "43 binned SHAP per forest type",
-   "stage": "40_aggregation"
+   "stage": "40_aggregation",
+   "glob": "40_aggregation/*/conditional/**/43_SHAPVALUES-conditional_meanAggregatedAcrossIGBP-*",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "outputs/40_aggregation/44_SHAPVALUES AggregatedAcrossScenarios",
    "label": "44 SHAP per stress stage",
    "stage": "40_aggregation",
-   "note": "Also mirrored-stages/ and factorial-cells/"
+   "note": "Also mirrored-stages/ and factorial-cells/",
+   "glob": "40_aggregation/*/conditional/**/44_SHAPVALUES-conditional_AggregatedAcrossScenarios_*",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "deeper-only",
+    "mirrored-stages",
+    "factorial-cells",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "outputs/40_aggregation/45_StageDistributions",
    "label": "45 stage driver distributions",
-   "stage": "40_aggregation"
+   "stage": "40_aggregation",
+   "glob": "40_aggregation/*/conditional/**/45_StageDistributions_*",
+   "variants": []
   },
   {
    "id": "outputs/40_aggregation/46_ALE_SiteCurves",
    "label": "46 ALE site curves",
-   "stage": "40_aggregation"
+   "stage": "40_aggregation",
+   "glob": "40_aggregation/*/ale/**/46_ALE_SiteCurves_*",
+   "variants": [
+    "deep-sm"
+   ]
   },
   {
    "id": "outputs/40_aggregation/46_ALE_Thresholds",
    "label": "46 ALE thresholds",
-   "stage": "40_aggregation"
+   "stage": "40_aggregation",
+   "glob": "40_aggregation/*/ale/**/46_ALE_Thresholds_*",
+   "variants": [
+    "deep-sm"
+   ]
   },
   {
    "id": "outputs/40_aggregation/47_THRESHOLD_Robustness",
    "label": "47 threshold robustness",
-   "stage": "40_aggregation"
+   "stage": "40_aggregation",
+   "glob": "40_aggregation/*/conditional/**/47_THRESHOLD_Robustness_*",
+   "variants": []
   },
   {
    "id": "outputs/40_aggregation/47_THRESHOLD_EstimatorSweep + LeaveOneSiteOut",
    "label": "47 estimator sweep + leave-one-out",
-   "stage": "40_aggregation"
+   "stage": "40_aggregation",
+   "glob": [
+    "40_aggregation/*/conditional/**/47_THRESHOLD_EstimatorSweep_*",
+    "40_aggregation/*/conditional/**/47_THRESHOLD_LeaveOneSiteOut_*"
+   ],
+   "variants": []
   },
   {
    "id": "outputs/40_aggregation/48_EXCEEDANCE",
    "label": "48 threshold exceedance",
-   "stage": "40_aggregation"
+   "stage": "40_aggregation",
+   "glob": "40_aggregation/*/conditional/**/48_EXCEEDANCE_*",
+   "variants": []
   },
   {
    "id": "outputs/40_aggregation/49_SiteThresholds + BiomeThresholds",
    "label": "49 site + forest type thresholds",
-   "stage": "40_aggregation"
+   "stage": "40_aggregation",
+   "glob": [
+    "40_aggregation/*/conditional/**/49_SiteThresholds*",
+    "40_aggregation/*/conditional/**/49_BiomeThresholds_*"
+   ],
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "deeper-only"
+   ]
   },
   {
    "id": "outputs/50_plots/51_FIG-1",
    "label": "Fig. 1 site map + climate",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/51_FIG-1_WorldMap_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/52_FIG-2",
    "label": "Fig. 2 VPD effect grids",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/52_FIG-2_FlamePlots*",
+   "variants": [
+    "deep-sm",
+    "deeper-only"
+   ]
   },
   {
    "id": "outputs/50_plots/52_SUPPFIG-1",
    "label": "Suppl. Fig. 1 TA and SM effects",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/52_SUPPFIG-1_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/52_SUPPFIG-7",
    "label": "Suppl. Fig. 7 flux grids",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": [
+    "50_plots/*/conditional/**/52_SUPPFIG-7_*",
+    "50_plots/*/conditional/**/52_SUPPFIG-X_FlamePlotsFluxes-*"
+   ],
+   "variants": [
+    "deep-sm",
+    "deeper-only"
+   ]
   },
   {
    "id": "outputs/50_plots/53_FIG-3",
    "label": "Fig. 3 effects along the stages",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/53_FIG-3_*",
+   "variants": [
+    "deep-sm",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "outputs/50_plots/53_SUPPFIG-3",
    "label": "Suppl. Fig. 3 mirrored stage order",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/53_SUPPFIG-3_*",
+   "variants": [
+    "mirrored-stages"
+   ]
   },
   {
    "id": "outputs/50_plots/54_FIG-4",
    "label": "Fig. 4 VPD response curve",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/54_FIG-4_*",
+   "variants": [
+    "deep-sm",
+    "blocked-cv",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "outputs/50_plots/54_SUPPTABLE-7",
    "label": "Suppl. Table 7 polynomials",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/54_SUPPTABLE-7_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/55_TABLE-1",
    "label": "Table 1 threshold robustness",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/55_TABLE-1_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/55_SUPPFIG-4",
    "label": "Suppl. Fig. 4 all 18 tests",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/55_SUPPFIG-4_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/56_SUPPFIG-2",
    "label": "Suppl. Fig. 2 per-site stage effects",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": [
+    "50_plots/*/conditional/**/56_SUPPFIG-2_*",
+    "50_plots/*/conditional/**/56_SUPPFIG-X_Stages_*"
+   ],
+   "variants": [
+    "deep-sm",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "outputs/50_plots/56_SUPPTABLE-6",
    "label": "Suppl. Table 6 stage effects",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": [
+    "50_plots/*/conditional/**/56_SUPPTABLE-6_*",
+    "50_plots/*/conditional/**/56_SUPPTABLE-X_Stages_*"
+   ],
+   "variants": [
+    "deep-sm",
+    "deeper-only",
+    "GPP",
+    "RECO",
+    "ET"
+   ]
   },
   {
    "id": "outputs/50_plots/57_SUPPFIG-5",
    "label": "Suppl. Fig. 5 ALE curves",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/ale/**/57_SUPPFIG-5_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/58_SUPPFIG-6",
    "label": "Suppl. Fig. 6 response by flux",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/58_SUPPFIG-6_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/59_SUPPTABLE-4",
    "label": "Suppl. Table 4 stage distributions",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/59_SUPPTABLE-4_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/59_SUPPTABLE-5",
    "label": "Suppl. Table 5 Stage 8 records",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/59_SUPPTABLE-5_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/60_SUPPFIG-8",
    "label": "Suppl. Fig. 8 exceedance",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/60_SUPPFIG-8_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/61_SUPPTABLE-3",
    "label": "Suppl. Table 3 stage definitions",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/61_SUPPTABLE-3_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/62_SUPPTABLE-9",
    "label": "Suppl. Table 9 threshold definitions",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/62_SUPPTABLE-9_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/63_SUPPTABLE-8",
    "label": "Suppl. Table 8 threshold vs VPD range",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/63_SUPPTABLE-8_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/64_SUPPDATA-2",
    "label": "Suppl. Data 2 site model skill",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/64_SUPPDATA-2_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/65_SUPPFIG-X",
    "label": "threshold spread (not in paper)",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/65_SUPPFIG-X_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/66_SUPPFIG-10",
    "label": "Suppl. Fig. 10 data flow",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/66_SUPPFIG-10_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/67_SUPPDATA-1",
    "label": "Suppl. Data 1 losses per site",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/67_SUPPDATA-1_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/68_SUPPFIG-9",
    "label": "Suppl. Fig. 9 site curves in kPa",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/68_SUPPFIG-9_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/69_SUPPTABLE-10",
    "label": "Suppl. Table 10 factorial SM x VPD",
    "stage": "50_plots",
-   "note": ""
+   "note": "",
+   "glob": "50_plots/*/conditional/**/69_SUPPTABLE-10_*",
+   "variants": [
+    "factorial-cells"
+   ]
   },
   {
    "id": "outputs/80_info/81_INFO_ThresholdDefinitions",
    "label": "81 peak, decline, crossing",
    "stage": "80_info",
-   "note": ""
+   "note": "",
+   "glob": "80_info/**/81_INFO_ThresholdDefinitions*",
+   "variants": []
   },
   {
    "id": "outputs/80_info/82_INFO_ThresholdVsSiteVPDRange",
    "label": "82 threshold by VPD quartile",
    "stage": "80_info",
-   "note": ""
+   "note": "",
+   "glob": "80_info/**/82_INFO_ThresholdVsSiteVPDRange*",
+   "variants": []
   },
   {
    "id": "outputs/80_info/83_INFO_LeaveRegionOut",
    "label": "83 leave region out",
    "stage": "80_info",
-   "note": ""
+   "note": "",
+   "glob": "80_info/**/83_INFO_LeaveRegionOut*",
+   "variants": []
   },
   {
    "id": "outputs/80_info/84_INFO_ShortRecordSensitivity",
    "label": "84 short record sensitivity",
    "stage": "80_info",
-   "note": ""
+   "note": "",
+   "glob": "80_info/**/84_INFO_ShortRecordSensitivity*",
+   "variants": []
   },
   {
    "id": "outputs/80_info/85_INFO_WueVsVpd",
    "label": "85 WUE vs VPD",
    "stage": "80_info",
-   "note": ""
+   "note": "",
+   "glob": "80_info/**/85_INFO_WueVsVpd_*",
+   "variants": []
   },
   {
    "id": "outputs/80_info/86_INFO_SiteSkill",
    "label": "86 site model skill",
    "stage": "80_info",
-   "note": ""
+   "note": "",
+   "glob": "80_info/**/86_INFO_SiteSkill_*",
+   "variants": []
   },
   {
    "id": "outputs/80_info/87_INFO_StageCutoffPercentiles",
    "label": "87 cut-off percentiles",
    "stage": "80_info",
-   "note": ""
+   "note": "",
+   "glob": "80_info/**/87_INFO_StageCutoffPercentiles_*",
+   "variants": []
   },
   {
    "id": "outputs/80_info/88_INFO_StageOrderTest",
    "label": "88 stage order test",
    "stage": "80_info",
-   "note": ""
+   "note": "",
+   "glob": "80_info/**/88_INFO_StageOrderTest_*",
+   "variants": []
   },
   {
    "id": "outputs/80_info/89_INFO_StageMatching_SUMMARY",
    "label": "89 Stage 7 vs 8 matching",
    "stage": "80_info",
-   "note": ""
+   "note": "",
+   "glob": "80_info/**/89_INFO_StageMatching_*",
+   "variants": []
   },
   {
    "id": "outputs/10_datasets/ (whole folder)",
    "label": "10_datasets (selection)",
    "stage": "10_datasets",
    "note": "Stage folder as read by script 91",
+   "glob": "10_datasets/**",
+   "variants": [],
    "group_end": true
   },
   {
@@ -1209,6 +1621,8 @@
    "label": "20_subsets, all files",
    "stage": "20_subsets",
    "note": "Stage folder as read by script 91",
+   "glob": "20_subsets/**",
+   "variants": [],
    "group_end": true
   },
   {
@@ -1216,6 +1630,8 @@
    "label": "30_shap, no csv twins",
    "stage": "30_shap",
    "note": "Stage folder as read by script 91",
+   "glob": "30_shap/**",
+   "variants": [],
    "group_end": true
   },
   {
@@ -1223,6 +1639,8 @@
    "label": "40_aggregation, no csv twins",
    "stage": "40_aggregation",
    "note": "Stage folder as read by script 91",
+   "glob": "40_aggregation/**",
+   "variants": [],
    "group_end": true
   },
   {
@@ -1230,6 +1648,8 @@
    "label": "50_plots, all files",
    "stage": "50_plots",
    "note": "Stage folder as read by script 91",
+   "glob": "50_plots/**",
+   "variants": [],
    "group_end": true
   },
   {
@@ -1237,6 +1657,8 @@
    "label": "80_info, all files",
    "stage": "80_info",
    "note": "Stage folder as read by script 91",
+   "glob": "80_info/**",
+   "variants": [],
    "group_end": true
   },
   {
@@ -1244,6 +1666,7 @@
    "label": "deposit: 6 zips + MANIFEST + ARCHIVES",
    "stage": "deposit",
    "note": "<DATA_ROOT>/deposit/",
+   "variants": [],
    "group_end": true
   },
   {
@@ -1251,6 +1674,7 @@
    "label": "92_data_flow_graph.json",
    "stage": "90_deposit",
    "note": "Reads and writes of every script, kept by hand in the repository",
+   "variants": [],
    "group_end": true
   },
   {
@@ -1258,6 +1682,7 @@
    "label": "DATA_FLOW.html (this chart)",
    "stage": "deposit",
    "note": "<DATA_ROOT>/deposit/DATA_FLOW.html",
+   "variants": [],
    "group_end": true
   }
  ]

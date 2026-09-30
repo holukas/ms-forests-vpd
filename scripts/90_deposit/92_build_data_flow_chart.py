@@ -7,22 +7,64 @@ page is self-contained (inline SVG and a little JavaScript): the mouse wheel zoo
 moves the view, a click on a box highlights everything upstream and downstream of it.
 
 Reads:
+    92_data_flow_template.html, next to this script: the page with its styles and scripts.
     92_data_flow_graph.json, next to this script. The reads and writes of every script were
-    taken from the code by hand and are kept in this file. When a script starts reading or
-    writing a different file, update its entry here and rerun.
+    taken from the code by hand and are kept in this file, with the run variants of every
+    script and file and, for every output file, a glob relative to data/outputs/. When a
+    script starts reading or writing a different file, update its entry here and rerun.
+    <DATA_ROOT>/deposit/MANIFEST.csv, if it exists: archive, count and size of the deposited
+    files of each output.
+    <DATA_ROOT>/data/outputs/: every glob is checked against the files on disk.
+    docs/_quarto.yml and docs/pipeline.qmd: address of the documentation site and the
+    section anchors the links point to.
 
 Writes:
     <DATA_ROOT>/deposit/DATA_FLOW.html
+    docs/data_flow.html, the same page for the documentation site. Written only together
+    with the deposit copy, so a test run that sends OUT elsewhere leaves docs/ alone.
+
+Prints a warning for every output with no file on disk and for deposited files that no
+glob matches. The warnings are also listed on the page.
 """
+import csv
+import datetime
 import html
 import json
-from collections import defaultdict
+import os
+import re
+from collections import Counter, defaultdict
 from pathlib import Path
 
-from src.paths import DATA_ROOT
+import yaml
+
+from src.paths import DATA_ROOT, REPO_ROOT
 
 GRAPH = Path(__file__).with_name("92_data_flow_graph.json")
 OUT = DATA_ROOT / "deposit" / "DATA_FLOW.html"
+DOCS_OUT = REPO_ROOT / "docs" / "data_flow.html"
+OUTPUTS = DATA_ROOT / "data" / "outputs"
+MANIFEST = DATA_ROOT / "deposit" / "MANIFEST.csv"
+REPO_URL = "https://github.com/holukas/ms-forests-vpd"
+SITE_URL = "https://holukas.github.io/ms-forests-vpd/"     # used if _quarto.yml has no site-url
+
+# Run variants: folder names of the sensitivity runs and the three other fluxes. The
+# descriptions follow the "Run variants" table in docs/pipeline.qmd.
+FLUX_TEXT = "attribution of the partitioned flux or of evapotranspiration instead of NEP"
+VARIANTS = [
+    ("deep-sm", "deep-sm", "deepest usable soil water layer per site"),
+    ("blocked-cv", "blocked-cv", "leave-one-year-out instead of a shuffled split"),
+    ("no_ta", "no_ta", "air temperature dropped from the predictors"),
+    ("no_vpd", "no_vpd", "VPD dropped from the predictors"),
+    ("deeper-only", "deeper-only", "SITE_SUBSET: the 128 sites with a soil water layer below layer 1"),
+    ("mirrored-stages", "mirrored-stages",
+     "stage 44 only, VPD escalates and extreme soil dryness is added last"),
+    ("factorial-cells", "factorial-cells",
+     "stage 44 only, four soil water classes by four VPD classes, temperature free"),
+    ("GPP", "GPP", FLUX_TEXT), ("RECO", "RECO", FLUX_TEXT), ("ET", "ET", FLUX_TEXT),
+]
+# Folder names that mark a variant in a path under data/outputs/
+VARIANT_FOLDER = {v[0]: v[0] for v in VARIANTS[:7]}
+VARIANT_FOLDER.update({"GPP_ZSCORE": "GPP", "RECO_ZSCORE": "RECO", "ET_ZSCORE": "ET"})
 
 graph = json.loads(GRAPH.read_text(encoding="utf8"))
 
@@ -62,6 +104,127 @@ preds, succs = defaultdict(list), defaultdict(list)
 for a, b in edges:
     succs[a].append(b)
     preds[b].append(a)
+
+
+def glob_regex(pattern):
+    """Regex for a glob relative to data/outputs/: * and ? stay within a folder, ** spans folders."""
+    out, i = "", 0
+    while i < len(pattern):
+        if pattern.startswith("**/", i):
+            out, i = out + "(?:.*/)?", i + 3
+        elif pattern.startswith("**", i):
+            out, i = out + ".*", i + 2
+        elif pattern[i] == "*":
+            out, i = out + "[^/]*", i + 1
+        elif pattern[i] == "?":
+            out, i = out + "[^/]", i + 1
+        elif pattern[i] == "[":
+            j = pattern.index("]", i)
+            out, i = out + pattern[i:j + 1], j + 1
+        else:
+            out, i = out + re.escape(pattern[i]), i + 1
+    return re.compile(out + r"\Z")
+
+
+def globs_of(d):
+    g = d.get("glob")
+    return [] if not g else [g] if isinstance(g, str) else list(g)
+
+
+# Deposit location and disk check. The manifest lists every deposited file, relative to
+# data/outputs/; csv twins of parquet files are not deposited and so not in it.
+warnings = []
+
+
+def warn(text):
+    warnings.append(text)
+    print("warning:", text)
+
+
+manifest = []
+if MANIFEST.exists():
+    with open(MANIFEST, newline="", encoding="utf8") as f:
+        manifest = list(csv.DictReader(f))
+disk = None
+if OUTPUTS.is_dir():
+    disk = []
+    for root, _, names in os.walk(OUTPUTS):
+        rel = Path(root).relative_to(OUTPUTS).as_posix()
+        disk += [n if rel == "." else f"{rel}/{n}" for n in names]
+else:
+    warn(f"no data folder at {OUTPUTS}, files not checked")
+
+matched = set()
+for n, d in nodes.items():
+    d.update(archives=[], files=None, bytes=None, on_disk=None, disk_files=None)
+    rx = [glob_regex(p) for p in globs_of(d)]
+    if not rx:
+        continue
+    rows = [r for r in manifest if any(x.match(r["path"]) for x in rx)]
+    if MANIFEST.exists():
+        d.update(archives=sorted({r["archive"] for r in rows}), files=len(rows),
+                 bytes=sum(int(r["bytes"]) for r in rows))
+    if not d.get("group_end"):          # the stage folders of script 91 match everything
+        matched.update(r["path"] for r in rows)
+    if disk is None:
+        continue
+    hits = [p for p in disk if any(x.match(p) for x in rx)]
+    d.update(on_disk=bool(hits), disk_files=len(hits))
+    if not hits:
+        warn(f"not on disk: {d['id']}")
+    found = {VARIANT_FOLDER[s] for p in hits for s in p.split("/")[:-1] if s in VARIANT_FOLDER}
+    extra = sorted(found - set(d.get("variants", [])))
+    if extra and not d.get("group_end"):
+        warn(f"variants on disk but not in the graph: {d['id']}: {', '.join(extra)}")
+
+# Run logs are no product of the graph, and Supplementary Table 1 is made by hand; neither is drift
+HAND_MADE = ["ExtendedDataTable1_Site_DetailsStats_21_SUBSETS_parquet_vars_stats_subsets.xlsx"]
+unmatched = sorted(r["path"] for r in manifest if r["path"] not in matched)
+logs = [p for p in unmatched if p.endswith(".log") or p.rsplit("/", 1)[-1].startswith("1_") and p.endswith(".txt")]
+hand = [p for p in unmatched if p.rsplit("/", 1)[-1] in HAND_MADE]
+unmatched = [p for p in unmatched if p not in logs and p not in hand]
+if logs:
+    print(f"note: {len(logs)} run logs in the deposit belong to no product")
+for p in hand:
+    print(f"note: made by hand (Supplementary Table 1): {p}")
+for stage, k in sorted(Counter(p.split("/")[0] for p in unmatched).items()):
+    warn(f"{k} deposited files in {stage} match no glob")
+for p in unmatched[:20]:
+    warn(f"no glob matches: {p}")
+
+# Links: the script on GitHub and its section of the documentation site
+quarto_yml = REPO_ROOT / "docs" / "_quarto.yml"
+quarto = yaml.safe_load(quarto_yml.read_text(encoding="utf8")) if quarto_yml.exists() else {}
+site = ((quarto.get("website") or {}).get("site-url") or SITE_URL).rstrip("/") + "/"
+
+
+def heading_id(text):
+    """Id that Pandoc, and so Quarto, gives a heading: no punctuation, hyphens, lowercase,
+    nothing before the first letter."""
+    s = re.sub(r"[^\w\s.-]", "", text)
+    s = re.sub(r"\s+", "-", s.strip()).lower()
+    return re.sub(r"^[^a-z]+", "", s) or "section"
+
+
+stage_anchor = {}
+pipeline_qmd = REPO_ROOT / "docs" / "pipeline.qmd"
+if pipeline_qmd.exists():
+    for line in pipeline_qmd.read_text(encoding="utf8").splitlines():
+        m = re.match(r"##\s+((\d\d_[a-z]+)\b.*)$", line)
+        if m:
+            stage_anchor.setdefault(m.group(2), heading_id(m.group(1)))
+
+for n, d in nodes.items():
+    d["url"] = f"{REPO_URL}/blob/main/{d['path']}" if d["kind"] == "script" and d.get("path") else None
+    if d["kind"] == "product" and d["id"].startswith("scripts/"):
+        d["url"] = f"{REPO_URL}/blob/main/{d['id']}"
+    d["docs_url"] = None
+    if d["kind"] == "script":
+        stage = d.get("stage", "")
+        if stage == "50_figures":
+            d["docs_url"] = site + "figures.html"
+        else:
+            d["docs_url"] = site + "pipeline.html" + (f"#{stage_anchor[stage]}" if stage in stage_anchor else "")
 
 # Block layout: a file sits in the column of the script that writes it, under that script.
 # A script sits one column right of the latest writer of its inputs. Raw inputs are column 0.
@@ -266,6 +429,30 @@ for r, ks in bcols.items():
             y += NODE_H + GAP_Y
         y += BLOCK_GAP
 
+# Stage lanes: a column takes the most common stage of its scripts, column 0 holds the raw
+# inputs and the deposit group has a lane of its own. Neighboring columns of the same stage
+# share one band.
+end_cols = {rank[n] for n in end_nodes}
+col_stage = {}
+for r in range(maxr + 1):
+    if r == 0:
+        col_stage[r] = "00_raw"
+    elif r in end_cols:
+        col_stage[r] = "90_deposit"
+    else:
+        count = Counter(nodes[n].get("stage", "") for n in cols.get(r, []) if nodes[n]["kind"] == "script")
+        # on a tie the earlier stage wins
+        col_stage[r] = min(count, key=lambda s: (-count[s], s)) if count else col_stage[r - 1]
+lanes = []
+for r in range(maxr + 1):
+    x0 = round(max(0, x_of_col[r] - COL_GAP / 2), 1)
+    x1 = round(min(total_w, x_of_col[r] + col_w.get(r, 100) + LEFT + COL_GAP / 2), 1)
+    if lanes and lanes[-1]["stage"] == col_stage[r]:
+        lanes[-1]["x1"] = x1
+    else:
+        lanes.append({"stage": col_stage[r], "label": STAGE_LABEL.get(col_stage[r], col_stage[r]),
+                      "x0": x0, "x1": x1})
+
 
 def text_color(hex_color):
     """Black or white label text, whichever contrasts more with the fill."""
@@ -278,7 +465,16 @@ def esc(s):
     return html.escape(str(s), quote=True)
 
 
-svg = []
+LANE_TEXT = {"#F0E442": "#9c8a00"}           # the yellow is too light for text on a light band
+svg = ['<g id="lanes">']
+for ln in lanes:
+    c = STAGE_COLOR.get(ln["stage"], "#777777")
+    svg.append(f'<rect class="lane" x="{ln["x0"]}" y="0" width="{ln["x1"] - ln["x0"]:.1f}" height="{total_h:.0f}" '
+               f'style="fill:{c};opacity:.07"/>'
+               f'<text class="lanet" x="{ln["x0"] + 10:.1f}" y="30" '
+               f'style="fill:{LANE_TEXT.get(c, c)};font-weight:700;font-size:14px;text-anchor:start">'
+               f'{esc(ln["label"])}</text>')
+svg.append('</g>')
 for i, (a, b) in enumerate(edges):
     ax, ay, aw, ah = geom[a]
     bx, by, bw, bh = geom[b]
@@ -320,107 +516,60 @@ for n, (x0, y0, w, h) in geom.items():
                   f'class="badge badge-{badge.rstrip('.').lower()}"/>'
                   f'<text x="{x0 + w - bw / 2 - 6:.1f}" y="{y0 + h / 2 + 3.5:.1f}" class="badget">{badge}</text>')
         text_x = x0 + 22 + (w - 22 - bw - 6) / 2
-    svg.append(f'<g class="n {d["kind"]}" data-id="{esc(n)}"><title>{esc(tip)}</title>{shape}'
+    missing = " missing" if d.get("on_disk") is False else ""
+    svg.append(f'<g class="n {d["kind"]}{missing}" data-id="{esc(n)}"><title>{esc(tip)}</title>{shape}'
                f'<text x="{text_x:.1f}" y="{y0 + h / 2 + 4:.1f}"{fill_text}>{esc(label)}</text></g>')
 
 legend_items = [(k, v) for k, v in STAGE_LABEL.items()
                 if any(nodes[n].get("stage") == k for n in nodes)]
-data = {"succs": succs, "preds": preds}
+# Node table for the page script: everything the interactive features need per node
+node_data = {}
+for n, (x0, y0, w, h) in geom.items():
+    d = nodes[n]
+    item = display_item(n)
+    docs_url = d["docs_url"]
+    if item and item[1] in ("Main", "Suppl.") and n in writer:     # a display item links like its script
+        docs_url = nodes[writer[n]]["docs_url"]
+    node_data[n] = {
+        "id": d["id"], "kind": d["kind"], "label": label_of(n), "stage": d.get("stage", ""),
+        "path": d.get("path", ""), "note": d.get("note", ""), "icon": node_icon(n),
+        "badge": item[1] if item else "", "rank": rank[n],
+        "x": round(x0, 1), "y": round(y0, 1), "w": w, "h": h,
+        "glob": globs_of(d), "archives": d["archives"], "files": d["files"], "bytes": d["bytes"],
+        "on_disk": d["on_disk"], "disk_files": d["disk_files"], "variants": d.get("variants", []),
+        "url": d["url"], "docs_url": docs_url,
+    }
+data = {
+    "succs": succs, "preds": preds, "nodes": node_data, "lanes": lanes,
+    "variants": [{"id": v, "label": label, "description": text} for v, label, text in VARIANTS],
+    "meta": {"repo_url": REPO_URL, "docs_url": site, "built": datetime.date.today().isoformat(),
+             "warnings": warnings},
+}
 
-page = f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ms-forests-vpd data flow</title>
-<style>
-:root {{ --bg:#ffffff; --fg:#1a1a1a; --muted:#666; --edge:#b9b9b9; --script:#ffffff; --hl:#111; }}
-@media (prefers-color-scheme: dark) {{ :root {{ --bg:#16181c; --fg:#e8e8e8; --muted:#9aa; --edge:#4a4f57; --script:#23262c; --hl:#fff; }} }}
-html,body {{ margin:0; height:100%; background:var(--bg); color:var(--fg); font:13px system-ui,-apple-system,Segoe UI,sans-serif; }}
-header {{ position:fixed; top:0; left:0; right:0; padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--edge); z-index:2; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }}
-header h1 {{ font-size:14px; margin:0 12px 0 0; }}
-header button {{ font:inherit; padding:2px 9px; cursor:pointer; }}
-header input {{ font:inherit; padding:2px 6px; width:170px; }}
-.legend span {{ display:inline-flex; align-items:center; gap:4px; margin-right:10px; color:var(--muted); }}
-.legend i {{ width:12px; height:12px; border-radius:6px; display:inline-block; }}
-.hint {{ color:var(--muted); font-size:12px; }}
-svg {{ position:fixed; top:0; left:0; width:100%; height:100%; cursor:grab; }}
-svg.drag {{ cursor:grabbing; }}
-.e {{ fill:none; stroke:var(--edge); stroke-width:1.2; }}
-.n text {{ font-size:{FONT}px; text-anchor:middle; fill:var(--fg); pointer-events:none; }}
-rect.script {{ fill:var(--script); stroke-width:2.2; }}
-.numt {{ font-size:11px; font-weight:700; text-anchor:middle; pointer-events:none; }}
-.badge {{ fill:#ffffff; opacity:.92; }} .badge-main {{ fill:#111111; }} .badge-unused {{ fill:#ffffff; opacity:.6; }}
-.n text.badget {{ font-size:9px; font-weight:700; fill:#111111; pointer-events:none; }}
-.badge-main + text.badget {{ fill:#ffffff; }}
-.legend svg {{ position:static; width:auto; height:auto; cursor:default; vertical-align:middle; }}
-rect.product {{ stroke:none; opacity:.85; }}
-.dim .e {{ opacity:.12; }} .dim .n {{ opacity:.18; }}
-.dim .e.on {{ opacity:1; stroke:var(--hl); stroke-width:2; }} .dim .n.on {{ opacity:1; }}
-.n {{ cursor:pointer; }}
-</style></head><body>
-<header>
-<h1>Data flow: scripts and the files they read and write</h1>
-<button id="zin">+</button><button id="zout">&minus;</button><button id="fit">Fit</button>
-<input id="q" placeholder="Search a script or file">
-<span class="legend">{''.join(f'<span><i style="background:{STAGE_COLOR[k]}"></i>{esc(v)}</span>' for k, v in legend_items)}
-<span><i style="background:transparent;border:2px solid var(--fg);border-radius:2px"></i>script</span>
-<span><i style="background:#aaa"></i>file</span><span><svg width="16" height="13">{icon_svg("input", 1, 1, "currentColor")}</svg>input data</span><span><svg width="16" height="13">{icon_svg("generated", 1, 1, "currentColor")}</svg>generated data</span><span><svg width="16" height="13">{icon_svg("fig", 1, 1, "currentColor")}</svg>figure</span><span><svg width="16" height="13">{icon_svg("table", 1, 1, "currentColor")}</svg>table</span><span><svg width="16" height="13">{icon_svg("data", 1, 1, "currentColor")}</svg>data file</span><span><svg width="16" height="13">{icon_svg("analysis", 1, 1, "currentColor")}</svg>analysis script</span><span><svg width="16" height="13">{icon_svg("draw", 1, 1, "currentColor")}</svg>figure or table script</span><span><svg width="16" height="13">{icon_svg("package", 1, 1, "currentColor")}</svg>deposit script</span><span><b style="background:#111;color:#fff;border-radius:6px;padding:0 5px;font-size:10px">Main</b> main text</span><span><b style="background:#fff;color:#111;border:1px solid #999;border-radius:6px;padding:0 5px;font-size:10px">Suppl.</b> supplement</span></span>
-<span class="hint">Each file sits under the script that writes it; a line from a file leads to a script that reads it. Wheel: zoom. Drag: pan. Hover: direct links. Click: full lineage. Esc: clear. Hover a box for the file path.</span>
-</header>
-<svg id="c" viewBox="0 0 {total_w} {total_h}" xmlns="http://www.w3.org/2000/svg"><g id="vp">
-{chr(10).join(svg)}
-</g></svg>
-<script>
-const G = {json.dumps(data)};
-const svg = document.getElementById('c'), vp = document.getElementById('vp');
-const W = {total_w}, H = {total_h};
-let vb = {{x:0, y:0, w:W, h:H}};
-function apply() {{ svg.setAttribute('viewBox', `${{vb.x}} ${{vb.y}} ${{vb.w}} ${{vb.h}}`); }}
-function fit() {{
-  const r = svg.getBoundingClientRect(), top = 90 * W / r.width;
-  const s = Math.max(W / r.width, (H + top) / r.height);
-  vb = {{w: r.width * s, h: r.height * s, x: 0, y: -top}}; vb.x = (W - vb.w) / 2; apply();
-}}
-function zoom(f, cx, cy) {{
-  const r = svg.getBoundingClientRect();
-  const px = vb.x + (cx - r.left) / r.width * vb.w, py = vb.y + (cy - r.top) / r.height * vb.h;
-  vb.w *= f; vb.h *= f; vb.x = px - (cx - r.left) / r.width * vb.w; vb.y = py - (cy - r.top) / r.height * vb.h; apply();
-}}
-svg.addEventListener('wheel', e => {{ e.preventDefault(); zoom(e.deltaY > 0 ? 1.15 : 1/1.15, e.clientX, e.clientY); }}, {{passive:false}});
-let drag = null;
-svg.addEventListener('pointerdown', e => {{ drag = {{x:e.clientX, y:e.clientY, vx:vb.x, vy:vb.y, moved:false}}; svg.classList.add('drag'); }});
-window.addEventListener('pointermove', e => {{
-  if (!drag) return; const r = svg.getBoundingClientRect();
-  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
-  vb.x = drag.vx - dx / r.width * vb.w; vb.y = drag.vy - dy / r.height * vb.h; apply();
-}});
-window.addEventListener('pointerup', () => {{ setTimeout(() => drag = null, 0); svg.classList.remove('drag'); }});
-document.getElementById('zin').onclick = () => {{ const r = svg.getBoundingClientRect(); zoom(1/1.4, r.left + r.width/2, r.top + r.height/2); }};
-document.getElementById('zout').onclick = () => {{ const r = svg.getBoundingClientRect(); zoom(1.4, r.left + r.width/2, r.top + r.height/2); }};
-document.getElementById('fit').onclick = fit;
-const nodesEl = [...document.querySelectorAll('.n')], edgesEl = [...document.querySelectorAll('.e')];
-let pinned = null;
-function walk(start, map) {{ const seen = new Set([start]), st = [start];
-  while (st.length) {{ const n = st.pop(); for (const m of (map[n] || [])) if (!seen.has(m)) {{ seen.add(m); st.push(m); }} }} return seen; }}
-function show(set) {{
-  vp.classList.toggle('dim', !!set);
-  nodesEl.forEach(el => el.classList.toggle('on', !!set && set.has(el.dataset.id)));
-  edgesEl.forEach(el => el.classList.toggle('on', !!set && set.has(el.dataset.a) && set.has(el.dataset.b)));
-}}
-function direct(id) {{ return new Set([id, ...(G.preds[id] || []), ...(G.succs[id] || [])]); }}
-function lineage(id) {{ return new Set([...walk(id, G.preds), ...walk(id, G.succs)]); }}
-nodesEl.forEach(el => {{
-  el.addEventListener('mouseenter', () => {{ if (!pinned) show(direct(el.dataset.id)); }});
-  el.addEventListener('mouseleave', () => {{ if (!pinned) show(null); }});
-  el.addEventListener('click', () => {{ if (drag && drag.moved) return; pinned = el.dataset.id; show(lineage(pinned)); }});
-}});
-window.addEventListener('keydown', e => {{ if (e.key === 'Escape') {{ pinned = null; show(null); }} }});
-document.getElementById('q').addEventListener('input', e => {{
-  const q = e.target.value.trim().toLowerCase(); if (!q) {{ show(pinned ? lineage(pinned) : null); return; }}
-  show(new Set(nodesEl.filter(el => (el.dataset.id + ' ' + el.textContent).toLowerCase().includes(q)).map(el => el.dataset.id)));
-}});
-window.addEventListener('resize', fit); fit();
-</script></body></html>
-"""
+ICON_LEGEND = [("input", "input data"), ("generated", "generated data"), ("fig", "figure"),
+               ("table", "table"), ("data", "data file"), ("analysis", "analysis script"),
+               ("draw", "figure or table script"), ("package", "deposit script")]
+legend = ['<span class="legend">']
+legend += [f'<span><i style="background:{STAGE_COLOR[k]}"></i>{esc(v)}</span>' for k, v in legend_items]
+legend += ['<span><i style="background:transparent;border:2px solid var(--fg);border-radius:2px"></i>script</span>',
+           '<span><i style="background:#aaa"></i>file</span>']
+legend += [f'<span><svg width="16" height="13">{icon_svg(k, 1, 1, "currentColor")}</svg>{v}</span>'
+           for k, v in ICON_LEGEND]
+legend += ['<span><b style="background:#111;color:#fff;border-radius:6px;padding:0 5px;font-size:10px">Main</b>'
+           ' main text</span>',
+           '<span><b style="background:#fff;color:#111;border:1px solid #999;border-radius:6px;padding:0 5px;'
+           'font-size:10px">Suppl.</b> supplement</span>', '</span>']
+TEMPLATE = Path(__file__).with_name("92_data_flow_template.html")
+page = (TEMPLATE.read_text(encoding="utf8")
+        .replace("<!--__LEGEND__-->", "".join(legend))
+        .replace("<!--__SVG__-->", "\n".join(svg))
+        .replace("/*__DATA__*/null", json.dumps(data))
+        .replace("__FONT__", str(FONT))
+        .replace("__W__", str(total_w)).replace("__H__", f"{total_h:.0f}"))
 OUT.parent.mkdir(parents=True, exist_ok=True)
 OUT.write_text(page, encoding="utf8")
 print(f"wrote {OUT}: {len(nodes)} nodes, {len(edges)} edges, {maxr + 1} columns, {total_w}x{total_h:.0f}")
+if OUT.parent == DATA_ROOT / "deposit":
+    DOCS_OUT.write_text(page, encoding="utf8")
+    print(f"wrote {DOCS_OUT}")
+print(f"{len(warnings)} warnings")

@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ms-forests-vpd data flow</title>
+<style id="pagecss">
+:root { --bg:#ffffff; --fg:#1a1a1a; --muted:#666; --edge:#b9b9b9; --script:#ffffff; --hl:#111; --lane:#f3f4f6; --panel:#fafafa; --minibg:rgba(255,255,255,.85); --warn:#d62728; --link:#0b5cad; --hh:44px; }
+@media (prefers-color-scheme: dark) { :root { --bg:#16181c; --fg:#e8e8e8; --muted:#9aa; --edge:#4a4f57; --script:#23262c; --hl:#fff; --lane:#1d2025; --panel:#1b1e23; --minibg:rgba(22,24,28,.85); --warn:#ff6b6b; --link:#7fb6ff; } }
+html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:13px system-ui,-apple-system,Segoe UI,sans-serif; }
+header { position:fixed; top:0; left:0; right:0; padding:6px 12px; background:var(--bg); border-bottom:1px solid var(--edge); z-index:4; display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; }
+header h1 { font-size:14px; margin:0 6px 0 0; white-space:nowrap; }
+header button, header select { font:inherit; padding:2px 8px; cursor:pointer; }
+header select { max-width:180px; }
+header input[type=search], header input#q { font:inherit; padding:2px 6px; width:160px; }
+header label { white-space:nowrap; cursor:pointer; }
+header .grp { display:inline-flex; gap:10px; align-items:center; flex-wrap:wrap; }
+button.on { background:var(--fg); color:var(--bg); border-color:var(--fg); }
+#legendbox { flex-basis:100%; padding:4px 0 2px; }
+#vdesc { flex-basis:100%; color:var(--muted); font-size:12px; }
+.legend span { display:inline-flex; align-items:center; gap:4px; margin-right:10px; color:var(--muted); }
+.legend i { width:12px; height:12px; border-radius:6px; display:inline-block; }
+.hint { color:var(--muted); font-size:12px; display:block; margin-top:4px; }
+.warnlist { color:var(--warn); font-size:12px; margin:4px 0 0; padding-left:18px; }
+svg#c { position:fixed; top:0; left:0; width:100%; height:100%; cursor:grab; }
+svg#c.drag { cursor:grabbing; }
+.legend svg { position:static; width:auto; height:auto; cursor:default; vertical-align:middle; }
+/* side panel with the recipe */
+#panel { position:fixed; top:var(--hh); right:0; bottom:0; width:380px; max-width:calc(100vw - 16px); background:var(--panel); border-left:1px solid var(--edge); z-index:3; display:flex; flex-direction:column; box-shadow:-2px 0 8px rgba(0,0,0,.08); }
+#panel[hidden] { display:none; }
+#panel.collapsed { bottom:auto; }
+#panel.collapsed #pbody { display:none; }
+#panel .ph { display:flex; align-items:center; gap:6px; padding:6px 8px; border-bottom:1px solid var(--edge); }
+#panel .ph b { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#panel .ph button { font:inherit; padding:0 8px; cursor:pointer; }
+#pbody { overflow-y:auto; padding:8px 12px 24px; line-height:1.4; }
+#pbody h2 { font-size:15px; margin:4px 0 8px; }
+#pbody h3 { font-size:13px; margin:14px 0 4px; border-top:1px solid var(--edge); padding-top:10px; }
+#pbody h4 { font-size:12px; margin:8px 0 2px; color:var(--muted); font-weight:600; }
+#pbody dl { display:grid; grid-template-columns:max-content 1fr; gap:3px 10px; margin:0; }
+#pbody dt { color:var(--muted); }
+#pbody dd { margin:0; overflow-wrap:anywhere; }
+#pbody ol, #pbody ul { margin:2px 0; padding-left:20px; }
+#pbody p { margin:4px 0; }
+#pbody a { color:var(--link); }
+#pbody .muted { color:var(--muted); }
+#pbody .links a { margin-right:14px; }
+#pbody code { font-size:12px; overflow-wrap:anywhere; }
+.flag { display:inline-block; color:#fff; background:var(--warn); border-radius:3px; padding:0 5px; font-size:11px; font-weight:700; cursor:help; }
+/* minimap */
+#mini { position:fixed; right:12px; bottom:12px; width:220px; height:80px; background:var(--minibg); border:1px solid var(--edge); border-radius:4px; z-index:2; }
+#mini canvas { display:block; width:220px; height:80px; cursor:crosshair; touch-action:none; }
+body.pwide #mini { right:calc(min(380px, 100vw - 16px) + 12px); }
+@media (max-width:700px) { body.pwide #mini { display:none; } }
+</style>
+<style id="chartcss">
+.lane { fill:var(--lane); stroke:none; pointer-events:none; }
+.lanet { fill:var(--muted); font-size:13px; font-weight:600; pointer-events:none; }
+.e { fill:none; stroke:var(--edge); stroke-width:1.2; }
+.n text { font-size:__FONT__px; text-anchor:middle; fill:var(--fg); pointer-events:none; }
+rect.script { fill:var(--script); stroke-width:2.2; }
+.numt { font-size:11px; font-weight:700; text-anchor:middle; pointer-events:none; }
+.badge { fill:#ffffff; opacity:.92; } .badge-main { fill:#111111; } .badge-unused { fill:#ffffff; opacity:.6; }
+.n text.badget { font-size:9px; font-weight:700; fill:#111111; pointer-events:none; }
+.badge-main + text.badget { fill:#ffffff; }
+rect.product { stroke:none; opacity:.85; }
+.n.missing > rect.script, .n.missing > rect.product { stroke:#d62728 !important; stroke-width:2 !important; stroke-dasharray:4 3; }
+.dim .e { opacity:.12; } .dim .n { opacity:.18; }
+.dim .e.on { opacity:1; stroke:var(--hl); stroke-width:2; } .dim .n.on { opacity:1; }
+.n { cursor:pointer; }
+</style></head><body>
+<header>
+<h1 title="Scripts and the files they read and write">Data flow</h1>
+<span class="grp"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">&minus;</button><button id="fit" title="Fit to the visible nodes">Fit</button></span>
+<input id="q" placeholder="Search a script or file">
+<span class="grp">
+<label><input type="checkbox" id="fman"> Manuscript items only</label>
+<label><input type="checkbox" id="fera"> Hide ERA5 download</label>
+<label><input type="checkbox" id="fdep"> Hide deposit group</label>
+</span>
+<label id="vwrap">Variant: <select id="vsel"><option value="">none</option></select></label>
+<span class="grp"><button id="xsvg" title="Download the current view as SVG">SVG</button><button id="xpng" title="Download the current view as PNG">PNG</button></span>
+<button id="legbtn" aria-expanded="false">Legend</button>
+<div id="vdesc" hidden></div>
+<div id="legendbox" hidden>
+<!--__LEGEND__-->
+<span class="hint">Each file sits under the script that writes it; a line from a file leads to a script that reads it. Wheel: zoom. Drag: pan. Hover: direct links. Click: full lineage and the recipe to make the item. Esc: clear. Hover a box for the file path. A red dashed outline marks a file that was not found on disk.</span>
+<span class="hint" id="built"></span>
+</div>
+</header>
+<svg id="c" viewBox="0 0 __W__ __H__" xmlns="http://www.w3.org/2000/svg"><g id="vp">
+<!--__SVG__-->
+</g></svg>
+<aside id="panel" hidden>
+<div class="ph"><button id="pcol" title="Collapse or expand">&#9652;</button><b id="ptitle"></b><button id="pclose" title="Close (Esc)">&times;</button></div>
+<div id="pbody"></div>
+</aside>
+<div id="mini" title="Overview: click or drag to move the view"><canvas id="minic"></canvas></div>
+<script>
+const G = /*__DATA__*/null;
+// Safe views of the data: every field may be missing
+const DATA = G || {};
+const NODES = DATA.nodes || {}, PREDS = DATA.preds || {}, SUCCS = DATA.succs || {};
+const VARIANTS = Array.isArray(DATA.variants) ? DATA.variants : [];
+const META = DATA.meta || {};
+const svg = document.getElementById('c'), vp = document.getElementById('vp');
+const header = document.querySelector('header');
+const W = __W__, H = __H__;
+const $ = id => document.getElementById(id);
+
+const STAGE_LABEL = {
+  '00_raw': 'raw inputs', '10_datasets': '10 datasets', '20_subsets': '20 subsets',
+  '30_shap': '30 models and SHAP', '40_aggregation': '40 aggregation', '50_figures': '50 figure scripts',
+  '50_plots': '50 figures and tables', '80_info': '80 checks (INFO)', '90_deposit': '90 deposit', 'deposit': 'deposit files'
+};
+const GROUP_LABEL = {
+  '00': 'Raw inputs', '10': '10 datasets', '20': '20 subsets', '30': '30 models and SHAP',
+  '40': '40 aggregation', '50': '50 figures and tables', '80': '80 checks', '90': '90 deposit', '99': 'Other'
+};
+const ICON_TEXT = {
+  input: 'input data', generated: 'generated data', fig: 'figure', table: 'table', data: 'data file',
+  analysis: 'analysis script', draw: 'figure or table script', package: 'deposit script'
+};
+const BADGE_TEXT = { 'Main': 'Main text item', 'Suppl.': 'Supplementary item', 'unused': 'Made but not used in the manuscript' };
+const ERA5_SCRIPTS = new Set(['16', '16a', '16b', '16c', '16d']);
+
+// ---------- node helpers ----------
+const ndCache = {};
+function nd(id) {
+  if (ndCache[id]) return ndCache[id];
+  const raw = NODES[id] || {};
+  const n = Object.assign({}, raw);
+  n.id = String(raw.id != null ? raw.id : String(id).replace(/^[SP]:/, ''));
+  n.kind = raw.kind || (String(id).startsWith('S:') ? 'script' : 'product');
+  n.label = raw.label || n.id;
+  n.stage = raw.stage || '';
+  n.archives = Array.isArray(raw.archives) ? raw.archives : [];
+  n.variants = Array.isArray(raw.variants) ? raw.variants : [];
+  return (ndCache[id] = n);
+}
+function scriptNum(id) { return parseInt(nd(id).id, 10); }   // NaN when the id has no number
+function rankOf(id) { const r = nd(id).rank; return Number.isFinite(r) ? r : 0; }
+// Natural order of ids: 13 < 13b < 14
+function natCmp(a, b) {
+  const ma = /^(\d*)(.*)$/.exec(String(a)), mb = /^(\d*)(.*)$/.exec(String(b));
+  const na = ma[1] === '' ? Infinity : +ma[1], nb = mb[1] === '' ? Infinity : +mb[1];
+  if (na !== nb) return na < nb ? -1 : 1;
+  return ma[2] < mb[2] ? -1 : ma[2] > mb[2] ? 1 : 0;
+}
+function runOrder(a, b) { return (rankOf(a) - rankOf(b)) || natCmp(nd(a).id, nd(b).id); }
+function stageKey(id) {
+  const n = nd(id), m = /^(\d\d)/.exec(n.stage);
+  if (m) return m[1];
+  if (n.stage === 'deposit') return '90';
+  const k = parseInt(n.id, 10);
+  return isNaN(k) ? '99' : String(Math.floor(k / 10) * 10).padStart(2, '0');
+}
+function safeUrl(u) { return typeof u === 'string' && /^https?:\/\//i.test(u) ? u : null; }
+function humanSize(b) {
+  if (!Number.isFinite(b)) return '';
+  const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0;
+  while (b >= 1000 && i < u.length - 1) { b /= 1000; i++; }
+  return (i === 0 ? String(b) : b.toPrecision(3)) + ' ' + u[i];
+}
+
+// ---------- view box, zoom and pan ----------
+let vb = {x:0, y:0, w:W, h:H};
+let miniPending = false;
+function apply() {
+  svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  if (!miniPending) { miniPending = true; requestAnimationFrame(() => { miniPending = false; drawMini(); }); }
+}
+function setHeaderHeight() { document.documentElement.style.setProperty('--hh', header.offsetHeight + 'px'); }
+function panelWide() { return !panel.hidden && !panel.classList.contains('collapsed'); }
+// Fit the visible nodes into the area below the header and left of the open panel
+function fit() {
+  setHeaderHeight();
+  const r = svg.getBoundingClientRect(), top = header.offsetHeight + 8;
+  const right = panelWide() ? panel.offsetWidth : 0;
+  const aw = Math.max(50, r.width - right), ah = Math.max(50, r.height - top);
+  const b = visibleBounds(), bw = b.x1 - b.x0, bh = b.y1 - b.y0;
+  const s = Math.max(bw / aw, bh / ah);
+  vb = {w: r.width * s, h: r.height * s, x: b.x0 - (aw * s - bw) / 2, y: b.y0 - top * s - (ah * s - bh) / 2};
+  apply();
+}
+function zoom(f, cx, cy) {
+  const r = svg.getBoundingClientRect();
+  const px = vb.x + (cx - r.left) / r.width * vb.w, py = vb.y + (cy - r.top) / r.height * vb.h;
+  vb.w *= f; vb.h *= f; vb.x = px - (cx - r.left) / r.width * vb.w; vb.y = py - (cy - r.top) / r.height * vb.h; apply();
+}
+svg.addEventListener('wheel', e => { e.preventDefault(); zoom(e.deltaY > 0 ? 1.15 : 1/1.15, e.clientX, e.clientY); }, {passive:false});
+let drag = null;
+svg.addEventListener('pointerdown', e => { drag = {x:e.clientX, y:e.clientY, vx:vb.x, vy:vb.y, moved:false}; svg.classList.add('drag'); });
+window.addEventListener('pointermove', e => {
+  if (!drag) return; const r = svg.getBoundingClientRect();
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+  vb.x = drag.vx - dx / r.width * vb.w; vb.y = drag.vy - dy / r.height * vb.h; apply();
+});
+window.addEventListener('pointerup', () => { setTimeout(() => drag = null, 0); svg.classList.remove('drag'); });
+$('zin').onclick = () => { const r = svg.getBoundingClientRect(); zoom(1/1.4, r.left + r.width/2, r.top + r.height/2); };
+$('zout').onclick = () => { const r = svg.getBoundingClientRect(); zoom(1.4, r.left + r.width/2, r.top + r.height/2); };
+$('fit').onclick = fit;
+
+// ---------- nodes, boxes and colors (read once from the DOM) ----------
+const nodesEl = [...document.querySelectorAll('.n')], edgesEl = [...document.querySelectorAll('.e')];
+const box = {}, color = {};
+nodesEl.forEach(el => {
+  const id = el.dataset.id, n = NODES[id] || {};
+  try { const b = el.getBBox(); box[id] = {x:b.x, y:b.y, w:b.width, h:b.height}; }
+  catch (err) { if (Number.isFinite(n.x)) box[id] = {x:n.x, y:n.y, w:n.w || 0, h:n.h || 0}; }
+  const r = el.querySelector('rect.product, rect.script');
+  color[id] = (r && (r.classList.contains('script') ? r.style.stroke : r.style.fill)) || '#888888';
+});
+function badgeOf(id) {
+  const b = nd(id).badge;
+  if (b) return b;
+  const el = nodesEl.find(e => e.dataset.id === id), t = el && el.querySelector('text.badget');
+  return t ? t.textContent : '';
+}
+
+// ---------- filters ----------
+let hidden = new Set();
+function computeHidden() {
+  const all = nodesEl.map(el => el.dataset.id), h = new Set();
+  if ($('fman').checked) {
+    const keep = new Set();
+    all.forEach(id => { const b = badgeOf(id); if (b === 'Main' || b === 'Suppl.') walk(id, PREDS).forEach(k => keep.add(k)); });
+    all.forEach(id => { if (!keep.has(id)) h.add(id); });
+  }
+  if ($('fera').checked) all.forEach(id => {
+    const n = nd(id);
+    if (n.kind === 'script' ? ERA5_SCRIPTS.has(n.id) : n.id.includes('16_ERA5')) h.add(id);
+  });
+  if ($('fdep').checked) all.forEach(id => {
+    const n = nd(id);
+    if (n.stage === '90_deposit' || n.stage === 'deposit' || (n.kind === 'product' && n.id.endsWith('(whole folder)'))) h.add(id);
+  });
+  return h;
+}
+function applyFilters() {
+  hidden = computeHidden();
+  nodesEl.forEach(el => { el.style.display = hidden.has(el.dataset.id) ? 'none' : ''; });
+  edgesEl.forEach(el => { el.style.display = hidden.has(el.dataset.a) || hidden.has(el.dataset.b) ? 'none' : ''; });
+  if (pinned && hidden.has(pinned)) closePanel();
+  render(); drawMini();
+}
+['fman', 'fera', 'fdep'].forEach(k => $(k).addEventListener('change', applyFilters));
+function visibleBounds() {
+  if (!hidden.size) return {x0:0, y0:0, x1:W, y1:H};
+  let b = null;
+  nodesEl.forEach(el => {
+    const r = box[el.dataset.id]; if (!r || hidden.has(el.dataset.id)) return;
+    if (!b) b = {x0:r.x, y0:r.y, x1:r.x + r.w, y1:r.y + r.h};
+    else { b.x0 = Math.min(b.x0, r.x); b.y0 = Math.min(b.y0, r.y); b.x1 = Math.max(b.x1, r.x + r.w); b.y1 = Math.max(b.y1, r.y + r.h); }
+  });
+  if (!b) return {x0:0, y0:0, x1:W, y1:H};
+  return {x0:b.x0 - 30, y0:b.y0 - 30, x1:b.x1 + 30, y1:b.y1 + 30};
+}
+
+// ---------- highlighting: one source at a time (pinned lineage, search or variant) ----------
+let pinned = null, query = '', variant = '', active = null;
+function walk(start, map) { const seen = new Set([start]), st = [start];
+  while (st.length) { const n = st.pop(); for (const m of (map[n] || [])) if (!seen.has(m)) { seen.add(m); st.push(m); } } return seen; }
+function show(set) {
+  vp.classList.toggle('dim', !!set);
+  nodesEl.forEach(el => el.classList.toggle('on', !!set && set.has(el.dataset.id)));
+  edgesEl.forEach(el => el.classList.toggle('on', !!set && set.has(el.dataset.a) && set.has(el.dataset.b)));
+}
+function direct(id) { return new Set([id, ...(PREDS[id] || []), ...(SUCCS[id] || [])]); }
+function lineage(id) { return new Set([...walk(id, PREDS), ...walk(id, SUCCS)]); }
+function searchSet() {
+  const q = query.toLowerCase();
+  return new Set(nodesEl.filter(el => !hidden.has(el.dataset.id) &&
+    (el.dataset.id + ' ' + el.textContent).toLowerCase().includes(q)).map(el => el.dataset.id));
+}
+function variantSet(v) { return new Set(nodesEl.map(el => el.dataset.id).filter(id => nd(id).variants.includes(v))); }
+function currentSet() {
+  if (active === 'pin' && pinned) return lineage(pinned);
+  if (active === 'search' && query) return searchSet();
+  if (active === 'variant' && variant) return variantSet(variant);
+  return null;
+}
+function render() { show(currentSet()); }
+nodesEl.forEach(el => {
+  el.addEventListener('mouseenter', () => { if (!active) show(direct(el.dataset.id)); });
+  el.addEventListener('mouseleave', () => { if (!active) show(null); });
+  el.addEventListener('click', () => {
+    if (drag && drag.moved) return;
+    pinned = el.dataset.id; active = 'pin'; setVariant('');
+    openPanel(pinned); render();
+  });
+});
+const qEl = $('q');
+qEl.addEventListener('input', () => {
+  query = qEl.value.trim();
+  if (query) { active = 'search'; setVariant(''); } else active = pinned ? 'pin' : null;
+  render();
+});
+window.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (pinned) { closePanel(); active = query ? 'search' : null; }
+  else { query = ''; qEl.value = ''; setVariant(''); active = null; }
+  render();
+});
+
+// ---------- variants ----------
+const vsel = $('vsel'), vdesc = $('vdesc');
+if (!VARIANTS.length) $('vwrap').hidden = true;
+VARIANTS.forEach(v => {
+  if (!v || v.id == null) return;
+  const o = document.createElement('option'); o.value = String(v.id); o.textContent = v.label || String(v.id); vsel.appendChild(o);
+});
+// Set the select box and the description line, without changing the highlight source
+function setVariant(v) {
+  variant = v; vsel.value = v;
+  const d = VARIANTS.find(x => x && String(x.id) === v);
+  vdesc.textContent = d ? (d.label || d.id) + ': ' + (d.description || '') : '';
+  vdesc.hidden = !d; setHeaderHeight();
+}
+vsel.addEventListener('change', () => {
+  const v = vsel.value;
+  if (pinned) closePanel();
+  query = ''; qEl.value = '';
+  setVariant(v); active = v ? 'variant' : null; render();
+});
+
+// ---------- legend toggle and build info ----------
+$('legbtn').onclick = () => {
+  const lb = $('legendbox'); lb.hidden = !lb.hidden;
+  $('legbtn').classList.toggle('on', !lb.hidden); $('legbtn').setAttribute('aria-expanded', String(!lb.hidden));
+  setHeaderHeight();
+};
+(function buildInfo() {
+  const el = $('built'), parts = [];
+  if (META.built) parts.push('Built ' + META.built + '.');
+  const repo = safeUrl(META.repo_url), docs = safeUrl(META.docs_url);
+  el.textContent = parts.join(' ') + (parts.length ? ' ' : '');
+  const addLink = (u, t) => { const a = document.createElement('a'); a.href = u; a.textContent = t; a.target = '_blank'; a.rel = 'noopener'; el.appendChild(a); el.appendChild(document.createTextNode(' ')); };
+  if (repo) addLink(repo, 'Code repository');
+  if (docs) addLink(docs, 'Documentation');
+  const w = Array.isArray(META.warnings) ? META.warnings : [];
+  if (w.length) {
+    const ul = document.createElement('ul'); ul.className = 'warnlist';
+    w.forEach(t => { const li = document.createElement('li'); li.textContent = String(t); ul.appendChild(li); });
+    el.after(ul);
+  }
+  if (!el.textContent.trim() && !repo && !docs) el.hidden = true;
+})();
+
+// ---------- recipe panel ----------
+const panel = $('panel'), pbody = $('pbody');
+function mk(tag, text, cls) { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+function link(url, text) {
+  const u = safeUrl(url); if (!u) return mk('span', text);
+  const a = mk('a', text); a.href = u; a.target = '_blank'; a.rel = 'noopener'; return a;
+}
+function missingFlag() {
+  const f = mk('span', 'missing', 'flag');
+  f.title = 'This item was not found on disk when the chart was built.'; return f;
+}
+// Scripts as lists grouped by stage, in run order
+function scriptList(ids) {
+  const frag = document.createDocumentFragment(), groups = {};
+  ids.slice().sort(runOrder).forEach(id => { const k = stageKey(id); (groups[k] = groups[k] || []).push(id); });
+  Object.keys(groups).sort().forEach(k => {
+    frag.appendChild(mk('h4', GROUP_LABEL[k] || k));
+    const ol = mk('ol');
+    groups[k].forEach(id => { const n = nd(id), li = mk('li'); li.appendChild(link(n.url, n.id + ' ' + n.label)); ol.appendChild(li); });
+    frag.appendChild(ol);
+  });
+  return frag;
+}
+function openPanel(id) {
+  const n = nd(id), el = nodesEl.find(e => e.dataset.id === id);
+  const missing = n.on_disk === false || (el && el.classList.contains('missing'));
+  $('ptitle').textContent = (n.kind === 'script' ? 'Script ' + n.id : 'File');
+  pbody.textContent = '';
+  const h2 = mk('h2', n.label); if (missing) { h2.appendChild(document.createTextNode(' ')); h2.appendChild(missingFlag()); }
+  pbody.appendChild(h2);
+  // links
+  const lk = mk('p', null, 'links');
+  if (safeUrl(n.url)) lk.appendChild(link(n.url, n.kind === 'script' ? 'Open script on GitHub' : 'Open on GitHub'));
+  if (safeUrl(n.docs_url)) lk.appendChild(link(n.docs_url, 'Documentation'));
+  if (lk.childNodes.length) pbody.appendChild(lk);
+  // facts
+  const dl = mk('dl');
+  const row = (k, v) => { if (v == null || v === '') return; dl.appendChild(mk('dt', k)); const dd = mk('dd'); if (v instanceof Node) dd.appendChild(v); else dd.textContent = v; dl.appendChild(dd); };
+  row('Kind', n.kind === 'script' ? 'script' : 'file');
+  row('Stage', STAGE_LABEL[n.stage] || n.stage);
+  row('Icon', ICON_TEXT[n.icon] || n.icon || '');
+  const badge = badgeOf(id); row('Badge', badge ? badge + ' (' + (BADGE_TEXT[badge] || badge) + ')' : '');
+  if (n.kind === 'script') row('Path', n.path ? mk('code', n.path) : '');
+  else { row('File id', mk('code', n.id)); if (n.path && n.path !== n.id) row('Path', mk('code', n.path)); }
+  row('Note', n.note || '');
+  if (n.variants.length) row('Variants', n.variants.map(v => { const d = VARIANTS.find(x => x && String(x.id) === String(v)); return d && d.label ? d.label : String(v); }).join(', '));
+  if (n.kind === 'product') {
+    row('Archives', n.archives.length ? n.archives.join(', ') : 'not listed here (see MANIFEST.csv)');
+    const c = [];
+    if (Number.isFinite(n.files)) c.push(n.files + (n.files === 1 ? ' file' : ' files'));
+    if (Number.isFinite(n.bytes)) c.push(humanSize(n.bytes));
+    row('Content', c.join(', '));
+  }
+  if (missing) { const s = mk('span'); s.appendChild(missingFlag()); s.appendChild(document.createTextNode(' not found on disk')); row('Status', s); }
+  pbody.appendChild(dl);
+
+  // How to reproduce: all upstream scripts (for a script: itself too)
+  // A script marked redundant is replaced by another that writes the same file (13 by 13b)
+  const up = [...walk(id, PREDS)].filter(k => nd(k).kind === 'script' && !/redundant/i.test(nd(k).label || ''));
+  pbody.appendChild(mk('h3', 'How to reproduce'));
+  if (!up.length) pbody.appendChild(mk('p', 'No script writes this file. It is an input.', 'muted'));
+  else { pbody.appendChild(mk('p', 'Run these scripts in this order:', 'muted')); pbody.appendChild(scriptList(up)); }
+
+  // Shortcut: start at script 31 with the files from the deposit
+  pbody.appendChild(mk('h3', 'Shortcut with the data deposit'));
+  const early = w => { const k = scriptNum(w); return Number.isFinite(k) && k < 31; };
+  const fromDeposit = p => { const ws = PREDS[p] || []; return !ws.length || ws.every(early); };
+  const short = up.filter(k => { const x = scriptNum(k); return Number.isFinite(x) && x >= 31 && x < 90; });
+  const inputs = new Set();
+  short.forEach(s => (PREDS[s] || []).forEach(p => { if (nd(p).kind === 'product' && fromDeposit(p)) inputs.add(p); }));
+  if (!short.length && n.kind === 'product' && fromDeposit(id)) inputs.add(id);
+  if (!short.length && !inputs.size) {
+    pbody.appendChild(mk('p', 'No shortcut. This item comes before script 31 or after script 89; run the full list above.', 'muted'));
+  } else {
+    const arch = new Set(), unknown = [];
+    inputs.forEach(p => { const a = nd(p).archives; if (a.length) a.forEach(x => arch.add(x)); else unknown.push(p); });
+    pbody.appendChild(mk('p', short.length ? '1. Unpack these deposit archives:' : 'Unpack this deposit archive:', 'muted'));
+    if (arch.size) { const ul = mk('ul'); [...arch].sort().forEach(a => ul.appendChild(mk('li', a))); pbody.appendChild(ul); }
+    if (unknown.length) {
+      pbody.appendChild(mk('p', (arch.size ? 'Also the archives that hold these files' : 'The archives that hold these files') + ' (MANIFEST.csv in the deposit lists them):'));
+      const ul = mk('ul'); unknown.sort().forEach(p => { const li = mk('li'); li.appendChild(mk('code', nd(p).id)); ul.appendChild(li); }); pbody.appendChild(ul);
+    }
+    if (short.length) { pbody.appendChild(mk('p', '2. Then run these scripts in this order:', 'muted')); pbody.appendChild(scriptList(short)); }
+  }
+  panel.hidden = false; panel.classList.remove('collapsed'); $('pcol').innerHTML = '&#9652;';
+  document.body.classList.toggle('pwide', panelWide());
+  pbody.scrollTop = 0;
+}
+function closePanel() { panel.hidden = true; pinned = null; document.body.classList.remove('pwide'); }
+$('pclose').onclick = () => { closePanel(); active = query ? 'search' : null; render(); };
+$('pcol').onclick = () => {
+  panel.classList.toggle('collapsed');
+  $('pcol').innerHTML = panel.classList.contains('collapsed') ? '&#9662;' : '&#9652;';
+  document.body.classList.toggle('pwide', panelWide());
+};
+
+// ---------- minimap ----------
+const miniC = $('minic'), MW = 220, MH = 80;
+function miniMap() { const s = Math.min(MW / W, MH / H); return {s, ox:(MW - W * s) / 2, oy:(MH - H * s) / 2}; }
+function drawMini() {
+  const dpr = window.devicePixelRatio || 1;
+  if (miniC.width !== Math.round(MW * dpr)) { miniC.width = Math.round(MW * dpr); miniC.height = Math.round(MH * dpr); }
+  const cx = miniC.getContext('2d'); if (!cx) return;
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, MW, MH);
+  const m = miniMap();
+  nodesEl.forEach(el => {
+    const id = el.dataset.id, b = box[id]; if (!b || hidden.has(id)) return;
+    cx.fillStyle = color[id];
+    cx.fillRect(m.ox + b.x * m.s, m.oy + b.y * m.s, Math.max(1, b.w * m.s), Math.max(1, b.h * m.s));
+  });
+  cx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--hl').trim() || '#111111';
+  cx.lineWidth = 1.5;
+  cx.strokeRect(m.ox + vb.x * m.s, m.oy + vb.y * m.s, vb.w * m.s, vb.h * m.s);
+}
+let miniDrag = false;
+function miniMove(e) {
+  const r = miniC.getBoundingClientRect(), m = miniMap();
+  vb.x = (e.clientX - r.left - m.ox) / m.s - vb.w / 2; vb.y = (e.clientY - r.top - m.oy) / m.s - vb.h / 2; apply();
+}
+miniC.addEventListener('pointerdown', e => { miniDrag = true; try { miniC.setPointerCapture(e.pointerId); } catch (err) {} miniMove(e); e.preventDefault(); });
+miniC.addEventListener('pointermove', e => { if (miniDrag) miniMove(e); });
+miniC.addEventListener('pointerup', () => { miniDrag = false; });
+miniC.addEventListener('pointercancel', () => { miniDrag = false; });
+miniC.addEventListener('wheel', e => e.preventDefault(), {passive:false});
+if (window.matchMedia) { try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawMini); } catch (err) {} }
+
+// ---------- export as SVG and PNG ----------
+const NS = 'http://www.w3.org/2000/svg';
+// Light theme values of the CSS variables, from the first :root rule of the page CSS
+const LIGHT = {};
+(/:root\s*\{([^}]*)\}/.exec($('pagecss').textContent) || ['', ''])[1].split(';').forEach(d => {
+  const m = /^\s*--([\w-]+)\s*:\s*(.+?)\s*$/.exec(d); if (m) LIGHT[m[1]] = m[2];
+});
+function resolveVars(s) { return s.replace(/var\(--([\w-]+)\)/g, (x, k) => LIGHT[k] || '#000000'); }
+function exportSvgText() {
+  const r = svg.getBoundingClientRect(), c = svg.cloneNode(true);
+  c.removeAttribute('id'); c.removeAttribute('class'); c.removeAttribute('style');
+  c.setAttribute('xmlns', NS);
+  c.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  c.setAttribute('width', String(Math.round(r.width))); c.setAttribute('height', String(Math.round(r.height)));
+  c.querySelectorAll('.n, .e').forEach(el => { if (el.style.display === 'none') el.remove(); });
+  const bg = document.createElementNS(NS, 'rect');
+  [['x', vb.x], ['y', vb.y], ['width', vb.w], ['height', vb.h], ['fill', '#ffffff']].forEach(([k, v]) => bg.setAttribute(k, String(v)));
+  c.insertBefore(bg, c.firstChild);
+  const st = document.createElementNS(NS, 'style');
+  st.textContent = 'text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }\n' + $('chartcss').textContent;
+  c.insertBefore(st, c.firstChild);
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' + resolveVars(new XMLSerializer().serializeToString(c));
+}
+function download(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+$('xsvg').onclick = () => download(new Blob([exportSvgText()], {type:'image/svg+xml'}), 'data_flow.svg');
+$('xpng').onclick = () => {
+  const r = svg.getBoundingClientRect(), w = Math.round(r.width) * 2, h = Math.round(r.height) * 2;
+  const img = new Image();
+  img.onload = () => {
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const cx = cv.getContext('2d'); cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, w, h); cx.drawImage(img, 0, 0, w, h);
+    try { cv.toBlob(b => { if (b) download(b, 'data_flow.png'); else alert('PNG export failed. Use SVG.'); }, 'image/png'); }
+    catch (err) { alert('PNG export failed in this browser. Use SVG.'); }
+  };
+  img.onerror = () => alert('PNG export failed in this browser. Use SVG.');
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(exportSvgText());
+};
+
+window.addEventListener('resize', fit); fit();
+</script></body></html>
