@@ -13,6 +13,8 @@ from sklearn.model_selection import train_test_split, KFold, LeaveOneGroupOut, R
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
 
+from src.paths import resolve_stored_path
+
 
 def train_rf_models_and_shap(target: str, features: list,
                              siteconfig, ix, modelstxt, results_outdir: Path, conditional=False) -> None:
@@ -22,7 +24,7 @@ def train_rf_models_and_shap(target: str, features: list,
         return None
 
     # Load site data
-    filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
+    filepath = str(resolve_stored_path(siteconfig['_FILEPATH_PARQUET_SUBSET']))
     subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     print(f"Records: {len(subset)}")
 
@@ -165,7 +167,7 @@ def train_xgboost_models_and_shap(target: str, features: list,
         return {}
 
     # Load site data
-    filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
+    filepath = str(resolve_stored_path(siteconfig['_FILEPATH_PARQUET_SUBSET']))
     subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     # subset = subset.head(100)  # todo deactivate, for testing only
     print(f"Records: {len(subset)}")
@@ -380,7 +382,7 @@ def train_xgboost_models_and_ale(target: str, features: list,
         return {}
 
     # Load site data
-    filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
+    filepath = str(resolve_stored_path(siteconfig['_FILEPATH_PARQUET_SUBSET']))
     subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     print(f"Records: {len(subset)}")
 
@@ -597,7 +599,7 @@ def calculate_partial_correlations(target: str, features: list,
         return None
 
     # Load site data
-    filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
+    filepath = str(resolve_stored_path(siteconfig['_FILEPATH_PARQUET_SUBSET']))
     subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     print(f"Records: {len(subset)}")
 
@@ -687,7 +689,7 @@ def calculate_path_analysis(target: str, features: list,
         return None
 
     # Load site data
-    filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
+    filepath = str(resolve_stored_path(siteconfig['_FILEPATH_PARQUET_SUBSET']))
     subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     print(f"Records: {len(subset)}")
 
@@ -977,7 +979,7 @@ def tune_xgboost_hyperparameters(target: str, features: list,
         return {}
 
     # Load site data
-    filepath = siteconfig['_FILEPATH_PARQUET_SUBSET']
+    filepath = str(resolve_stored_path(siteconfig['_FILEPATH_PARQUET_SUBSET']))
     subset = dv.load_parquet(filepath, sanitize_timestamp=False, output_middle_timestamp=False)
     print(f"Records: {len(subset)}")
 

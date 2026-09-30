@@ -75,11 +75,20 @@ def resolve_stored_path(stored) -> Path:
     ``_FILEPATH_PARQUET_SUBSET``) hold relative values such as
     ``..\\..\\data\\outputs\\10_datasets\\12_parquet_merged\\AR-SLu_MF_FLX_2009-2011.parquet``.
     The leading parent parts are dropped and the rest is placed under
-    `DATA_ROOT`. Absolute values are returned unchanged. Parsed with
-    `PureWindowsPath`, which accepts both backslashes and forward slashes.
+    `DATA_ROOT`. An absolute value is returned unchanged if the file exists.
+    Otherwise it was written on another machine, as in the site table of the
+    data deposit, and the part from ``data/outputs/`` on is placed under
+    `DATA_ROOT`. Parsed with `PureWindowsPath`, which accepts both backslashes
+    and forward slashes.
     """
     path = PureWindowsPath(str(stored))
-    if path.is_absolute():
+    if path.root:  # absolute, with or without a drive (a path written on Linux has none)
+        if Path(path).exists():
+            return Path(path)
+        lower = [part.lower() for part in path.parts]
+        for i in range(len(lower) - 1):
+            if lower[i] == "data" and lower[i + 1] == "outputs":
+                return DATA_ROOT.joinpath(*path.parts[i:])
         return Path(path)
     parts = [part for part in path.parts if part not in ("..", ".")]
     return DATA_ROOT.joinpath(*parts)
