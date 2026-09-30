@@ -152,4 +152,10 @@ Both scripts write into `<DATA_ROOT>/deposit/`.
 
 The reads and writes in `92_data_flow_graph.json` were taken from the code by hand. When a
 script starts reading or writing a different file, update its entry there and rerun
-script 92.
+script 92. Script 92 also writes a copy of the chart to `docs/data_flow.html` for this
+site.
+
+The chart below shows every script with the files it reads and writes and the archive
+each file is deposited in. [Open the chart full screen](data_flow.html).
+
+<iframe src="data_flow.html" title="Data flow of the pipeline" width="100%" height="700" style="border:1px solid #ccc;" loading="lazy"></iframe>
