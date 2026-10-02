@@ -1,8 +1,8 @@
 """
 How much of a peak-season day is measured, and how many Stage 8 records each time scale would keep.
 
-Backs the reply to Reviewer 2 on why the analysis is not repeated at daily or coarser
-resolution (R2-01). Two parts, both counted over the 208 sites of the analysis.
+Shows why the analysis is not repeated at daily or coarser resolution. Two parts, both
+counted over the 208 sites of the analysis.
 
 1. Daily coverage. The analysis window is the four peak-GPP months of a site and its
    daytime records (SW_IN_POT > 20 W m-2), all years, before the quality filter. Per day,
