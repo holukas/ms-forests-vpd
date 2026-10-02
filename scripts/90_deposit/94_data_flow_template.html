@@ -4,7 +4,8 @@
 <title>ms-forests-vpd data flow</title>
 <style id="pagecss">
 :root { --bg:#ffffff; --fg:#1a1a1a; --muted:#666; --edge:#b9b9b9; --script:#ffffff; --hl:#111; --lane:#f3f4f6; --panel:#fafafa; --minibg:rgba(255,255,255,.85); --link:#0b5cad; --hh:44px; }
-@media (prefers-color-scheme: dark) { :root { --bg:#16181c; --fg:#e8e8e8; --muted:#9aa; --edge:#4a4f57; --script:#23262c; --hl:#fff; --lane:#1d2025; --panel:#1b1e23; --minibg:rgba(22,24,28,.85); --link:#7fb6ff; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#16181c; --fg:#e8e8e8; --muted:#9aa; --edge:#4a4f57; --script:#23262c; --hl:#fff; --lane:#1d2025; --panel:#1b1e23; --minibg:rgba(22,24,28,.85); --link:#7fb6ff; } }
+:root[data-theme="dark"] { --bg:#16181c; --fg:#e8e8e8; --muted:#9aa; --edge:#4a4f57; --script:#23262c; --hl:#fff; --lane:#1d2025; --panel:#1b1e23; --minibg:rgba(22,24,28,.85); --link:#7fb6ff; }
 html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:13px system-ui,-apple-system,Segoe UI,sans-serif; }
 header { position:fixed; top:0; left:0; right:0; padding:6px 12px; background:var(--bg); border-bottom:1px solid var(--edge); z-index:4; display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; }
 header h1 { font-size:14px; margin:0 6px 0 0; white-space:nowrap; }
@@ -74,6 +75,7 @@ rect.product { stroke:none; opacity:.85; }
 </span>
 <label id="vwrap">Variant: <select id="vsel"><option value="">none</option></select></label>
 <span class="grp"><button id="xsvg" title="Download the current view as SVG">SVG</button><button id="xpng" title="Download the current view as PNG">PNG</button></span>
+<button id="theme" title="Color theme: follow the system, light or dark">Theme: system</button>
 <button id="legbtn" aria-expanded="false">Legend</button>
 <div id="vdesc" hidden></div>
 <div id="legendbox" hidden>
@@ -441,6 +443,28 @@ miniC.addEventListener('pointerup', () => { miniDrag = false; });
 miniC.addEventListener('pointercancel', () => { miniDrag = false; });
 miniC.addEventListener('wheel', e => e.preventDefault(), {passive:false});
 if (window.matchMedia) { try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawMini); } catch (err) {} }
+// Theme switch: system, light or dark. ?theme= in the URL wins over the stored choice.
+(function () {
+  const btn = document.getElementById('theme'), root = document.documentElement;
+  const modes = ['system', 'light', 'dark'];
+  let mode = 'system';
+  try {
+    const q = new URLSearchParams(location.search).get('theme');
+    const s = localStorage.getItem('dataFlowTheme');
+    if (modes.includes(q)) mode = q; else if (modes.includes(s)) mode = s;
+  } catch (err) {}
+  function apply() {
+    if (mode === 'system') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', mode);
+    btn.textContent = 'Theme: ' + mode;
+    drawMini();
+  }
+  btn.addEventListener('click', () => {
+    mode = modes[(modes.indexOf(mode) + 1) % modes.length];
+    try { localStorage.setItem('dataFlowTheme', mode); } catch (err) {}
+    apply();
+  });
+  apply();
+})();
 
 // ---------- export as SVG and PNG ----------
 const NS = 'http://www.w3.org/2000/svg';
