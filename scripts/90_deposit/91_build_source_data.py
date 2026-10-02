@@ -11,7 +11,7 @@ Without arguments it is a dry run that checks every source file. With ``--build`
 writes the same archive twice (replacing existing ones):
     <DATA_ROOT>/deposit_eth_research_collection/ms-forests-vpd_SourceData.zip
     <DATA_ROOT>/submission_nature_communications/Source Data.zip, uploaded to the journal
-Run it before 91_build_deposit_archives.py --build, which lists the deposit copy in
+Run it before 93_build_deposit_archives.py --build, which lists the deposit copy in
 MANIFEST.csv and ARCHIVES.csv.
 """
 import sys

@@ -10,7 +10,7 @@ committed and fits the one site. README.txt in the archive gives the steps.
 
 Without arguments it is a dry run. With ``--build`` it writes
 <DATA_ROOT>/deposit_eth_research_collection/ms-forests-vpd_demo.zip (replacing an
-existing one). Run it before 91_build_deposit_archives.py --build, which lists the
+existing one). Run it before 93_build_deposit_archives.py --build, which lists the
 archive in MANIFEST.csv and ARCHIVES.csv.
 """
 import io

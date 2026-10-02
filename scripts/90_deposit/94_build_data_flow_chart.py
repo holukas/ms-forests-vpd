@@ -7,8 +7,8 @@ page is self-contained (inline SVG and a little JavaScript): the mouse wheel zoo
 moves the view, a click on a box highlights everything upstream and downstream of it.
 
 Reads:
-    92_data_flow_template.html, next to this script: the page with its styles and scripts.
-    92_data_flow_graph.json, next to this script. The reads and writes of every script were
+    94_data_flow_template.html, next to this script: the page with its styles and scripts.
+    94_data_flow_graph.json, next to this script. The reads and writes of every script were
     taken from the code by hand and are kept in this file, with the run variants of every
     script and file and, for every output file, a glob relative to data/outputs/. When a
     script starts reading or writing a different file, update its entry here and rerun.
@@ -36,7 +36,7 @@ from pathlib import Path
 
 from src.paths import DATA_ROOT, DEPOSIT_DIR, REPO_ROOT
 
-GRAPH = Path(__file__).with_name("92_data_flow_graph.json")
+GRAPH = Path(__file__).with_name("94_data_flow_graph.json")
 OUT = DEPOSIT_DIR / "DATA_FLOW.html"
 DOCS_OUT = REPO_ROOT / "docs" / "data_flow.html"
 OUTPUTS = DATA_ROOT / "data" / "outputs"
@@ -140,7 +140,7 @@ def warn(text):
 manifest = []
 if MANIFEST.exists():
     with open(MANIFEST, newline="", encoding="utf8") as f:
-        # Only the stage archives of script 91; the Source Data archive of script 93 holds
+        # Only the stage archives of script 93; the Source Data archive of script 91 holds
         # renamed copies, whose paths are not relative to data/outputs/
         manifest = [r for r in csv.DictReader(f) if r["archive"].startswith("ms-forests-vpd_outputs_")]
 disk = None
@@ -162,7 +162,7 @@ for n, d in nodes.items():
     if MANIFEST.exists():
         d.update(archives=sorted({r["archive"] for r in rows}), files=len(rows),
                  bytes=sum(int(r["bytes"]) for r in rows))
-    if not d.get("group_end"):          # the stage folders of script 91 match everything
+    if not d.get("group_end"):          # the stage folders of script 93 match everything
         matched.update(r["path"] for r in rows)
     if disk is None:
         continue
@@ -230,7 +230,7 @@ for n in nodes:
     if nodes[n]["kind"] == "product":
         rank[n] = rank[writer[n]] if n in writer else 0
 
-# The deposit group (stage folders, scripts 91 and 92, deposit files) goes after everything else
+# The deposit group (stage folders, scripts 93 and 94, deposit files) goes after everything else
 end_nodes = [n for n in nodes if nodes[n].get("group_end")]
 if end_nodes:
     last = max(r for n, r in rank.items() if n not in end_nodes)
@@ -527,7 +527,7 @@ legend += ['<span><b style="background:#111;color:#fff;border-radius:6px;padding
            ' main text</span>',
            '<span><b style="background:#fff;color:#111;border:1px solid #999;border-radius:6px;padding:0 5px;'
            'font-size:10px">Suppl.</b> supplement</span>', '</span>']
-TEMPLATE = Path(__file__).with_name("92_data_flow_template.html")
+TEMPLATE = Path(__file__).with_name("94_data_flow_template.html")
 page = (TEMPLATE.read_text(encoding="utf8")
         .replace("<!--__LEGEND__-->", "".join(legend))
         .replace("<!--__SVG__-->", "\n".join(svg))

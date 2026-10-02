@@ -917,8 +917,43 @@
   },
   {
    "id": "91",
-   "path": "scripts/90_deposit/91_build_deposit_archives.py",
-   "label": "91 build deposit archives",
+   "path": "scripts/90_deposit/91_build_source_data.py",
+   "label": "91 build source data",
+   "stage": "90_deposit",
+   "reads": [
+    "outputs/10_datasets/ (whole folder)",
+    "outputs/20_subsets/ (whole folder)",
+    "outputs/40_aggregation/ (whole folder)",
+    "outputs/50_plots/ (whole folder)"
+   ],
+   "writes": [
+    "deposit_eth_research_collection/ms-forests-vpd_SourceData.zip",
+    "submission_nature_communications/Source Data.zip"
+   ],
+   "note": "Copies the data file of every display item under a plain name; nothing is recomputed. Dry run by default; --build writes.",
+   "variants": [],
+   "group_end": true
+  },
+  {
+   "id": "92",
+   "path": "scripts/90_deposit/92_build_demo_data.py",
+   "label": "92 build demo data",
+   "stage": "90_deposit",
+   "reads": [
+    "outputs/20_subsets/ (whole folder)",
+    "outputs/30_shap/ (whole folder)"
+   ],
+   "writes": [
+    "deposit_eth_research_collection/ms-forests-vpd_demo.zip"
+   ],
+   "note": "Model input of one site (CH-Dav) with its published output, to try script 31 without the full deposit. Dry run by default; --build writes.",
+   "variants": [],
+   "group_end": true
+  },
+  {
+   "id": "93",
+   "path": "scripts/90_deposit/93_build_deposit_archives.py",
+   "label": "93 build deposit archives",
    "stage": "90_deposit",
    "reads": [
     "outputs/10_datasets/ (whole folder)",
@@ -936,52 +971,17 @@
    "group_end": true
   },
   {
-   "id": "92",
-   "path": "scripts/90_deposit/92_build_data_flow_chart.py",
-   "label": "92 build data flow chart",
+   "id": "94",
+   "path": "scripts/90_deposit/94_build_data_flow_chart.py",
+   "label": "94 build data flow chart",
    "stage": "90_deposit",
    "reads": [
-    "scripts/90_deposit/92_data_flow_graph.json"
+    "scripts/90_deposit/94_data_flow_graph.json"
    ],
    "writes": [
     "deposit_eth_research_collection/DATA_FLOW.html"
    ],
    "note": "Draws this chart.",
-   "variants": [],
-   "group_end": true
-  },
-  {
-   "id": "93",
-   "path": "scripts/90_deposit/93_build_source_data.py",
-   "label": "93 build source data",
-   "stage": "90_deposit",
-   "reads": [
-    "outputs/10_datasets/ (whole folder)",
-    "outputs/20_subsets/ (whole folder)",
-    "outputs/40_aggregation/ (whole folder)",
-    "outputs/50_plots/ (whole folder)"
-   ],
-   "writes": [
-    "deposit_eth_research_collection/ms-forests-vpd_SourceData.zip",
-    "submission_nature_communications/Source Data.zip"
-   ],
-   "note": "Copies the data file of every display item under a plain name; nothing is recomputed. Dry run by default; --build writes.",
-   "variants": [],
-   "group_end": true
-  },
-  {
-   "id": "94",
-   "path": "scripts/90_deposit/94_build_demo_data.py",
-   "label": "94 build demo data",
-   "stage": "90_deposit",
-   "reads": [
-    "outputs/20_subsets/ (whole folder)",
-    "outputs/30_shap/ (whole folder)"
-   ],
-   "writes": [
-    "deposit_eth_research_collection/ms-forests-vpd_demo.zip"
-   ],
-   "note": "Model input of one site (CH-Dav) with its published output, to try script 31 without the full deposit. Dry run by default; --build writes.",
    "variants": [],
    "group_end": true
   }
@@ -1642,7 +1642,7 @@
    "id": "outputs/10_datasets/ (whole folder)",
    "label": "10_datasets (selection)",
    "stage": "10_datasets",
-   "note": "Stage folder as read by script 91",
+   "note": "Stage folder as read by script 93",
    "glob": "10_datasets/**",
    "variants": [],
    "group_end": true
@@ -1651,7 +1651,7 @@
    "id": "outputs/20_subsets/ (whole folder)",
    "label": "20_subsets, all files",
    "stage": "20_subsets",
-   "note": "Stage folder as read by script 91",
+   "note": "Stage folder as read by script 93",
    "glob": "20_subsets/**",
    "variants": [],
    "group_end": true
@@ -1660,7 +1660,7 @@
    "id": "outputs/30_shap/ (whole folder)",
    "label": "30_shap, no csv twins",
    "stage": "30_shap",
-   "note": "Stage folder as read by script 91",
+   "note": "Stage folder as read by script 93",
    "glob": "30_shap/**",
    "variants": [],
    "group_end": true
@@ -1669,7 +1669,7 @@
    "id": "outputs/40_aggregation/ (whole folder)",
    "label": "40_aggregation, no csv twins",
    "stage": "40_aggregation",
-   "note": "Stage folder as read by script 91",
+   "note": "Stage folder as read by script 93",
    "glob": "40_aggregation/**",
    "variants": [],
    "group_end": true
@@ -1678,7 +1678,7 @@
    "id": "outputs/50_plots/ (whole folder)",
    "label": "50_plots, all files",
    "stage": "50_plots",
-   "note": "Stage folder as read by script 91",
+   "note": "Stage folder as read by script 93",
    "glob": "50_plots/**",
    "variants": [],
    "group_end": true
@@ -1687,7 +1687,7 @@
    "id": "outputs/80_info/ (whole folder)",
    "label": "80_info, all files",
    "stage": "80_info",
-   "note": "Stage folder as read by script 91",
+   "note": "Stage folder as read by script 93",
    "glob": "80_info/**",
    "variants": [],
    "group_end": true
@@ -1701,8 +1701,8 @@
    "group_end": true
   },
   {
-   "id": "scripts/90_deposit/92_data_flow_graph.json",
-   "label": "92_data_flow_graph.json",
+   "id": "scripts/90_deposit/94_data_flow_graph.json",
+   "label": "94_data_flow_graph.json",
    "stage": "90_deposit",
    "note": "Reads and writes of every script, kept by hand in the repository",
    "variants": [],
