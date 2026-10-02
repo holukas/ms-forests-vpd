@@ -62,7 +62,7 @@ def fit_polynomial_to_curves(curves_array, grid):
 
 
 def find_zero_crossing(curve, grid):
-    """First positive to negative crossing, by linear interpolation. NaN if there is none."""
+    """Highest positive to negative crossing, by linear interpolation, as for SHAP. NaN if there is none."""
     valid = ~np.isnan(curve)
     if np.sum(valid) <= 1:
         return np.nan
@@ -71,7 +71,7 @@ def find_zero_crossing(curve, grid):
     if np.all(curve_valid >= 0) or np.all(curve_valid <= 0):
         return np.nan
     sign_changes = np.diff(np.sign(curve_valid))
-    for idx in np.where(sign_changes != 0)[0]:
+    for idx in np.where(sign_changes != 0)[0][::-1]:
         if curve_valid[idx] > 0 and curve_valid[idx + 1] <= 0:
             x1, x2 = grid_valid[idx], grid_valid[idx + 1]
             y1, y2 = curve_valid[idx], curve_valid[idx + 1]

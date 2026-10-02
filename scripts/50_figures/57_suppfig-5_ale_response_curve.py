@@ -3,7 +3,7 @@ Supplementary Fig. 5: ALE response curves of NEP to VPD and the ALE threshold.
 
 Panel a shows the per-site curves of all sites, panels b to e those of one forest type
 each. Each site curve is smoothed with a fourth-order polynomial, and the threshold is the
-mean of the sites' first positive-to-negative zero crossings. Sites without a crossing do
+mean of the sites' highest positive-to-negative zero crossings. Sites without a crossing do
 not enter the threshold, and the panel title then gives both counts.
 
 Settings:
@@ -54,7 +54,7 @@ def fit_polynomial_to_curves(curves_array, grid):
 
 
 def find_zero_crossing(curve, grid):
-    """Find first positive-to-negative zero crossing via linear interpolation. Returns NaN if no crossing."""
+    """Find the highest positive-to-negative zero crossing via linear interpolation, as for SHAP. Returns NaN if no crossing."""
     valid = ~np.isnan(curve)
     if np.sum(valid) <= 1:
         return np.nan
@@ -63,7 +63,7 @@ def find_zero_crossing(curve, grid):
     if np.all(curve_valid >= 0) or np.all(curve_valid <= 0):
         return np.nan
     sign_changes = np.diff(np.sign(curve_valid))
-    for idx in np.where(sign_changes != 0)[0]:
+    for idx in np.where(sign_changes != 0)[0][::-1]:
         if curve_valid[idx] > 0 and curve_valid[idx + 1] <= 0:
             x1, x2 = grid_valid[idx], grid_valid[idx + 1]
             y1, y2 = curve_valid[idx], curve_valid[idx + 1]
