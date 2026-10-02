@@ -984,6 +984,21 @@
    "note": "Draws this chart.",
    "variants": [],
    "group_end": true
+  },
+  {
+   "id": "95",
+   "path": "scripts/90_deposit/95_copy_figures_to_docs.py",
+   "label": "95 copy figures to docs",
+   "stage": "90_deposit",
+   "reads": [
+    "outputs/50_plots/ (whole folder)"
+   ],
+   "writes": [
+    "docs/figures/"
+   ],
+   "note": "Web-size copies of the 14 figures for the Figures page of the documentation. Dry run by default, --build writes.",
+   "variants": [],
+   "group_end": true
   }
  ],
  "products": [
@@ -1713,6 +1728,14 @@
    "label": "DATA_FLOW.html (this chart)",
    "stage": "deposit",
    "note": "<DATA_ROOT>/deposit_eth_research_collection/DATA_FLOW.html",
+   "variants": [],
+   "group_end": true
+  },
+  {
+   "id": "docs/figures/",
+   "label": "docs/figures, 14 web-size figures",
+   "stage": "deposit",
+   "note": "In the repository: docs/figures/fig1.png to suppfig10.png, 1600 px wide, 256 colors",
    "variants": [],
    "group_end": true
   },
