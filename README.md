@@ -1,7 +1,7 @@
 # ms-forests-vpd
 
 Code for the analysis of vapour pressure deficit (VPD) and soil water content (SWC)
-effects on daytime net ecosystem productivity (NEP) at forest eddy covariance sites.
+effects on daytime net ecosystem production (NEP) at forest eddy covariance sites.
 
 One XGBoost model is trained per site. The fitted models are interpreted with SHAP
 values, calculated out-of-sample through 5-fold cross-validation, and with ALE curves.

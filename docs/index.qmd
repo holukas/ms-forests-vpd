@@ -3,7 +3,7 @@ title: "Overview"
 ---
 
 Code for the analysis of vapor pressure deficit (VPD) and soil water content (SWC)
-effects on daytime net ecosystem productivity (NEP) at 208 forest eddy covariance sites.
+effects on daytime net ecosystem production (NEP) at 208 forest eddy covariance sites.
 
 One XGBoost model is fitted per site. The models are interpreted with SHAP values,
 computed out-of-sample through 5-fold cross-validation, and with ALE curves. Site results
