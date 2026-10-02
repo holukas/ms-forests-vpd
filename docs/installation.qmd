@@ -6,18 +6,11 @@ title: "Installation"
 
 - Python 3.12, pinned in `.python-version` and enforced by `pyproject.toml`
 - [uv](https://docs.astral.sh/uv/) for dependency management
-- About 4 GB of disk space for the environment; the data need far more, see [Data](data.qmd)
+- About 4 GB of disk space for the environment. The data need far more (see [Data](data.qmd)).
 
 ## Install
 
-```bash
-git clone https://github.com/holukas/ms-forests-vpd.git
-cd ms-forests-vpd
-uv sync
-```
-
-`uv sync` reads `uv.lock` and creates `.venv` with the exact package versions used for
-the manuscript. It downloads Python 3.12 if the system does not have it. To install uv:
+Install uv if it is missing:
 
 ```bash
 # Windows PowerShell
@@ -27,10 +20,22 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+Clone the repository and create the environment:
+
+```bash
+git clone https://github.com/holukas/ms-forests-vpd.git
+cd ms-forests-vpd
+uv sync --locked
+```
+
+`uv sync --locked` creates `.venv` from `uv.lock`, with every package at the locked
+version. It downloads Python 3.12 if the system does not have it. With an empty uv cache,
+a fresh install takes about three minutes on a standard desktop computer.
+
 ## Running scripts
 
 Scripts import from `src/`, which `uv sync` installs in editable mode. Paths are resolved
-from the repository root, so scripts run from anywhere:
+from the repository root, so scripts run from any working directory:
 
 ```bash
 uv run python scripts/30_shap/31_shap.py
@@ -38,9 +43,10 @@ uv run python scripts/30_shap/31_shap.py
 
 ## Packages
 
-Every runtime dependency is pinned in `pyproject.toml` to the version the published
-results were produced with, so `pip install .` and `uv sync` give the same environment.
-Transitive versions are in `uv.lock`.
+`pyproject.toml` pins the direct dependencies. `uv.lock` pins every package, including
+the transitive ones. `pip install .` uses the direct pins only, not the lock file, so
+transitive versions may differ. [Reproducibility](#reproducibility) describes how the
+package versions affect the results.
 
 | Package | Version | Used for |
 |---------|---------|----------|
@@ -50,7 +56,7 @@ Transitive versions are in `uv.lock`.
 | `scipy` | 1.18.0 | Z-scores, nearest-neighbor search, statistics |
 | `matplotlib` | 3.11.1 | Figures |
 | `scikit-learn` | 1.9.0 | Cross-validation, metrics, hyperparameter search |
-| `xgboost` | 3.0.5 | Gradient-boosted regression; the one pin that changes results |
+| `xgboost` | 3.0.5 | Gradient-boosted regression (the one pin that changes results) |
 | `shap` | 0.52.0 | SHAP values via `TreeExplainer` |
 | `pyale` | 1.2.0 | ALE curves |
 | `statsmodels` | 0.14.6 | Spline row of the threshold robustness table |
@@ -58,23 +64,44 @@ Transitive versions are in `uv.lock`.
 | `pyyaml` | 6.0.3 | Settings |
 | `openpyxl` | 3.1.5 | Tables for Word |
 
+## Demo
+
+The data deposit (see [Data](data.qmd#deposited-outputs)) contains
+`ms-forests-vpd_demo.zip` (10 MB) with the model input and the published model output of
+one site, CH-Dav.
+
+1. Create an empty data folder, point `MS_FORESTS_VPD_DATA` at it (see [Data](data.qmd)),
+   and unpack the archive into `<data folder>/data/outputs/`.
+2. Run `uv run python scripts/30_shap/31_shap.py`.
+
+The script fits the XGBoost model of the site in five-fold cross-validation and computes
+the out-of-sample SHAP values. This took 7 seconds on a 24-thread desktop computer. The
+script writes `CH-Dav_shap-conditional_NEP_ZSCORE.parquet`, a run log and the
+cross-validation results to `data/outputs/30_shap/NEP_ZSCORE/conditional/`. With xgboost
+3.0.5 on 24 threads, the parquet file equals
+`expected_output/CH-Dav_shap-conditional_NEP_ZSCORE.parquet` from the archive. With other
+thread counts, the values differ by up to a few percent (see
+[Reproducibility](#reproducibility)).
+
 ## Reproducibility
 
-The results were produced with xgboost 3.0.5 and `n_jobs=-1` on a 24-thread machine. At
-that version and thread count they reproduce bit for bit across all 208 sites. Both
-settings change the fitted trees through the order of floating-point additions in the
-`hist` tree method:
+The published results were produced with xgboost 3.0.5 and `n_jobs=-1` on a 24-thread
+machine. With that version and thread count, they reproduce bit for bit across all 208
+sites. Both settings change the fitted trees through the order of floating-point
+additions in the `hist` tree method:
 
 - Under xgboost 3.3.0, predictions correlate at 0.995 with the published ones, the mean
   absolute SHAP of VPD is higher at every site tested, and the site-level VPD to soil
-  moisture ratio is 6 to 21 percent higher. Out-of-sample R2 is unchanged.
+  moisture ratio is 6 to 21 percent higher. Out-of-sample R^2^ is unchanged.
 - Under 3.0.5 with a different thread count, the early-stopping iteration at one site
   ranged from 478 (24 threads) to 1021 (one thread), and the site-level ratio from 1.53
   to 1.69.
 
-These differences are per site; aggregates over 208 sites are affected less. The shap
-and scikit-learn versions make no difference: 0.52.0 and 1.9.0 reproduce the results of
-0.48.0 and 1.6.1 exactly.
+These differences are per site. Aggregates over 208 sites are affected less.
+
+The shap and scikit-learn versions make no difference. The results were produced with
+shap 0.48.0 and scikit-learn 1.6.1, and the newer pinned versions, 0.52.0 and 1.9.0,
+reproduce them exactly.
 
 ## Optional groups
 
@@ -93,5 +120,5 @@ render time, so no data folder is needed.
 .\preview_docs.ps1 -Render    # build into docs/_site/
 ```
 
-Outside Windows: `uv run quarto preview docs` and `uv run quarto render docs`. The
-published site is built by GitHub Actions on every push to `main`.
+On other systems, run `uv run quarto preview docs` and `uv run quarto render docs`.
+GitHub Actions builds the published site on every push to `main`.

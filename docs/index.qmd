@@ -2,18 +2,33 @@
 title: "Overview"
 ---
 
-Code for the analysis of vapor pressure deficit (VPD) and soil water content (SWC)
-effects on daytime net ecosystem production (NEP) at 208 forest eddy covariance sites.
+This site documents the code for the paper *An atmospheric dryness threshold limits daytime net CO~2~ uptake in
+forests* by Lukas Hörtnagl and coauthors, submitted to Nature Communications. The
+analysis outputs and a snapshot of the code are deposited in the ETH Research
+Collection: <https://doi.org/10.3929/ethz-c-000798579>.
 
-One XGBoost model is fitted per site. The models are interpreted with SHAP values,
-computed out-of-sample through 5-fold cross-validation, and with ALE curves. Site results
-are aggregated with equal weight per site, overall and per IGBP forest type.
+The code analyzes the effects of vapor pressure deficit (VPD) and soil water content (SWC)
+on daytime net ecosystem production (NEP) at 208 forest eddy covariance sites.
+
+Each site has its own XGBoost model. The models are interpreted with ALE curves and with
+out-of-sample SHAP values from 5-fold cross-validation. Site results are aggregated with
+equal weight per site, overall and per IGBP forest type.
 
 - Target: `NEP_ZSCORE`, half-hourly, daytime, four months of highest GPP per site.
   `GPP_ZSCORE`, `RECO_ZSCORE` and `ET_ZSCORE` run through the same pipeline as
   supporting analyses.
 - Predictors: `TA_ZSCORE`, `SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`.
 - All variables are z-scored within site.
+
+## Data flow
+
+The chart shows every script with the files it reads and writes, from the flux data to
+each figure and table. It also shows which archive of the deposit holds each file. Scroll to zoom
+and drag to pan. Hover over a script or file to see its direct links, and click it to see
+its full lineage.
+[Open the chart full screen](data_flow.html).
+
+<iframe src="data_flow.html" title="Data flow of the pipeline" width="100%" height="700" style="border:1px solid #ccc;" loading="lazy"></iframe>
 
 ## Repository layout
 
@@ -23,20 +38,21 @@ are aggregated with equal weight per site, overall and per IGBP forest type.
 | `scripts/20_subsets/` | Build the per-site analysis subset and compute z-scores |
 | `scripts/30_shap/` | Fit XGBoost models, compute SHAP values and ALE curves |
 | `scripts/40_aggregation/` | Aggregate SHAP values per site, across sites, by forest type and by stress stage |
-| `scripts/50_figures/` | Manuscript figures and tables |
-| `scripts/80_info/` | Sensitivity checks quoted in the text |
+| `scripts/50_figures/` | Manuscript figures, tables and data files, each script named after the items it produces |
+| `scripts/80_info/` | Checks quoted in the text or used in supplementary tables |
+| `scripts/90_deposit/` | Source Data, demo data, deposit archives and the data flow chart |
 | `src/` | Shared code: models, aggregation, plotting, statistics, curve fitting, stress stages, file handling, paths |
 | `config/` | `settings.yaml` and FLUXNET site metadata |
 | `data/worldmap/` | Natural Earth country outlines for the site map |
 
-Source data and analysis outputs are not in the repository. See [Data](data.qmd).
+Source data and analysis outputs are not in the repository (see [Data](data.qmd)).
 
 ## Reading order
 
-[Installation](installation.qmd), then [Data](data.qmd) to point the code at a data
-folder. [Pipeline](pipeline.qmd) lists the scripts in run order. [Methods](methods.qmd)
-documents the choices that are hard to read from the code. [Figures](figures.qmd) maps
-each display item to its script.
+Start with [Installation](installation.qmd), then [Data](data.qmd), which shows how to
+point the code at a data folder. [Pipeline](pipeline.qmd) lists the scripts in run order.
+[Methods](methods.qmd) documents the choices that are hard to read from the code.
+[Figures](figures.qmd) maps each display item to its script and shows the figures.
 
 ## License
 

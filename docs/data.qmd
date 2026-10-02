@@ -2,12 +2,12 @@
 title: "Data"
 ---
 
-Source files and analysis outputs are about 185 GB and are kept outside the repository.
-The code reaches them through one setting, `DATA_ROOT`.
+Source files and analysis outputs, about 185 GB, are kept outside the repository. The
+code finds them through one setting, `DATA_ROOT`.
 
 ## Data root
 
-Resolution order, first match wins:
+The code takes `DATA_ROOT` from the first of these that is set:
 
 1. environment variable `MS_FORESTS_VPD_DATA`
 2. `DATA_ROOT` in `config/settings.local.yaml`, not under version control
@@ -27,8 +27,8 @@ Or in `config/settings.local.yaml`:
 DATA_ROOT: D:/ms-forests-vpd-data
 ```
 
-All other paths in `config/settings.yaml` are relative to `DATA_ROOT` and resolved by
-`src/paths.py`, which raises on import if the folder is missing.
+All other paths in `config/settings.yaml` are relative to `DATA_ROOT`. `src/paths.py`
+resolves them and raises an error on import if the folder is missing.
 
 ## Folder layout
 
@@ -50,14 +50,15 @@ All other paths in `config/settings.yaml` are relative to `DATA_ROOT` and resolv
         └── 80_info/
 ```
 
-Each `00_raw/<source>/` folder holds the unpacked site archives plus `0-info/` with the
-site metadata file. File name patterns per source are in `config/settings.yaml`.
+Each `00_raw/<source>/` folder holds the unpacked site archives and a `0-info/` folder
+with the site metadata file. `config/settings.yaml` gives the file name patterns per
+source.
 
 ## Source datasets
 
-Half-hourly FLUXNET-formatted files from five sources. Where a site appears in more than
-one, the higher-priority source wins and the others extend the record backwards
-(`src/files.py::create_parquet_files`).
+The analysis uses half-hourly FLUXNET-formatted files from five sources. If a site
+appears in more than one, the higher-priority source wins and the others extend the
+record backwards (`src/files.py::create_parquet_files`).
 
 | Source | Access |
 |--------|--------|
@@ -71,27 +72,39 @@ All five require registration, so the raw files are not redistributed here.
 
 ## Deposited outputs
 
-The per-site subsets (`20_subsets/`), the aggregation outputs (`40_aggregation/`), the
-figure data files and the sensitivity outputs (`80_info/`) are deposited in the ETH
-Research Collection: <https://doi.org/10.3929/ethz-c-000798579> [DEPOSIT PENDING: link
-goes live with the final upload]. Unpacked into `outputs/`, they allow every stage from
-`30_shap` onward and every figure to run without the raw source files.
+The analysis outputs are deposited in the ETH Research Collection:
+<https://doi.org/10.3929/ethz-c-000798579>. The deposit holds:
+
+- one zip archive per output stage (`10_datasets`, `20_subsets`, `30_shap`,
+  `40_aggregation`, `50_plots`, `80_info`), with paths relative to `outputs/`
+- `ms-forests-vpd_SourceData.zip`, the data behind every figure, table and
+  Supplementary Data file, one or more files per display item
+- `ms-forests-vpd_demo.zip`, the model input of one site for the demo
+  ([Installation](installation.qmd#demo))
+- `ms-forests-vpd_code.zip`, a snapshot of this repository in the version used for the
+  paper
+- `DATA_FLOW.html`, the data flow chart with the archive of each file
+- `MANIFEST.csv`, a SHA-256 checksum for every deposited file
+
+The [data flow chart](data_flow.html) shows which archive holds each file.
 
 ## Entry points
 
-- Everything from `30_shap` onward runs from `outputs/20_subsets/`, one small parquet
-  file per site. Rebuilding those from raw data is needed only if the site selection or
-  the filtering changes.
-- The figure scripts read `outputs/40_aggregation/`, `outputs/30_shap/` and
-  `outputs/80_info/` and fit no model.
+- With the stage archives unpacked into `outputs/`, every stage from `30_shap` onward and
+  every figure runs without the raw source files. These stages start from
+  `outputs/20_subsets/`, one small parquet file per site. Rebuild those from raw data only
+  if the site selection or the filtering changes.
+- With `30_shap/` unpacked as well, the aggregation and the figures run without refitting
+  the models. The figure scripts read `outputs/40_aggregation/`, `outputs/30_shap/` and
+  `outputs/80_info/`.
 
 ## ERA5 credentials
 
-Needed only for scripts `16a` to `16d`, which rebuild the climate normals.
+Only scripts `16a` to `16d`, which rebuild the climate normals, need these credentials.
 
-- Google Earth Engine (`16a`, `16b`): an Earth Engine account and cloud project;
-  authenticate once with `earthengine authenticate`.
+- Google Earth Engine (`16a`, `16b`): an Earth Engine account and cloud project.
+  Authenticate once with `earthengine authenticate`.
 - Copernicus Climate Data Store (`16c`, `16d`): a CDS account and an API key in
   `~/.cdsapirc`. Requests are queued server-side and can take hours.
 
-Script `17` merges whatever is present, see [Methods](methods.qmd#era5-climate-normals).
+Script `17` merges whatever is present (see [Methods](methods.qmd#era5-climate-normals)).

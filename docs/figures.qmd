@@ -4,19 +4,20 @@ title: "Figures"
 
 Figure scripts read `<DATA_ROOT>/data/outputs/` and write to `50_plots/`. None fits a
 model. Output file names carry the display item (`FIG-N`, `SUPPFIG-N`, `SUPPTABLE-N`,
-`SUPPDATA-N`), and every figure script also writes the plotted values as a `_DATA.csv`.
+`SUPPDATA-N`). Every figure script also writes the plotted values to a `_DATA.csv` file. The
+[data flow chart](data_flow.html) traces each figure back to the data it is built from.
 
 | Script | Display item | Reads |
 |--------|--------------|-------|
 | `51_fig-1_worldmap_mat_map_era5.py` | Fig. 1, site map and climate | `10_datasets/17_..._era5.csv` |
-| `52_fig-2+suppfig-1+7_flameplots.py` | Fig. 2, the VPD effect on TA, SM and ET grids; Supplementary Fig. 1, the TA and SM effects; Supplementary Fig. 7, the flux maps; selected with `FIGURE` | `40_aggregation/` |
+| `52_fig-2+suppfig-1+7_flameplots.py` | Fig. 2, the VPD effect on TA, SM and ET grids; Supplementary Fig. 1, the TA and SM effects; Supplementary Fig. 7, the flux maps. `FIGURE` selects the item | `40_aggregation/` |
 | `53_fig-3+suppfig-3_sankeyplot_shapvalues_8stages.py` | Fig. 3, driver effects across the stages; Supplementary Fig. 3 with `VARIANT = "mirrored-stages"` | `40_aggregation/` |
 | `54_fig-4+supptable-7_vpd_response_curve_shap_agg.py` | Fig. 4, the VPD response curve; Supplementary Table 7, coefficients and thresholds in σ and kPa | `40_aggregation/`, `20_subsets/` |
 | `55_table-1+suppfig-4_threshold_robustness.py` | Table 1, fifteen of the eighteen tests; Supplementary Fig. 4, all eighteen | `40_aggregation/47_...csv` |
 | `56_suppfig-2+supptable-6_scenarios_boxplot_shapsums.py` | Supplementary Fig. 2, per-site effects across the stages; Supplementary Table 6, stage means and SD | `40_aggregation/` |
 | `57_suppfig-5_ale_response_curve.py` | Supplementary Fig. 5, ALE curves | `40_aggregation/46_...` |
 | `58_suppfig-6_vpd_response_by_flux.py` | Supplementary Fig. 6, the VPD response of NEP, GPP, RECO and ET | `40_aggregation/` per flux |
-| `59_supptable-4+5_stage_distributions+min_records.py` | Supplementary Table 4, driver distributions per stage; Supplementary Table 5, part a the minimum-records sweep, part b the matched Stage 7 to 8 comparison | `40_aggregation/45_...csv`, `30_shap/`, `80_info/89_...csv` |
+| `59_supptable-4+5_stage_distributions+min_records.py` | Supplementary Table 4, driver distributions per stage; Supplementary Table 5, (a) the minimum-records sweep and (b) the matched Stage 7 to 8 comparison | `40_aggregation/45_...csv`, `30_shap/`, `80_info/89_...csv` |
 | `60_suppfig-8_threshold_exceedance.py` | Supplementary Fig. 8, share of half-hours above the threshold | `40_aggregation/48_...csv`, `47_...csv` |
 | `61_supptable-3_stage_cutoff_percentiles.py` | Supplementary Table 3, stage definitions checked against `src/stages.py`, with the cut-off percentiles of script 87 | `80_info/87_...csv` |
 | `62_supptable-9_threshold_definitions.py` | Supplementary Table 9, peak, steepest decline and zero crossing | `80_info/81_...csv` |
@@ -28,17 +29,22 @@ model. Output file names carry the display item (`FIG-N`, `SUPPFIG-N`, `SUPPTABL
 | `68_suppfig-9_site_curves_kpa.py` | Supplementary Fig. 9, every site's VPD response on one kPa axis with the per-site crossings | `40_aggregation/41_...`, `20_subsets/` |
 | `69_supptable-10_factorial_sm_vpd.py` | Supplementary Table 10, SM and VPD effects in four soil water classes by four VPD classes | `40_aggregation/.../factorial-cells/44_...csv` |
 
+Supplementary Table 1, the list of sites with their data references, was assembled by
+hand from the outputs of stage 21. Supplementary Table 2, the per-site statistics, comes
+from the outputs of stages 17 and 21. Script 91 copies the data behind every display item
+into the Source Data archive (see [Data](data.qmd#deposited-outputs)).
+
 ## Figure 4 aggregation
 
-Script 54 aggregates the SHAP values with `aggfunc = 'mean'` within each site grid, and
-fits the curve to the cross-site median per bin. The `median` set for the two bin
-coordinate columns applies to the bin edges only, where every record carries the same
-value; it avoids floating-point noise in the labels and does not affect the SHAP values.
+Script 54 averages the SHAP values within each site grid (`aggfunc = 'mean'`) and fits
+the curve to the cross-site median per bin. The `median` set for the two bin coordinate
+columns applies only to the bin edges, where every record carries the same value. It
+avoids floating-point noise in the labels and does not affect the SHAP values.
 
 ## Table 1 and Supplementary Fig. 4
 
-Script 47 computes the eighteen tests and writes `47_THRESHOLD_Robustness_NEP_ZSCORE.csv`;
-script 55 renders that file as the table and the figure, so the two cannot disagree.
+Script 47 computes the eighteen tests and writes `47_THRESHOLD_Robustness_NEP_ZSCORE.csv`.
+Script 55 renders that file as both the table and the figure, so the two cannot disagree.
 
 | Group | Tests |
 |---|---|
@@ -47,15 +53,18 @@ script 55 renders that file as the table and the figure, so the two cannot disag
 | Site set | each site removed in turn; Europe, North America and both removed; records of at least 3, 5 and 10 years |
 
 Each row gives the test, the number of sites, the threshold in σ and in kPa, and the
-95 percent prediction band of the fit; every row converts to kPa with its own site set.
-Three rows carry another interval and are marked with an asterisk: the estimator row the
-range across its 23 settings, the leave-one-site-out row the range across the 208
-removals, and the ALE row the confidence interval of the mean of the per-site crossings.
-The bootstrap over sites that script 47 also writes (`boot_lower`, `boot_upper`) is
+95 percent prediction band of the fit. Every row converts to kPa with its own site set.
+Three rows, marked with an asterisk, carry another interval:
+
+- estimator row: the range across its 23 settings
+- leave-one-site-out row: the range across the 208 removals
+- ALE row: the confidence interval of the mean of the per-site crossings
+
+Script 47 also writes a bootstrap interval over sites (`boot_lower`, `boot_upper`). It is
 narrower than the prediction band in every test and is not shown.
 
-`MAIN_ROWS` in script 55 selects the fifteen rows of Table 1, one per kind of test with
-the depth rows as pairs; the figure shows all eighteen.
+`MAIN_ROWS` in script 55 selects the fifteen rows of Table 1: one per kind of test, with
+the depth rows as pairs.
 
 ## Script 57 settings
 
@@ -63,6 +72,68 @@ the depth rows as pairs; the figure shows all eighteen.
 |---------|---------|--------|
 | `PLOT_FEATURE` | `VPD_ZSCORE` | Predictor on the x axis |
 | `FLUX` | `NEP_ZSCORE` | Target |
-| `USE_MEDIAN` | `False` | Mean across sites; `True` for the median |
-| `USE_CI` | `True` | 95 percent interval in the labels; `False` for the standard error |
+| `USE_MEDIAN` | `False` | Mean across sites. `True` uses the median |
+| `USE_CI` | `True` | 95 percent interval in the labels. `False` uses the standard error |
 | `VARIANT` | `""` | Run variant to read |
+
+## Figures of the paper
+
+Script 95 writes web-size copies of the figures to `docs/figures/`. The
+full-resolution files and the data behind each figure are in the deposit (see
+[Data](data.qmd#deposited-outputs)). The legends are in the paper.
+
+### Fig. 1
+
+![Global distribution and bioclimatic diversity of forest eddy covariance sites. Script 51.](figures/fig1.png)
+
+### Fig. 2
+
+![Atmospheric dryness suppresses daytime forest net ecosystem production across the observed range of shallow soil moisture and ecosystem water fluxes. Script 52.](figures/fig2.png)
+
+### Fig. 3
+
+![Atmospheric dryness is the largest attributed constraint on forest daytime net ecosystem production as heat and drought intensify. Script 53.](figures/fig3.png)
+
+### Fig. 4
+
+![An atmospheric dryness threshold constrains daytime forest net ecosystem production. Script 54.](figures/fig4.png)
+
+### Supplementary Fig. 1
+
+![Effects of air temperature and soil moisture on daytime forest NEP, mapped on the grids of Fig. 2. Script 52.](figures/suppfig1.png)
+
+### Supplementary Fig. 2
+
+![Environmental controls on forest net ecosystem production across progressive stress stages. Script 56.](figures/suppfig2.png)
+
+### Supplementary Fig. 3
+
+![The stage sequence with atmospheric and soil dryness in reverse order. Script 53.](figures/suppfig3.png)
+
+### Supplementary Fig. 4
+
+![The VPD threshold of daytime NEP under 18 tests of the soil water layer, the model fitting and the site set. Script 55.](figures/suppfig4.png)
+
+### Supplementary Fig. 5
+
+![The VPD thresholds re-estimated with Accumulated Local Effects. Script 57.](figures/suppfig5.png)
+
+### Supplementary Fig. 6
+
+![VPD response of the net CO~2~ flux and its components across 208 forest sites. Script 58.](figures/suppfig6.png)
+
+### Supplementary Fig. 7
+
+![Bivariate functional responses of forest net CO~2~ and water fluxes to atmospheric and soil moisture anomalies. Script 52.](figures/suppfig7.png)
+
+### Supplementary Fig. 8
+
+![Share of peak-season daytime half-hours above the VPD threshold. Script 60.](figures/suppfig8.png)
+
+### Supplementary Fig. 9
+
+![Per-site VPD responses of daytime NEP. Script 68.](figures/suppfig9.png)
+
+### Supplementary Fig. 10
+
+![Records retained at each step of the data preparation. Script 66.](figures/suppfig10.png)
