@@ -767,6 +767,23 @@
    ]
   },
   {
+   "id": "80",
+   "path": "scripts/80_info/80_time_scale_coverage.py",
+   "label": "80 day coverage, time scales",
+   "stage": "80_info",
+   "reads": [
+    "outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv",
+    "outputs/10_datasets/12_parquet_merged/<SITE> (per site)",
+    "outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv",
+    "outputs/20_subsets/<SITE> subset parquet (per site)"
+   ],
+   "writes": [
+    "outputs/80_info/80_INFO_TimeScaleCoverage"
+   ],
+   "note": "",
+   "variants": []
+  },
+  {
    "id": "81",
    "path": "scripts/80_info/81_threshold_definitions.py",
    "label": "81 threshold definitions",
@@ -1569,6 +1586,14 @@
    "variants": [
     "factorial-cells"
    ]
+  },
+  {
+   "id": "outputs/80_info/80_INFO_TimeScaleCoverage",
+   "label": "80 day coverage, time scales",
+   "stage": "80_info",
+   "note": "",
+   "glob": "80_info/**/80_INFO_*",
+   "variants": []
   },
   {
    "id": "outputs/80_info/81_INFO_ThresholdDefinitions",

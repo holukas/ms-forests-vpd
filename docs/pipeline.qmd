@@ -128,6 +128,7 @@ the same numbers, a script of the 50s lays the INFO file out.
 
 | Script | Function |
 |--------|----------|
+| `80_time_scale_coverage.py` | Measured share of a peak-season day, and the records and Stage 8 records left at daily, monthly and yearly resolution |
 | `81_threshold_definitions.py` | Peak, steepest decline and zero crossing of the fitted VPD response, with range-edge flags |
 | `82_threshold_vs_site_vpd_range.py` | Per-site thresholds by quartile of the site's maximum VPD |
 | `83_leave_region_out.py` | Threshold and Stage 8 attribution with Europe, North America or both removed |
