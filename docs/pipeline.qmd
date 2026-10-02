@@ -169,4 +169,4 @@ script 94. It also writes a copy of the chart to `docs/data_flow.html` for this 
 The chart below shows every script, its files and the archive each file is deposited
 in. [Open the chart full screen](data_flow.html).
 
-<iframe src="data_flow.html" title="Data flow of the pipeline" width="100%" height="700" style="border:1px solid #ccc;" loading="lazy"></iframe>
+<iframe src="data_flow.html?theme=light" title="Data flow of the pipeline" width="100%" height="700" style="border:1px solid #ccc;" loading="lazy"></iframe>
