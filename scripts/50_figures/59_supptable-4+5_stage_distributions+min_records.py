@@ -257,7 +257,7 @@ MATCH_COLS = [('strict', 'Same month and hour of day'), ('covariate', 'Any month
 matching_rows = [
     ('Sites with records in both stages', lambda r: f"{int(r['sites_both_stages'])}"),
     ('Sites with matched pairs', lambda r: f"{int(r['sites_with_pairs'])}"),
-    ('Stage 8 records matched (share of all, %)',
+    ('Stage 8 records matched at sites with both stages (n, %)',
      lambda r: f"{int(r['stage8_records_matched']):,} ({r['share_records_matched'] * 100:.0f})"),
     ('Difference after matching, Stage 8 minus Stage 7: TA, SM, SW, VPD (σ)',
      lambda r: ', '.join(f"{r[f'balance_{c}_mean']:+.2f}" for c in
