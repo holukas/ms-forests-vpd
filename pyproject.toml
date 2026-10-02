@@ -11,17 +11,20 @@ requires-python = ">=3.12,<3.13"
 license = { text = "GPL-3.0-or-later" }
 authors = [{ name = "Lukas Hörtnagl", email = "lukas.hoertnagl@usys.ethz.ch" }]
 
-# Every runtime dependency is pinned to the version the published results were
-# produced with, so that `pip install .` gives the same environment as `uv sync`.
-# This is an analysis repository, not a library, and the pins are the record of
-# what ran. The one that matters most is xgboost: rerunning the same data and
+# Every direct dependency is pinned here. uv.lock fixes every package, and
+# `uv sync --locked` recreates that environment. `pip install .` installs these
+# pins only, not the lock file, so transitive packages may differ.
+# This is an analysis repository, not a library. The pin that matters most is
+# xgboost 3.0.5, the version that produced the results: rerunning the same data and
 # the same seeds under 3.3.0 instead of 3.0.5 gives different models, with
 # predictions correlating at 0.995, mean |SHAP| for VPD rising at every site
 # tested and the VPD/SWC ratio rising by 6 to 21 %. Do not change that pin
 # without rerunning the whole campaign and updating every number in the
-# manuscript. shap 0.52.0 and scikit-learn 1.9.0 reproduce the April results
-# exactly. numpy stays below 2.5 because numba, pulled in by shap, supports
-# no more, and numba 0.53 does not build on Python 3.12.
+# manuscript. shap 0.52.0 and scikit-learn 1.9.0 are newer than the versions that
+# produced the results (shap 0.48.0, scikit-learn 1.6.1) and reproduce those
+# results exactly. diive is installed from PyPI at the 0.91.1 release. numpy
+# stays below 2.5 because numba, pulled in by shap, supports no more, and
+# numba 0.53 does not build on Python 3.12.
 dependencies = [
     "diive==0.91.1",
     "pandas==3.0.5",

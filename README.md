@@ -35,9 +35,13 @@ Once the repository is public it is published at
 - **Python 3.12**, pinned in `.python-version` and enforced by `pyproject.toml`
 - [uv](https://docs.astral.sh/uv/) for dependency management
 
-Direct dependencies, pinned in `pyproject.toml` to the versions the published results
-were produced with, so that `pip install .` and `uv sync` give the same environment.
-Transitive versions are in `uv.lock`.
+Direct dependencies are pinned in `pyproject.toml`. `uv.lock` fixes every package,
+including the transitive ones, and `uv sync --locked` recreates that environment.
+`pip install .` installs the direct pins only, not the lock file, so transitive versions
+may differ. xgboost 3.0.5 is the version that produced the published results, and fitted
+models differ between xgboost versions. shap 0.52.0 and scikit-learn 1.9.0 are newer than
+the versions that produced the results (0.48.0 and 1.6.1) and reproduce them exactly.
+diive is installed from PyPI at release 0.91.1.
 
 | Package | Version |
 |---------|---------|
@@ -74,7 +78,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh              # macOS / Linux
 ```
 
 Tested on Windows 11 with Python 3.12. No special hardware is needed.
-[INSTALL TIME PENDING: measure `uv sync` in a clean clone with an empty uv cache]
+A fresh install with `uv sync --locked` and an empty uv cache takes about three minutes on a standard desktop computer.
 
 ## Demo
 
@@ -112,8 +116,8 @@ deposited in the ETH Research Collection: <https://doi.org/10.3929/ethz-c-000798
 [DEPOSIT PENDING: link goes live with the final upload]. Unpack them into
 `data/outputs/` to run everything from `30_shap` onward without the raw source files.
 The data behind each figure and table are also in the archive
-`ms-forests-vpd_SourceData.zip` of the same deposit, one file per display item, named
-after it (`Fig4_all_sites.csv`, `SupplementaryTable6.xlsx`).
+`ms-forests-vpd_SourceData.zip` of the same deposit, one or more files per display item,
+named after it (`Fig4_all_sites.csv`, `SupplementaryTable6.xlsx`).
 
 ## Running
 
@@ -138,19 +142,20 @@ uv run python scripts/50_figures/54_fig-4+supptable-7_vpd_response_curve_shap_ag
 Scripts are numbered in run order within each folder. The two model scripts take hours
 over the full site list; everything else is minutes. Display scripts carry the manuscript
 item they produce in their name (`fig-4`, `supptable-7`, `suppdata-1`), and their outputs
-carry the same token; scripts under `80_info/` write checks that are quoted in the text
-and read by no figure.
+carry the same token. Script 65 draws a figure that is not in the manuscript. Scripts
+under `80_info/` write checks that are quoted in the text or used in supplementary tables
+and Supplementary Data 2, and no figure reads them.
 
 ## Repository layout
 
 | Path | Contents |
 |------|----------|
 | `scripts/10_datasets/` | Source dataset assembly, variable coverage, ERA5 climate normals |
-| `scripts/20_subsets/` | Per-site analysis subsets and z-scores |
+| `scripts/20_subsets/` | Per-site analysis subsets and z-scores, records removed per filtering step |
 | `scripts/30_shap/` | Model fitting, SHAP values, ALE curves |
 | `scripts/40_aggregation/` | Aggregation per site, across sites, by IGBP, by stress stage |
-| `scripts/50_figures/` | Manuscript figures, tables and data files, one script per display item |
-| `scripts/80_info/` | Checks whose numbers are quoted in the text, read by no figure |
+| `scripts/50_figures/` | Manuscript figures, tables and data files, each script named after the items it produces |
+| `scripts/80_info/` | Checks quoted in the text or used in supplementary tables, read by no figure |
 | `scripts/90_deposit/` | Archives for the data deposit, the data flow chart, the Source Data and the demo data |
 | `src/` | Shared code: models, aggregation, plotting, statistics, I/O, paths |
 | `config/` | `settings.yaml` and FLUXNET site metadata |
