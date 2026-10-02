@@ -297,7 +297,9 @@ def gam_curve(x, y, alpha=None):
     basis = BSplines(xs, df=[GAM_DF], degree=[3])
 
     def fitted(a):
-        model = GLMGam(ys, smoother=basis, alpha=[a]).fit()
+        # The B-spline basis drops its first column, so the intercept must enter as exog,
+        # unpenalized; without it the fit is pinned to zero at the lowest bin.
+        model = GLMGam(ys, exog=np.ones((len(ys), 1)), smoother=basis, alpha=[a]).fit()
         edf = model.df_model + 1
         resid = np.sum((ys - model.fittedvalues) ** 2)
         gcv = len(ys) * resid / (len(ys) - edf) ** 2
