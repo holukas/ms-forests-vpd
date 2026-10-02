@@ -55,6 +55,7 @@ format:
     theme: cosmo
     toc: true
     toc-depth: 3
+    lightbox: true
     code-copy: true
     code-overflow: wrap
     link-external-newwindow: true
