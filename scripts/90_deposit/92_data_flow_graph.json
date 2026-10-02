@@ -561,13 +561,7 @@
     "outputs/50_plots/56_SUPPTABLE-6"
    ],
    "note": "Also reads 44 of the deep-sm variant for the last block of the table.",
-   "variants": [
-    "deep-sm",
-    "deeper-only",
-    "GPP",
-    "RECO",
-    "ET"
-   ]
+   "variants": []
   },
   {
    "id": "57",
@@ -1115,7 +1109,7 @@
    "id": "outputs/20_subsets/<SITE> subset parquet (per site)",
    "label": "21 subset parquet (per site)",
    "stage": "20_subsets",
-   "note": "21_subsets_parquet/<SITE>_subset_GPPhighest4_qc0_daytime.parquet; variants deep-sm, blocked-cv, no_ta, no_vpd",
+   "note": "21_subsets_parquet/<SITE>_subset_GPPhighest4_qc0_daytime.parquet. Main run and deep-sm only. The 21 tables of blocked-cv, no_ta and no_vpd point to the main subsets.",
    "glob": "20_subsets/**/21_subsets_parquet/*",
    "variants": [
     "deep-sm"
@@ -1185,6 +1179,7 @@
    "id": "outputs/30_shap/<FLUX>/ale/<SITE>_ale_curves (per site)",
    "label": "32 ALE curves (per site)",
    "stage": "30_shap",
+   "note": "Also the per-site plot <SITE>_ale_combined_<FLUX>.png.",
    "glob": [
     "30_shap/*/ale/**/??-???_ale_curves_*",
     "30_shap/*/ale/**/??-???_ale_combined_*"
@@ -1367,14 +1362,8 @@
    "label": "Suppl. Fig. 7 flux grids",
    "stage": "50_plots",
    "note": "",
-   "glob": [
-    "50_plots/*/conditional/**/52_SUPPFIG-7_*",
-    "50_plots/*/conditional/**/52_SUPPFIG-X_FlamePlotsFluxes-*"
-   ],
-   "variants": [
-    "deep-sm",
-    "deeper-only"
-   ]
+   "glob": "50_plots/*/conditional/**/52_SUPPFIG-7_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/53_FIG-3",
@@ -1444,34 +1433,16 @@
    "label": "Suppl. Fig. 2 per-site stage effects",
    "stage": "50_plots",
    "note": "",
-   "glob": [
-    "50_plots/*/conditional/**/56_SUPPFIG-2_*",
-    "50_plots/*/conditional/**/56_SUPPFIG-X_Stages_*"
-   ],
-   "variants": [
-    "deep-sm",
-    "deeper-only",
-    "GPP",
-    "RECO",
-    "ET"
-   ]
+   "glob": "50_plots/*/conditional/**/56_SUPPFIG-2_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/56_SUPPTABLE-6",
    "label": "Suppl. Table 6 stage effects",
    "stage": "50_plots",
    "note": "",
-   "glob": [
-    "50_plots/*/conditional/**/56_SUPPTABLE-6_*",
-    "50_plots/*/conditional/**/56_SUPPTABLE-X_Stages_*"
-   ],
-   "variants": [
-    "deep-sm",
-    "deeper-only",
-    "GPP",
-    "RECO",
-    "ET"
-   ]
+   "glob": "50_plots/*/conditional/**/56_SUPPTABLE-6_*",
+   "variants": []
   },
   {
    "id": "outputs/50_plots/57_SUPPFIG-5",
@@ -1663,7 +1634,7 @@
    "id": "outputs/80_info/89_INFO_StageMatching_SUMMARY",
    "label": "89 Stage 7 vs 8 matching",
    "stage": "80_info",
-   "note": "",
+   "note": "Summary read by 59, plus the per-site file 89_INFO_StageMatching_<FLUX>.csv.",
    "glob": "80_info/**/89_INFO_StageMatching_*",
    "variants": []
   },
