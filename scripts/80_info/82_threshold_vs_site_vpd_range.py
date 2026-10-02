@@ -44,8 +44,10 @@ def main():
                         / "21_SUBSETS_parquet_vars_stats_subsets.csv")
     thresholds = pd.read_csv(agg / "49_SiteThresholds.csv")
 
-    d = thresholds.merge(sites[['SITE', 'VPD_Z0', 'VPD_SD', 'VPD_MAX']], on='SITE')
-    d = d.copy()
+    # Every site enters its quartile; a site without a crossing keeps an empty threshold and
+    # is left out of the medians, so the last column shows where crossings are missing.
+    d = sites[['SITE', 'IGBP', 'VPD_Z0', 'VPD_SD', 'VPD_MAX']].merge(
+        thresholds[['SITE', 'threshold_z']], on='SITE', how='left')
     d.loc[d['SITE'].isin(PA_UNIT_SITES), PA_UNIT_COLS] /= 100
     d['vpd_max_kpa'] = d['VPD_MAX'] / 10
     d['threshold_kpa'] = (d['VPD_Z0'] + d['threshold_z'] * d['VPD_SD']) / 10
@@ -65,8 +67,8 @@ def main():
         sites_with_crossing=('threshold_z', lambda v: int(v.notna().sum())))
     print(g.to_string(float_format=lambda v: f"{v:.2f}"))
 
-    rho_sigma = stats.spearmanr(d['vpd_max_kpa'], d['threshold_z'])
-    rho_kpa = stats.spearmanr(d['vpd_max_kpa'], d['threshold_kpa'])
+    rho_sigma = stats.spearmanr(d['vpd_max_kpa'], d['threshold_z'], nan_policy='omit')
+    rho_kpa = stats.spearmanr(d['vpd_max_kpa'], d['threshold_kpa'], nan_policy='omit')
     print(f"\nSpearman against the site's own maximum VPD")
     print(f"  threshold in sigma: rho = {rho_sigma.statistic:+.3f}, p = {rho_sigma.pvalue:.4g}")
     print(f"  threshold in kPa:   rho = {rho_kpa.statistic:+.3f}, p = {rho_kpa.pvalue:.4g}")
@@ -80,8 +82,11 @@ def main():
     print("No growth would mean a fixed physical limit. Neither holds.")
 
     crossings = int(g['sites_with_crossing'].sum())
-    print(f"\nA zero crossing appears at {crossings} of {len(d)} sites, in every stratum,"
-          f" so the nonlinearity is not confined to sites that reach high absolute VPD.")
+    missing = d.loc[d['threshold_z'].isna(), ['SITE', 'stratum']]
+    print(f"\nA crossing from positive to negative appears at {crossings} of {len(d)} sites, in every"
+          f" stratum, so the nonlinearity is not confined to sites that reach high absolute VPD.")
+    for site, stratum in missing.itertuples(index=False):
+        print(f"  no crossing: {site} ({stratum})")
 
     outfile = info / "82_INFO_ThresholdVsSiteVPDRange.csv"
     g.to_csv(outfile)
