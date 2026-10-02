@@ -80,7 +80,10 @@ the depth rows as pairs.
 
 Script 95 writes web-size copies of the figures to `docs/figures/`. The
 full-resolution files and the data behind each figure are in the deposit (see
-[Data](data.qmd#deposited-outputs)). The legends are in the paper.
+[Data](data.qmd#deposited-outputs)). The legends are in the paper. The tables are not
+reproduced here. They are in the paper and its supplement, and their data are in
+`ms-forests-vpd_SourceData.zip` of the deposit, one or more files per table
+(`Table1.csv`, `SupplementaryTable6.xlsx`).
 
 ### Fig. 1
 
