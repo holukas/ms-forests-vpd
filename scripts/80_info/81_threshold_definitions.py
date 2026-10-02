@@ -45,7 +45,7 @@ def curve_points(x: np.ndarray, y: np.ndarray) -> dict:
     yf = np.polyval(coeffs, xf)
     slope = np.polyval(np.polyder(coeffs), xf)
 
-    crossings = np.where(np.diff(np.sign(yf)))[0]
+    crossings = np.where((yf[:-1] > 0) & (yf[1:] <= 0))[0]
     zero = (max(xf[i] - yf[i] * (xf[i + 1] - xf[i]) / (yf[i + 1] - yf[i]) for i in crossings)
             if len(crossings) else np.nan)
 

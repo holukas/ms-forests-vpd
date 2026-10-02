@@ -8,13 +8,14 @@ def calc_threshold(x_fit, y_fit, pi_lower, pi_upper):
     """
     Find the threshold and its 95% interval as zero crossings of the fit and its bands.
 
-    Each crossing is linearly interpolated. With several crossings, the highest
-    x value is returned. Returns (threshold, from pi_lower, from pi_upper).
+    Each crossing is linearly interpolated. Only crossings from positive to negative
+    count; with several, the highest x value is returned. Returns (threshold, from
+    pi_lower, from pi_upper).
     """
 
     def find_highest_zero_crossing(x, y):
-        # Find all indices where the sign of y changes from positive to negative (or vice versa)
-        sign_changes = np.where(np.diff(np.sign(y)))[0]
+        # Find all indices where y changes from positive to zero or negative
+        sign_changes = np.where((y[:-1] > 0) & (y[1:] <= 0))[0]
 
         if len(sign_changes) == 0:
             return np.nan  # Return NaN if the curve never crosses zero

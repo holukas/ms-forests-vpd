@@ -2,8 +2,8 @@
 Test whether the VPD threshold differs between forest types.
 
 One threshold per site, from the stage 41 TA by VPD file: VPD SHAP averaged per VPD bin,
-a fourth-order polynomial fitted, and the highest zero crossing taken, as in
-`src.fit.calc_threshold`. Sites with fewer than MIN_BINS filled bins are skipped. The
+a fourth-order polynomial fitted, and the highest crossing from positive to negative
+taken, as in `src.fit.calc_threshold`. Sites with fewer than MIN_BINS filled bins are skipped. The
 per-site values feed a Kruskal-Wallis test across forest types, pairwise Mann-Whitney
 tests with Holm correction, and a bootstrap interval for each forest type median. Rank
 tests are used because the per-site thresholds are skewed. The Figure 4 intervals cannot
@@ -30,14 +30,14 @@ N_BOOTSTRAP = 10000
 
 
 def site_threshold(binned: pd.DataFrame) -> float:
-    """Highest zero crossing of the fitted curve for one site, in sigma."""
+    """Highest positive to negative crossing of the fitted curve for one site, in sigma."""
     curve = binned.groupby('BIN_VPD_ZSCORE')['VPD_ZSCORE_SHAPVALS'].mean()
     if len(curve) < MIN_BINS:
         return np.nan
     x, y = curve.index.to_numpy(float), curve.to_numpy(float)
     xf = np.linspace(x.min(), x.max(), 500)
     yf = np.polyval(np.polyfit(x, y, 4), xf)
-    crossings = np.where(np.diff(np.sign(yf)))[0]
+    crossings = np.where((yf[:-1] > 0) & (yf[1:] <= 0))[0]
     if len(crossings) == 0:
         return np.nan
     return max(xf[i] - yf[i] * (xf[i + 1] - xf[i]) / (yf[i + 1] - yf[i]) for i in crossings)

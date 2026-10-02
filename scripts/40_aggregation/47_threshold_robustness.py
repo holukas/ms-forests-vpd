@@ -1,7 +1,7 @@
 """
 Robustness tests of the VPD threshold.
 
-The estimator is the highest zero crossing of a fourth-order polynomial fitted to the
+The estimator is the highest positive to negative crossing of a fourth-order polynomial fitted to the
 cross-site median VPD SHAP per bin of the TA by VPD grid. Each row has two kPa intervals:
 the prediction band of the fit (`lower`, `upper`), shown in the display items, and a site
 bootstrap with 2000 resamples (`boot_lower`, `boot_upper`). Three rows put another
@@ -83,22 +83,22 @@ subsets = site_stats()
 # ---------------------------------------------------------------------------
 
 def highest_crossing(x, y):
-    """Highest x where the curve crosses zero, matching src.fit.calc_threshold."""
-    sign_changes = np.where(np.diff(np.sign(y)))[0]
+    """Highest x where the curve crosses from positive to negative, matching src.fit.calc_threshold."""
+    sign_changes = np.where((y[:-1] > 0) & (y[1:] <= 0))[0]
     if len(sign_changes) == 0:
         return np.nan
     return max(x[i] - y[i] * (x[i + 1] - x[i]) / (y[i + 1] - y[i]) for i in sign_changes)
 
 
 def crossing(x, y):
-    """Highest zero crossing of the fitted polynomial, or nan."""
+    """Highest positive to negative crossing of the fitted polynomial, or nan."""
     ok = np.isfinite(y)
     if ok.sum() <= POLY_DEGREE + 1:
         return np.nan
     coef = np.polyfit(x[ok], y[ok], POLY_DEGREE)
     fine = np.linspace(x[ok].min(), x[ok].max(), 2000)
     vals = np.polyval(coef, fine)
-    sign_change = np.where(np.diff(np.sign(vals)))[0]
+    sign_change = np.where((vals[:-1] > 0) & (vals[1:] <= 0))[0]
     if len(sign_change) == 0:
         return np.nan
     roots = [fine[i] - vals[i] * (fine[i + 1] - fine[i]) / (vals[i + 1] - vals[i])

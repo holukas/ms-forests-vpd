@@ -3,7 +3,7 @@ Figure 4 and Supplementary Table 7: the VPD response curve of NEP.
 
 Panel a plots the SHAP effect of VPD on NEP per VPD bin, aggregated across sites and
 colored by air temperature, with a fourth-order polynomial fit and its 95% prediction
-interval. Panels b to e show each forest type. The threshold is the highest zero crossing
+interval. Panels b to e show each forest type. The threshold is the highest positive to negative crossing
 of the fit, bounded by the crossings of the interval. Supplementary Table 7 lists the
 coefficients, R2 and the threshold in sigma and in kPa; the kPa value uses each site's VPD
 mean and standard deviation, averaged over sites, with CD-Ygb converted from Pa first.
