@@ -108,10 +108,11 @@ Nine record subsets defined on z-scores in `src/stages.py`, with cut-offs at 0.3
 | 8 | extremely hot, extremely dry soil, extremely dry air |
 
 Standardization does not make the drivers Gaussian; script 87 measures the empirical
-share of records below each cut-off (within five percentage points of the Gaussian share
+share of records below each cut-off (within six percentage points of the Gaussian share
 at the median site, within two at the Stage 8 cut-offs). Shortwave radiation is not
 constrained by the stages and rises from 0.34σ at Stage 1 to 0.65σ at Stage 8 (script
-45). The sequence is not a factorial design; two tests address that.
+45). The sequence is not a factorial design. Three tests address that: the mirrored stage
+order, the matched records and the factorial cells.
 
 ### Stage order
 
@@ -147,6 +148,32 @@ writes the summary as part b of Supplementary Table 5.
 
 Shortwave radiation is balanced after matching. The residual TA imbalance of 0.15σ
 contributes 0.03σ through the TA attribution.
+
+### Factorial cells
+
+`FACTORIAL_CELLS` in `src/stages.py` splits the records into four soil water classes by
+four VPD classes at the same cut-offs as the stages, with TA unconstrained. Class 0 is
+the middle 25 percent, and classes 1 to 3 step toward stress at 0.714 and 1.282, down for
+soil water and up for VPD. Records with wet soil or low VPD fall in no cell. Script 44
+with `STAGE_SEQUENCE = "factorial"` aggregates the sixteen cells into its own
+`factorial-cells/` folder. Script 69 writes Supplementary Table 10: per cell the sites,
+the records and the SM, VPD and net effects as the mean of the site means, with the
+interquartile range across sites.
+
+With the other driver in its central range, the VPD effect at extreme VPD (-0.40σ) is
+about five times the SM effect at extreme SM (-0.08σ). Each effect is nearly the same in
+every class of the other driver: -0.40σ at extreme VPD in all four soil water classes and
+-0.08σ at extreme soil water in all four VPD classes.
+
+### Stage 8 by site
+
+Part a of Supplementary Table 5 (script 59) raises a minimum number of Stage 8 records
+per site from 1 to 100 and reports the sites that remain, their mean VPD and SM effects
+and the ratio of the two with a bootstrap interval over sites. Two rows pair the effects
+at each site, each the mean over the Stage 8 records of that site: the share of sites at
+which the VPD effect is more negative than the SM effect, and the median across sites of
+the VPD minus SM effect. Without a minimum, the VPD effect is the more negative at 146 of
+160 sites (91 percent), with a median difference of -0.37σ.
 
 ## Aggregation across sites
 
