@@ -80,6 +80,11 @@ def calc_ci_95(values):
     return mean, mean - ci, mean + ci
 
 
+def fmt2(value):
+    """Two decimals for a label. A value that rounds to zero prints as 0.00, not -0.00."""
+    return f'{round(value, 2) + 0.0:.2f}'
+
+
 # ==============================
 # CONFIGURATION
 # ==============================
@@ -238,10 +243,10 @@ if mean_effect is not None and std_effect is not None:
         # Format label based on USE_CI flag
         if USE_CI:
             _, ci_lower, ci_upper = calc_ci_95(individual_thresholds)
-            label_text = f'Threshold\nx={threshold_main:.2f} [{ci_lower:.2f}, {ci_upper:.2f}]'
+            label_text = f'Threshold\nx={fmt2(threshold_main)} [{fmt2(ci_lower)}, {fmt2(ci_upper)}]'
         else:
             threshold_sem = individual_thresholds.std() / np.sqrt(len(individual_thresholds))
-            label_text = f'Threshold\nx={threshold_main:.2f}±{threshold_sem:.2f} SEM'
+            label_text = f'Threshold\nx={fmt2(threshold_main)}±{fmt2(threshold_sem)} SEM'
 
         ax_all.annotate(label_text,
                         xy=(threshold_main, 0),
@@ -341,9 +346,9 @@ if mean_effect is not None and std_effect is not None:
                 # Format label based on USE_CI flag
                 if USE_CI:
                     _, ci_lower, ci_upper = calc_ci_95(igbp_individual_thresholds)
-                    label_text = f'x={igbp_threshold_main:.2f} [{ci_lower:.2f}, {ci_upper:.2f}]'
+                    label_text = f'x={fmt2(igbp_threshold_main)} [{fmt2(ci_lower)}, {fmt2(ci_upper)}]'
                 else:
-                    label_text = f'x={igbp_threshold_main:.2f}±{igbp_sem:.2f} SEM'
+                    label_text = f'x={fmt2(igbp_threshold_main)}±{fmt2(igbp_sem)} SEM'
 
                 # Anchored in axes coordinates, not data coordinates. Placing it a fixed
                 # distance left of the marker pushed it into the y axis whenever the

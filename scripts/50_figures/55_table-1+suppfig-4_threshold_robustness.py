@@ -153,9 +153,9 @@ for group, ys in group_rows.items():
              fontsize=AX_LABELS_FONTSIZE * 0.68, color=COLOR_GREY, fontweight='bold')
 axt.text(COL_N, max(ypos) + 0.66, 'sites', transform=TAB, ha='right', va='center',
          fontsize=AX_LABELS_FONTSIZE * 0.68, color=COLOR_GREY, fontweight='bold')
-axt.text(COL_SIGMA, max(ypos) + 0.66, 'sigma', transform=TAB, ha='right', va='center',
+axt.text(COL_SIGMA, max(ypos) + 0.66, 'σ', transform=TAB, ha='right', va='center',
          fontsize=AX_LABELS_FONTSIZE * 0.68, color=COLOR_GREY, fontweight='bold')
-axt.text(COL_VALUE, max(ypos) + 0.66, 'kPa [95 % band]', transform=TAB, ha='left',
+axt.text(COL_VALUE, max(ypos) + 0.66, 'kPa [95% band]', transform=TAB, ha='left',
          va='center', fontsize=AX_LABELS_FONTSIZE * 0.68, color=COLOR_GREY,
          fontweight='bold')
 

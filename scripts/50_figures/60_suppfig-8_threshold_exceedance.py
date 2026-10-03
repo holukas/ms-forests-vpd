@@ -59,6 +59,8 @@ per_biome = pd.read_csv(agg / f'48_EXCEEDANCE_PerBiome_{FLUX}.csv').set_index('I
 robustness = pd.read_csv(agg / f'47_THRESHOLD_Robustness_{FLUX}.csv')
 threshold_kpa = float(robustness.loc[robustness['test'] == 'PUBLISHED REFERENCE',
                                      'threshold_kpa'].iloc[0])
+threshold_sigma = float(robustness.loc[robustness['test'] == 'PUBLISHED REFERENCE',
+                                       'threshold_sigma'].iloc[0])
 
 pooled = per_biome.loc['all', 'pooled_pct']
 counts = per_site['IGBP'].value_counts()
@@ -72,7 +74,7 @@ ranked = per_site.sort_values('above_published_kpa_pct').reset_index(drop=True)
 axs[0].bar(ranked.index, ranked['above_published_kpa_pct'], width=1.0,
            color=[COLORS[i] for i in ranked['IGBP']], linewidth=0)
 axs[0].axhline(pooled, color='black', lw=1.2, linestyle='--', zorder=3)
-axs[0].text(2, pooled + 2, f'all half-hours, {pooled:.0f} %', fontsize=AX_LABELS_FONTSIZE * 0.85)
+axs[0].text(2, pooled + 2, f'all half-hours, {pooled:.0f}%', fontsize=AX_LABELS_FONTSIZE * 0.85)
 axs[0].set_xlim(-2, len(ranked) + 1)
 axs[0].set_ylim(0, 100)
 axs[0].set_xlabel(f'Sites, ranked (n = {len(ranked)})', fontsize=AX_LABELS_FONTSIZE)
@@ -101,7 +103,7 @@ rng = np.random.default_rng(42)
 global_sigma_median = per_site['above_published_sigma_pct'].median()
 axs[2].axhline(global_sigma_median, color='black', lw=1.2, linestyle='--', zorder=1)
 # The label sits in a margin on the right, because the point clouds reach the line.
-axs[2].text(3.55, global_sigma_median + 1.5, f'all sites\ncrossing\n{global_sigma_median:.0f} %',
+axs[2].text(3.55, global_sigma_median + 1.5, f'{global_sigma_median:.0f}% above\nall-sites\ncrossing\n({threshold_sigma:.2f} $\\sigma$)',
             fontsize=AX_LABELS_FONTSIZE * 0.85, va='bottom')
 
 # The median bar and its number take the color of the group, so each group reads against
@@ -113,7 +115,7 @@ for pos, igbp in enumerate(IGBP_ORDER):
                    marker=MARKERS[igbp], color=COLORS[igbp], linewidths=0, zorder=2)
     axs[2].plot([pos - 0.32, pos + 0.32], [g.median()] * 2, color=COLORS[igbp], lw=1.8,
                 zorder=3)
-    axs[2].text(pos, g.max() + 1.5, f'{g.median():.0f} %', color=COLORS[igbp], ha='center',
+    axs[2].text(pos, g.max() + 1.5, f'{g.median():.0f}%', color=COLORS[igbp], ha='center',
                 va='bottom', fontsize=AX_LABELS_FONTSIZE * 0.85, zorder=4)
     tick_labels.append(f'{igbp}\n{per_biome.loc[igbp, "biome_threshold_z"]:.2f} '
                        f'$\\sigma$\nn = {len(g)}')

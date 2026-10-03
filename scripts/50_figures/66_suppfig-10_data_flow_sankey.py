@@ -25,7 +25,7 @@ VARIANT = ""
 STEPS = [
     ('all_records', 'All half-hourly\nrecords'),
     ('measured_nee', 'Measured NEE\n(QC flag 0)'),
-    ('daytime', 'Daytime\n(SW_IN_POT > 20)'),
+    ('daytime', 'Daytime\n(SW_IN_POT > 20 W m⁻²)'),
     ('peak_months', 'Four peak-GPP\nmonths'),
     ('year_balanced', 'Equal year coverage\nper month'),
     ('complete_cases', 'No missing\npredictor or NEP'),
@@ -92,7 +92,7 @@ def main():
         ax.add_patch(plt.Rectangle((x, 0), node_w, n, facecolor=INK, edgecolor='none', zorder=3))
         ax.text(x + node_w / 2, n + start * 0.065, label, ha='center', va='bottom',
                 fontsize=10, color=INK, linespacing=1.35)
-        ax.text(x + node_w / 2, n + start * 0.012, f"{n:,.0f}  ({n / start * 100:.1f} %)",
+        ax.text(x + node_w / 2, n + start * 0.012, f"{n:,.0f}  ({n / start * 100:.1f}%)",
                 ha='center', va='bottom', fontsize=9.5, color=INK, fontweight='bold')
 
         if i == len(STEPS) - 1:

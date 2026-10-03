@@ -40,7 +40,7 @@ if not SHOW_RECO:
 NAMES = {'NEP_ZSCORE': 'NEP', 'GPP_ZSCORE': 'GPP', 'RECO_ZSCORE': 'RECO', 'ET_ZSCORE': 'ET'}
 # Where each flux comes from. Only NEP is a measurement, and the legend says so.
 SOURCE = {'NEP_ZSCORE': 'measured', 'GPP_ZSCORE': 'partitioned',
-          'RECO_ZSCORE': 'partitioned', 'ET_ZSCORE': 'from gap-filled LE'}
+          'RECO_ZSCORE': 'partitioned', 'ET_ZSCORE': 'from gap-filled latent heat flux'}
 # Okabe and Ito, distinguishable for every common color vision deficiency.
 COLORS = {'NEP_ZSCORE': '#000000', 'GPP_ZSCORE': '#009E73',
           'RECO_ZSCORE': '#D55E00', 'ET_ZSCORE': '#0072B2'}
@@ -154,7 +154,9 @@ for flux, thr in marked_thresholds:
     y_text = ymax + (0.14 - 0.07 * LABEL_ROW[flux]) * span
     ax.plot([thr, thr], [0, y_text], ls=(0, (1, 3)), color=COLORS[flux], lw=1.2, zorder=2)
     ha = LABEL_HA.get(flux, 'center')
-    ax.text(thr + {'left': 0.04, 'right': -0.04}.get(ha, 0), y_text, f"{NAMES[flux]} {thr:.2f}$\sigma$", color=COLORS[flux], ha=ha,
+    # Unicode minus, as in the tick labels, not the hyphen that string formatting gives.
+    thr_text = f'{thr:.2f}'.replace('-', '\N{MINUS SIGN}')
+    ax.text(thr + {'left': 0.04, 'right': -0.04}.get(ha, 0), y_text, f"{NAMES[flux]} {thr_text}$\sigma$", color=COLORS[flux], ha=ha,
             va='bottom', fontsize=AX_LABELS_FONTSIZE * 0.9, fontweight='bold', zorder=6,
             bbox=dict(facecolor='white', edgecolor='none', pad=1.5))
 

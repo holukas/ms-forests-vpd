@@ -164,7 +164,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
     # Labels & Column logic
     xlabel = rf'{beautify[xvar]} ($\sigma$)'
     ylabel = rf'{beautify[yvar]} ($\sigma$)'
-    zlabel = rf'{beautify[zvar]} effect on NEP ($\sigma$)' if '_SHAPVALS' in zvar else rf'{beautify[zvar]} ($\sigma$)'
+    zlabel = rf'{beautify[zvar]} effect on daytime NEP ($\sigma$)' if '_SHAPVALS' in zvar else rf'{beautify[zvar]} ($\sigma$)'
 
     # Bin coordinates are read as the median, which is exact; a mean of equal values
     # carries floating point noise into the labels. Both axes are always bin columns here.
