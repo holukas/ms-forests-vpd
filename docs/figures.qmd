@@ -22,7 +22,7 @@ model. Output file names carry the display item (`FIG-N`, `TABLE-N`, `SUPPFIG-N`
 | `60_suppfig-8_threshold_exceedance.py` | Supplementary Fig. 8, share of half-hours above the threshold | `40_aggregation/48_...csv`, `47_...csv` |
 | `61_supptable-3_stage_cutoff_percentiles.py` | Supplementary Table 3, stage definitions checked against `src/stages.py`, with the cut-off percentiles of script 87 | `80_info/87_...csv` |
 | `62_supptable-9_threshold_definitions.py` | Supplementary Table 9, peak, steepest decline and zero crossing | `80_info/81_...csv` |
-| `63_supptable-8_threshold_vs_site_vpd_range.py` | Supplementary Table 8, per-site threshold by quartile of site VPD range | `80_info/82_...csv` |
+| `63_supptable-8_threshold_vs_site_vpd_range.py` | Supplementary Table 8, per-site threshold by quartile of site maximum VPD | `80_info/82_...csv` |
 | `64_suppdata-2_site_skill.py` | Supplementary Data 2, site model skill under both cross-validation splits | `80_info/86_...csv`, `20_subsets/` |
 | `65_suppfig_biome_threshold_distributions.py` | Per-site thresholds by forest type, not in the manuscript | `40_aggregation/49_...csv` |
 | `66_suppfig-10_data_flow_sankey.py` | Supplementary Fig. 10, records retained at each filter | `20_subsets/22_data_flow.csv` |
