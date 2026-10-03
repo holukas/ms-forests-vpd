@@ -45,7 +45,7 @@ subsets_df = pd.read_csv(data_path("data/outputs/20_subsets/21_SUBSETS_parquet_v
 counts = subsets_df.groupby('IGBP').agg(n_sites=('SITE', 'size'), n_years=('N_YEARS', 'sum'))
 n_sites_counted = counts['n_sites'].sum()
 n_years_counted = counts['n_years'].sum()
-IGBP_ORDER = ['ENF', 'DBF', 'EBF', 'MF']
+IGBP_ORDER = ['ENF', 'DBF', 'MF', 'EBF']  # the order used in all other figures and tables
 
 valid_df = datasets_df.dropna(subset=['ERA5_MAT_1991_2020', 'ERA5_MAP_1991_2020']).copy()
 n_sites_climate = len(valid_df)
@@ -183,7 +183,7 @@ plot_map_region(ax_world, extent=[-180, 180, -60, 85], title=f'Global forest sit
 
 # Legend under the map. Short labels only: the site-year counts and the percentages go in
 # the figure caption instead, which is where they were asked for.
-# Explicit handles, so the legend order is by size and does not follow the drawing order.
+# Explicit handles, so the legend follows IGBP_ORDER and not the drawing order.
 legend_handles = [
     Line2D([], [], linestyle='none', marker=igbp_markers[igbp]['marker'],
            markerfacecolor=igbp_markers[igbp]['color'],
