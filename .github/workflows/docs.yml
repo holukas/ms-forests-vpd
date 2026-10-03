@@ -23,7 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Same version as the quarto-cli pin in uv.lock
       - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.10.18
 
       # Nothing in docs/ is executed at render time (execute.enabled is false in
       # _quarto.yml), so no Python environment and no data folder are needed here.
