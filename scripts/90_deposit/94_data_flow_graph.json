@@ -799,10 +799,12 @@
    "stage": "80_info",
    "reads": [
     "outputs/40_aggregation/49_SiteThresholds + BiomeThresholds",
-    "outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv"
+    "outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv",
+    "outputs/30_shap/<FLUX>/conditional/<SITE>_shap-conditional_<FLUX>.parquet (per site)"
    ],
    "writes": [
-    "outputs/80_info/82_INFO_ThresholdVsSiteVPDRange"
+    "outputs/80_info/82_INFO_ThresholdVsSiteVPDRange",
+    "outputs/80_info/82_INFO_DriverEffectDirection"
    ],
    "note": "",
    "variants": []
@@ -1595,6 +1597,14 @@
    "stage": "80_info",
    "note": "",
    "glob": "80_info/**/82_INFO_ThresholdVsSiteVPDRange*",
+   "variants": []
+  },
+  {
+   "id": "outputs/80_info/82_INFO_DriverEffectDirection",
+   "label": "82 driver effect direction",
+   "stage": "80_info",
+   "note": "",
+   "glob": "80_info/**/82_INFO_DriverEffectDirection*",
    "variants": []
   },
   {

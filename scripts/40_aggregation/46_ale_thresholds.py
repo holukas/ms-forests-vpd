@@ -2,7 +2,7 @@
 Put the per-site ALE curves on a common grid and derive VPD thresholds from them.
 
 Each site's curve is interpolated to the grid and smoothed with a fourth-order polynomial;
-its threshold is the first positive to negative crossing. A group's threshold (`ALL SITES`,
+its threshold is the highest positive to negative crossing. A group's threshold (`ALL SITES`,
 then one row per forest type) is the mean of the per-site crossings, with a 95% interval
 from the t distribution; sites whose curve never crosses are left out. The
 `ALL SITES (pooled curve)` row is a different quantity: the crossing of the cross-site

@@ -4,7 +4,7 @@ downloading the full deposit.
 
 The archive holds the site table of stage 21 reduced to DEMO_SITE, the model input of
 that site, and the published output of script 31 for it as the expected result. Paths
-inside the archive are relative to data/outputs/, like the stage archives of script 91.
+inside the archive are relative to data/outputs/, like the stage archives of script 93.
 Unpacked into the data/outputs/ folder of an empty data root, script 31 runs as
 committed and fits the one site. README.txt in the archive gives the steps.
 

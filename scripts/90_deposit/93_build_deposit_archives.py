@@ -20,8 +20,8 @@ Without arguments it is a dry run. With ``--build`` it writes into
 <DATA_ROOT>/deposit_eth_research_collection/ the archives
 ms-forests-vpd_outputs_<stage>.zip (replacing existing ones), MANIFEST.csv
 (sha256 per file) and ARCHIVES.csv. Other zip archives already in that folder,
-the Source Data of script 91, are listed in both files as they are, so run 91
-first.
+the Source Data of script 91 and the demo of script 92, are listed in both files
+as they are, so run 91 and 92 first.
 """
 import csv
 import hashlib
