@@ -22,6 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # A checkout gives every file the time of the checkout. Set each page to the
+      # time of its last commit, which Quarto shows as "Last updated".
+      - name: Set page dates from git
+        run: |
+          for f in docs/*.qmd; do
+            touch -d "$(git log -1 --format=%cI -- "$f")" "$f"
+          done
 
       # Same version as the quarto-cli pin in uv.lock
       - uses: quarto-dev/quarto-actions/setup@v2

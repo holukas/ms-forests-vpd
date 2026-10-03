@@ -11,6 +11,11 @@ execute:
   enabled: false
   freeze: true
 
+# "Last updated" in the right sidebar (_last-modified-sidebar.html). Quarto reads the
+# file modification time, which the docs workflow sets to the last commit of each page.
+date-modified: last-modified
+date-format: "D MMMM YYYY"
+
 website:
   title: "ms-forests-vpd"
   description: "Code documentation for the forest VPD / soil moisture SHAP analysis"
@@ -59,3 +64,5 @@ format:
     code-copy: true
     code-overflow: wrap
     link-external-newwindow: true
+    include-after-body:
+      - _last-modified-sidebar.html
