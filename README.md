@@ -184,7 +184,7 @@ diive is installed from PyPI at release 0.91.1.
 Cite the code as:
 
 Hörtnagl, L. (2026). ms-forests-vpd: analysis code for atmospheric dryness and forest net
-CO<sub>2</sub> uptake. <https://github.com/holukas/ms-forests-vpd>
+CO<sub>2</sub> uptake (version v2-revised). <https://github.com/holukas/ms-forests-vpd>
 
 The data and code deposit is in the ETH Research Collection:
 <https://doi.org/10.3929/ethz-c-000798579>. [`CITATION.cff`](CITATION.cff) holds the same

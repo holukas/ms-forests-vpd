@@ -10,6 +10,8 @@ authors:
 repository-code: "https://github.com/holukas/ms-forests-vpd"
 url: "https://holukas.github.io/ms-forests-vpd/"
 license: GPL-3.0-or-later
+version: "v2-revised"
+date-released: "2026-10-04"
 identifiers:
   - type: doi
     value: "10.3929/ethz-c-000798579"
