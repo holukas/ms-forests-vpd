@@ -66,7 +66,8 @@ FILES = [
     ("SupplementaryFig10.csv", "Supplementary Fig. 10", f"{PLOTS}/66_SUPPFIG-10_DataFlow_Sankey_DATA.csv"),
     ("SupplementaryTables1-2_site_statistics.csv", "Supplementary Tables 1 and 2",
      "20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv"),
-    ("SupplementaryTable1_ERA5_climate.csv", "Supplementary Table 1",
+    ("SupplementaryTable1_climate.csv", "Supplementary Table 1", f"{PLOTS}/51_FIG-1_WorldMap_MAT_MAP_ERA5_DATA.csv"),
+    ("SupplementaryTable1_climate_full.csv", "Supplementary Table 1",
      "10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv"),
     ("SupplementaryTable3_stage_definitions.csv", "Supplementary Table 3",
      f"{PLOTS}/61_SUPPTABLE-3_StageDefinitions_NEP_ZSCORE.csv"),
@@ -106,6 +107,13 @@ script whose number starts the source file name. The deposit in the ETH Research
 Collection (https://doi.org/10.3929/ethz-c-000798579) holds the same outputs together with
 every earlier step and the sensitivity runs. Column names follow the pipeline; the legend
 of each display item gives the units. Licence: CC BY 4.0.
+
+Site climate (Fig. 1b, Supplementary Table 1): SupplementaryTable1_climate.csv lists MAT and
+MAP of the 208 sites with the source of each value (ERA5_MAT_SOURCE, ERA5_MAP_SOURCE) and,
+where ERA5-Land replaces the ERA5 data of the flux product, the reason (ERA5_MAT_REASON,
+ERA5_MAP_REASON). SupplementaryTable1_climate_full.csv is the complete site table of the
+pipeline with the same columns. It also holds US-xBN, which has no soil water data in the
+peak months and is not part of the 208 sites.
 
 {table}
 """
