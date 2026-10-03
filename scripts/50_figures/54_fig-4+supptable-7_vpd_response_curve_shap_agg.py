@@ -207,7 +207,8 @@ subsetdf.to_csv(_outfilepath, index=False)
 X_data = subsetdf.iloc[:, 0].values
 Y_data = subsetdf.iloc[:, 1].values
 Z_data = subsetdf.iloc[:, 2].values
-# todo check SEM
+# Standard error across sites, used only to set the y range of the panels, so that the range
+# stays as it was when the panel showed it as error bars
 _sem = subsetdf.iloc[:, 3].values
 _sem_upper = Y_data + _sem
 _sem_lower = Y_data - _sem
@@ -251,16 +252,6 @@ for i, label in list(enumerate(bin_labels)):
     # semplot = ax_all.scatter(X_data[indices], _sem_lower[indices], label="Standard error", **plotparams)
     # ax_all.scatter(X_data[indices], _sem_upper[indices], **plotparams)
 
-    # 3. Plot the error bars
-    semplot = ax_all.errorbar(X_data[indices], Y_data[indices],
-                              yerr=[_sem[indices], _sem[indices]],
-                              fmt='none',  # 'none' ensures it only plots the bars, no markers/lines
-                              ecolor=fill_color,  # Color of the error bars
-                              elinewidth=2,  # Thickness of the error bar line
-                              capsize=0,  # Length of the horizontal caps at the ends
-                              alpha=0.3,  # Match your scatter alpha, or set to 1
-                              zorder=1)  # Keeps it behind the scatter points
-
 if show_fit:
     fillbetweenplot = plot.add_fit(
         ax=ax_all, x_fit=x_fit, y_fit=y_fit, pi_lower=pi_lower, pi_upper=pi_upper,
@@ -276,12 +267,6 @@ else:
 # plotparams = dict(marker='o', s=5, zorder=1, alpha=1, edgecolors='none', color=color_points)
 # semplot = ax_all.scatter(X_data, _sem_lower, label="Standard error", **plotparams)
 # ax_all.scatter(X_data, _sem_upper, **plotparams)
-
-# Legend 2 for IQR and fill_between plot
-if show_fit:
-    handles = [fillbetweenplot, semplot]
-else:
-    handles = [semplot]
 
 # Legends for main figure
 legend1 = ax_all.legend(handles=scatterhandles,
