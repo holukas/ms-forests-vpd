@@ -28,31 +28,35 @@ DATA_ROOT: D:/ms-forests-vpd-data
 ```
 
 All other paths in `config/settings.yaml` are relative to `DATA_ROOT`. `src/paths.py`
-resolves them and raises an error on import if the folder is missing.
+resolves them and does not check that the folder exists.
 
 ## Folder layout
 
 ```
 <DATA_ROOT>/
-└── data/
-    ├── 00_raw/
-    │   ├── ameriflux/
-    │   ├── fluxnet_from_carbonportal/
-    │   ├── fluxnet_from_fluxnetorg/
-    │   ├── from-fluxnet-shuttle/
-    │   └── japanflux/
-    └── outputs/
-        ├── 10_datasets/
-        ├── 20_subsets/
-        ├── 30_shap/
-        ├── 40_aggregation/
-        ├── 50_plots/
-        └── 80_info/
+├── data/
+│   ├── 00_raw/
+│   │   ├── ameriflux/
+│   │   ├── fluxnet_from_carbonportal/
+│   │   ├── fluxnet_from_fluxnetorg/
+│   │   ├── from-fluxnet-shuttle/
+│   │   └── japanflux/
+│   └── outputs/
+│       ├── 10_datasets/
+│       ├── 20_subsets/
+│       ├── 30_shap/
+│       ├── 40_aggregation/
+│       ├── 50_plots/
+│       └── 80_info/
+├── deposit_eth_research_collection/
+└── submission_nature_communications/
 ```
 
 Each `00_raw/<source>/` folder holds the unpacked site archives and a `0-info/` folder
 with the site metadata file. `config/settings.yaml` gives the file name patterns per
-source.
+source. Scripts 91 to 94 write the deposit files to `deposit_eth_research_collection/`.
+Script 91 also writes the journal copy of the Source Data to
+`submission_nature_communications/`.
 
 ## Source datasets
 
@@ -62,13 +66,13 @@ record backwards (`src/files.py::create_parquet_files`).
 
 | Source | Access |
 |--------|--------|
-| FLUXNET-SHUTTLE | <https://fluxnet.org/> |
-| FLUXNET2015 (ICOS Carbon Portal) | <https://www.icos-cp.eu/> |
+| FLUXNET-SHUTTLE | fluxnet-shuttle v0.3.7, <https://github.com/fluxnet/shuttle> |
+| ICOS Carbon Portal | <https://www.icos-cp.eu/> |
 | FLUXNET2015 (fluxnet.org) | <https://fluxnet.org/data/fluxnet2015-dataset/> |
 | AmeriFlux FLUXNET | <https://ameriflux.lbl.gov/> |
 | JapanFlux2024 | <https://www.japanflux.org/> |
 
-All five require registration, so the raw files are not redistributed here.
+The networks distribute these files under CC BY 4.0.
 
 ## Deposited outputs
 
@@ -79,32 +83,35 @@ The analysis outputs are deposited in the ETH Research Collection:
   `40_aggregation`, `50_plots`, `80_info`), with paths relative to `outputs/`
 - `ms-forests-vpd_SourceData.zip`, the data behind every figure, table and
   Supplementary Data file, one or more files per display item
-- `ms-forests-vpd_demo.zip`, the model input of one site for the demo
-  ([Installation](installation.qmd#demo))
+- `ms-forests-vpd_demo.zip`, the model input and the published model output of one site
+  for the demo ([Installation](installation.qmd#demo))
 - `ms-forests-vpd_code.zip`, a snapshot of this repository in the version used for the
   paper
 - `DATA_FLOW.html`, the data flow chart with the archive of each file
-- `MANIFEST.csv`, a SHA-256 checksum for every deposited file
+- `MANIFEST.csv`, the size and SHA-256 checksum of every file in the archives
+- `ARCHIVES.csv`, the number of files, size and SHA-256 checksum of each archive
+- `README.txt`, a description of the deposit and its archives
 
 The [data flow chart](data_flow.html) shows which archive holds each file.
 
 ## Entry points
 
-- With the stage archives unpacked into `outputs/`, every stage from `30_shap` onward and
+- With `20_subsets/` unpacked into `outputs/`, every stage from `30_shap` onward and
   every figure runs without the raw source files. These stages start from
   `outputs/20_subsets/`, one small parquet file per site. Rebuild those from raw data only
   if the site selection or the filtering changes.
 - With `30_shap/` unpacked as well, the aggregation and the figures run without refitting
   the models. The figure scripts read `outputs/40_aggregation/`, `outputs/30_shap/` and
-  `outputs/80_info/`.
+  `outputs/80_info/`. Some also read the site tables in `outputs/10_datasets/` and
+  `outputs/20_subsets/`.
 
 ## ERA5 credentials
 
-Only scripts `16a` to `16d`, which rebuild the climate normals, need these credentials.
+Only scripts `16` and `16a` to `16d`, which rebuild the climate normals, need these credentials.
 
 - Google Earth Engine (`16a`, `16b`): an Earth Engine account and cloud project.
   Authenticate once with `earthengine authenticate`.
-- Copernicus Climate Data Store (`16c`, `16d`): a CDS account and an API key in
+- Copernicus Climate Data Store (`16`, `16c`, `16d`): a CDS account and an API key in
   `~/.cdsapirc`. Requests are queued server-side and can take hours.
 
 Script `17` merges whatever is present (see [Methods](methods.qmd#era5-climate-normals)).

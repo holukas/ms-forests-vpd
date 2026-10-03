@@ -16,7 +16,8 @@ Most steps take minutes. On a 24-thread machine with 208 sites,
 
 ## Run variants
 
-Every stage from 21 onward has a `VARIANT` constant. An empty string reads and writes the
+Every stage from 21 onward has a `VARIANT` constant, except script 51. Script 86 loops
+over a list, `VARIANTS`. An empty string reads and writes the
 baseline paths. Any other value adds a folder level on both sides, so a variant reads
 `20_subsets/<VARIANT>/` and writes `30_shap/<FLUX>/<type>/<VARIANT>/`. A stage fails on a
 missing file if its predecessor has not run with the same variant.
@@ -34,7 +35,8 @@ missing file if its predecessor has not run with the same variant.
 Scripts from 41 onward also take `SITE_SUBSET`, either `""` for all sites or
 `"deeper-only"` for the 128 sites with a soil water layer below layer 1. With the empty
 variant and `deep-sm`, this subset gives a matched pair: the same 128 sites at their
-shallowest and at their deepest layer. Scripts 45, 46, 51, 57 and 66 take no subset.
+shallowest and at their deepest layer. Scripts 45, 46, 51, 57, 61, 64, 66 to 68, 80,
+85 to 87 and 89 take no subset.
 
 `31_shap.py` and `32_validate_shap_methods.py` take `SITES` and `MAX_SITES` to limit a
 run for timing.
@@ -106,12 +108,12 @@ curves on 100 grid points per predictor and writes `{SITE}_ale_curves_{TARGET}.c
 | `43_binagg_across_igbp.py` | Averages the site grids per forest type |
 | `44_agg_per_scenario.py` | Computes SHAP means within the stress stages, per site and across sites. `STAGE_SEQUENCE` is `"published"`, `"mirrored"` or `"factorial"` |
 | `45_stage_distributions.py` | Computes driver medians and quartiles within each stage, in standardized and measured units |
-| `46_ale_thresholds.py` | Puts the per-site ALE curves on one grid and finds their thresholds, overall and per forest type |
+| `46_ale_thresholds.py` | Puts the per-site ALE curves on one grid, takes the highest crossing from positive to negative of each and averages them, overall and per forest type |
 | `47_threshold_robustness.py` | Re-estimates the VPD threshold eighteen ways, with a bootstrap over sites, the 23-setting estimator sweep and leave-one-site-out. Feeds Table 1 |
 | `48_threshold_exceedance.py` | Computes the share of peak-season daytime half-hours above the threshold, per site and forest type |
-| `49_biome_thresholds.py` | Estimates one threshold per site and compares forest types with Kruskal-Wallis and Holm-corrected pairwise tests |
+| `49_biome_thresholds.py` | Estimates one threshold per site (highest crossing from positive to negative) and compares forest types with Kruskal-Wallis and Holm-corrected pairwise tests |
 
-Run 41 first, then 42 and 43. Run 44 any time after 31, 46 after 32 and 49 after 42. Run
+Run 41 first, then 42 and 43. Run 44 any time after 31, 46 after 32 and 49 after 41. Run
 47 after 46 and after the `deep-sm`, `deeper-only`, `blocked-cv` and `no_ta` runs have
 reached stage 41. Run 48 after 47 and 49. Bins covered by fewer than half the sites are
 dropped.
@@ -119,21 +121,24 @@ dropped.
 ## 50_figures
 
 Figure scripts write to `50_plots/<FLUX>/<type>/<VARIANT>/<SITE_SUBSET>/`, so a variant
-never overwrites a published figure. Scripts 55, 57, 59, 60 and 65 read the stage 40
-files of 47, 46, 45, 48 and 49, in that order. Scripts 59, 61, 62, 63 and 64 read the
-stage 80 files of 89, 87, 81, 82 and 86, in that order. See [Figures](figures.qmd).
+never overwrites a published figure. Script 53 writes Supplementary Fig. 3 to the folder
+without the variant level, under its own name. Scripts 55, 57, 59, 60 and 65 read the
+stage 40 files of 47, 46, 45, 48 and 49, in that order. Script 68 reads those of 41, 47
+and 49. Scripts 59, 61, 62, 63 and 64 read the stage 80 files of 89, 87, 81, 82 and 86,
+in that order. See [Figures](figures.qmd).
 
 ## 80_info: sensitivity checks
 
 These scripts compute numbers quoted in the paper and write to
-`80_info/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/`. Where a supplementary table shows
+`80_info/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/`. Scripts 80 and 85 to 87 write to
+`80_info/<FLUX>/`. Where a supplementary table shows
 the same numbers, a script of the 50s lays out the INFO file.
 
 | Script | Function |
 |--------|----------|
 | `80_time_scale_coverage.py` | Measured share of a peak-season day, and the records and Stage 8 records left at daily, monthly and yearly resolution |
-| `81_threshold_definitions.py` | Peak, steepest decline and zero crossing of the fitted VPD response, with range-edge flags |
-| `82_threshold_vs_site_vpd_range.py` | Per-site thresholds by quartile of the site's maximum VPD |
+| `81_threshold_definitions.py` | Peak, steepest decline, crossing from positive to negative and minimum of the fitted VPD response, with range-edge flags |
+| `82_threshold_vs_site_vpd_range.py` | Per-site thresholds by quartile of the site's maximum VPD, with all 208 sites in the quartiles. The direction of each driver's effect at every site goes to `82_INFO_DriverEffectDirection.csv` |
 | `83_leave_region_out.py` | Threshold and Stage 8 attribution with Europe, North America or both removed |
 | `84_short_record_sensitivity.py` | Threshold and Stage 8 attribution under minimum record lengths |
 | `85_wue_vs_vpd.py` | Water use efficiency against VPD per site |

@@ -19,9 +19,9 @@ weight per site, overall and per IGBP forest type.
 One interactive page shows every script with the files it reads and writes, from the flux
 data to each figure and table:
 <https://holukas.github.io/ms-forests-vpd/data_flow.html>, or download
-[`docs/data_flow.html`](docs/data_flow.html) and open it in a browser. The same page is
-`DATA_FLOW.html` in the data deposit, where it also shows the archive that holds each
-file.
+[`docs/data_flow.html`](docs/data_flow.html) and open it in a browser. The page also
+shows the archive of the data deposit that holds each file. The deposit has the same page
+as `DATA_FLOW.html`.
 
 ## Documentation
 
@@ -81,7 +81,7 @@ the out-of-sample SHAP values. This took 7 seconds on a 24-thread desktop comput
 writes `CH-Dav_shap-conditional_NEP_ZSCORE.parquet`, a run log and the cross-validation
 results to `data/outputs/30_shap/NEP_ZSCORE/conditional/`. With xgboost 3.0.5 on 24
 threads the parquet file equals `expected_output/CH-Dav_shap-conditional_NEP_ZSCORE.parquet`
-from the archive. With other thread counts the values differ by up to a few percent
+from the archive. With other thread counts the values differ slightly
 (`docs/installation.qmd`, Reproducibility).
 
 ## Data
@@ -117,12 +117,13 @@ uv run python scripts/20_subsets/21_prepare_input_data.py
 # XGBoost models and out-of-sample SHAP values (5-fold CV)
 uv run python scripts/30_shap/31_shap.py
 
-# ALE curves on the same models
+# ALE curves from one model per site with the same settings
 uv run python scripts/30_shap/32_validate_shap_methods.py
 
-# bin per site, aggregate across sites, then draw a figure
+# bin per site, aggregate across sites and per forest type, then draw a figure
 uv run python scripts/40_aggregation/41_binagg_per_site.py
 uv run python scripts/40_aggregation/42_binagg_across_sites.py
+uv run python scripts/40_aggregation/43_binagg_across_igbp.py
 uv run python scripts/50_figures/54_fig-4+supptable-7_vpd_response_curve_shap_agg.py
 ```
 

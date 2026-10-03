@@ -10,8 +10,8 @@ Collection: <https://doi.org/10.3929/ethz-c-000798579>.
 The code analyzes the effects of vapor pressure deficit (VPD) and soil water content (SWC)
 on daytime net ecosystem production (NEP) at 208 forest eddy covariance sites.
 
-Each site has its own XGBoost model. The models are interpreted with ALE curves and with
-out-of-sample SHAP values from 5-fold cross-validation. Site results are aggregated with
+Each site has its own XGBoost model. The models are interpreted with out-of-sample SHAP
+values from 5-fold cross-validation and with ALE curves. Site results are aggregated with
 equal weight per site, overall and per IGBP forest type.
 
 - Target: `NEP_ZSCORE`, half-hourly, daytime, four months of highest GPP per site.
@@ -40,7 +40,7 @@ its full lineage.
 | `scripts/40_aggregation/` | Aggregate SHAP values per site, across sites, by forest type and by stress stage |
 | `scripts/50_figures/` | Manuscript figures, tables and data files, each script named after the items it produces |
 | `scripts/80_info/` | Checks quoted in the text or used in supplementary tables |
-| `scripts/90_deposit/` | Source Data, demo data, deposit archives and the data flow chart |
+| `scripts/90_deposit/` | Source Data, demo data, deposit archives, the data flow chart and the figure copies for this site |
 | `src/` | Shared code: models, aggregation, plotting, statistics, curve fitting, stress stages, file handling, paths |
 | `config/` | `settings.yaml` and FLUXNET site metadata |
 | `data/worldmap/` | Natural Earth country outlines for the site map |

@@ -3,8 +3,9 @@ title: "Figures"
 ---
 
 Figure scripts read `<DATA_ROOT>/data/outputs/` and write to `50_plots/`. None fits a
-model. Output file names carry the display item (`FIG-N`, `SUPPFIG-N`, `SUPPTABLE-N`,
-`SUPPDATA-N`). Every figure script also writes the plotted values to a `_DATA.csv` file. The
+model. Output file names carry the display item (`FIG-N`, `TABLE-N`, `SUPPFIG-N`,
+`SUPPTABLE-N`, `SUPPDATA-N`). Most figure scripts also write the plotted values to a
+`_DATA.csv` file. The
 [data flow chart](data_flow.html) traces each figure back to the data it is built from.
 
 | Script | Display item | Reads |
@@ -26,7 +27,7 @@ model. Output file names carry the display item (`FIG-N`, `SUPPFIG-N`, `SUPPTABL
 | `65_suppfig_biome_threshold_distributions.py` | Per-site thresholds by forest type, not in the manuscript | `40_aggregation/49_...csv` |
 | `66_suppfig-10_data_flow_sankey.py` | Supplementary Fig. 10, records retained at each filter | `20_subsets/22_data_flow.csv` |
 | `67_suppdata-1_data_flow_per_site.py` | Supplementary Data 1, record losses per site | `20_subsets/22_data_flow.csv` |
-| `68_suppfig-9_site_curves_kpa.py` | Supplementary Fig. 9, every site's VPD response on one kPa axis with the per-site crossings | `40_aggregation/41_...`, `20_subsets/` |
+| `68_suppfig-9_site_curves_kpa.py` | Supplementary Fig. 9, the VPD responses of the 207 sites with a crossing from positive to negative, on one kPa axis with the per-site crossings | `40_aggregation/41_...`, `47_...csv`, `49_...csv`, `20_subsets/` |
 | `69_supptable-10_factorial_sm_vpd.py` | Supplementary Table 10, SM and VPD effects in four soil water classes by four VPD classes | `40_aggregation/.../factorial-cells/44_...csv` |
 
 Supplementary Table 1, the list of sites with their data references, was assembled by
@@ -61,7 +62,7 @@ Three rows, marked with an asterisk, carry another interval:
 - ALE row: the confidence interval of the mean of the per-site crossings
 
 Script 47 also writes a bootstrap interval over sites (`boot_lower`, `boot_upper`). It is
-narrower than the prediction band in every test and is not shown.
+narrower than the prediction band in every row without an asterisk and is not shown.
 
 `MAIN_ROWS` in script 55 selects the fifteen rows of Table 1: one per kind of test, with
 the depth rows as pairs.
@@ -72,7 +73,7 @@ the depth rows as pairs.
 |---------|---------|--------|
 | `PLOT_FEATURE` | `VPD_ZSCORE` | Predictor on the x axis |
 | `FLUX` | `NEP_ZSCORE` | Target |
-| `USE_MEDIAN` | `False` | Mean across sites. `True` uses the median |
+| `USE_MEDIAN` | `False` | Mean curve across sites, used only for the axis ranges. `True` uses the median |
 | `USE_CI` | `True` | 95 percent interval in the labels. `False` uses the standard error |
 | `VARIANT` | `""` | Run variant to read |
 

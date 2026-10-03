@@ -59,7 +59,7 @@ package versions affect the results.
 | `xgboost` | 3.0.5 | Gradient-boosted regression (the one pin that changes results) |
 | `shap` | 0.52.0 | SHAP values via `TreeExplainer` |
 | `pyale` | 1.2.0 | ALE curves |
-| `statsmodels` | 0.14.6 | Spline row of the threshold robustness table |
+| `statsmodels` | 0.14.6 | GAM row and LOWESS settings of the threshold robustness tests |
 | `geopandas` | 1.1.4 | Site map |
 | `pyyaml` | 6.0.3 | Settings |
 | `openpyxl` | 3.1.5 | Tables for Word |
@@ -80,8 +80,7 @@ script writes `CH-Dav_shap-conditional_NEP_ZSCORE.parquet`, a run log and the
 cross-validation results to `data/outputs/30_shap/NEP_ZSCORE/conditional/`. With xgboost
 3.0.5 on 24 threads, the parquet file equals
 `expected_output/CH-Dav_shap-conditional_NEP_ZSCORE.parquet` from the archive. With other
-thread counts, the values differ by up to a few percent (see
-[Reproducibility](#reproducibility)).
+thread counts, the values differ slightly (see [Reproducibility](#reproducibility)).
 
 ## Reproducibility
 
@@ -90,12 +89,10 @@ machine. With that version and thread count, they reproduce bit for bit across a
 sites. Both settings change the fitted trees through the order of floating-point
 additions in the `hist` tree method:
 
-- Under xgboost 3.3.0, predictions correlate at 0.995 with the published ones, the mean
-  absolute SHAP of VPD is higher at every site tested, and the site-level VPD to soil
-  moisture ratio is 6 to 21 percent higher. Out-of-sample R^2^ is unchanged.
-- Under 3.0.5 with a different thread count, the early-stopping iteration at one site
-  ranged from 478 (24 threads) to 1021 (one thread), and the site-level ratio from 1.53
-  to 1.69.
+- Under xgboost 3.3.0, predictions and out-of-sample R^2^ stay nearly the same, but the
+  attributions shift: the VPD effect is larger at every site tested.
+- Under 3.0.5 with a different thread count, the early-stopping iteration and the
+  site-level attributions change.
 
 These differences are per site. Aggregates over 208 sites are affected less.
 
@@ -106,14 +103,15 @@ reproduce them exactly.
 ## Optional groups
 
 ```bash
-uv sync --extra era5     # scripts 16a to 16d, ERA5 downloads, need credentials
+uv sync --extra era5     # scripts 16 and 16a to 16d, ERA5 downloads, need credentials
 uv sync --group dev      # JupyterLab, pytest, Quarto, ghp-import
 ```
 
 ## Building the documentation
 
 The site is a [Quarto](https://quarto.org/) website under `docs/`. Nothing is executed at
-render time, so no data folder is needed.
+render time, so no data folder is needed. Quarto comes with the dev group: run
+`uv sync --group dev` first.
 
 ```powershell
 .\preview_docs.ps1            # live preview
@@ -121,4 +119,4 @@ render time, so no data folder is needed.
 ```
 
 On other systems, run `uv run quarto preview docs` and `uv run quarto render docs`.
-GitHub Actions builds the published site on every push to `main`.
+GitHub Actions builds the published site on every push to `main` that changes `docs/`.

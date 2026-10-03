@@ -11,6 +11,9 @@ Each site has one XGBoost regressor with target `NEP_ZSCORE` and predictors `TA_
 `SWIN_ZSCORE`, `VPD_ZSCORE` and `SWC_ZSCORE`. The settings are in `src/models.py`:
 
 ```python
+n_estimators=3000
+max_depth=6
+learning_rate=0.05
 tree_method='hist'
 subsample=0.8
 colsample_bytree=0.8
@@ -21,8 +24,9 @@ min_child_weight=5
 early_stopping_rounds=100
 ```
 
-The hyperparameter search (`TUNE_HYPERPARAMETERS = True`) covers `n_estimators` 2000 to
-4000, `max_depth` 4 to 8 and `learning_rate` 0.01 to 0.1, 125 combinations per site.
+The published run uses these settings (`TUNE_HYPERPARAMETERS = False` in script 31). With
+`True`, a randomized search tests 25 of the 125 combinations of `n_estimators` 2000 to
+4000, `max_depth` 4 to 8 and `learning_rate` 0.01 to 0.1 per site (`TUNE_N_ITER`).
 
 ## Flux targets
 
@@ -191,10 +195,20 @@ the site means.
 The threshold is the highest VPD at which the fitted VPD contribution crosses from
 positive to negative. For SHAP (script 54), a fourth-order polynomial is fitted to the
 cross-site median per bin of the TA by VPD grid, one point per bin. For ALE (script 46),
-a fourth-order polynomial is fitted to each site curve, and the threshold is the mean of
-the per-site zero crossings with a t-based 95 percent interval. The crossing of the
-pooled curve (0.107σ against 0.181σ) is written beside it. Both estimates are zero
-crossings of a model attribution.
+a fourth-order polynomial is fitted to each site curve. Its highest crossing from positive
+to negative is the site threshold, as for SHAP. The threshold is the mean of these
+per-site crossings with a t-based 95 percent interval. The mean covers 207 sites, since
+US-Cwt has no such crossing. The crossing of the pooled curve (0.107σ against 0.192σ) is
+written beside it. Both estimates are zero crossings of a model attribution.
+
+Only crossings from positive to negative count (`src/fit.py`). Over the modeled records of
+a site, the VPD attributions average close to zero (median across sites 0.01σ), which
+makes a sign change likely at every site but does not set its direction. Script 82
+averages each driver's
+attribution per 0.1σ bin of that driver and writes, per site and driver, the sign of the
+correlation between bin and mean attribution (`82_INFO_DriverEffectDirection.csv`). The
+VPD effect decreases at 202 of the 208 sites, while the SW effect increases at all 208.
+The TA and SM effects decrease at about half of the sites and increase at the rest.
 
 Script 81 separates three points of the VPD contribution: its peak (0.47 kPa), its zero
 crossing (1.26 kPa) and its steepest decline (1.50 kPa). It flags points within 2 percent
@@ -213,8 +227,13 @@ threshold moves from 1.26 to 2.19 kPa.
 
 Script 47 re-estimates the threshold under 23 settings: polynomial degrees 2 to 6,
 LOWESS at five bandwidths, smoothing splines over two orders of magnitude, four bin widths
-and five fitting ranges. All estimates fall between 1.23 and 1.29 kPa, and the published
-fit sits at the median. LOWESS gives the lowest values, 0.155 to 0.174σ.
+and five fitting ranges. All estimates fall between 1.23 and 1.30 kPa. The published fit
+sits at the median. LOWESS gives the lowest values, 0.155 to 0.174σ.
+
+The GAM row of Table 1 fits a cubic B-spline basis with 12 degrees of freedom.
+Generalized cross-validation picks the penalty. The intercept enters unpenalized, because
+the basis drops its first column and would otherwise pin the fit to zero at the lowest
+bin.
 
 ### Leave-one-site-out
 
@@ -232,8 +251,11 @@ quartiles of their maximum VPD:
 |---|---|---|---|---|---|
 | lowest | 52 | 2.90 | 0.25 | 1.00 | 52 |
 | Q2 | 52 | 3.60 | 0.29 | 1.15 | 52 |
-| Q3 | 52 | 4.37 | 0.16 | 1.33 | 52 |
+| Q3 | 52 | 4.37 | 0.17 | 1.34 | 51 |
 | highest | 52 | 5.69 | 0.04 | 1.41 | 52 |
+
+US-Cwt (Q3) has no crossing from positive to negative. It stays in its quartile and is
+left out of the medians.
 
 From the lowest to the highest quartile, the VPD range grows by 96 percent and the
 threshold by 41 percent. The threshold is therefore neither fixed nor proportional to
@@ -242,16 +264,17 @@ the range.
 ### Forest type comparison
 
 The intervals in Figure 4 are prediction bands of the aggregated curve. Script 49 fits
-one threshold per site and compares the distributions (Kruskal-Wallis H = 12.17,
-p = 0.007). After Holm correction, only ENF against DBF and DBF against MF differ. The
+one threshold per site and compares the distributions over the 207 sites with a crossing
+from positive to negative (Kruskal-Wallis H = 11.43, p = 0.010). After Holm correction,
+only ENF against DBF differs (p = 0.035). The
 forest type medians span 0.19σ, and the widest within-type interquartile range is 0.52σ.
 
 ### Regional subsets and record length
 
 Scripts 83 and 84 recompute the threshold as the median of the per-site thresholds, with
 Europe, North America or both removed, and with minimum record lengths of 3, 5 and
-10 years. Table 1 (script 47) has the same tests on the aggregated curve, which is the
-estimator the manuscript reports.
+10 years. Table 1 and Supplementary Fig. 4 (script 47) have the same tests on the
+aggregated curve, which is the estimator the manuscript reports.
 
 ## ERA5 climate normals {#era5-climate-normals}
 
