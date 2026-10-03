@@ -278,10 +278,23 @@ aggregated curve, which is the estimator the manuscript reports.
 
 ## ERA5 climate normals {#era5-climate-normals}
 
-Script 17 gives each site one 1991 to 2020 mean annual temperature and precipitation from
-the ERA5 fields in the FLUXNET files, the Copernicus CDS or Google Earth Engine. Both
-values come from the same source, chosen on precipitation. Below 2000 mm per year,
-FLUXNET is used where available. Above that, Copernicus replaces it only when it is
-lower by more than 300 mm. A Copernicus value of zero counts as a failed download, and
-Earth Engine is compared instead. Sites without FLUXNET ERA5 fall back to Copernicus,
-then Earth Engine. Every decision is logged next to the output.
+Script 17 gives each site a 1991 to 2020 mean annual temperature (MAT) and precipitation
+(MAP). The values describe the sites in Fig. 1b and Supplementary Table 1 and enter no
+analysis.
+
+The first source is the ERA5 file of the flux product (TA_ERA, P_ERA), which ONEFlux
+scales to the site measurements. ERA5-Land at the site coordinates (Copernicus CDS,
+script 16d) replaces it in these cases:
+
+| Case | MAT | MAP | Sites |
+|---|---|---|---|
+| No ERA5 file in the flux product (FLUXNET2015 downloads) | yes | yes | 18 |
+| No site precipitation, so P_ERA is not scaled (`ERA_SLOPE` of P is -9999 in the BIF or AUXMETEO file) | | yes | 18 |
+| P_ERA more than 25% off the MAP reported for the site, ERA5-Land closer | | yes | 29 |
+| Set by hand in `config/site_climate_source_override.csv` (ERA5-Land closer to the reported MAT) | yes | | 7 |
+
+The site-reported values come from `config/site_climate_reported_manual.csv` (network pages
+and site papers, with sources), the `CLIM_AVG` rows of the site BIF, and the AmeriFlux site
+table in `config/`. They serve only for these checks. Four coastal sites (JP-Ynf, US-HB2,
+US-HB3, VU-Coc) fall on an ERA5-Land sea cell and use the nearest land cell. The output
+table lists the source of each value and, for ERA5-Land, the reason.

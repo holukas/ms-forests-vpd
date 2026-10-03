@@ -145,7 +145,7 @@
    "writes": [
     "outputs/10_datasets/16_ERA5_..._GoogleEarthEngine/ (per site)"
    ],
-   "note": "External source: GEE ECMWF/ERA5/DAILY.",
+   "note": "External source: GEE ECMWF/ERA5/DAILY. Not read by script 17 since the switch to ERA5-Land.",
    "variants": []
   },
   {
@@ -179,18 +179,17 @@
   {
    "id": "17",
    "path": "scripts/10_datasets/17_add_era5_info.py",
-   "label": "17 add ERA5 MAT/MAP",
+   "label": "17 add MAT/MAP",
    "stage": "10_datasets",
    "reads": [
     "outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv",
-    "outputs/10_datasets/16_ERA5_..._GoogleEarthEngine/ (per site)",
     "outputs/10_datasets/16_ERA5_..._Copernicus/ (per site)",
-    "00_raw/ FLUXNET ERA5 yearly files"
+    "00_raw/ FLUXNET ERA5 yearly, BIF and AUXMETEO files"
    ],
    "writes": [
     "outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv"
    ],
-   "note": "Reads the raw FLUXNET ERA5 yearly file for Shuttle and AmeriFlux sites.",
+   "note": "MAT and MAP from the FLUXNET ERA5 yearly file (TA_ERA, P_ERA), replaced by ERA5-Land (Copernicus) where the file is missing or P_ERA is not usable. Site-reported values and overrides from config/.",
    "variants": []
   },
   {

@@ -53,7 +53,7 @@ run for timing.
 | `14_collect_basic_stats.py` | Collects record counts, date ranges and basic statistics per variable | `14_datasets_info_parquet_vars_stats.csv` |
 | `15_remove_sites.py` | Applies the inclusion criteria | `15_datasets_info_parquet_vars_stats_usedsites.csv` |
 | `16a` to `16d`, `16_download_era5_mat_map.py` | Download ERA5 1991 to 2020 normals from Google Earth Engine and the Copernicus CDS | `16_ERA5_climate_1991-2020*/` |
-| `17_add_era5_info.py` | Picks one ERA5 source per site, adds MAT and MAP and logs every decision | `17_datasets_info_parquet_vars_stats_usedsites_era5.csv` |
+| `17_add_era5_info.py` | Adds MAT and MAP per site from the flux product's ERA5 file or ERA5-Land, with source and reason | `17_datasets_info_parquet_vars_stats_usedsites_era5.csv` |
 
 ## 20_subsets: model input
 
