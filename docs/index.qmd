@@ -54,6 +54,19 @@ point the code at a data folder. [Pipeline](pipeline.qmd) lists the scripts in r
 [Methods](methods.qmd) documents the choices that are hard to read from the code.
 [Figures](figures.qmd) maps each display item to its script and shows the figures.
 
+## How to cite
+
+Cite the code as:
+
+Hörtnagl, L. (2026). ms-forests-vpd: analysis code for atmospheric dryness and forest net
+CO~2~ uptake (version v2-revised). <https://github.com/holukas/ms-forests-vpd>
+
+The data and code deposit is in the ETH Research Collection:
+<https://doi.org/10.3929/ethz-c-000798579>.
+[`CITATION.cff`](https://github.com/holukas/ms-forests-vpd/blob/main/CITATION.cff) in the
+repository holds the same reference, and GitHub shows it under "Cite this repository". The
+paper reference will be added when the paper is published.
+
 ## License
 
 GPL-3.0-or-later. See `LICENSE` in the repository root.

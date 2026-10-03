@@ -85,7 +85,8 @@ The published analysis uses `SWC_F_MDS_1`, the shallowest layer. With
 `SWC_LAYER = "deepest"`, script 21 takes at each site the deepest layer that holds at
 least 90 percent of the records of layer 1 within the peak months
 (`src/common.py::deepest_swc_per_site`). This coverage floor keeps the sample the same in
-both runs. Without it, 18 sites would have run on a much sparser layer.
+both runs. Without it, a deeper but gappier layer would have shrunk the sample at some
+sites.
 
 Under this rule, 128 of 208 sites move to a deeper layer (layers 2 to 9) and 80 stay on
 layer 1. A `deep-sm` run therefore keeps all 208 sites, and 80 of them are bit-identical
@@ -116,7 +117,7 @@ broadleaf sites have a usable deeper layer.
 
 Standardization does not make the drivers Gaussian. Script 87 measures the empirical
 share of records below each cut-off. At the median site, this share is within six
-percentage points of the Gaussian share, and within two at the Stage 8 cut-offs. The
+percentage points of the Gaussian share, and within 2.2 at the Stage 8 cut-offs. The
 stages do not constrain shortwave radiation, which rises from 0.34σ at Stage 1 to 0.65σ
 at Stage 8 (script 45). The sequence is not a factorial design. Three tests address
 this: the mirrored stage order, the matched records and the factorial cells.
@@ -231,7 +232,8 @@ threshold moves from 1.26 to 2.19 kPa.
 Script 47 re-estimates the threshold under 23 settings: polynomial degrees 2 to 6,
 LOWESS at five bandwidths, smoothing splines over two orders of magnitude, four bin widths
 and five fitting ranges. All estimates fall between 1.23 and 1.30 kPa. The published fit
-sits at the median. LOWESS gives the lowest values, 0.155 to 0.174σ.
+sits near the median. LOWESS and the second-order polynomial give the lowest values,
+0.155 to 0.174σ.
 
 The GAM row of Table 1 fits a cubic B-spline basis with 12 degrees of freedom.
 Generalized cross-validation picks the penalty. The intercept enters unpenalized, because
