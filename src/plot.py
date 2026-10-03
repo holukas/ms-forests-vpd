@@ -127,7 +127,7 @@ STAGE_CONDITIONS = {
             ['moderate', '↑ high', '↑ high', '↑↑ very high', '↑↑ very high', '↑↑↑ extreme',
              '↑↑↑ extreme', '↑↑↑ extreme'],
         'SWC_ZSCORE':
-            ['moderate', 'moderate', '↓ low', '↓ low', '↓↓ very low', '↓↓  very low',
+            ['moderate', 'moderate', '↓ low', '↓ low', '↓↓ very low', '↓↓ very low',
              '↓↓↓ extreme', '↓↓↓ extreme'],
         'SWIN_ZSCORE':
             ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'all'],
