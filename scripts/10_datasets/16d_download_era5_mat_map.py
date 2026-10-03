@@ -3,9 +3,15 @@ Download hourly ERA5-Land temperature and precipitation from Copernicus CDS and 
 
 Per site, the script merges the two variables, drops duplicate timestamps,
 converts to degC (TA_degC) and mm (PRECIP_TOT_mm), shifts the timestamps back
-1 hour to the start of the ERA5 averaging period, keeps 1991-2020, and computes
-the annual mean temperature and precipitation sum. A yearly file is saved only
-if all 30 years are present. Sites with a valid yearly file are skipped.
+1 hour so that each hourly precipitation amount falls into the hour it covers
+(temperature is an instantaneous value, the shift does not matter for it),
+keeps 1991-2020, and computes the annual mean temperature and precipitation sum.
+A yearly file is saved only if all 30 years are present. Sites with a valid
+yearly file are skipped.
+
+Sites in ERA5_LAND_POINT_OVERRIDE lie on an ERA5-Land sea cell and use the
+nearest land cell. An override takes effect only for a site without a valid
+yearly file: move the site folder to archive/ first, then rerun.
 
 Usually started by 16c with a site index range (`... 0 35`); without arguments
 it processes all sites. Needs a configured cdsapi client.
@@ -53,6 +59,16 @@ total_sites = len(datasets_df)
 print(f"Processing {total_sites} sites (indices {batch_start} to {batch_start + total_sites - 1})\n")
 
 dataset = "reanalysis-era5-land-timeseries"
+
+# These coastal sites lie on an ERA5-Land sea cell (all-NaN temperature, zero
+# precipitation). They use the nearest land cell (0.1 deg grid) instead.
+# (lat, lon) of the grid cell, found by testing the neighbouring cells by distance.
+ERA5_LAND_POINT_OVERRIDE = {
+    "JP-Ynf": (26.7, 128.2),
+    "US-HB2": (33.3, -79.3),
+    "US-HB3": (33.4, -79.2),
+    "VU-Coc": (-15.4, 167.1),
+}
 
 # Create output directory
 output_dir = data_path("data/outputs/10_datasets/16_ERA5_climate_1991-2020_Copernicus/")
@@ -156,6 +172,9 @@ for index, row in datasets_df.iterrows():
     # if downloaded_via == 'FLUXNET_ORG':
     lon = row['LON']
     lat = row['LAT']
+    if site_id in ERA5_LAND_POINT_OVERRIDE:
+        lat, lon = ERA5_LAND_POINT_OVERRIDE[site_id]
+        log_message(f"{site_id}: site is on an ERA5-Land sea cell, using nearest land cell ({lat}, {lon})")
 
     request = {
         "variable": [
@@ -184,8 +203,8 @@ for index, row in datasets_df.iterrows():
         zip_ref.extractall(site_dir)
     target_file.unlink()
 
-    # Merge the two CSV files
-    csv_files = list(site_dir.glob('*.csv'))
+    # Merge the two downloaded CSV files (not the _shifted or _yearly output of an earlier run)
+    csv_files = list(site_dir.glob(f'{dataset}-*.csv'))
     if len(csv_files) >= 2:
         log_message(f"Merging {len(csv_files)} CSV files for {site_id}...")
 
@@ -269,10 +288,10 @@ for index, row in datasets_df.iterrows():
         timestamp_col = merged_df.columns[0]
         merged_df[timestamp_col] = pd.to_datetime(merged_df[timestamp_col], format='mixed')
 
-        # Subtract 1 hour to shift timestamps from END to START of averaging period
-        # (makes filtering by calendar year more intuitive)
+        # Subtract 1 hour: the precipitation of an hour is stamped at its end, so the
+        # amount of 23:00-24:00 on 31 December belongs to that year
         merged_df[timestamp_col] = merged_df[timestamp_col] - pd.Timedelta(hours=1)
-        print(f"Shifted timestamps back by 1 hour (now represent START of averaging period)")
+        print(f"Shifted timestamps back by 1 hour (precipitation now stamped at the start of its hour)")
 
         # Filter to complete years: 1991-01-01 00:00 to 2020-12-31 23:00
         start_time = pd.Timestamp('1991-01-01 00:00')
