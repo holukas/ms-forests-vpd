@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite it as below."
+type: software
+title: "ms-forests-vpd: analysis code for atmospheric dryness and forest net CO2 uptake"
+authors:
+  - family-names: "Hörtnagl"
+    given-names: "Lukas"
+    affiliation: "ETH Zurich"
+    orcid: "https://orcid.org/0000-0002-5569-0761"
+repository-code: "https://github.com/holukas/ms-forests-vpd"
+url: "https://holukas.github.io/ms-forests-vpd/"
+license: GPL-3.0-or-later
+identifiers:
+  - type: doi
+    value: "10.3929/ethz-c-000798579"
+    description: "Data and code deposit in the ETH Research Collection"
+keywords:
+  - eddy covariance
+  - vapor pressure deficit
+  - SHAP
+  - XGBoost
+  - forests

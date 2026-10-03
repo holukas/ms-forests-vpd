@@ -181,11 +181,15 @@ diive is installed from PyPI at release 0.91.1.
 
 ## How to cite
 
-Please cite the paper and the deposit:
+Cite the code as:
 
-- Hörtnagl, L. et al. An atmospheric dryness threshold limits daytime net CO<sub>2</sub>
-  uptake in forests. Submitted to Nature Communications.
-- Data and code deposit: ETH Research Collection, <https://doi.org/10.3929/ethz-c-000798579>.
+Hörtnagl, L. (2026). ms-forests-vpd: analysis code for atmospheric dryness and forest net
+CO<sub>2</sub> uptake. <https://github.com/holukas/ms-forests-vpd>
+
+The data and code deposit is in the ETH Research Collection:
+<https://doi.org/10.3929/ethz-c-000798579>. [`CITATION.cff`](CITATION.cff) holds the same
+reference, and GitHub shows it under "Cite this repository". The paper reference will be added
+when the paper is published.
 
 ## License
 
