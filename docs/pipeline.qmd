@@ -154,8 +154,12 @@ below the crossing of the aggregated curve. Table 1 reports the crossing.
 
 These scripts write the files for the ETH Research Collection to
 `<DATA_ROOT>/deposit_eth_research_collection/`. Script 91 also writes the Source Data for
-the journal to `<DATA_ROOT>/submission_nature_communications/`. Run 91 and 92 before 93,
-which lists their archives in `MANIFEST.csv` and `ARCHIVES.csv`. Script 95 writes the
+the journal to `<DATA_ROOT>/submission_nature_communications/`. Script 93 lists every zip
+archive already in the deposit folder in `MANIFEST.csv` and `ARCHIVES.csv`. Run 91 and 92
+before 93, and put the code and documentation snapshots there first as well: the code with
+`git archive --format=zip --prefix=ms-forests-vpd/` from the tagged commit as
+`ms-forests-vpd_code.zip`, and `docs/_site/` rendered from the same commit as
+`ms-forests-vpd_docs.zip`. Script 95 writes the
 figures for this site. Scripts 91 to 93 and 95 do a dry run by default and write only
 with `--build`.
 
