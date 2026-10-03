@@ -213,7 +213,10 @@ The TA and SM effects decrease at about half of the sites and increase at the re
 Script 81 separates three points of the VPD contribution: its peak (0.47 kPa), its zero
 crossing (1.26 kPa) and its steepest decline (1.50 kPa). It flags points within 2 percent
 of the range edge. The minimum is flagged in every group, because the curve is still
-falling where the data end.
+falling where the data end. Script 81 reads all points from a 2000-point grid of the fit.
+Script 54 places the peak marker of Fig. 4 with `src/fit.py::peak_of_polynomial`, which
+takes the maximum from the roots of the derivative and therefore does not depend on the
+grid spacing. Both agree at two decimals.
 
 ### Conversion to kPa
 
