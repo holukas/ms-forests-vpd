@@ -33,6 +33,8 @@ website:
         text: Installation
       - href: data.qmd
         text: Data
+      - href: columns.qmd
+        text: Columns
       - href: pipeline.qmd
         text: Pipeline
       - href: methods.qmd
@@ -48,6 +50,7 @@ website:
       - index.qmd
       - installation.qmd
       - data.qmd
+      - columns.qmd
       - pipeline.qmd
       - methods.qmd
       - figures.qmd

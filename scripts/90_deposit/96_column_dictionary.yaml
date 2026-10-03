@@ -1,0 +1,1696 @@
+# Column descriptions of every output table, read by 96_build_column_reference.py.
+# Forms and statistics form the naming scheme shared by all files. Under products, keyed
+# by the output id of 94_data_flow_graph.json, are the columns the scheme does not explain.
+# Placeholders in column names: {VAR} a variable token, {N} a number, {COL} any column the
+# scheme explains, {GRID_X} a number that is a grid value. A tuple column (column, statistic)
+# of a parquet file is described by its first level.
+intro: 'The deposit holds one zip archive per output stage (see [Data](data.qmd#deposited-outputs)).
+
+  This page describes the columns of every csv and parquet file in them, grouped by the output
+
+  of the [data flow chart](pipeline.qmd#data-flow-chart) that writes them. Most column names
+
+  follow one naming scheme, described first. Under each output, the table lists only the
+
+  columns the scheme does not explain.
+
+
+  The page is written by `scripts/90_deposit/96_build_column_reference.py` from
+
+  `96_column_dictionary.yaml`, which also checks every description against the headers of
+
+  the files on disk. The same descriptions, one row per column, are in `COLUMNS.csv` of the
+
+  deposit. In 30_shap and 40_aggregation the deposit holds parquet files only. Tables laid out
+
+  for Word (xlsx) are not described. Their data are in the csv file of the same item.
+
+  '
+scheme_intro: 'A column name is a variable token, optionally followed by a form and a statistic, as in
+
+  `VPD_ZSCORE_SHAPVALS` or `TA_ZSCORE_median`. All variables are half-hourly, or hourly at
+
+  sites that measure hourly, and taken from the FLUXNET-formatted files of each site.
+
+  σ is one standard deviation of a variable within a site, the unit of every z-score.
+
+  SHAP values are in σ of the target flux. NEP is positive for net CO~2~ uptake. Parquet
+
+  files of 40_aggregation have two column levels, written here as (column, statistic).
+
+  '
+variables:
+  TA:
+  - air temperature
+  - °C
+  VPD:
+  - vapor pressure deficit
+  - hPa (CD-Ygb in Pa)
+  SWC:
+  - soil water content of the layer used
+  - volumetric %
+  SWIN:
+  - incoming shortwave radiation
+  - W m-2
+  NEE:
+  - net ecosystem exchange of CO2
+  - µmol m-2 s-1
+  NEP:
+  - net ecosystem production (-NEE)
+  - µmol m-2 s-1
+  GPP:
+  - gross primary production (nighttime partitioning)
+  - µmol m-2 s-1
+  RECO:
+  - ecosystem respiration (nighttime partitioning)
+  - µmol m-2 s-1
+  LE:
+  - latent heat flux
+  - W m-2
+  ET:
+  - evapotranspiration from LE and TA
+  - mm h-1
+  PREC:
+  - precipitation
+  - mm
+forms:
+  '{VAR}': '{name}, measured ({unit})'
+  '{VAR}_ZSCORE': '{name}, z-score within the site, in σ'
+  '{VAR}_ZSCORE_SHAPVALS': SHAP value of {name} for the target flux, out of sample, in σ of the target
+  '{VAR}_ZSCORE_PRED': Out-of-sample model prediction of the target flux, in σ of the target
+  BIN_{VAR}_ZSCORE: Bin of the {name} z-score, lower edge of a 0.1σ bin [edge, edge + 0.1), in σ
+  '{VAR}_Z0': Site mean of {name} over the modeled records, the value at z = 0 ({unit})
+  '{VAR}_SD': Site standard deviation (ddof 1) of {name} over the modeled records ({unit})
+  '{VAR}_Z+2': '{VAR}_Z0 plus two times {VAR}_SD ({unit})'
+  '{VAR}_Z-2': '{VAR}_Z0 minus two times {VAR}_SD ({unit})'
+  '{VAR}_MIN': Site minimum of {name} over the modeled records ({unit})
+  '{VAR}_MAX': Site maximum of {name} over the modeled records ({unit})
+  '{VAR}_ZSCORE_MIN': Site minimum of the {name} z-score over the modeled records, in σ
+  '{VAR}_ZSCORE_MAX': Site maximum of the {name} z-score over the modeled records, in σ
+  '{VAR}_VAR': Name of the FLUXNET column used for {name} at the site, -MISSING- if none was found
+  '{VAR}_QC_VAR': Name of the FLUXNET quality flag column used with {name}, -MISSING- if none was found
+  '{VAR}_AVG': Mean of the column named in {VAR}_VAR over all records of the merged site file, gap-filled
+    values included
+  '{VAR}_N_RECORDS': Number of records with a value in the column named in {VAR}_VAR, over the merged
+    site file
+statistics:
+  mean: mean
+  median: median
+  min: minimum
+  max: maximum
+  count: number of values
+  std: standard deviation (ddof 1)
+  sem: standard error, std / sqrt(count)
+  iqr: 25th and 75th percentile, as text
+  POS_AVG: mean of the positive values over the records of the stage at one site
+  NEG_AVG: mean of the negative values over the records of the stage at one site
+  OVR_AVG: mean over the records of the stage at one site
+  OVR_SD: standard deviation (ddof 1) over the records of the stage at one site
+  OVR_MEDIAN: median over the records of the stage at one site
+  OVR_ABS_AVG: mean of the absolute values over the records of the stage at one site
+  OVR_ABS_MEDIAN: median of the absolute values over the records of the stage at one site
+  OVR_ABS_SD: standard deviation (ddof 1) of the absolute values over the records of the stage at one
+    site
+products:
+  outputs/10_datasets/11_datasets_info.csv:
+    row: One row per raw flux dataset found in the five download sources, a site can have several rows
+    note: Only datasets whose IGBP class is in ECOSYSTEMS of config/settings.yaml are kept. Path columns
+      hold Windows paths relative to a scripts subfolder (e.g. ..\..\data\00_raw\...). Drop the leading
+      ..\ parts and read the rest relative to the data folder root, as src/paths.py resolve_stored_path
+      does
+    columns:
+      SITE: FLUXNET site ID, e.g. AR-SLu
+      ORIGIN: Network prefix of the raw dataset folder name (AMF, CNF, EUF, FLX, ICOS, JPF, KOF, TERN)
+      DOWNLOADED_VIA: 'Download source of the dataset: SHUTTLE-CLI (fluxnet-shuttle CLI), AMERIFLUX, JAPANFLUX-URL
+        (JapanFlux2024), FLUXNET_CP (FLUXNET from the ICOS Carbon Portal), FLUXNET_ORG (FLUXNET2015 from
+        fluxnet.org)'
+      _DIRNAME: Name of the raw dataset folder
+      _DIRPATH: Path of the raw dataset folder, relative
+      _FILEPATH: Path of the half-hourly FULLSET or FLUXMET file of the dataset, or the hourly file where
+        no half-hourly file exists, relative
+      IGBP: IGBP vegetation class from the site metadata list of the source
+      LON: Site longitude in decimal degrees from the site metadata list of the source
+      LAT: Site latitude in decimal degrees from the site metadata list of the source
+      ELEVATION: Site elevation from the site metadata list, in m, empty where the source gives none (all
+        SHUTTLE-CLI datasets)
+      PRIORITY: Merge priority of the download source, 1 = used first where datasets of a site overlap
+        (SHUTTLE-CLI 1, AMERIFLUX and JAPANFLUX-URL 2, FLUXNET_CP 3, FLUXNET_ORG 4)
+  outputs/10_datasets/12_parquet_merged/<SITE> (per site):
+    row: One row per half-hourly or hourly record of one site
+    note: 'Datasets of one site are stacked by PRIORITY. Where two datasets overlap, the one ending later
+      is kept and the other is cut to end before it starts. If the datasets differ in time resolution,
+      the finer one is averaged to the coarser one, which also averages its TIMESTAMP_START and QC flags
+      (US-UMB: the AMF part has TIMESTAMP_START values like ...15 that are means of two start stamps)'
+    skip: 'FLUXNET passthrough: about 150 to 240 FLUXNET FULLSET columns as delivered by the networks,
+      documented by FLUXNET. Only the columns added by the pipeline are listed'
+    columns:
+      ORIGIN: Network prefix of the raw dataset that supplied the record (e.g. FLX, ICOS, AMF)
+      TIMESTAMP_MIDDLE: Middle of the averaging interval of the record (index of the file), in the time
+        of the FLUXNET files
+  outputs/10_datasets/12_datasets_info_parquet.csv:
+    row: One row per site, after merging its datasets
+    note: 'Same columns as 11_datasets_info.csv with these differences: for a site with several datasets
+      the values come from the dataset with the best PRIORITY, gaps filled from the others, and ORIGIN
+      joins the network prefixes of all merged datasets with + in priority order (e.g. ICOS+FLX). Path
+      columns are relative, see 11_datasets_info.csv'
+    columns:
+      SITE: FLUXNET site ID
+      ORIGIN: Network prefixes of the datasets merged for the site, joined with + in priority order
+      DOWNLOADED_VIA: Download source of the highest-priority dataset of the site
+      _DIRNAME: Name of the raw folder of the highest-priority dataset
+      _DIRPATH: Path of the raw folder of the highest-priority dataset, relative
+      _FILEPATH: Path of the raw data file of the highest-priority dataset, relative
+      IGBP: IGBP vegetation class of the highest-priority dataset
+      LON: Site longitude in decimal degrees
+      LAT: Site latitude in decimal degrees
+      ELEVATION: Site elevation in m, empty where no source gives it
+      PRIORITY: Merge priority of the highest-priority dataset of the site (1 SHUTTLE-CLI, 2 AMERIFLUX
+        or JAPANFLUX-URL, 4 FLUXNET_ORG)
+      _FILEPATH_PARQUET: Path of the merged site file in 10_datasets/12_parquet_merged/, relative
+  outputs/10_datasets/13_datasets_info_parquet_vars.csv:
+    row: One row per site
+    note: Columns of 12_datasets_info_parquet.csv plus the FLUXNET column chosen for each variable role.
+      Written by 13b_check_available_vars_SWC.py (13_check_available_vars.py writes the same file). For
+      a role with a list of candidates the first candidate that exists and has any value is taken, for
+      a role with one candidate only its presence is checked. -MISSING- means no candidate was found
+    columns:
+      SITE: FLUXNET site ID
+      ORIGIN: Network prefixes of the merged datasets, see 12_datasets_info_parquet.csv
+      DOWNLOADED_VIA: Download source of the highest-priority dataset
+      _DIRNAME: Name of the raw folder of the highest-priority dataset
+      _DIRPATH: Path of the raw folder of the highest-priority dataset, relative
+      _FILEPATH: Path of the raw data file of the highest-priority dataset, relative
+      IGBP: IGBP vegetation class
+      LON: Site longitude in decimal degrees
+      LAT: Site latitude in decimal degrees
+      ELEVATION: Site elevation in m, empty where no source gives it
+      PRIORITY: Merge priority of the highest-priority dataset
+      _FILEPATH_PARQUET: Path of the merged site file, relative
+      NEE_VAR: 'NEE column, used for NEP: first of NEE_VUT_50, NEE_vUT_USTAR50, NEE_CUT_50 with data'
+      NEE_QC_VAR: 'NEE quality flag column: first of NEE_VUT_50_QC, NEE_vUT_USTAR50, NEE_CUT_50_QC with
+        data'
+      LE_VAR: 'Latent heat flux column, used for ET: LE_F_MDS'
+      LE_QC_VAR: 'Quality flag of LE: LE_F_MDS_QC'
+      GPP_VAR: 'GPP column: first of GPP_NT_VUT_50, GPP_NT_vUT_USTAR50, GPP_NT_CUT_50, GPP_DT_VUT_50,
+        GPP_DT_vUT_USTAR50, GPP_DT_CUT_50 with data'
+      RECO_VAR: 'RECO column: first of RECO_NT_VUT_50, RECO_NT_vUT_USTAR50, RECO_NT_CUT_50, RECO_DT_VUT_50,
+        RECO_DT_vUT_USTAR50, RECO_DT_CUT_50 with data'
+      SWIN_VAR: 'Incoming shortwave radiation column: SW_IN_F'
+      SWIN_QC_VAR: 'Quality flag of SWIN: SW_IN_F_QC'
+      TA_VAR: 'Air temperature column: TA_F'
+      TA_QC_VAR: 'Quality flag of TA: TA_F_QC'
+      VPD_VAR: 'Vapor pressure deficit column: VPD_F'
+      VPD_QC_VAR: 'Quality flag of VPD: VPD_F_QC'
+      PREC_VAR: 'Precipitation column: P_F'
+      SWC_VAR: 'Soil water content column: first of SWC_F_MDS_1, SWC_F_MDS_2 with data'
+      SWC_QC_VAR: 'Quality flag of SWC: first of SWC_F_MDS_1_QC, SWC_F_MDS_2_QC with data, chosen independently
+        of SWC_VAR'
+  outputs/10_datasets/13b_variables_per_site.csv:
+    row: One row per site, scan type and matching column of the merged site file
+    note: All 300 merged sites. A column is listed under a scan type if its name contains the scan string
+      anywhere, so for TA also e.g. USTAR, TIMESTAMP_START and NEE_CUT_USTAR50_QC appear. Peak months
+      are the four calendar months with the highest mean GPP (column GPP_VAR) over the whole record, the
+      same definition as the subsets
+    columns:
+      SITE: FLUXNET site ID
+      IGBP: IGBP vegetation class
+      USED_SITE: True if the site is in 15_datasets_info_parquet_vars_stats_usedsites.csv of an earlier
+        run, False otherwise (all False if that file did not exist)
+      VARIABLE_TYPE: 'Scan string the column matched: NEE, TA, SWC, SW_IN or VPD'
+      VARIABLE_NAME: Name of the column in the merged site file
+      N_VALID: Count of records with a value in the column, whole record
+      N_TOTAL: Count of all records of the site, whole record
+      PCT_NONNULL: N_VALID as percent of N_TOTAL
+      N_VALID_PEAK: Count of records with a value in the column, within the four peak months, 0 if the
+        site has no GPP
+      N_TOTAL_PEAK: Count of all records within the four peak months, 0 if the site has no GPP
+      PCT_NONNULL_PEAK: N_VALID_PEAK as percent of N_TOTAL_PEAK, empty if the site has no GPP
+      PEAK_MONTHS: The four peak months as month numbers joined with +, highest mean GPP first (e.g. 7+8+6+9),
+        empty if the site has no GPP
+      PEAK_VS_SWC1: 'For soil water layers SWC_F_MDS_<n> only: N_VALID_PEAK of this layer divided by N_VALID_PEAK
+        of SWC_F_MDS_1 at the same site, fraction (1 = as many peak-month records as layer 1), empty for
+        other columns or if layer 1 has no peak-month data'
+  outputs/10_datasets/13b_variables_coverage_summary.csv:
+    row: One row per scan type and column name found at any site, sorted by SITES_WITH_DATA within each
+      scan type
+    note: Percent columns are text with one decimal and a % sign (e.g. 92.0%). A site counts as having
+      data if the column has at least one value over the whole record. Used sites are those with USED_SITE
+      True in 13b_variables_per_site.csv
+    columns:
+      VARIABLE_TYPE: 'Scan string the column matched: NEE, TA, SWC, SW_IN or VPD'
+      VARIABLE_NAME: Name of the column in the merged site files
+      SITES_WITH_DATA: Count of scanned sites where the column has data
+      TOTAL_SITES: Count of scanned sites (all merged sites)
+      COVERAGE_PERCENT: SITES_WITH_DATA as percent of TOTAL_SITES
+      AVG_NONNULL_PERCENT: Mean of PCT_NONNULL (whole record) across the sites where the column has data,
+        equal weight per site
+      SITES_WITH_DATA_USED: Count of used sites where the column has data
+      TOTAL_SITES_USED: Count of used sites among the scanned sites
+      COVERAGE_PERCENT_USED: SITES_WITH_DATA_USED as percent of TOTAL_SITES_USED
+      MEDIAN_NONNULL_PEAK_PERCENT_USED: Median of PCT_NONNULL_PEAK across used sites where the column
+        has data, equal weight per site
+  outputs/10_datasets/14_datasets_info_parquet_vars_stats.csv:
+    row: One row per site (all 300 merged sites)
+    note: 'Columns of 13_datasets_info_parquet_vars.csv plus record counts and means over the whole merged
+      site file. Families {VAR}_VAR, {VAR}_QC_VAR, {VAR}_AVG and {VAR}_N_RECORDS follow the grammar, with
+      VAR in NEE, LE, GPP, RECO, SWIN, TA, VPD, SWC and PREC (only PREC_VAR and PREC_N_RECORDS). Values
+      are in the FLUXNET units: VPD in hPa (CD-Ygb in Pa), SWC in percent. Path columns are relative,
+      see 11_datasets_info.csv'
+    columns:
+      SITE: FLUXNET site ID
+      ORIGIN: Network prefixes of the merged datasets joined with + in priority order
+      DOWNLOADED_VIA: Download source of the highest-priority dataset
+      _DIRNAME: Name of the raw folder of the highest-priority dataset
+      _DIRPATH: Path of the raw folder of the highest-priority dataset, relative
+      _FILEPATH: Path of the raw data file of the highest-priority dataset, relative
+      IGBP: IGBP vegetation class
+      LON: Site longitude in decimal degrees
+      LAT: Site latitude in decimal degrees
+      ELEVATION: Site elevation in m, empty where no source gives it
+      PRIORITY: Merge priority of the highest-priority dataset, 1 = top
+      _FILEPATH_PARQUET: Path of the merged site file, relative
+      DATE_FIRST: Date of the first record of the merged site file, as DD Mon YYYY
+      DATE_LAST: Date of the last record of the merged site file, as DD Mon YYYY
+      N_YEARS: Calendar years spanned by the record, last year minus first year plus 1, partial years
+        counted
+      N_RECORDS: Count of records (rows) in the merged site file, at its time step of 30 or 60 min
+      PREC/YR: Sum of P_F over the whole record divided by N_YEARS, in mm per year
+  outputs/10_datasets/15_datasets_info_parquet_vars_stats_usedsites.csv:
+    row: One row per site used in the analysis (209 sites)
+    note: Same columns and meaning as 14_datasets_info_parquet_vars_stats.csv, keeping only sites with
+      SWC, GPP and RECO, IGBP not DNF, and N_YEARS of at least 3. Families follow the grammar ({VAR}_VAR,
+      {VAR}_QC_VAR, {VAR}_AVG, {VAR}_N_RECORDS)
+    columns:
+      SITE: FLUXNET site ID
+      ORIGIN: Network prefixes of the merged datasets joined with + in priority order
+      DOWNLOADED_VIA: Download source of the highest-priority dataset
+      _DIRNAME: Name of the raw folder of the highest-priority dataset
+      _DIRPATH: Path of the raw folder of the highest-priority dataset, relative
+      _FILEPATH: Path of the raw data file of the highest-priority dataset, relative
+      IGBP: IGBP vegetation class
+      LON: Site longitude in decimal degrees
+      LAT: Site latitude in decimal degrees
+      ELEVATION: Site elevation in m, empty where no source gives it
+      PRIORITY: Merge priority of the highest-priority dataset, 1 = top
+      _FILEPATH_PARQUET: Path of the merged site file, relative
+      DATE_FIRST: Date of the first record of the merged site file, as DD Mon YYYY
+      DATE_LAST: Date of the last record of the merged site file, as DD Mon YYYY
+      N_YEARS: Calendar years spanned by the record, last year minus first year plus 1, partial years
+        counted
+      N_RECORDS: Count of records (rows) in the merged site file, at its time step of 30 or 60 min
+      PREC/YR: Sum of P_F over the whole record divided by N_YEARS, in mm per year
+  outputs/10_datasets/16_ERA5_climate_1991-2020/ (per site, legacy):
+    row: 'Hourly files: one row per hour. Yearly files: one row per year 1991 to 2020. Raw files: one
+      row per hour as downloaded'
+    note: 'Legacy, not read by any later script. Same layout as the Copernicus folder, made by 16_download_era5_mat_map.py
+      for FLUXNET_ORG sites only, with the site coordinates rounded to 0.1°. Files per site: <SITE>_era5_1991-2020_shifted.csv
+      (hourly), <SITE>_era5_1991-2020_yearly.csv, and in raw/ the two CDS files (2 m temperature, precipitation).
+      The yearly file is not checked for 30 complete years. ERA5-Land time series from the Copernicus
+      CDS'
+    columns:
+      valid_time: 'Raw files: end of the hour in UTC as delivered by CDS. _shifted file: 1 h earlier,
+        the start of the hour, 1991-01-01 00:00 to 2020-12-31 23:00. _yearly file: first day of the year
+        (YYYY-01-01)'
+      t2m: 'Raw temperature file: ERA5-Land 2 m air temperature in K'
+      tp: 'Raw precipitation file: ERA5-Land total precipitation of the hour in m'
+      latitude: 'Raw files: latitude of the ERA5-Land grid point in decimal degrees'
+      longitude: 'Raw files: longitude of the ERA5-Land grid point in decimal degrees'
+      TA_degC: '2 m air temperature in °C. _shifted file: hourly value (t2m minus 273.15). _yearly file:
+        annual mean of the hourly values'
+      PRECIP_TOT_mm: 'Precipitation in mm. _shifted file: amount of the hour (tp times 1000). _yearly
+        file: annual sum'
+      LAT: Latitude of the ERA5-Land grid point in decimal degrees
+      LON: Longitude of the ERA5-Land grid point in decimal degrees
+  outputs/10_datasets/16_ERA5_..._GoogleEarthEngine/ (per site):
+    row: One row per year 1991 to 2020 for one site
+    note: Not read by script 17 since the switch to ERA5-Land. ERA5 (not ERA5-Land) daily collection ECMWF/ERA5/DAILY
+      on Google Earth Engine, value of the grid cell at the site coordinates (scale 27830 m). A file is
+      written only if all 30 years have values
+    columns:
+      Year: Calendar year
+      MAT_degC: Mean of the daily mean 2 m air temperature over the year, in °C
+      PRECIP_TOT_mm: Sum of the daily total precipitation over the year, in mm
+  outputs/10_datasets/16_ERA5_..._Copernicus/ (per site):
+    row: 'Hourly file: one row per hour 1991 to 2020. Yearly file: one row per year 1991 to 2020. Raw
+      files: one row per hour as downloaded'
+    note: 'ERA5-Land time series from the Copernicus CDS at the site coordinates, or at the nearest land
+      cell for sites in ERA5_LAND_POINT_OVERRIDE (sea cells). Files per site: <SITE>_era5_1991-2020_shifted.csv
+      (hourly), <SITE>_era5_1991-2020_yearly.csv (read by script 17), and in raw/ the two CDS files (2
+      m temperature, precipitation). The yearly file exists only if all 30 years are present. Timestamps
+      are shifted back 1 h so that the precipitation of an hour falls into the year it belongs to. Temperature
+      is shifted too'
+    columns:
+      valid_time: 'Raw files: end of the hour in UTC as delivered by CDS. _shifted file: 1 h earlier,
+        the start of the hour, 1991-01-01 00:00 to 2020-12-31 23:00. _yearly file: first day of the year
+        (YYYY-01-01)'
+      t2m: 'Raw temperature file: ERA5-Land 2 m air temperature in K'
+      tp: 'Raw precipitation file: ERA5-Land total precipitation of the hour in m'
+      latitude: 'Raw files: latitude of the ERA5-Land grid point in decimal degrees'
+      longitude: 'Raw files: longitude of the ERA5-Land grid point in decimal degrees'
+      TA_degC: '2 m air temperature in °C. _shifted file: hourly value (t2m minus 273.15). _yearly file:
+        annual mean of the hourly values'
+      PRECIP_TOT_mm: 'Precipitation in mm. _shifted file: amount of the hour (tp times 1000). _yearly
+        file: annual sum'
+      LAT: Latitude of the ERA5-Land grid point in decimal degrees
+      LON: Longitude of the ERA5-Land grid point in decimal degrees
+  outputs/10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv:
+    row: One row per site used in the analysis (209 sites)
+    note: Columns of 15_datasets_info_parquet_vars_stats_usedsites.csv plus the 1991-2020 site climate.
+      The climate values describe the sites (Fig. 1b, Supplementary Table 1) and enter no analysis. Despite
+      the ERA5_ prefix, values come from FLUXNET TA_ERA and P_ERA (ERA5 downscaled to the site by ONEFlux)
+      where the flux product has an ERA5 yearly file, otherwise from ERA5-Land. Families follow the grammar
+      ({VAR}_VAR, {VAR}_QC_VAR, {VAR}_AVG, {VAR}_N_RECORDS)
+    columns:
+      SITE: FLUXNET site ID
+      ORIGIN: Network prefixes of the merged datasets joined with + in priority order
+      DOWNLOADED_VIA: Download source of the highest-priority dataset
+      _DIRNAME: Name of the raw folder of the highest-priority dataset
+      _DIRPATH: Path of the raw folder of the highest-priority dataset, relative
+      _FILEPATH: Path of the raw data file of the highest-priority dataset, relative
+      IGBP: IGBP vegetation class
+      LON: Site longitude in decimal degrees
+      LAT: Site latitude in decimal degrees
+      ELEVATION: Site elevation in m, empty where no source gives it
+      PRIORITY: Merge priority of the highest-priority dataset, 1 = top
+      _FILEPATH_PARQUET: Path of the merged site file, relative
+      DATE_FIRST: Date of the first record of the merged site file, as DD Mon YYYY
+      DATE_LAST: Date of the last record of the merged site file, as DD Mon YYYY
+      N_YEARS: Calendar years spanned by the record, last year minus first year plus 1, partial years
+        counted
+      N_RECORDS: Count of records (rows) in the merged site file, at its time step of 30 or 60 min
+      PREC/YR: Sum of P_F over the whole record divided by N_YEARS, in mm per year
+      ERA5_MAT_1991_2020: Mean annual air temperature 1991-2020 in °C, mean of the 30 yearly values from
+        the source in ERA5_MAT_SOURCE, rounded to 3 decimals
+      ERA5_MAP_1991_2020: Mean annual precipitation 1991-2020 in mm per year, mean of the 30 yearly sums
+        from the source in ERA5_MAP_SOURCE, rounded to 3 decimals
+      ERA5_MAT_SOURCE: 'Source of ERA5_MAT_1991_2020: FLUXNET TA_ERA (ERA5 yearly file of the flux product)
+        or ERA5-Land (16_ERA5_..._Copernicus yearly file)'
+      ERA5_MAP_SOURCE: 'Source of ERA5_MAP_1991_2020: FLUXNET P_ERA (ERA5 yearly file of the flux product)
+        or ERA5-Land (16_ERA5_..._Copernicus yearly file)'
+      ERA5_MAT_REASON: 'Why ERA5-Land was used for MAT: no ERA5 file in the flux product, or override:
+        <reason> from config/site_climate_source_override.csv, empty if FLUXNET TA_ERA was used'
+      ERA5_MAP_REASON: 'Why ERA5-Land was used for MAP: no ERA5 file in the flux product, no site precipitation
+        so P_ERA not scaled, P_ERA more than 25% off the site-reported MAP (with the deviations and the
+        source of the reported value), or override: <reason>, empty if FLUXNET P_ERA was used'
+  outputs/20_subsets/<SITE> subset parquet (per site):
+    row: One row per half-hourly or hourly record of one site that passed all subset filters
+    note: 'File 21_subsets_parquet/<SITE>_subset_GPPhighest4_qc0_daytime.parquet, main run and deep-sm.
+      Filters in order: measured NEE (QC flag 0), daytime (SW_IN_POT above 20 W m-2), the four months
+      with the highest mean GPP over the whole record, the same number of years for each of these months
+      (latest years kept), no missing value in any of the eight measured variables. Columns are the grammar
+      forms {VAR} (measured, FLUXNET units, VPD in hPa, CD-Ygb in Pa) and {VAR}_ZSCORE for NEE, LE, GPP,
+      RECO, TA, VPD, SWIN, SWC, ET, NEP. NEP is NEE times -1. ET is computed from LE and TA (diive et_from_le)
+      in mm h-1. The z-scores are computed over the records of this file with the population standard
+      deviation (ddof 0). In deep-sm, SWC is the deepest soil water layer that keeps at least 90% of the
+      peak-month records of layer 1 (see SWC_VAR in its 21_SUBSETS table)'
+    columns:
+      TIMESTAMP_MIDDLE: Middle of the averaging interval of the record (index of the file), in the time
+        of the FLUXNET files
+  outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv:
+    row: One row per site with a non-empty subset (208 sites)
+    note: 'One file per run variant: main, deep-sm, blocked-cv, no_ta, no_vpd. The blocked-cv, no_ta and
+      no_vpd tables point to the main subset files. All statistics are over the subset records of the
+      site, the same records the z-scores are computed on. Families follow the grammar with VAR in NEE,
+      LE, GPP, RECO, TA, VPD, SWIN, SWC, ET, NEP: {VAR}_ZSCORE_MIN, {VAR}_ZSCORE_MAX, {VAR}_Z0, {VAR}_SD,
+      {VAR}_Z+2, {VAR}_Z-2, {VAR}_MIN, {VAR}_MAX. Measured values in FLUXNET units (VPD in hPa, CD-Ygb
+      in Pa). SWC_VAR and SWC_LAYER appear only in the deep-sm table, the other four tables were written
+      before the code added them'
+    columns:
+      SITE: FLUXNET site ID
+      DATE_FIRST: Date of the first subset record, as DD Mon YYYY
+      DATE_LAST: Date of the last subset record, as DD Mon YYYY
+      N_YEARS: Calendar years spanned by the subset, last year minus first year plus 1 (a December to
+        February season counts 2)
+      N_RECORDS: Count of subset records of the site
+      _FILEPATH_PARQUET_SUBSET: Absolute path of the subset parquet file on the machine that wrote it
+      SWC_VAR: 'deep-sm only: FLUXNET soil water column used as SWC (SWC_F_MDS_<n>)'
+      SWC_LAYER: 'deep-sm only: layer number n of SWC_VAR, -9999 if the name has no layer number'
+      LAT: Site latitude in decimal degrees
+      LON: Site longitude in decimal degrees
+      ELEVATION: Site elevation in m, empty where no source gives it
+      IGBP: IGBP vegetation class
+  outputs/20_subsets/22_data_flow.csv:
+    row: One row per site used in the analysis (209 sites, one ends with 0 records and has no subset)
+    note: Main run only. Record counts after each filter step of stage 21, in the order of the steps.
+      complete_cases equals N_RECORDS in 21_SUBSETS_parquet_vars_stats_subsets.csv, checked by the script
+    columns:
+      SITE: FLUXNET site ID
+      IGBP: IGBP vegetation class
+      all_records: Count of all records in the merged site file
+      measured_nee: Records left after keeping measured NEE (QC flag 0)
+      daytime: Records left after keeping daytime (SW_IN_POT above 20 W m-2)
+      peak_months: Records left after keeping the four months with the highest mean GPP over the whole
+        record
+      year_balanced: Records left after giving each of the four months the same number of years, latest
+        years kept
+      complete_cases: Records left after dropping records with a missing value in NEE, LE, GPP, RECO,
+        TA, VPD, SWIN or SWC
+      SWC_VAR: FLUXNET soil water column used as SWC
+  outputs/30_shap/<FLUX>/conditional/<SITE>_shap-conditional_<FLUX>.parquet (per site):
+    row: One half-hourly or hourly record of the site's peak-season subset (4 peak-GPP months, daytime,
+      measured NEE with QC flag 0, all variables present)
+    note: 'Every record of the subset is in the file, and each record carries the prediction and the SHAP
+      values of the one fold model that held it out in cross-validation (main run and the deep-sm, no_ta
+      and no_vpd variants: shuffled 5-fold KFold, random_state 42, blocked-cv variant: leave one calendar
+      year out, sites with a single year are missing). XGBoost hyperparameters are fixed for all sites.
+      SHAP is TreeSHAP with tree_path_dependent (conditional) perturbation. Predictors are TA_ZSCORE,
+      SWIN_ZSCORE, VPD_ZSCORE and SWC_ZSCORE in the full set, the no_ta variant has no TA_ZSCORE_SHAPVALS
+      column and the no_vpd variant has no VPD_ZSCORE_SHAPVALS column. The target is the flux in the folder
+      name (NEP_ZSCORE in the main run, also GPP_ZSCORE, RECO_ZSCORE, ET_ZSCORE). All other columns ({VAR}
+      in its unit and {VAR}_ZSCORE, z-score within the site subset) are passed through from the subset
+      file. SHAP values, SUM, EXPECTED, SUM+EXPECTED and the prediction are in σ of the target. A positive
+      SHAP value raises the predicted target (for NEP more net uptake). Pandas reads TIMESTAMP_MIDDLE
+      back as the index.'
+    columns:
+      TIMESTAMP_MIDDLE: Middle of the averaging period of the record (30 or 60 min, as in the source data),
+        written pandas index
+      EXPECTED: SHAP base value in σ of the target, mean over the folds of each fold explainer's expected
+        model output, one constant per site file
+      SUM: Sum of the {VAR}_ZSCORE_SHAPVALS columns of the record, in σ of the target
+      SUM+EXPECTED: EXPECTED plus SUM, in σ of the target, reconstructs the prediction up to the difference
+        between the fold's own base value and the fold mean (about 0.01 to 0.03 σ), use {VAR}_ZSCORE_PRED
+        for the exact prediction
+      '{VAR}_ZSCORE_PRED': Out-of-fold prediction of the target for this record, in σ of the target
+  outputs/30_shap/<FLUX>/conditional/2_cv_results_all_sites.csv:
+    row: One site
+    note: 'Cross-validation scores of the models behind the per-site SHAP files. Main run and variants
+      deep-sm, no_ta, no_vpd: 5 shuffled folds, so fold_1 to fold_5. blocked-cv variant: one fold per
+      calendar year present in the site subset, fold 1 is the earliest year, up to 28 folds, columns of
+      folds a site does not have are empty, and the column order follows the first site written (global_r2
+      and global_rmse sit after fold_2). Sites skipped by blocked CV (single year) have no row. RMSE values
+      are in σ of the target.'
+    columns:
+      site: Site code
+      target: Target flux of the models, e.g. NEP_ZSCORE
+      fold_{N}_r2: Coefficient of determination of fold N model on its held-out records
+      fold_{N}_rmse: Root mean square error of fold N model on its held-out records, in σ of the target
+      global_r2: Coefficient of determination of the pooled out-of-fold predictions against observations,
+        all records of the site
+      global_rmse: Root mean square error of the pooled out-of-fold predictions, all records of the site,
+        in σ of the target
+  outputs/30_shap/<FLUX>/ale/<SITE>_ale_curves (per site):
+    row: One grid point of the ALE curve of one predictor at one site
+    note: Accumulated local effects (PyALE, grid_size 100) from one XGBoost model per site, fitted on
+      85 percent of the subset records (15 percent for early stopping) with the hyperparameters of script
+      31 and evaluated on all records. Predictors TA_ZSCORE, SWIN_ZSCORE, VPD_ZSCORE, SWC_ZSCORE, usually
+      101 points each (fewer if quantile edges coincide). Parquet and csv twins have the same columns.
+    columns:
+      feature_value: Quantile bin edge of the predictor, in σ of the predictor (z-score within site),
+        the first point is the predictor minimum
+      effect: Centered accumulated local effect at feature_value, in σ of the target, centered so that
+        the record-weighted mean effect is zero
+      feature: Predictor name, e.g. VPD_ZSCORE
+      site: Site code
+      target: Target flux of the model, e.g. NEP_ZSCORE
+      IGBP: IGBP forest type of the site
+      LAT: Site latitude in decimal degrees, from the 21 subsets table
+      LON: Site longitude in decimal degrees, from the 21 subsets table
+      ELEVATION: Site elevation from the 21 subsets table, NaN where unknown
+      N_RECORDS: Number of records in the site subset (count)
+  outputs/30_shap/<FLUX>/ale/<SITE>_ale parquet (per site):
+    row: One row per modeled record of one site, as in the subset file
+    note: Input data of the ALE model of script 32 with its prediction. The ALE model is one XGBoost model
+      per site, fitted on 85 percent of the records (random split), separate from the cross-validated
+      models behind the SHAP values.
+    columns:
+      TIMESTAMP_MIDDLE: Middle of the averaging period of the record (30 or 60 min, as in the source data),
+        written pandas index
+      '{VAR}_ZSCORE_PRED': Prediction of the ALE model for every record, in σ of the target, in-sample
+        for the 85 percent of records the model was fitted on
+  outputs/30_shap/<FLUX>/ale/0_ale_validation_sites.csv:
+    row: One site
+    note: Fit of the single ALE model per site, scored on all subset records including the 85 percent
+      used for training, so in-sample explanatory power and not comparable to the out-of-fold scores of
+      2_cv_results
+    columns:
+      site: Site code
+      target: Target flux, e.g. NEP_ZSCORE
+      r2_full: Coefficient of determination of the ALE model on all records of the site, in-sample
+      rmse_full: Root mean square error of the ALE model on all records of the site, in σ of the target,
+        in-sample
+      n_records: Number of records used (count)
+      n_features: Number of predictors (count)
+  outputs/40_aggregation/41_SHAPVALUES meanAggregatedPerSite (per grid):
+    row: One site and one cell of the 179 by 179 grid of the two binning variables, including cells with
+      no records of that site (all values NaN)
+    note: Each file is one grid, named BIN-{x}+BIN-{y}+{FLUX}, with x and y from TA+VPD, SWC+VPD, TA+SWC,
+      ET+VPD, ET+SWC (z-scores). Records of the per-site SHAP file are binned on x_ZSCORE and y_ZSCORE
+      (bins of 0.1 σ, see BIN_{VAR}_ZSCORE), and every other column is the mean over the site's records
+      in the cell (aggregation mean, at least 1 record). So {VAR} is the bin mean in its unit, {VAR}_ZSCORE
+      and the SHAP columns are bin means in σ. No record count per cell is stored. Every site has 32041
+      rows, about 97 percent of them empty, drop rows where the value columns are NaN before use. Variants
+      as in the per-site SHAP files, deeper-only keeps the 128 sites with soil water below layer 1.
+    columns:
+      BIN_{VAR}_ZSCORE: Lower edge of the 0.1 σ bin of VAR_ZSCORE for this cell, interval [edge, edge
+        + 0.1), zero bin labeled -0.0
+      EXPECTED: SHAP base value of the site, in σ of the target (constant per site, NaN in empty cells)
+      SUM: Mean over the cell's records of the summed SHAP values, in σ of the target
+      SUM+EXPECTED: Mean over the cell's records of SUM+EXPECTED, in σ of the target
+      '{VAR}_ZSCORE_PRED': Mean over the cell's records of the out-of-fold prediction, in σ of the target
+      SITE: Site code
+      IGBP: IGBP forest type of the site
+      __index_level_0__: Written pandas index, row number 0 to 32040 within the site, restarts for each
+        site, no meaning
+  outputs/40_aggregation/42_SHAPVALUES AggregatedAcrossSites (per grid):
+    row: One grid cell (pair of bins) that holds a value for at least one site
+    note: 'Two-level columns, first level a grammar column, second level a statistic. The parquet schema
+      stores them as strings like (''VPD_ZSCORE_SHAPVALS'', ''mean''), pandas.read_parquet restores the
+      two levels. Input is the 41 file of the same grid, DNF sites removed. Aggregation is two-step: first
+      the mean over records within a site and cell (file 41), then the statistics over these per-site
+      means, each site with equal weight. mean, median, max, min, std (ddof 1), sem (std / sqrt(count))
+      and count are taken over sites, and count is the number of sites with data in the cell, not records.
+      The figures keep only cells with count at least ceil(N_SITES / 2). Only columns {VAR}_ZSCORE, {VAR}_ZSCORE_SHAPVALS
+      and the BIN columns are aggregated, the measured-unit columns, EXPECTED, SUM, SUM+EXPECTED and the
+      prediction are not in the file. Rows are sorted as strings by BIN_COMBINED_STR, not numerically.'
+    columns:
+      BIN_{VAR}_ZSCORE: Lower edge of the 0.1 σ bin of VAR_ZSCORE for the cell (median of identical labels),
+        interval [edge, edge + 0.1)
+      N_SITES: Total number of sites that went into the file (count), same in every row, the denominator
+        for the per-cell site count
+      BIN_COMBINED_STR: Cell label x+y, the lower bin edges of the first and second grid variable of the
+        file name, one decimal, zero written -0.0 (e.g. -0.0+0.5), written pandas index
+  outputs/40_aggregation/43_SHAPVALUES AcrossIGBP (per forest type, grid):
+    row: One cell of the full 179 by 179 grid for one forest type, including cells no site of that type
+      reaches
+    note: Same layout and statistics as file 42, computed separately over the sites of one IGBP forest
+      type (DBF, EBF, ENF, MF, named in the file name, DNF excluded), each site with equal weight. Unlike
+      42, cells without any site are kept, with count 0 and NaN in the other statistics, so most rows
+      are empty.
+    columns:
+      BIN_{VAR}_ZSCORE: Lower edge of the 0.1 σ bin of VAR_ZSCORE for the cell (median of identical labels),
+        interval [edge, edge + 0.1)
+      N_SITES: Number of sites of this forest type that went into the file (count), same in every row
+      BIN_COMBINED_STR: Cell label x+y, the lower bin edges of the first and second grid variable of the
+        file name, one decimal, zero written -0.0, written pandas index
+  outputs/40_aggregation/44_SHAPVALUES AggregatedAcrossScenarios:
+    row: One site and one stress stage (9 stages per site, 16 factorial cells per site in factorial-cells/)
+    note: 'Per-site rows only, there are no across-site rows in this file. Stage statistics {COL}_* are
+      taken over the records of the site that fall in the stage, for every column of the per-site SHAP
+      file, so also for measured variables and z-scores. Stages are masks on TA_ZSCORE, VPD_ZSCORE and
+      SWC_ZSCORE with cuts a = 0.3186 (middle 25 percent of a normal distribution), b = 0.7144 and c =
+      1.2816 (10th and 90th percentile). Main sequence: 0 all data, 1 all three drivers within plus or
+      minus a, 2 warm, 3 warm and dry soil, 4 hot and dry soil, 5 hot and very dry soil, 6 extremely hot
+      and very dry soil, 7 extremely hot and extremely dry soil, stages 2 to 7 with VPD_ZSCORE at most
+      c, 8 compound extreme with TA and VPD above c and SWC below -c. mirrored-stages/ swaps the roles
+      of VPD and soil water, factorial-cells/ crosses 4 soil water classes with 4 VPD classes and leaves
+      TA free. Across-site stage summaries (mean of site means, sem, and a total SD by the law of total
+      variance, sqrt of the mean of within-site variances plus the ddof 0 variance of site means) are
+      computed on the fly by calculate_stage_stats in src/stages.py for the figures and are not stored
+      here.'
+    columns:
+      SITE: Site code
+      IGBP: IGBP forest type of the site
+      SCENARIO: 'Stage number within the sequence, 0 to 8 (factorial: cell number 0 to 15, 4 times SWC_CLASS
+        plus VPD_CLASS)'
+      CONDITION: Text label of the stage, not unique (stages 5, 6 and 7 are all labeled hot and driest),
+        use SCENARIO as key
+      N_VALUES: Number of the site's records in the stage (count), statistics are NaN when 0
+      TA_CLASS: Temperature class of the stage, -1 unrestricted, 0 within plus or minus a, 1 above a up
+        to b, 2 above b up to c, 3 above c
+      VPD_CLASS: VPD class of the stage, 0 within plus or minus a, 1 above a up to b, 2 above b up to
+        c, 3 above c, -1 unrestricted in stage 0 and only kept at or below c in stages 2 to 7
+      SWC_CLASS: 'Soil water class of the stage, toward dry soil: 0 within plus or minus a, 1 below -a
+        down to -b, 2 below -b down to -c, 3 below -c, -1 unrestricted in stage 0 and only kept at or
+        above -c in mirrored stages 2 to 7'
+      NET_SHAPVALS_OVR_AVG: Mean of SUM (net SHAP effect of all predictors) over the stage records at
+        this site, in σ of the target, equals SUM_OVR_AVG
+      NET_SHAPVALS_OVR_SD: Standard deviation (ddof 1) of SUM over the stage records at this site, in
+        σ of the target, includes the covariance between drivers
+      NET_SHAPVALS_OVR_SEM: Standard error of the mean of SUM over the stage records at this site, in
+        σ of the target
+      __index_level_0__: Written pandas index, the site code (same as SITE)
+      EXPECTED: SHAP base value in σ of the target, mean over the folds of each fold explainer's expected
+        model output, one constant per site file
+      SUM: Sum of the {VAR}_ZSCORE_SHAPVALS columns of the record, in σ of the target
+      SUM+EXPECTED: EXPECTED plus SUM, in σ of the target, reconstructs the prediction up to the difference
+        between the fold's own base value and the fold mean (about 0.01 to 0.03 σ), use {VAR}_ZSCORE_PRED
+        for the exact prediction
+  outputs/40_aggregation/45_StageDistributions:
+    row: 'perSite: one row per site and stress stage. overall: one row per stage. byIGBP: one row per
+      stage and forest type'
+    note: 'Three csv files in 40_aggregation/NEP_ZSCORE/conditional. Stages are the soil drying sequence
+      of src/stages.py, stage_0 to stage_8, applied to the per-site conditional SHAP files (peak-season
+      daytime records of the stage 21 subsets): 0 all records, 1 normal (TA, VPD and SWC all within |z|
+      <= 0.319), 2 warm, 3 warm and dry, 4 hot and dry, 5 hot and very dry soil, 6 extremely hot and very
+      dry soil, 7 extremely hot and extremely dry soil, stages 2 to 7 with VPD z <= 1.28, 8 compound extreme
+      (TA z > 1.28, SWC z < -1.28, VPD z > 1.28). perSite holds the median over the records of one site
+      in one stage. overall and byIGBP summarize these site medians across sites, each site with equal
+      weight: the value columns are the median across sites and the _iqr columns the 25th and 75th percentiles
+      across sites. A site enters a stage only if it has at least one record in it. VAR is TA, VPD, SWC
+      or SWIN.'
+    columns:
+      SITE: FLUXNET site ID
+      IGBP: IGBP forest type of the site (ENF, DBF, EBF, MF)
+      stage: Stress stage index, 0 to 8, see note
+      n_records: 'perSite: number of half-hourly records of the site in the stage'
+      '{VAR}_abs_median': 'perSite: median of measured VAR over the records of the site in the stage,
+        in the unit of VAR in the subset files (TA °C, VPD hPa, SWC %, SWIN W m-2)'
+      '{VAR}_z_median': 'perSite: median of VAR_ZSCORE over the records of the site in the stage, in σ
+        of VAR'
+      sites: 'overall and byIGBP: number of sites with at least one record in the stage (and forest type)'
+      records: 'overall and byIGBP: sum of n_records over these sites'
+      '{VAR}_z': 'overall and byIGBP: median across sites of the site medians of VAR_ZSCORE, in σ of VAR'
+      '{VAR}_z_iqr': 'overall and byIGBP: text [q25, q75], 25th and 75th percentile across sites of the
+        site medians of VAR_ZSCORE, in σ of VAR, rounded to 2 decimals'
+      '{VAR}_abs': 'overall and byIGBP: median across sites of the site medians of measured VAR, in the
+        unit of VAR in the subset files'
+      '{VAR}_abs_iqr': 'overall and byIGBP: text [q25, q75], 25th and 75th percentile across sites of
+        the site medians of measured VAR, rounded to 2 decimals'
+  outputs/40_aggregation/46_ALE_SiteCurves:
+    row: One row per site with an ALE curve for VPD_ZSCORE
+    note: Parquet in 40_aggregation/NEP_ZSCORE/ale (main run) and ale/deep-sm. SITE is the written index.
+      Each site's raw accumulated local effects (ALE) curve for VPD_ZSCORE from stage 32 (PyALE, centered
+      so the record-weighted mean effect is zero) is linearly interpolated to a common grid of 50 evenly
+      spaced VPD_ZSCORE values spanning the minimum to maximum feature value over all site curves. Values
+      are the unsmoothed interpolated curve, NaN outside the site's own VPD range. The ALE comes from
+      a separate XGBoost model of NEP_ZSCORE per site, not from the SHAP models.
+    columns:
+      SITE: FLUXNET site ID, written index
+      IGBP: IGBP forest type of the site
+      '{GRID_X}': ALE effect of VPD_ZSCORE on predicted NEP_ZSCORE at the grid value given by the column
+        name (VPD in σ), in σ of NEP, NEP positive = net uptake, NaN outside the site's VPD range
+  outputs/40_aggregation/46_ALE_Thresholds:
+    row: 'One row per group: all sites (mean of per-site crossings), all sites (pooled curve), then ENF,
+      DBF, MF, EBF'
+    note: 'csv in 40_aggregation/NEP_ZSCORE/ale and ale/deep-sm. Per site, the ALE curve on the common
+      grid (46_ALE_SiteCurves) is smoothed with a fourth-order polynomial and its highest positive to
+      negative zero crossing is taken. Sites whose fitted curve never crosses are left out. Group thresholds
+      are the mean of the per-site crossings, each site with equal weight. The pooled curve row is a different
+      quantity: the crossing of the cross-site mean of the fitted curves, kept where at least half of
+      the sites have data, and it has no interval. Script 47 reads the ALL SITES row for its ALE row.
+      The deep-sm file was written by an earlier version of script 46 and has no sd and se columns. Numbers
+      are written rounded to 3 decimals.'
+    columns:
+      feature: Feature of the ALE curve, VPD_ZSCORE
+      target: Model target, NEP_ZSCORE
+      method: Per-site zero-crossings, mean (mean of per-site crossings) or Pooled curve zero-crossing
+        (crossing of the mean curve)
+      group: ALL SITES, ALL SITES (pooled curve), or an IGBP forest type
+      threshold: VPD threshold in σ of VPD (within-site z-score), mean across sites of the per-site crossings,
+        or crossing of the pooled curve
+      ci_lower: Lower bound of the 95% confidence interval of the mean of per-site crossings, t distribution,
+        σ of VPD, empty for the pooled curve row
+      ci_upper: Upper bound of the same 95% confidence interval, σ of VPD, empty for the pooled curve
+        row
+      sd: Standard deviation across sites of the per-site crossings (ddof 1), σ of VPD, between-site spread,
+        empty for the pooled curve row
+      se: Standard error of the mean of per-site crossings, σ of VPD, empty for the pooled curve row
+      n_sites: 'Per-site rows: number of sites with a crossing that enter the mean. Pooled curve row:
+        number of sites with an ALE curve'
+      mode: Per-site curves or Single curve
+  outputs/40_aggregation/47_THRESHOLD_Robustness:
+    row: One row per robustness test of the VPD threshold, plus a final PUBLISHED REFERENCE row
+    note: 'csv in 40_aggregation/NEP_ZSCORE/conditional. Estimator of every row unless stated: highest
+      positive to negative crossing of a fourth-order polynomial fitted to the cross-site median VPD SHAP
+      per TA by VPD bin cell (stage 41 per-site cell means, cells held by at least half the row''s sites),
+      as for Figure 4. Rows differ in data (soil water depth runs, no_ta, blocked-cv), in site set (regions
+      removed, minimum record length, matched sites) or in estimator (mean per bin, GAM, ALE, estimator
+      sweep). σ to kPa: kPa = (mean over the row''s sites of the site VPD mean + z times mean over the
+      row''s sites of the site VPD standard deviation) / 10, with the stage 21 site table of the run behind
+      the row (deep-sm rows use the deep-sm table, no_ta and blocked-cv their own, all others the main
+      run table), CD-Ygb VPD divided by 100 from Pa to hPa. Interval columns: lower and upper are in kPa,
+      lower_sigma and upper_sigma are the same interval in σ, and boot_lower and boot_upper are a separate
+      site bootstrap interval in kPa. In ordinary rows (note empty) lower and upper are the crossings
+      of the lower and upper bound of the 95% prediction band of the fit (src.fit, for the GAM row the
+      band of the spline), the interval shown in the display items, and boot_lower and boot_upper are
+      the 2.5th and 97.5th percentiles of the crossing over 2000 resamples of sites with replacement.
+      Three rows, flagged in note, carry another interval in lower and upper, copied unchanged into boot_lower
+      and boot_upper: ALE instead of SHAP (95% confidence interval of the mean of per-site ALE crossings
+      from 46_ALE_Thresholds), Threshold estimator (minimum and maximum over the sweep settings), Any
+      one site removed (minimum and maximum over single-site removals). Any interval bound is NaN if the
+      corresponding curve does not cross zero.'
+    columns:
+      group: 'Test block: Soil water depth, Model fitting, Site set, empty for the reference row'
+      test: Name of the test, or PUBLISHED REFERENCE for the main analysis
+      threshold_sigma: 'Threshold in σ of VPD (within-site z-score). ALE row: ALL SITES value of 46_ALE_Thresholds,
+        rounded to 3 decimals. Estimator row: median over the sweep settings. Any one site removed row:
+        the reference value'
+      threshold_kpa: 'Threshold in kPa, converted with the site set and site table of the row. Estimator
+        row: median over the settings. Any one site removed row: median over the removals'
+      lower: 'Lower interval bound in kPa: crossing of the lower 95% prediction band in ordinary rows,
+        otherwise the interval named in note'
+      upper: 'Upper interval bound in kPa: crossing of the upper 95% prediction band in ordinary rows,
+        otherwise the interval named in note'
+      boot_lower: 2.5th percentile of the threshold over 2000 site bootstrap resamples, kPa. Equal to
+        lower in the three rows with a note
+      boot_upper: 97.5th percentile of the threshold over 2000 site bootstrap resamples, kPa. Equal to
+        upper in the three rows with a note
+      n_sites: 'Number of sites in the row''s site set. ALE row: sites with a per-site ALE crossing. Any
+        one site removed row: the full set, each refit uses one site less'
+      lower_sigma: 'Lower bound of the same interval as lower, in σ of VPD. Any one site removed row:
+        kPa minimum converted back with the main run site table. ALE row: rounded to 3 decimals'
+      upper_sigma: 'Upper bound of the same interval as upper, in σ of VPD. Any one site removed row:
+        kPa maximum converted back with the main run site table. ALE row: rounded to 3 decimals'
+      note: 'Empty for prediction band rows. Otherwise names the interval held in lower, upper, boot_lower,
+        boot_upper: 95% confidence interval of the mean of per-site crossings, spread across settings,
+        or range across single-site removals'
+      shift_kpa: threshold_kpa minus the PUBLISHED REFERENCE threshold_kpa, kPa, positive = higher threshold
+        than the reference, 0 in the reference row
+  outputs/40_aggregation/47_THRESHOLD_EstimatorSweep + LeaveOneSiteOut:
+    row: 'EstimatorSweep: one row per estimator setting (23). LeaveOneSiteOut: one row per site removed
+      from the reference set (208)'
+    note: 'Two csv files in 40_aggregation/NEP_ZSCORE/conditional. EstimatorSweep refits the threshold
+      on the same all-sites curve as Figure 4 (42 file, cross-site median VPD SHAP and median VPD bin
+      value per TA by VPD cell, cells with at least half of the sites), changing only the estimator: polynomial
+      degree, LOWESS span, smoothing spline factor, coarser VPD bins (cells averaged into wider bins,
+      quartic fit), and fitting range in VPD. Threshold is always the highest positive to negative crossing.
+      LeaveOneSiteOut drops each reference site in turn, refits the reference estimator on the remaining
+      sites and converts to kPa with their mean VPD statistics. Removals without a crossing are dropped
+      before writing. The min, max and median of both files form the Threshold estimator and Any one site
+      removed rows of 47_THRESHOLD_Robustness.'
+    columns:
+      family: 'EstimatorSweep: estimator family, polynomial, lowess, spline, bin width or fitting range'
+      setting: 'EstimatorSweep: setting within the family (degree 2 to 6, frac 0.2 to 0.7, s factor 0.001
+        to 0.1 times n times variance, bin width 0.1 to 0.5 σ, fitting range |x| <= 2.0 to 3.5 σ or full
+        range)'
+      threshold_z: 'EstimatorSweep: VPD threshold in σ of VPD (within-site z-score), NaN if the fit does
+        not cross zero'
+      note: 'EstimatorSweep: published choice for the quartic, number of bins for bin width rows, number
+        of TA by VPD cells kept for fitting range rows, otherwise empty'
+      site_removed: 'LeaveOneSiteOut: FLUXNET site ID of the site left out, written index'
+      threshold_kpa: 'LeaveOneSiteOut: threshold in kPa from the remaining sites, converted with their
+        mean VPD and standard deviation (main run site table)'
+  outputs/40_aggregation/48_EXCEEDANCE:
+    row: 'PerSite: one row per site. PerBiome: one row per forest type (ENF, DBF, EBF, MF) plus all'
+    note: 'Two csv files in 40_aggregation/NEP_ZSCORE/conditional. Counts stage 21 subset half-hours (peak-season
+      daytime, QC 0) with VPD and VPD_ZSCORE present, no model involved. VPD converted from hPa to kPa,
+      CD-Ygb from Pa. All exceedance shares are percent (0 to 100) of half-hours of the site with VPD
+      strictly above a threshold. Four thresholds: the PUBLISHED REFERENCE of 47_THRESHOLD_Robustness
+      in kPa, the same in σ, the site''s own crossing from 49_SiteThresholds in σ, and the median crossing
+      of the site''s forest type from 49_BiomeThresholds_Summary in σ. PerBiome statistics named site_
+      are across sites with equal weight. pooled_pct is weighted by records. The all row covers all sites.'
+    columns:
+      SITE: 'PerSite: FLUXNET site ID'
+      IGBP: IGBP forest type, PerBiome also all
+      n_records: 'Number of half-hours with VPD (PerSite: of the site, PerBiome: summed over the sites)'
+      n_above: 'PerSite: number of half-hours with VPD above the reference threshold in kPa'
+      vpd_mean_kpa: 'PerSite: mean VPD over the site''s half-hours, kPa'
+      vpd_max_kpa: 'PerSite: maximum VPD over the site''s half-hours, kPa'
+      above_published_kpa_pct: 'PerSite: percent of the site''s half-hours with VPD above the reference
+        threshold in kPa'
+      above_published_sigma_pct: 'PerSite: percent of the site''s half-hours with VPD_ZSCORE above the
+        reference threshold in σ'
+      above_own_threshold_pct: 'PerSite: percent of the site''s half-hours with VPD_ZSCORE above the site''s
+        own crossing, NaN if the site has none'
+      own_threshold_z: 'PerSite: the site''s own threshold from 49_SiteThresholds, σ of VPD, NaN if none'
+      above_biome_threshold_pct: 'PerSite: percent of the site''s half-hours with VPD_ZSCORE above the
+        median crossing of its forest type'
+      biome_threshold_z: Median per-site crossing of the forest type from 49_BiomeThresholds_Summary,
+        σ of VPD, NaN in the PerBiome all row
+      mean_excess_kpa: 'PerSite: mean of VPD minus the reference threshold over half-hours above it, kPa,
+        0 if never above. PerBiome: median across sites of these site means'
+      n_sites: 'PerBiome: number of sites'
+      pooled_pct: 'PerBiome: percent of all half-hours of the group above the reference threshold in kPa,
+        record weighted'
+      site_median_pct: 'PerBiome: median across sites of above_published_kpa_pct'
+      site_min_pct: 'PerBiome: minimum across sites of above_published_kpa_pct'
+      site_max_pct: 'PerBiome: maximum across sites of above_published_kpa_pct'
+      sigma_median_pct: 'PerBiome: median across sites of above_published_sigma_pct'
+      own_threshold_median_pct: 'PerBiome: median across sites with a crossing of above_own_threshold_pct'
+      biome_threshold_median_pct: 'PerBiome: median across sites of above_biome_threshold_pct'
+  outputs/40_aggregation/49_SiteThresholds + BiomeThresholds:
+    row: 'SiteThresholds: one row per site with a crossing. Summary: one row per forest type. PairwiseTests:
+      one row per pair of forest types (6)'
+    note: Three csv files per run, in 40_aggregation/NEP_ZSCORE/conditional and its variant folders blocked-cv,
+      deep-sm, deeper-only (main run, 128 sites that moved to a deeper soil layer) and deep-sm/deeper-only,
+      each from that run's stage 41 TA by VPD file. Per site, the cell means of VPD SHAP are averaged
+      per VPD bin over TA bins, a fourth-order polynomial is fitted and its highest positive to negative
+      crossing taken. Sites with fewer than 15 VPD bins or without a crossing are dropped. Summary and
+      PairwiseTests use these per-site values, each site with equal weight. The Kruskal-Wallis test across
+      the four forest types is only printed to the console, not written.
+    columns:
+      SITE: 'SiteThresholds: FLUXNET site ID'
+      IGBP: IGBP forest type (ENF, DBF, EBF, MF)
+      threshold_z: 'SiteThresholds: site VPD threshold in σ of the site''s VPD (within-site z-score)'
+      n: 'Summary: number of sites of the forest type with a crossing'
+      median: 'Summary: median of the per-site thresholds, σ of VPD'
+      iqr_lower: 'Summary: 25th percentile of the per-site thresholds, σ of VPD'
+      iqr_upper: 'Summary: 75th percentile of the per-site thresholds, σ of VPD'
+      ci_lower: 'Summary: 2.5th percentile of the median over 10000 bootstrap resamples of sites, σ of
+        VPD'
+      ci_upper: 'Summary: 97.5th percentile of the median over 10000 bootstrap resamples of sites, σ of
+        VPD'
+      pair: 'PairwiseTests: the two forest types compared, as A vs B'
+      p_raw: 'PairwiseTests: p value of the two-sided Mann-Whitney U test of the per-site thresholds'
+      p_holm: 'PairwiseTests: p value with Holm correction over the 6 pairs'
+      significant: 'PairwiseTests: True if p_holm < 0.05'
+  outputs/50_plots/51_FIG-1:
+    row: One row per site of the analysis (208 sites, DNF and US-xBN excluded)
+    note: Source Data of Fig. 1 (Fig1.csv) and Supplementary Table 1 (SupplementaryTable1_climate.csv).
+      Panel a plots LON and LAT, panel b plots ERA5_MAT_1991_2020 against ERA5_MAP_1991_2020. Values copied
+      from 10_datasets/17_datasets_info_parquet_vars_stats_usedsites_era5.csv (script 17). Column names
+      keep the ERA5 prefix for every source. Climate values describe the sites and enter no analysis
+    columns:
+      SITE: Site ID (FLUXNET style, country code and site code)
+      IGBP: IGBP forest type of the site (ENF, DBF, MF or EBF)
+      LAT: Site latitude in decimal degrees (WGS84), y axis of panel a
+      LON: Site longitude in decimal degrees (WGS84), x axis of panel a
+      ERA5_MAT_1991_2020: Mean annual air temperature 1991 to 2020 in °C, mean of the yearly values, x
+        axis of panel b. Source in ERA5_MAT_SOURCE
+      ERA5_MAP_1991_2020: Mean annual precipitation 1991 to 2020 in mm per year, mean of the yearly sums,
+        y axis of panel b. Source in ERA5_MAP_SOURCE
+      ERA5_MAT_SOURCE: 'Source of the MAT value: ''FLUXNET TA_ERA'' (ERA5 air temperature scaled to the
+        site by ONEFlux, from the ERA5 file of the flux product) or ''ERA5-Land'' (ERA5-Land at the site
+        coordinates)'
+      ERA5_MAT_REASON: Why MAT comes from ERA5-Land, empty when the flux product value is used (no ERA5
+        file in the flux product, or a hand-set override with its reason)
+      ERA5_MAP_SOURCE: 'Source of the MAP value: ''FLUXNET P_ERA'' (ERA5 precipitation of the flux product)
+        or ''ERA5-Land'''
+      ERA5_MAP_REASON: Why MAP comes from ERA5-Land, empty when P_ERA is used (no ERA5 file, no site precipitation
+        so P_ERA not scaled, P_ERA more than 25% off the site-reported MAP with the source of that MAP,
+        or a hand-set override)
+  outputs/50_plots/52_FIG-2:
+    row: One row per cell of a two-variable bin grid and panel (15 panels a to o)
+    note: 'Source Data of Fig. 2 (Fig2.csv). Each panel is a heat map: x and y are the bin coordinates,
+      z the color. Rows of panels: TA by VPD (a to e), SM by VPD (f to j), ET by VPD (k to o). Columns
+      of panels: Global forests, ENF, DBF, MF, EBF. Bins are 0.1 σ wide and labeled by their lower edge.
+      Per site, the VPD SHAP values of all records in a cell are averaged (stage 41), then z is the mean
+      of these site means across the sites of the group, equal weight per site (stages 42 and 43). A cell
+      is kept only if at least half of the sites of the group have data in it, and a forest type panel
+      keeps only cells that are also kept in the Global forests panel. The site count per panel shown
+      in the figure header is not in the file. The deep-sm and deeper-only runs write the same file in
+      their variant folders'
+    columns:
+      panel: Panel letter of the figure, a to o
+      group: 'Site group of the panel: ''Global forests'' (all sites) or a forest type (ENF, DBF, MF,
+        EBF)'
+      x_var: 'Name of the bin column on the x axis: BIN_TA_ZSCORE, BIN_SWC_ZSCORE or BIN_ET_ZSCORE'
+      y_var: Name of the bin column on the y axis, always BIN_VPD_ZSCORE
+      z_var: Name of the plotted statistic, VPD_ZSCORE_SHAPVALS_mean (mean across sites of the site mean
+        VPD SHAP value in the cell)
+      x: Lower edge of the x bin in σ (z-score of x_var within site)
+      y: Lower edge of the VPD bin in σ (VPD z-score within site)
+      z: VPD effect on daytime NEP in σ of NEP, mean across the sites of the group of the site mean SHAP
+        value of VPD in the cell
+  outputs/50_plots/52_SUPPFIG-1:
+    row: One row per cell of a two-variable bin grid and panel (10 panels a to j)
+    note: 'Source Data of Supplementary Fig. 1 (SupplementaryFig1.csv). Same layout and aggregation as
+      Fig. 2: panels a to e show the TA effect on the TA by VPD grid, panels f to j the SM effect on the
+      SM by VPD grid, columns Global forests, ENF, DBF, MF, EBF. Bins 0.1 σ wide, labeled by their lower
+      edge. z is the mean across sites of the per-site mean SHAP value in the cell. Cells kept only where
+      at least half of the sites of the group have data, forest type panels only where the Global forests
+      panel has the cell'
+    columns:
+      panel: Panel letter of the figure, a to j
+      group: 'Site group of the panel: ''Global forests'' (all sites) or a forest type (ENF, DBF, MF,
+        EBF)'
+      x_var: 'Name of the bin column on the x axis: BIN_TA_ZSCORE or BIN_SWC_ZSCORE'
+      y_var: Name of the bin column on the y axis, always BIN_VPD_ZSCORE
+      z_var: 'Name of the plotted statistic: TA_ZSCORE_SHAPVALS_mean or SWC_ZSCORE_SHAPVALS_mean'
+      x: Lower edge of the x bin in σ (z-score of x_var within site)
+      y: Lower edge of the VPD bin in σ (VPD z-score within site)
+      z: TA or SM effect on daytime NEP in σ of NEP, mean across the sites of the group of the site mean
+        SHAP value in the cell
+  outputs/50_plots/52_SUPPFIG-7:
+    row: One row per cell of the SM by VPD bin grid and panel (20 panels a to t)
+    note: 'Source Data of Supplementary Fig. 7 (SupplementaryFig7.csv). The fluxes themselves, not SHAP
+      values, on the SM by VPD grid: panels a to e NEP, f to j GPP, k to o RECO, p to t ET, columns Global
+      forests, ENF, DBF, MF, EBF. Bins 0.1 σ wide, labeled by their lower edge. z is the mean across sites
+      of the per-site mean flux z-score in the cell. Cells kept only where at least half of the sites
+      of the group have data, forest type panels only where the Global forests panel has the cell'
+    columns:
+      panel: Panel letter of the figure, a to t
+      group: 'Site group of the panel: ''Global forests'' (all sites) or a forest type (ENF, DBF, MF,
+        EBF)'
+      x_var: Name of the bin column on the x axis, always BIN_SWC_ZSCORE
+      y_var: Name of the bin column on the y axis, always BIN_VPD_ZSCORE
+      z_var: 'Name of the plotted statistic: NEP_ZSCORE_mean, GPP_ZSCORE_mean, RECO_ZSCORE_mean or ET_ZSCORE_mean'
+      x: Lower edge of the SM bin in σ (soil water z-score within site)
+      y: Lower edge of the VPD bin in σ (VPD z-score within site)
+      z: Flux in σ of that flux (z-score within site), mean across the sites of the group of the site
+        mean in the cell. NEP positive = net uptake
+  outputs/50_plots/53_FIG-3:
+    row: One row per driver (or net effect), site group and stage
+    note: Source Data of Fig. 3 (Fig3.csv, the NEP file in the base folder). Read from the stage 44 file,
+      which holds per site and stage the mean over the records of that stage of each SHAP value. All statistics
+      are taken across sites, equal weight per site. Panel a is igbp = global, panels b to e the forest
+      types. Bars are the mean of the drivers, the diamond the mean of NET_SHAPVALS, whiskers the sem.
+      The GPP, RECO and ET files give the same for models of that flux (effects in σ of that flux), the
+      deep-sm and deeper-only files the sensitivity runs
+    columns:
+      Variable: 'Driver: {VAR}_ZSCORE_SHAPVALS_OVR_AVG for SWIN, TA, SWC (SM) and VPD (site stage mean
+        SHAP value of that predictor), or NET_SHAPVALS (site stage mean of the sum of the four SHAP values,
+        the net effect)'
+      igbp: 'Site group: ''global'' (all sites, panel a) or a forest type ENF, DBF, MF, EBF (panels b
+        to e)'
+      stage: Stress stage 1 to 8 (definitions in Supplementary Table 3)
+      mean: Mean across sites of the site stage mean effect, in σ of the flux (bar height or net diamond)
+      sem: Standard error of that mean across sites (std of site means divided by the square root of n_sites),
+        in σ, the whisker
+      total_sd: 'Total standard deviation in σ by the law of total variance: square root of the mean within-site
+        variance of the record SHAP values plus the variance of the site means (ddof 0)'
+      min: Smallest site stage mean in σ
+      max: Largest site stage mean in σ
+      n_sites: Number of sites with records in this stage
+  outputs/50_plots/53_SUPPFIG-3:
+    row: One row per driver (or net effect), site group and stage
+    note: 'Source Data of Supplementary Fig. 3 (SupplementaryFig3.csv). Same columns and statistics as
+      Fig. 3 data, from the mirrored-stages aggregation: VPD rises along the stages while soil water stays
+      moderate, and Stage 8 adds extreme soil dryness. All statistics across sites, equal weight per site'
+    columns:
+      Variable: 'Driver: {VAR}_ZSCORE_SHAPVALS_OVR_AVG for SWIN, TA, SWC (SM) and VPD (site stage mean
+        SHAP value of that predictor), or NET_SHAPVALS (site stage mean of the sum of the four SHAP values)'
+      igbp: 'Site group: ''global'' (all sites) or a forest type ENF, DBF, MF, EBF'
+      stage: Stage 1 to 8 of the mirrored sequence
+      mean: Mean across sites of the site stage mean effect, in σ of NEP
+      sem: Standard error of that mean across sites, in σ
+      total_sd: 'Total standard deviation in σ: square root of the mean within-site variance plus the
+        variance of the site means (ddof 0)'
+      min: Smallest site stage mean in σ
+      max: Largest site stage mean in σ
+      n_sites: Number of sites with records in this stage
+  outputs/50_plots/54_FIG-4:
+    row: 'Data files: one row per cell of the TA by VPD bin grid kept for the panel, so several rows share
+      one VPD bin. Coefficient file: one row per panel'
+    note: 'Source Data of Fig. 4 (Fig4_all_sites.csv, Fig4_ENF.csv, Fig4_DBF.csv, Fig4_MF.csv, Fig4_EBF.csv,
+      Fig4_polynomial_coefficients.csv). Two schemas: the _ALLSITES_DATA and _<IGBP>_DATA files (points
+      of panel a and panels b to e) and the _DATA_COEFFICIENTS file (fits). Grid: TA and VPD bins 0.1
+      σ wide, labeled by their lower edge. Per site, all records in a cell are averaged (stage 41), then
+      the site values are aggregated across sites, equal weight per site (stages 42 and 43). The all-sites
+      file keeps cells where at least half of the 208 sites have data. A forest type file keeps cells
+      that are also in the all-sites file and where at least half of the sites of that type have data,
+      and drops rows with a missing value. Each point is plotted at x = BIN_VPD_ZSCORE_median, y = VPD_ZSCORE_SHAPVALS_median,
+      colored by TA_ZSCORE_mean in ten equal-width classes. VPD_ZSCORE_SHAPVALS_sem is not drawn.
+      The variant folders (deep-sm, blocked-cv, deeper-only and their combinations) and the GPP, RECO
+      and ET folders hold the same files for those runs, with SHAP values in σ of their flux'
+    columns:
+      BIN_VPD_ZSCORE_median: Lower edge of the VPD bin in σ (VPD z-score within site), x axis. The median
+        across sites is used only to read the bin label exactly, all sites share it
+      VPD_ZSCORE_SHAPVALS_median: 'VPD effect on daytime NEP in σ of NEP, y axis: median across sites
+        of the site mean VPD SHAP value in the cell'
+      TA_ZSCORE_mean: 'Air temperature of the cell in σ (TA z-score within site), point color: mean across
+        sites of the site mean TA z-score in the cell'
+      VPD_ZSCORE_SHAPVALS_sem: 'Standard error across sites of the site mean VPD SHAP values in the cell,
+        in σ of NEP: std across sites divided by the square root of the number of sites with data. Computed
+        around the cross-site mean but drawn around the median'
+      IGBP: 'Panel of the fit: ''ALL SITES'' (panel a) or a forest type ENF, DBF, MF, EBF (panels b to
+        e)'
+      a: Coefficient of x^4 of the fourth-order polynomial y = a x^4 + b x^3 + c x^2 + d x + e, fitted
+        by least squares to the cells of the panel (x VPD bin in σ, y median VPD SHAP in σ)
+      b: Coefficient of x^3 of the same polynomial
+      c: Coefficient of x^2 of the same polynomial
+      d: Coefficient of x of the same polynomial
+      e: Constant term of the same polynomial, in σ
+      R2: Coefficient of determination of the fit over the cells of the panel, each cell weighted equally,
+        1 minus residual over total sum of squares
+      Threshold: 'VPD threshold in σ (not kPa) as text ''t [lo, hi]'': t is the highest positive to negative
+        zero crossing of the fit, lo and hi the same crossing of the lower and upper bound of the 95%
+        prediction interval. kPa values are in Supplementary Table 7'
+  outputs/50_plots/54_SUPPTABLE-7:
+    row: 'One row per site group: all sites, then ENF, DBF, MF, EBF'
+    note: Source Data of Supplementary Table 7 (SupplementaryTable7.csv). Same fits as the Fig. 4 coefficient
+      file, written by the same script. The .xlsx twin (sheet 'Threshold polynomials') is the same table
+      formatted for Word and is not described separately
+    columns:
+      Group: 'Site group: ''ALL SITES'' or a forest type ENF, DBF, MF, EBF'
+      Sites: Number of sites of the group in the stage 21 subsets table
+      a: Coefficient of x^4 of y = a x^4 + b x^3 + c x^2 + d x + e, x VPD in σ, y VPD effect on NEP in
+        σ
+      b: Coefficient of x^3
+      c: Coefficient of x^2
+      d: Coefficient of x
+      e: Constant term, in σ
+      R2: Coefficient of determination of the fit over the grid cells, rounded to 3 decimals
+      Threshold (sigma): 'Threshold in σ as text ''t [lo, hi]'': highest positive to negative zero crossing
+        of the fit, and of the lower and upper 95% prediction bound'
+      Threshold (kPa): 'The same three values in kPa as text ''t [lo, hi]'': per site VPD mean plus z
+        times VPD standard deviation (subset records, hPa, CD-Ygb converted from Pa), divided by 10, then
+        averaged over the sites of the group'
+  outputs/50_plots/55_TABLE-1:
+    row: One row per robustness test, with sub-header rows for the test groups
+    note: 'Source Data of Table 1 (Table1.csv). Formatted table built from 40_aggregation 47_THRESHOLD_Robustness_NEP_ZSCORE.csv,
+      which holds the unformatted numbers of all 18 tests. Rows ''Soil water depth'', ''Model fitting''
+      and ''Site set'' are group headers with empty cells. Values are text ''t [lo, hi]'': lo and hi are
+      the 95% prediction band of the fit, except in rows marked with an asterisk, where they are the range
+      across the leave-one-site-out removals or, for ALE, the 95% confidence interval of the mean per-site
+      crossing. The .xlsx twin (sheet ''Table 1'') is the same table for Word with the footnote under
+      it and is not described separately'
+    columns:
+      Test: Name of the robustness test, or of the test group in a sub-header row
+      Sites (of 208): Number of sites in the run of this test, empty in sub-header rows
+      Threshold (σ): VPD threshold in σ (VPD z-score within site) with its interval, text
+      Threshold (kPa): VPD threshold in kPa with its interval, text, converted with the site set of the
+        row (per-site VPD mean and standard deviation averaged over the sites of the run)
+  outputs/50_plots/56_SUPPTABLE-6:
+    row: One row per site group, driver and stage
+    note: Source Data of Supplementary Table 6 (SupplementaryTable6_data.csv) and of Supplementary Fig.
+      2. Per site and stage, the stage 44 file holds the mean over the records of that stage of each SHAP
+      value. All statistics here are taken across the sites of the group, equal weight per site, in σ
+      of NEP. This csv holds the four drivers only. The net sum rows and the block for all sites with
+      the deepest soil water layer (deep-sm run) are only in the .xlsx, which is the formatted table for
+      Word (cells 'mean±total_SD (min, max)') and is not described separately
+    columns:
+      IGBP: 'Site group: ''All sites'' or a forest type ENF, DBF, MF, EBF'
+      Feature: 'Driver, as the stage 44 column: {VAR}_ZSCORE_SHAPVALS_OVR_AVG for VPD, TA, SWC (SM) and
+        SWIN (SW), the site stage mean SHAP value of that predictor'
+      n_sites: Number of sites with records in this stage
+      Scenario: Stress stage 1 to 8 (definitions in Supplementary Table 3)
+      Mean: Mean across sites of the site stage mean effect, in σ
+      total_SD: 'Total standard deviation in σ: square root of the mean within-site variance of the record
+        SHAP values plus the variance of the site means (ddof 0)'
+      SEM: Standard error of the mean across sites, in σ
+      Median: Median across sites of the site stage mean effect, in σ
+      Min: Smallest site stage mean in σ
+      Max: Largest site stage mean in σ
+      P25: 25th percentile across sites, in σ
+      P75: 75th percentile across sites, in σ
+      Sites < 0: Number of sites with a negative site stage mean effect
+      '% < 0': Share of sites with a negative site stage mean effect, in %
+      PERC_N_SITES_BELOW_ZERO: Same as '% < 0', in %, the value printed above each sina plot
+  outputs/50_plots/57_SUPPFIG-5:
+    row: 'Curves file: one row per site, grid point and panel. Thresholds file: one row per site group'
+    note: Source Data of Supplementary Fig. 5 (SupplementaryFig5_curves.csv and SupplementaryFig5_thresholds.csv).
+      ALE (accumulated local effects, PyALE) of VPD on the NEP model of each site, interpolated by stage
+      46 to one grid of 50 points spanning all sites, then smoothed per site with a fourth-order polynomial.
+      Grid points outside a site's own VPD range are left out. Each site appears twice in the curves file,
+      in panel a and in the panel of its forest type
+    columns:
+      panel: 'Panel letter: a (all sites) or b to e (ENF, DBF, MF, EBF)'
+      group: 'Site group: ''Global forests'' or a forest type ENF, DBF, MF, EBF'
+      SITE: Site ID
+      IGBP: IGBP forest type of the site
+      x: VPD in σ (VPD z-score within site), grid point of the common grid
+      ale_effect: Polynomial-smoothed ALE of VPD on predicted NEP at x, in σ of NEP
+      threshold: 'ALE threshold in σ: mean across the sites of the group of each site''s highest positive
+        to negative zero crossing of its smoothed curve, sites without a crossing left out'
+      n_crossing: Number of sites of the group whose curve crosses zero from positive to negative
+      n_total: Number of sites of the group
+      ci95_lower: Lower bound of the 95% confidence interval of the threshold in σ, from the t distribution
+        over the site crossings
+      ci95_upper: Upper bound of the 95% confidence interval of the threshold in σ
+  outputs/50_plots/58_SUPPFIG-6:
+    row: 'Curves file: one row per flux and point of the fitted curve (1000 per flux). Thresholds file:
+      one row per flux'
+    note: Source Data of Supplementary Fig. 6 (SupplementaryFig6_curves.csv and SupplementaryFig6_thresholds.csv).
+      For each flux the all-sites cells of the TA by VPD grid are read and fitted as in Fig. 4 (median
+      across sites of the site mean VPD SHAP per cell, fourth-order polynomial, 95% prediction interval),
+      so the NEP curve is the Fig. 4a curve. The kPa scale is the mean over sites of the site VPD means
+      plus z times the mean over sites of the site VPD standard deviations (subset records, CD-Ygb converted
+      from Pa)
+    columns:
+      flux: 'Flux of the model: NEP, GPP, RECO or ET'
+      vpd_z: VPD in σ (VPD z-score within site), evenly spaced between the lowest and highest VPD bin
+        of the cells
+      vpd_kpa_network: The same VPD in kPa on the network scale, top axis of the figure
+      effect_z: Fitted VPD effect on the flux in σ of that flux. Positive is more of the flux (more uptake
+        for NEP and GPP, more respiration for RECO, more water loss for ET)
+      band_lower: Lower bound of the 95% prediction interval of the fit, in σ of the flux
+      band_upper: Upper bound of the 95% prediction interval of the fit, in σ of the flux
+      source: 'Origin of the flux: ''measured'' (NEP), ''partitioned'' (GPP, RECO) or ''from gap-filled
+        latent heat flux'' (ET)'
+      n_sites: Number of sites in the all-sites aggregation of the flux
+      fit_r2: Coefficient of determination of the polynomial fit over the cells, rounded to 3 decimals
+      threshold_z: Highest positive to negative zero crossing of the fit, in σ of VPD
+      lower_z: Same crossing of the lower prediction bound in σ, empty if that bound does not cross
+      upper_z: Same crossing of the upper prediction bound in σ, empty if that bound does not cross
+      threshold_kpa_network: threshold_z in kPa on the network scale
+      marked_in_figure: True if the crossing is drawn in the figure (filled marker, or open marker for
+        a crossing that is not resolved)
+      note: Remark on the crossing, empty or 'interval open on one side, crossing not resolved' (RECO)
+  outputs/50_plots/59_SUPPTABLE-4:
+    row: One row per site group and stage (stages 0 to 8, for Global forests and each forest type)
+    note: 'Source Data of Supplementary Table 4 (SupplementaryTable4.csv). Built from stage 45: per site
+      and stage, the median of each driver over the records of that stage, then across sites the median
+      of these site medians with the interquartile range across sites in brackets. Driver cells are text
+      ''median [q25, q75]''. The .xlsx twin is the same table formatted for Word and is not described
+      separately'
+    columns:
+      Group: 'Site group: ''Global forests'' (all sites) or a forest type ENF, DBF, MF, EBF'
+      Stage: Stage 0 (all records, no restriction) or stress stage 1 to 8
+      Sites: Number of sites with at least one record in the stage
+      Records: Number of half-hourly records in the stage, summed over sites
+      TA (sigma): Air temperature z-score within site in σ, median across sites of the site median [interquartile
+        range across sites]
+      TA (degC): Air temperature in °C, median across sites of the site median [interquartile range across
+        sites]
+      VPD (sigma): VPD z-score within site in σ, median across sites of the site median [interquartile
+        range across sites]
+      VPD (kPa): VPD in kPa (stored hPa divided by 10), median across sites of the site median [interquartile
+        range across sites]
+      SM (sigma): Soil water content z-score within site in σ, median across sites of the site median
+        [interquartile range across sites]
+      SM (%): Soil water content in %, median across sites of the site median [interquartile range across
+        sites]
+      SW (sigma): Incoming shortwave radiation z-score within site in σ, median across sites of the site
+        median [interquartile range across sites]
+      SW (W m-2): Incoming shortwave radiation in W m-2, median across sites of the site median [interquartile
+        range across sites]
+  outputs/50_plots/59_SUPPTABLE-5:
+    row: 'Display csv: one row per quantity (transposed table, two blocks). _DATA csv: one row per minimum
+      number of Stage 8 records per site'
+    note: 'Source Data of Supplementary Table 5 (SupplementaryTable5.csv for the display table, SupplementaryTable5_data.csv
+      for block a unrounded). Stage 8 is the compound extreme: TA z > 1.28, SM z < -1.28 and VPD z > 1.28
+      within site. Per site, the SHAP values of its Stage 8 records are averaged, then sites with at least
+      the minimum number of Stage 8 records are kept and summarized across sites, equal weight per site.
+      The display csv holds formatted text: block a (rows of quantities, one column per minimum), a blank
+      row, the header row ''b | Stage 7 against Stage 8 on matched records'' whose cells in columns ''1''
+      and ''5'' name the two matchings, then block b from 80_info script 89 in those two columns. The
+      .xlsx twin is the same table for Word and is not described separately'
+    columns:
+      a | Minimum Stage 8 records per site: 'Row label: the quantity of block a, the block b header, or
+        a block b quantity'
+      '1': 'Block a: value with a minimum of 1 Stage 8 record per site (all sites with Stage 8 records).
+        Block b: value for matching on the same month and hour of day'
+      '5': 'Block a: value with a minimum of 5 Stage 8 records per site. Block b: value for matching at
+        any month and hour'
+      '10': 'Block a: value with a minimum of 10 Stage 8 records per site, empty in block b'
+      '20': 'Block a: value with a minimum of 20 Stage 8 records per site, empty in block b'
+      '30': 'Block a: value with a minimum of 30 Stage 8 records per site, empty in block b'
+      '50': 'Block a: value with a minimum of 50 Stage 8 records per site, empty in block b'
+      '100': 'Block a: value with a minimum of 100 Stage 8 records per site, empty in block b'
+      Minimum Stage 8 records per site: Minimum number of Stage 8 records a site needs to be kept
+      Sites kept: Number of sites with at least that many Stage 8 records
+      Stage 8 records kept: Number of Stage 8 records of the kept sites
+      Share of Stage 8 records kept (%): Stage 8 records kept as % of all Stage 8 records of all sites
+      Sites with a negative VPD effect: Number of kept sites whose site mean VPD SHAP value in Stage 8
+        is below zero
+      Share of kept sites with a negative VPD effect (%): The same as % of the kept sites
+      Net effect (sigma): Mean across kept sites of the site mean net effect (sum of the four SHAP values)
+        in Stage 8, in σ of NEP
+      VPD effect (sigma): Mean across kept sites of the site mean VPD SHAP value in Stage 8, in σ of NEP
+      SM effect (sigma): Mean across kept sites of the site mean SM SHAP value in Stage 8, in σ of NEP
+      VPD to SM ratio: Ratio of the cross-site mean VPD effect to the cross-site mean SM effect
+      VPD to SM ratio, 95% bootstrap: 95% interval of the ratio as text '[lo, hi]', 2.5th and 97.5th percentiles
+        over 10000 bootstrap resamples of sites (seed 42)
+      Share of kept sites with VPD below SM (%): '% of kept sites whose VPD effect is more negative than
+        their SM effect'
+      VPD minus SM effect, median across sites (sigma): Median across kept sites of the site VPD effect
+        minus the site SM effect, in σ of NEP
+  outputs/50_plots/60_SUPPFIG-8:
+    row: One row per site (208 sites)
+    note: Source Data of Supplementary Fig. 8 (SupplementaryFig8.csv). Counts over the peak-season daytime
+      half-hours of the stage 21 subset of each site, no model involved (stage 48). VPD of CD-Ygb converted
+      from Pa. Panel a ranks above_published_kpa_pct, panel b plots it against vpd_mean_kpa, panel c shows
+      above_biome_threshold_pct
+    columns:
+      SITE: Site ID
+      IGBP: IGBP forest type of the site
+      vpd_mean_kpa: Mean VPD of the site over its subset records, in kPa
+      above_published_kpa_pct: Share of the site's records with VPD above the threshold of the main analysis
+        in kPa (about 1.26 kPa, reference row of stage 47), in %
+      above_biome_threshold_pct: Share of the site's records with VPD z-score above the threshold of its
+        forest type (median of the per-site crossings of that type, stage 49) in the site's own σ, in
+        %
+  outputs/50_plots/61_SUPPTABLE-3:
+    row: 'StageDefinitions csv: one row per stage, Stage 1 to Stage 8. StageCutoffPercentiles csv: one
+      row per stage cut-off, from -1.28 to +1.28 σ'
+    note: Source Data of Supplementary Table 3, upper part (StageDefinitions) and lower part (StageCutoffPercentiles).
+      The xlsx holds both parts on one sheet, formatted for Word, and is not described. The rule texts
+      use the cut-offs rounded to two decimals, the stage code uses a = 0.31863936, b = 0.71436744 and
+      c = 1.28155157 σ (standard normal quantiles), and the script checks that both select the same records.
+      Percent columns of the lower part are medians across the 208 sites, equal weight per site, of the
+      share of a site's modeled records (the records in the SHAP files) at or below the cut-off, taken
+      from script 87.
+    columns:
+      Stage: Stage label, Stage 1 to Stage 8
+      TA: Condition on the air temperature z-score for the stage, as text, in σ
+      SM: Condition on the soil water content (SWC) z-score for the stage, as text, in σ
+      VPD: Condition on the VPD z-score for the stage, as text, in σ
+      SW: Condition on the incoming shortwave radiation z-score, always all (unrestricted)
+      Cut-off (sigma): Stage cut-off in σ of the within-site z-score, rounded to two decimals
+      Standard normal (%): Share of a standard normal distribution at or below the cut-off, in %
+      TA (%): Median across sites of the percent of modeled records with TA z-score at or below the cut-off
+      VPD (%): Median across sites of the percent of modeled records with VPD z-score at or below the
+        cut-off
+      SM (%): Median across sites of the percent of modeled records with SWC z-score at or below the cut-off
+      SW (%): Median across sites of the percent of modeled records with SWIN z-score at or below the
+        cut-off
+  outputs/50_plots/62_SUPPTABLE-9:
+    row: 'One row per group: all sites (Global forests) and the forest types ENF, DBF, MF, EBF'
+    note: Source Data of Supplementary Table 9, built from 81_INFO_ThresholdDefinitions.csv. The xlsx
+      is the same table formatted for Word and is not described separately. All points are read off the
+      quartic fit of the Fig. 4 VPD response curve of the group (VPD SHAP value against the VPD z-score
+      bin, medians across sites). Values are text with fixed decimals. A value followed by "(range edge)"
+      lies within 2 % of the fitted range width from an end of the range, so it is the last point fitted,
+      not a feature of the curve. The zero crossing is never tested for the range edge. kPa values are
+      the mean over the sites of the group, equal weight per site, of (site mean VPD + z × site VPD standard
+      deviation) / 10, with CD-Ygb converted from Pa to hPa.
+    columns:
+      Group: 'Group name: Global forests (all sites) or forest type (IGBP)'
+      Fitted range, upper limit (σ): Largest VPD z-score bin of the fitted curve data of the group, in
+        σ, one decimal
+      Peak of the VPD effect (σ): VPD z-score where the fitted VPD effect on NEP is most positive, in
+        σ
+      Peak of the VPD effect (kPa): Peak of the VPD effect converted to VPD in kPa
+      Steepest decline (σ): VPD z-score of the most negative slope of the fitted curve at or after the
+        peak, in σ, may carry the range edge flag
+      Steepest decline (kPa): Steepest decline converted to VPD in kPa, may carry the range edge flag
+      Zero crossing, the threshold (σ): VPD z-score of the highest crossing of the fitted curve from positive
+        to negative, the threshold of the main analysis, in σ
+      Zero crossing, the threshold (kPa): Zero crossing converted to VPD in kPa
+  outputs/50_plots/63_SUPPTABLE-8:
+    row: One row per quartile of site maximum VPD, Q1 lowest to Q4 highest
+    note: Source Data of Supplementary Table 8, built from 82_INFO_ThresholdVsSiteVPDRange.csv. The xlsx
+      is the same table formatted for Word. The 208 sites are split into quartiles of their maximum VPD
+      over the modeled records (peak-season daytime). Medians are across sites, equal weight per site.
+      The per-site threshold is the highest positive to negative crossing of a quartic fitted to the site
+      VPD response (script 49). A site without a crossing counts under Sites but is left out of the threshold
+      medians. CD-Ygb is converted from Pa to hPa.
+    columns:
+      Quartile of site maximum VPD: Quartile label, Q1 lowest maximum VPD to Q4 highest maximum VPD
+      Sites: Number of sites in the quartile, count
+      Median site maximum VPD (kPa): Median across the sites of the quartile of the site maximum VPD,
+        in kPa
+      Median threshold (σ): Median across sites with a crossing of the per-site threshold, in σ of the
+        VPD z-score
+      Median threshold (kPa): Median across sites with a crossing of the per-site threshold in kPa, (site
+        mean VPD + threshold × site VPD standard deviation) / 10
+      Sites with a zero crossing: Number of sites of the quartile whose fitted curve crosses zero from
+        positive to negative, count
+  outputs/50_plots/64_SUPPDATA-2:
+    row: One row per site and cross-validation split
+    note: Source Data of Supplementary Data 2, built from 86_INFO_SiteSkill_NEP_ZSCORE.csv. The xlsx holds
+      the same table and is deposited as Supplementary Data 2, same columns. Skill of the out-of-sample
+      predictions of the NEP z-score stored in the SHAP files, nothing refitted. RMSE, MAE and bias are
+      in σ of the within-site NEP z-score. Bias is prediction minus observation. R2 is 1 minus the sum
+      of squared errors over the sum of squares about the mean of the same subset, so it can be low or
+      negative in Stage 8 and the VPD tail where the NEP variance is small. Metrics are empty when the
+      subset has fewer than 10 records. Sites with a single year have no Leave-one-year-out row. Metrics
+      rounded to three decimals.
+    columns:
+      Site: FLUXNET site code
+      Forest type (IGBP): IGBP forest type of the site (ENF, DBF, MF, EBF)
+      Cross-validation split: Shuffled 5-fold (main analysis, random folds) or Leave-one-year-out (one
+        fold per year)
+      All records, n: Number of modeled records of the site with observation and prediction, count
+      All records, R2: R2 of the predictions over all records, unitless
+      All records, RMSE (σ): Root mean square error over all records, in σ
+      All records, MAE (σ): Mean absolute error over all records, in σ
+      All records, Bias (σ): Mean of prediction minus observation over all records, in σ
+      Stage 8, n: Number of Stage 8 records (TA z > 1.28, SWC z < -1.28 and VPD z > 1.28 σ), count
+      Stage 8, R2: R2 over the Stage 8 records, against their own mean, unitless
+      Stage 8, RMSE (σ): Root mean square error over the Stage 8 records, in σ
+      Stage 8, MAE (σ): Mean absolute error over the Stage 8 records, in σ
+      Stage 8, Bias (σ): Mean of prediction minus observation over the Stage 8 records, in σ
+      VPD tail (> 1.28σ), n: Number of records with VPD z-score above 1.2816 σ, any TA and SWC, count
+      VPD tail (> 1.28σ), R2: R2 over the VPD tail records, against their own mean, unitless
+      VPD tail (> 1.28σ), RMSE (σ): Root mean square error over the VPD tail records, in σ
+      VPD tail (> 1.28σ), MAE (σ): Mean absolute error over the VPD tail records, in σ
+      VPD tail (> 1.28σ), Bias (σ): Mean of prediction minus observation over the VPD tail records, in
+        σ
+  outputs/50_plots/66_SUPPFIG-10:
+    row: One row per filtering step, in the order applied
+    note: Source Data of Supplementary Fig. 10. Counts are sums over all 208 sites of 22_data_flow.csv.
+      Each step is applied to the records left by the steps before it.
+    columns:
+      step: 'Step name: all_records (all records of the site files), measured_nee (NEE QC flag 0), daytime
+        (SW_IN_POT > 20 W m-2), peak_months (four peak-GPP months of the site), year_balanced (same number
+        of years in every peak month, oldest years trimmed), complete_cases (no missing NEE, LE, GPP,
+        RECO, TA, VPD, SW_IN or SWC, the modeled records)'
+      records: Records left after the step, summed over sites, count
+      removed: Records removed by the step, summed over sites, count, empty for the first step
+      share_kept_pct: Records left after the step as percent of all records
+  outputs/50_plots/67_SUPPDATA-1:
+    row: One row per site, sorted by site code, plus a last row All sites with the column totals
+    note: Source Data of Supplementary Data 1. The xlsx holds the same table and is deposited as Supplementary
+      Data 1, same columns. Each count column is the number of records of the site left after that step
+      and all steps before it, the steps of Supplementary Fig. 10. In the All sites row, Forest type and
+      Soil water layer are empty.
+    columns:
+      Site: FLUXNET site code, or All sites in the totals row
+      Forest type (IGBP): IGBP forest type of the site (ENF, DBF, MF, EBF)
+      All half-hourly records: All records of the site file, count
+      Measured NEE (QC flag 0): Records with measured NEE, QC flag 0, count
+      Daytime (SW_IN_POT > 20 W m-2): Measured records in daytime, potential shortwave radiation above
+        20 W m-2, count
+      Four peak-GPP months: Records left in the four months with the highest mean GPP of the site, count
+      Equal year coverage per month: Records left after keeping the same number of years in each peak
+        month, oldest years trimmed, count
+      Complete cases (records used): Records with no missing NEE, LE, GPP, RECO, TA, VPD, SW_IN or SWC,
+        the modeled records, count
+      Soil water layer used: FLUXNET variable used as soil water content of the site, e.g. SWC_F_MDS_1
+  outputs/50_plots/68_SUPPFIG-9:
+    row: 'Crossings csv: one row per site with a zero crossing. DATA csv: one row per point of the kPa
+      grid, 0 to 4 kPa in steps of 0.02. DATA_SiteCurves csv: one row per site and point of its fitted
+      curve, 200 points per site'
+    note: 'Source Data of Supplementary Fig. 9. Per-site curves: the stage 41 TA by VPD cells of the site
+      averaged per VPD z-score bin, a quartic fitted as in script 49 (sites need at least 15 bins), evaluated
+      at 200 points from the lowest to the highest bin of the site. kPa is (site mean VPD + z × site VPD
+      standard deviation) / 10, with CD-Ygb converted from Pa to hPa. The VPD effect is the SHAP value
+      of VPD in σ of the within-site NEP z-score. The median and quartiles of the DATA csv are across
+      the site curves covering a grid point, each curve linearly interpolated to the grid, equal weight
+      per site, written for every grid point but plotted only where drawn is True.'
+    columns:
+      SITE: FLUXNET site code
+      IGBP: IGBP forest type of the site
+      threshold_z: Per-site threshold from script 49, highest positive to negative crossing of the fitted
+        site curve, in σ of the VPD z-score
+      crossing_kpa: Per-site threshold converted to VPD in kPa
+      vpd_kpa: 'DATA csv: grid point, VPD in kPa. DATA_SiteCurves csv: VPD of the curve point in kPa'
+      n_sites: Number of site curves whose kPa range covers the grid point, count
+      drawn: True where at least half the site curves cover the grid point, where median and band are
+        plotted
+      median: Median across site curves of the fitted VPD effect at the grid point, in σ
+      q25: 25th percentile across site curves of the fitted VPD effect at the grid point, in σ
+      q75: 75th percentile across site curves of the fitted VPD effect at the grid point, in σ
+      vpd_effect: Fitted VPD effect on NEP of the site at the curve point, in σ
+  outputs/50_plots/69_SUPPTABLE-10:
+    row: One row per cell of soil water class by VPD class, 16 cells, in both csv files
+    note: 'Source Data of Supplementary Table 10. The xlsx is the same table formatted for Word. The classes
+      use the stage cut-offs a = 0.3186, b = 0.7144 and c = 1.2816 σ, soil water stepping downward and
+      VPD upward from the central class, TA unrestricted. A site enters a cell when it has at least one
+      record there. Per site, the SHAP values are averaged over the records of the cell (σ of the within-site
+      NEP z-score), then the statistics are taken across sites, equal weight per site. The net effect
+      is the per-record sum of the SHAP values of TA, VPD, SWC and SWIN. In the table csv the effect cells
+      are text, the mean across sites with the 25th and 75th percentiles across sites in brackets, two
+      decimals. In the DATA csv, SWC_ZSCORE_* and VPD_ZSCORE_* name the predictor: they hold the SHAP
+      values of SWC_ZSCORE and VPD_ZSCORE (script 69 drops the suffix _SHAPVALS_OVR_AVG of the stage 44
+      columns).'
+    columns:
+      SM class: Soil water class with its SWC z-score range, as text
+      VPD class: VPD class with its VPD z-score range, as text
+      Sites: Number of sites with at least one record in the cell, count
+      Records: Records in the cell summed over sites, count
+      SM effect (σ): Soil water SHAP contribution, mean across sites of site means with interquartile
+        range across sites in brackets, in σ, text
+      VPD effect (σ): VPD SHAP contribution, mean across sites of site means with interquartile range
+        across sites in brackets, in σ, text
+      Net effect (σ): Sum of the four SHAP contributions, mean across sites of site means with interquartile
+        range across sites in brackets, in σ, text
+      SWC_CLASS: 'Soil water class index: 0 central (|z| ≤ a), 1 dry (-b ≤ z < -a), 2 very dry (-c ≤ z
+        < -b), 3 extreme (z < -c)'
+      VPD_CLASS: 'VPD class index: 0 central (|z| ≤ a), 1 higher (a < z ≤ b), 2 high (b < z ≤ c), 3 extreme
+        (z > c)'
+      SWC_CLASS_NAME: 'Name of the soil water class: central, dry, very dry, extreme'
+      VPD_CLASS_NAME: 'Name of the VPD class: central, higher, high, extreme'
+      sites: Number of sites with at least one record in the cell, count
+      records: Records in the cell summed over sites, count
+      SWC_ZSCORE_mean: Mean across sites of the site mean soil water SHAP contribution in the cell, in
+        σ
+      SWC_ZSCORE_median: Median across sites of the site mean soil water SHAP contribution in the cell,
+        in σ
+      SWC_ZSCORE_q25: 25th percentile across sites of the site mean soil water SHAP contribution in the
+        cell, in σ
+      SWC_ZSCORE_q75: 75th percentile across sites of the site mean soil water SHAP contribution in the
+        cell, in σ
+      VPD_ZSCORE_mean: Mean across sites of the site mean VPD SHAP contribution in the cell, in σ
+      VPD_ZSCORE_median: Median across sites of the site mean VPD SHAP contribution in the cell, in σ
+      VPD_ZSCORE_q25: 25th percentile across sites of the site mean VPD SHAP contribution in the cell,
+        in σ
+      VPD_ZSCORE_q75: 75th percentile across sites of the site mean VPD SHAP contribution in the cell,
+        in σ
+      NET_mean: Mean across sites of the site mean net effect in the cell, in σ
+      NET_median: Median across sites of the site mean net effect in the cell, in σ
+      NET_q25: 25th percentile across sites of the site mean net effect in the cell, in σ
+      NET_q75: 75th percentile across sites of the site mean net effect in the cell, in σ
+  outputs/80_info/80_INFO_TimeScaleCoverage:
+    row: 'DailyCoverage: one row per summary quantity. DailyCoverage_perSite: one row per site. TimeScaleSampleSize:
+      one row per time scale'
+    note: 'Numbers on why the analysis is not repeated at daily or coarser resolution, 208 sites. Daily
+      coverage counts the analysis window before the quality filter: the four peak-GPP months of the site,
+      daytime records (SW_IN_POT > 20 W m-2), all years. A record is measured when its NEE QC flag is
+      0. Sample size per time scale uses the modeled subsets (measured, daytime, peak months, year-balanced,
+      complete cases), averaged to days (days with at least 8 records), to the calendar months of each
+      year and to years. At the coarser scales the means are standardized again per site (population standard
+      deviation) before the Stage 8 rule of src/stages.py is applied. DailyCoverage is a long table of
+      quantity and value.'
+    columns:
+      quantity: 'Name of the summary quantity: sites (count), daytime_per_day_median_site and measured_per_day_median_site
+        (median across sites of the site median daytime and measured records per day), measured_share_pct_median_site
+        (median across sites of the measured share, %), sites_median_day_unmeasured (sites whose median
+        day has no measured record), days_ge90pct_measured_pct_median_site and the 75 and 50 twins (median
+        across sites of the percent of days with at least that share measured), days_ge90pct_measured_pct_pooled
+        and the 75 and 50 twins (same percent over all site days pooled)'
+      value: Value of the quantity, unit as named in quantity
+      SITE: FLUXNET site code
+      IGBP: IGBP forest type of the site
+      days: Number of peak-season days with at least one daytime record, all years, count
+      daytime_per_day_median: Median over days of the daytime records per day, count
+      measured_per_day_median: Median over days of the measured records per day, count
+      measured_share_pct: Measured records as percent of daytime records, pooled over all days of the
+        site
+      days_ge90pct_measured: Number of days with at least 90 % of the daytime records measured
+      days_ge90pct_measured_pct: Days with at least 90 % measured, as percent of days
+      days_ge75pct_measured: Number of days with at least 75 % of the daytime records measured
+      days_ge75pct_measured_pct: Days with at least 75 % measured, as percent of days
+      days_ge50pct_measured: Number of days with at least 50 % of the daytime records measured
+      days_ge50pct_measured_pct: Days with at least 50 % measured, as percent of days
+      scale: 'Time scale: half-hourly, daily, monthly, yearly'
+      records: 'Values at that scale summed over sites: records, days, site months or site years, count'
+      median_per_site: Median across sites of the values per site at that scale
+      stage8_records: Values at that scale in Stage 8, summed over sites, count
+      sites_without_stage8: Number of sites with no Stage 8 value at that scale
+      sites_with_ge100_records: Number of sites with at least 100 values at that scale
+  outputs/80_info/81_INFO_ThresholdDefinitions:
+    row: 'One row per group: all sites and the forest types ENF, DBF, EBF, MF'
+    note: Four points on the quartic fit of the Fig. 4 VPD response curve of the group (VPD SHAP value
+      in σ of NEP against the VPD z-score bin, from the 54_FIG-4 _DATA files), fit evaluated at 2000 points
+      over the fitted range. z values are in σ of the VPD z-score. kPa values are the mean over the sites
+      of the group, equal weight per site, of (site mean VPD + z × site VPD standard deviation) / 10,
+      with CD-Ygb converted from Pa to hPa. An edge flag is True when the point lies within 2 % of the
+      fitted range width from either end. Feeds Supplementary Table 9.
+    columns:
+      group: ALL SITES or IGBP forest type
+      x_max: Largest VPD z-score bin of the fitted curve data, upper end of the fitted range, in σ
+      peak_z: VPD z-score where the fitted VPD effect is most positive, in σ
+      peak_kPa: Peak converted to VPD in kPa
+      peak_at_edge: True if the peak lies at the edge of the fitted range
+      steepest_decline_z: VPD z-score of the most negative slope of the fitted curve at or after the peak,
+        in σ
+      steepest_decline_kPa: Steepest decline converted to VPD in kPa
+      steepest_decline_at_edge: True if the steepest decline lies at the edge of the fitted range
+      zero_crossing_z: VPD z-score of the highest crossing of the fitted curve from positive to negative,
+        the threshold, linearly interpolated, in σ, empty without crossing
+      zero_crossing_kPa: Zero crossing converted to VPD in kPa
+      zero_crossing_at_edge: Always False, the zero crossing is not tested for the range edge
+      minimum_z: VPD z-score where the fitted VPD effect is most negative within the fitted range, in
+        σ
+      minimum_kPa: Minimum converted to VPD in kPa
+      minimum_at_edge: True if the minimum lies at the edge of the fitted range
+  outputs/80_info/82_INFO_ThresholdVsSiteVPDRange:
+    row: 'ThresholdVsSiteVPDRange: one row per quartile of site maximum VPD. _perSite: one row per site,
+      208 sites'
+    note: Tests whether the per-site threshold follows the VPD range of the site. The per-site threshold
+      is the highest positive to negative crossing of a quartic fitted to the site VPD response (49_SiteThresholds.csv).
+      The site maximum VPD is taken over the modeled records. Medians are across sites, equal weight per
+      site, and sites without a crossing are left out of the threshold medians. CD-Ygb is converted from
+      Pa to hPa. Feeds Supplementary Table 8.
+    columns:
+      stratum: 'Quartile of site maximum VPD: Q1 lowest max VPD, Q2, Q3, Q4 highest max VPD'
+      n: Number of sites in the quartile, count
+      median_max_vpd_kpa: Median across the sites of the quartile of the site maximum VPD, in kPa
+      median_threshold_sigma: Median across sites with a crossing of the per-site threshold, in σ of the
+        VPD z-score
+      median_threshold_kpa: Median across sites with a crossing of the per-site threshold, in kPa
+      sites_with_crossing: Number of sites of the quartile with a zero crossing, count
+      SITE: FLUXNET site code
+      IGBP: IGBP forest type of the site
+      threshold_z: Per-site threshold in σ of the VPD z-score, empty without crossing
+      threshold_kpa: Per-site threshold in kPa, (site mean VPD + threshold_z × site VPD standard deviation)
+        / 10
+      vpd_max_kpa: Maximum VPD of the site over the modeled records, in kPa
+  outputs/80_info/82_INFO_DriverEffectDirection:
+    row: One row per site and driver with at least 15 usable bins
+    note: Direction of each driver's effect against the driver itself, per site. The SHAP values of the
+      driver are averaged per 0.1 σ bin of the driver z-score (bin center = z rounded to the nearest 0.1),
+      keeping bins with at least 10 records.
+    columns:
+      SITE: FLUXNET site code
+      driver: 'Driver: VPD, TA, SWIN or SWC'
+      bins: Number of 0.1 σ bins with at least 10 records, count
+      r: Pearson correlation across bins between bin center and mean SHAP value of the driver, negative
+        means the effect falls as the driver rises
+  outputs/80_info/83_INFO_LeaveRegionOut:
+    row: 'One row per site set: all sites, minus Europe, minus North America, minus both'
+    note: Region from the country prefix of the site code. Thresholds are the per-site thresholds of script
+      49, not the crossing of the aggregated curve of Table 1. Stage 8 values are the site means of the
+      SHAP contributions over the Stage 8 records (script 44). Nothing is refitted. CD-Ygb is converted
+      from Pa to hPa.
+    columns:
+      set: 'Site set: all sites, minus Europe, minus North America, minus both'
+      sites: Number of sites of the set with a per-site threshold, count
+      stage8_sites: Number of sites of the set with Stage 8 records, count
+      ratio: Mean across sites of the Stage 8 VPD SHAP contribution divided by the mean across sites of
+        the Stage 8 soil water SHAP contribution, unitless
+      threshold_sigma: Median over the sites of the set of the per-site threshold, in σ of the VPD z-score
+      threshold_kpa: Median over the sites of the set of the per-site threshold in kPa, site mean VPD
+        + threshold × site VPD standard deviation
+  outputs/80_info/84_INFO_ShortRecordSensitivity:
+    row: 'One row per minimum record length: 1, 2, 3, 5 and 10 years'
+    note: Record length is N_YEARS of the modeled subset, last minus first calendar year plus 1. Thresholds
+      are the per-site thresholds of script 49, not the crossing of the aggregated curve of Table 1. Nothing
+      is refitted. CD-Ygb is converted from Pa to hPa.
+    columns:
+      min_years: Minimum record length of a site, in years
+      sites: Number of sites with a per-site threshold and at least min_years, count
+      records_kept_pct: Modeled records of the sites with at least min_years, as percent of the modeled
+        records of all sites
+      threshold_sigma: Median over the kept sites of the per-site threshold, in σ of the VPD z-score
+      threshold_kpa: Median over the kept sites of the per-site threshold, in kPa
+      ratio: Mean across kept sites of the Stage 8 VPD SHAP contribution divided by the mean across kept
+        sites of the Stage 8 soil water SHAP contribution, unitless
+  outputs/80_info/85_INFO_WueVsVpd:
+    row: 'acrossSites: one row per VPD bin reached by at least half the sites. exponents: one row per
+      site with at least 8 usable bins. perSite: one row per site and VPD bin'
+    note: Measured water use efficiency (WUE) against VPD, no SHAP values. Bins are 0.1 σ wide on the
+      VPD z-score of the modeled records and labeled by their lower edge. Per bin WUE is mean GPP over
+      mean ET, converted with 15.42 mmol H2O m-2 s-1 per mm h-1, in µmol CO2 per mmol H2O. A bin needs
+      at least 10 records and a mean ET above 0.01 mm h-1. Across sites, equal weight per site, bins reached
+      by fewer than half the sites are dropped. The exponent fit maps each bin edge to VPD in hPa with
+      the site mean and standard deviation (CD-Ygb converted from Pa).
+    columns:
+      bin: Lower edge of the 0.1 σ bin of the VPD z-score
+      n_sites: Number of sites with a value in the bin, count
+      wue_relative: 'perSite: bin WUE divided by site_wue, unitless. acrossSites: median across sites
+        of that ratio'
+      q25: 25th percentile across sites of wue_relative in the bin
+      q75: 75th percentile across sites of wue_relative in the bin
+      wue_absolute: Median across sites of the bin WUE, µmol CO2 per mmol H2O
+      SITE: FLUXNET site code
+      exponent: Slope of log WUE on log VPD (hPa) across the bins of the site, unitless, -1 means no stomatal
+        adjustment
+      n_bins: Number of bins of the site in the fit, positive VPD and WUE only, count
+      gpp: Mean GPP of the records in the bin, µmol CO2 m-2 s-1
+      et: Mean ET of the records in the bin, mm h-1
+      n: Number of records in the bin, count
+      wue: Bin WUE, gpp over et converted to mmol H2O m-2 s-1, µmol CO2 per mmol H2O
+      site_wue: WUE of the site over all its modeled records, mean GPP over mean ET, µmol CO2 per mmol
+        H2O
+  outputs/80_info/86_INFO_SiteSkill:
+    row: 'SiteSkill_NEP_ZSCORE: one row per site and cross-validation variant. _summary: one row per variant
+      and metric'
+    note: Skill of the out-of-sample predictions of the NEP z-score stored in the SHAP files, nothing
+      refitted. RMSE, MAE and bias are in σ of the within-site NEP z-score. Bias is prediction minus observation.
+      R2 is 1 minus the sum of squared errors over the sum of squares about the mean of the same subset,
+      so it can be low or negative in Stage 8 and the VPD tail. Metrics are empty when the subset has
+      fewer than 10 records. The VPD tail is VPD z-score above 1.2816 σ, any TA and SWC. Feeds Supplementary
+      Data 2.
+    columns:
+      site: FLUXNET site code
+      variant: random-folds (main analysis, shuffled 5-fold) or blocked-cv (leave-one-year-out)
+      all_n: Number of modeled records with observation and prediction, count
+      all_r2: R2 over all records, unitless
+      all_rmse: Root mean square error over all records, in σ
+      all_mae: Mean absolute error over all records, in σ
+      all_bias: Mean of prediction minus observation over all records, in σ
+      stage8_n: Number of Stage 8 records, count
+      stage8_r2: R2 over the Stage 8 records, unitless
+      stage8_rmse: Root mean square error over the Stage 8 records, in σ
+      stage8_mae: Mean absolute error over the Stage 8 records, in σ
+      stage8_bias: Mean of prediction minus observation over the Stage 8 records, in σ
+      vpdtail_n: Number of VPD tail records, count
+      vpdtail_r2: R2 over the VPD tail records, unitless
+      vpdtail_rmse: Root mean square error over the VPD tail records, in σ
+      vpdtail_mae: Mean absolute error over the VPD tail records, in σ
+      vpdtail_bias: Mean of prediction minus observation over the VPD tail records, in σ
+      metric: Name of the per-site column summarized, e.g. all_r2
+      count: Number of sites with a value of the metric, count
+      25%: 25th percentile across sites of the metric
+      50%: Median across sites of the metric
+      75%: 75th percentile across sites of the metric
+  outputs/80_info/87_INFO_StageCutoffPercentiles:
+    row: 'StageCutoffPercentiles_NEP_ZSCORE: one row per site and driver. _summary: one row per driver
+      and cut-off'
+    note: Where the fixed stage cut-offs fall in the site distributions of the drivers. Cut-offs a = 0.31863936,
+      b = 0.71436744 and c = 1.28155157 σ, read from src/stages.py. Shares are over the records of the
+      SHAP file of the site (the modeled records) with a value of the driver. Summary statistics are across
+      sites, equal weight per site. Shares are fractions 0 to 1. Feeds the lower part of Supplementary
+      Table 3.
+    columns:
+      site: FLUXNET site code
+      driver: 'Driver column: TA_ZSCORE, VPD_ZSCORE, SWC_ZSCORE or SWIN_ZSCORE'
+      n: Number of records of the site with a value of the driver, count
+      share_below_-c: Fraction of the records with driver z-score at or below -c (-1.2816 σ)
+      share_below_-b: Fraction of the records with driver z-score at or below -b (-0.7144 σ)
+      share_below_-a: Fraction of the records with driver z-score at or below -a (-0.3186 σ)
+      share_below_a: Fraction of the records with driver z-score at or below a (0.3186 σ)
+      share_below_b: Fraction of the records with driver z-score at or below b (0.7144 σ)
+      share_below_c: Fraction of the records with driver z-score at or below c (1.2816 σ)
+      cutoff: 'Cut-off label: -c, -b, -a, a, b, c'
+      sigma: Cut-off value in σ
+      gaussian: Standard normal share at or below the cut-off, fraction 0 to 1
+      sites: Number of sites, count
+      q25: 25th percentile across sites of the share at or below the cut-off
+      median: Median across sites of the share at or below the cut-off
+      q75: 75th percentile across sites of the share at or below the cut-off
+      median_minus_gaussian: median minus gaussian, fraction 0 to 1
+  outputs/80_info/88_INFO_StageOrderTest:
+    row: 'StageOrderTest: one row per stage sequence and stage. _VERDICT: one row per stage sequence'
+    note: Compares the main stage order (published, extreme VPD added at Stage 8) with the mirrored order
+      of src/stages.py (VPD escalated, extreme soil dryness added last). Per site, the SHAP contributions
+      are averaged over the records of the stage (script 44), then averaged across sites, equal weight
+      per site, skipping sites with no record in the stage. All effects in σ of the within-site NEP z-score.
+      The net effect is the per-record sum of the SHAP values of TA, VPD, SWC and SWIN.
+    columns:
+      sequence: 'Stage order: published or mirrored'
+      stage: Stage number, 1 to 8
+      sites: Number of site rows for the stage, all sites including those with no record in the stage
+      records: Records in the stage summed over sites, count
+      condition: Stage label of the stage function, e.g. hot and 2 driest
+      net: Mean across sites of the site mean net effect, in σ
+      VPD: Mean across sites of the site mean VPD SHAP contribution, in σ
+      TA: Mean across sites of the site mean TA SHAP contribution, in σ
+      SM: Mean across sites of the site mean soil water SHAP contribution, in σ
+      SW: Mean across sites of the site mean shortwave radiation SHAP contribution, in σ
+      'Unnamed: 0': 'Written index: stage order, published or mirrored'
+      second_last_net: net at Stage 7 of the order, in σ
+      last_net: net at Stage 8 of the order, in σ
+      final_step: last_net minus second_last_net, in σ
+  outputs/80_info/89_INFO_StageMatching_SUMMARY:
+    row: 'StageMatching_NEP_ZSCORE: one row per site with Stage 7 and Stage 8 records and matching method.
+      _SUMMARY: one row per matching method'
+    note: 'Each Stage 8 record is matched to the nearest Stage 7 record of the same site (Euclidean distance
+      on the TA, SWC and SWIN z-scores), with replacement. strict: same calendar month, hour of day within
+      1 h and each z-score within 0.5 σ. covariate: the 0.5 σ caliper only. Differences are Stage 8 minus
+      Stage 7. SHAP contributions and the net effect (sum of the four SHAP values per record) are in σ
+      of the within-site NEP z-score. Covariate differences are in σ of the driver z-score. The d_ columns
+      of the per-site file are empty for sites without a matched pair. Across-site statistics use the
+      sites with pairs, equal weight per site, unless named otherwise. Shares are fractions 0 to 1. Nothing
+      is refitted.'
+    columns:
+      SITE: FLUXNET site code
+      IGBP: IGBP forest type of the site
+      matching: 'Matching method: strict or covariate'
+      n_stage7: Number of Stage 7 records of the site, count
+      n_stage8: Number of Stage 8 records of the site, count
+      n_matched: Number of Stage 8 records with a Stage 7 partner, count
+      share_matched: n_matched over n_stage8, fraction 0 to 1
+      net_stage7_all: Mean net effect over all Stage 7 records of the site, unmatched, in σ
+      net_stage8_all: Mean net effect over all Stage 8 records of the site, unmatched, in σ
+      vpd_stage7_all: Mean VPD SHAP contribution over all Stage 7 records of the site, unmatched, in σ
+      vpd_stage8_all: Mean VPD SHAP contribution over all Stage 8 records of the site, unmatched, in σ
+      d_TA_ZSCORE: Mean TA z-score of the matched Stage 8 records minus that of their Stage 7 partners,
+        covariate balance, in σ
+      d_SWC_ZSCORE: Mean SWC z-score of the matched Stage 8 records minus that of their Stage 7 partners,
+        covariate balance, in σ
+      d_SWIN_ZSCORE: Mean SWIN z-score of the matched Stage 8 records minus that of their Stage 7 partners,
+        covariate balance, in σ
+      d_VPD_ZSCORE: Mean VPD z-score of the matched Stage 8 records minus that of their Stage 7 partners,
+        not matched on, the VPD contrast, in σ
+      d_net: Mean net effect of the matched Stage 8 records minus that of their Stage 7 partners, in σ
+      d_VPD: Same difference for the VPD SHAP contribution, in σ
+      d_TA: Same difference for the TA SHAP contribution, in σ
+      d_SM: Same difference for the soil water SHAP contribution, in σ
+      d_SW: Same difference for the shortwave radiation SHAP contribution, in σ
+      sites_both_stages: Number of sites with Stage 7 and Stage 8 records, count
+      sites_with_pairs: Number of sites with at least one matched pair, count
+      stage8_records: Stage 8 records summed over sites with both stages, count
+      stage8_records_matched: Matched Stage 8 records summed over sites, count
+      share_records_matched: stage8_records_matched over stage8_records, fraction 0 to 1
+      balance_TA_ZSCORE_mean: Mean across sites with pairs of d_TA_ZSCORE, in σ
+      balance_SWC_ZSCORE_mean: Mean across sites with pairs of d_SWC_ZSCORE, in σ
+      balance_SWIN_ZSCORE_mean: Mean across sites with pairs of d_SWIN_ZSCORE, in σ
+      balance_VPD_ZSCORE_mean: Mean across sites with pairs of d_VPD_ZSCORE, in σ
+      d_net_median: Median across sites with pairs of d_net, in σ
+      d_net_mean: Mean across sites with pairs of d_net, in σ
+      d_net_share_negative: Share of sites with pairs with negative d_net, fraction 0 to 1
+      d_VPD_median: Median across sites with pairs of d_VPD, in σ
+      d_VPD_mean: Mean across sites with pairs of d_VPD, in σ
+      d_VPD_share_negative: Share of sites with pairs with negative d_VPD, fraction 0 to 1
+      d_TA_median: Median across sites with pairs of d_TA, in σ
+      d_TA_mean: Mean across sites with pairs of d_TA, in σ
+      d_TA_share_negative: Share of sites with pairs with negative d_TA, fraction 0 to 1
+      d_SM_median: Median across sites with pairs of d_SM, in σ
+      d_SM_mean: Mean across sites with pairs of d_SM, in σ
+      d_SM_share_negative: Share of sites with pairs with negative d_SM, fraction 0 to 1
+      d_SW_median: Median across sites with pairs of d_SW, in σ
+      d_SW_mean: Mean across sites with pairs of d_SW, in σ
+      d_SW_share_negative: Share of sites with pairs with negative d_SW, fraction 0 to 1
+      unmatched_net_diff_mean_sites_with_pairs: Mean across sites with pairs of net_stage8_all minus net_stage7_all,
+        in σ
+      unmatched_net_share_negative_sites_with_pairs: Share of sites with pairs where net_stage8_all is
+        below net_stage7_all, fraction 0 to 1
+      unmatched_net_diff_mean_all_common: Mean across all sites with both stages of net_stage8_all minus
+        net_stage7_all, in σ
+      unmatched_net_share_negative_all_common: Share of all sites with both stages where net_stage8_all
+        is below net_stage7_all, fraction 0 to 1

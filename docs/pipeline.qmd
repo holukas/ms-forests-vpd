@@ -172,8 +172,9 @@ before 93, and put the code and documentation snapshots there first as well: the
 `git archive --format=zip --prefix=ms-forests-vpd/` from the tagged commit as
 `ms-forests-vpd_code.zip`, and `docs/_site/` rendered from the same commit as
 `ms-forests-vpd_docs.zip`. Script 95 writes the
-figures for this site. Scripts 91 to 93 and 95 do a dry run by default and write only
-with `--build`.
+figures for this site and script 96 the Output columns page. Scripts 91 to 93 and 95 do a
+dry run by default and write only with `--build`. Script 96 always writes the page and
+writes `COLUMNS.csv` only with `--build`.
 
 | Script | Function |
 |--------|----------|
@@ -182,6 +183,7 @@ with `--build`.
 | `93_build_deposit_archives.py` | One uncompressed zip per output stage, with `MANIFEST.csv` and `ARCHIVES.csv` |
 | `94_build_data_flow_chart.py` | `DATA_FLOW.html`, a zoomable chart of every script with the files it reads and writes, from `94_data_flow_graph.json` |
 | `95_copy_figures_to_docs.py` | The 14 figures of the paper, scaled to 1600 px and 256 colors, in `docs/figures/` for the [Figures](figures.qmd) page |
+| `96_build_column_reference.py` | The [Output columns](columns.qmd) page and `COLUMNS.csv`, from the descriptions in `96_column_dictionary.yaml`, checked against the header of every output file |
 
 The reads and writes in `94_data_flow_graph.json` were taken from the code by hand. When
 a script changes the files it reads or writes, update its entry there and rerun

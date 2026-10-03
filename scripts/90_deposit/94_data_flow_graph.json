@@ -1000,6 +1000,29 @@
    "note": "Web-size copies of the 14 figures for the Figures page of the documentation. Dry run by default, --build writes.",
    "variants": [],
    "group_end": true
+  },
+  {
+   "id": "96",
+   "path": "scripts/90_deposit/96_build_column_reference.py",
+   "label": "96 build column reference",
+   "stage": "90_deposit",
+   "reads": [
+    "scripts/90_deposit/96_column_dictionary.yaml",
+    "scripts/90_deposit/94_data_flow_graph.json",
+    "outputs/10_datasets/ (whole folder)",
+    "outputs/20_subsets/ (whole folder)",
+    "outputs/30_shap/ (whole folder)",
+    "outputs/40_aggregation/ (whole folder)",
+    "outputs/50_plots/ (whole folder)",
+    "outputs/80_info/ (whole folder)"
+   ],
+   "writes": [
+    "docs/columns.qmd",
+    "deposit_eth_research_collection/COLUMNS.csv"
+   ],
+   "note": "Describes every column of every csv and parquet output from the dictionary and checks the descriptions against the file headers. Always writes the Output columns page, --build also writes COLUMNS.csv.",
+   "variants": [],
+   "group_end": true
   }
  ],
  "products": [
@@ -1745,6 +1768,30 @@
    "label": "docs/figures, 14 web-size figures",
    "stage": "deposit",
    "note": "In the repository: docs/figures/fig1.png to suppfig10.png, 1600 px wide, 256 colors",
+   "variants": [],
+   "group_end": true
+  },
+  {
+   "id": "scripts/90_deposit/96_column_dictionary.yaml",
+   "label": "96_column_dictionary.yaml",
+   "stage": "90_deposit",
+   "note": "Column descriptions and naming scheme, kept by hand in the repository",
+   "variants": [],
+   "group_end": true
+  },
+  {
+   "id": "docs/columns.qmd",
+   "label": "docs/columns.qmd, Output columns page",
+   "stage": "deposit",
+   "note": "In the repository: the Output columns page of the documentation",
+   "variants": [],
+   "group_end": true
+  },
+  {
+   "id": "deposit_eth_research_collection/COLUMNS.csv",
+   "label": "COLUMNS.csv",
+   "stage": "deposit",
+   "note": "<DATA_ROOT>/deposit_eth_research_collection/COLUMNS.csv, one row per column of every output",
    "variants": [],
    "group_end": true
   },
