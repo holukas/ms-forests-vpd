@@ -299,5 +299,9 @@ script 16d) replaces it in these cases:
 The site-reported values come from `config/site_climate_reported_manual.csv` (network pages
 and site papers, with sources), the `CLIM_AVG` rows of the site BIF, and the AmeriFlux site
 table in `config/`. They serve only for these checks. Four coastal sites (JP-Ynf, US-HB2,
-US-HB3, VU-Coc) fall on an ERA5-Land sea cell and use the nearest land cell. The output
-table lists the source of each value and, for ERA5-Land, the reason.
+US-HB3, VU-Coc) fall on an ERA5-Land sea cell and use the nearest land cell
+(`ERA5_LAND_POINT_OVERRIDE` in script 16d). The output table lists the source of each
+value and, for ERA5-Land, the reason (`ERA5_MAT_SOURCE`, `ERA5_MAT_REASON`,
+`ERA5_MAP_SOURCE`, `ERA5_MAP_REASON`). Script 51 keeps these columns in the Fig. 1 data
+file. Script 91 copies that file to the Source Data as `SupplementaryTable1_climate.csv`
+and the full table of script 17 as `SupplementaryTable1_climate_full.csv`.
