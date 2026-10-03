@@ -348,7 +348,8 @@ if show_shap_thresholds:
                               threshold_main=threshold_main, show_annotate=True,
                               fontsize=AX_LABELS_FONTSIZE, show_annotate_short=False,
                               colors_symbols=colors_symbols,
-                              label_pos=LABEL_POS, label_neg=LABEL_NEG)
+                              label_pos=LABEL_POS, label_neg=LABEL_NEG,
+                              peak=fit.peak_of_polynomial(poly_func, x_fit))
 
 # # todo Add arrow to highlight one of the IQR/SEM data points
 # select_x = 1.7
@@ -488,7 +489,8 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
             threshold_main=threshold_main,
             show_annotate=True, fontsize=AX_LABELS_FONTSIZE, show_annotate_short=True,
             colors_symbols=colors_symbols,
-            label_pos=LABEL_POS, label_neg=LABEL_NEG)
+            label_pos=LABEL_POS, label_neg=LABEL_NEG,
+            peak=fit.peak_of_polynomial(poly_func, x_fit))
 
     # Format subplot
     plot.format(ax=ax, fontsize=AX_LABELS_FONTSIZE, showyticklabels=showyticklabels, showxticklabels=showxticklabels,
