@@ -1,0 +1,24 @@
+SITE,MAT,MAP,SOURCE,NOTE
+AR-SLu,,400,https://fluxnet.org/sites/siteinfo/AR-SLu,no MAT reported
+AU-Boy,16.9,445,https://www.tern.org.au/tern-ecosystem-processes/boyagin-wandoo-woodland-supersite/,OzFlux MAP 446 mm (BoM Pingelly)
+AU-Col,,933,https://www.ozflux.org.au/monitoringsites/collie/collie_description.html,BoM AWS 009628; no MAT reported
+AU-Cow,24.0,4425,https://www.tern.org.au/tern-ecosystem-processes/daintree-rainforest-supersite/,OzFlux MAP about 3700 mm
+AU-Ctr,24.4,5143,https://www.tern.org.au/tern-ecosystem-processes/daintree-rainforest-supersite/,OzFlux MAP about 5180 mm
+AU-Cum,19,800,https://www.tern.org.au/tern-ecosystem-processes/cumberland-plain-supersite/,Renchon et al. 2018 MAT 18 MAP 800
+AU-GWW,18.8,265,https://www.tern.org.au/tern-ecosystem-processes/great-western-woodlands-supersite/,OzFlux MAP about 240 mm
+AU-Gin,18.4,681,https://www.tern.org.au/tern-ecosystem-processes/gingin-banksia-woodland-supersite/,OzFlux SILO 1975-2010 724 mm 18.6 degC
+AU-Rob,19.4,2236,https://www.tern.org.au/tern-ecosystem-processes/robson-creek-rainforest-supersite/,OzFlux MAP 2292 mm
+AU-Tum,10.72,1159.01,https://fluxnet.org/sites/siteinfo/AU-Tum,TERN 9.8 degC 1417 mm; OzFlux 1000 mm
+AU-Wac,12.76,1105.59,https://fluxnet.org/sites/siteinfo/AU-Wac,OzFlux MAP 1209 mm
+AU-Whr,15.9,558,https://www.ozflux.org.au/monitoringsites/whroo/whroo_description.html,MAT from McHugh et al. 2017 Table 1 (2012-2014)
+AU-Wom,11.4,936,https://www.tern.org.au/tern-ecosystem-processes/wombat-stringybark-eucalypt-supersite/,Hinko-Najera et al. 2017 MAT 11.0 MAP 879 (1901-2014)
+AU-Wrr,,1700,https://www.ozflux.org.au/monitoringsites/warra/warra_description.html,no MAT reported
+CN-Cha,3.6,695,Guan et al. 2006 Agric. For. Meteorol. 137 138-149 Sect. 2.1,1982-2003
+CN-Dzo,,1607,https://www.chinaflux.org/engczd/index.aspx?nodeid=633,MAT only as range 21.5 to 28.5 degC
+CN-Mxn,9.3,825.2,https://deims.org/1cc2296d-afd0-4de8-90af-ef79927c0e9f,station about 1.6 km from tower
+CN-Qia,17.9,1485.1,Wen et al. 2006 Agric. For. Meteorol. 137 166-175 Sect. 2.1,1985-2004
+DE-Lnf,6.96,894.6,https://fluxnet.org/sites/siteinfo/DE-Lnf,BIF entry is 0 and 0
+FI-Sod,0.3,543,https://en.ilmatieteenlaitos.fi/ghg-sodankylaicos,1991-2020; BIF and ICOS MAP 2424 mm is an error
+IT-BsB,13.3,773.0,https://meta.icos-cp.eu/resources/stations/ES_IT-BsB,
+MY-PSO,25.3,1865,https://asiaflux.nies.go.jp/site-info/PSO.html,2003-2009
+US-Me3,7.6,500,"Kwon, Law, Thomas & Johnson 2018, Agric. For. Meteorol. (OSTI 1537930)","PRISM 1981-2010 at the tower; AmeriFlux lists 719 mm"

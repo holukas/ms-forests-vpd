@@ -1,0 +1,8 @@
+SITE,VARIABLE,SOURCE,REASON
+AU-Wac,MAT,ERA5-Land,closer to the site-reported MAT than TA_ERA
+CD-Ygb,MAT,ERA5-Land,closer to the site-reported MAT than TA_ERA
+DE-Hzd,MAT,ERA5-Land,closer to the site-reported MAT than TA_ERA
+EE-Stg,MAT,ERA5-Land,closer to the site-reported MAT than TA_ERA
+KR-JjM,MAT,ERA5-Land,closer to the site-reported MAT than TA_ERA
+US-HBK,MAT,ERA5-Land,closer to the site-reported MAT than TA_ERA
+US-UMd,MAT,ERA5-Land,closer to the site-reported MAT than TA_ERA
