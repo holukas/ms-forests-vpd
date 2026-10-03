@@ -44,6 +44,22 @@ def calc_threshold(x_fit, y_fit, pi_lower, pi_upper):
     return threshold_main, threshold_lower, threshold_upper
 
 
+def peak_of_polynomial(poly_func, x_fit):
+    """
+    Return (x, y) of the highest point of a fitted polynomial within the range of x_fit.
+
+    Interior maxima are taken from the roots of the derivative, so the position does not
+    depend on the spacing of x_fit. Without an interior maximum the highest end of the
+    range is returned.
+    """
+    lo, hi = x_fit.min(), x_fit.max()
+    roots = poly_func.deriv().roots
+    roots = roots[np.isreal(roots)].real
+    candidates = [r for r in roots if lo < r < hi and poly_func.deriv(2)(r) < 0] + [lo, hi]
+    x_peak = max(candidates, key=poly_func)
+    return x_peak, poly_func(x_peak)
+
+
 def fit_polynomial(X_data, Y_data):
     # Fit polynomial
     degree = 4

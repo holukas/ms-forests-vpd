@@ -401,13 +401,17 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
 
 def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_annotate, show_annotate_short,
                          fontsize, colors_symbols, label_pos: str = "Stimulation",
-                         label_neg: str = "Suppression"):
+                         label_neg: str = "Suppression", peak: tuple = None):
     """Draw the zero crossing, the extremes and the two zone labels.
 
     label_pos and label_neg name the zones above and below zero. The defaults fit a
     carbon uptake flux (positive SHAP means more uptake). For RECO and ET, pass
     neutral labels such as "Increase" and "Decrease".
+
+    peak is an optional (x, y) of the maximum, e.g. from fit.peak_of_polynomial(). Without
+    it the maximum is read from the grid at max_ix, which rounds to the grid spacing.
     """
+    x_peak, y_peak = peak if peak is not None else (x_fit[max_ix], y_fit[max_ix])
     color_limzone = '#d6604d'
     color_facilzone = '#4393c3'
 
@@ -535,7 +539,7 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_
     y_offset_topline = y_range * scaling_factor
 
     # Maximum facilitation
-    ax.scatter(x_fit[max_ix], y_fit[max_ix], color='none', marker='^', edgecolor=colors_symbols[0], **_params2)
+    ax.scatter(x_peak, y_peak, color='none', marker='^', edgecolor=colors_symbols[0], **_params2)
 
     # Threshold
     ax.scatter(threshold_main, 0, c="none", edgecolors=colors_symbols[1], **_params2)
@@ -547,16 +551,16 @@ def show_shap_thresholds(ax, x_fit, y_fit, max_ix, min_ix, threshold_main, show_
         _fontsize = fontsize * 0.9 if show_annotate_short else fontsize
 
         if not show_annotate_short:
-            ann_txt = f'Max. {label_pos.lower()}\nx={x_fit[max_ix]:.2f}'
+            ann_txt = f'Max. {label_pos.lower()}\nx={x_peak:.2f}'
             offx = 0.1
             offy = 0.06
         else:
-            ann_txt = f'x={x_fit[max_ix]:.2f}'
+            ann_txt = f'x={x_peak:.2f}'
             offx = 0.1
             offy = 0
         ax.annotate(ann_txt,
-                    xy=(x_fit[max_ix], y_fit[max_ix]),
-                    xytext=(x_fit[max_ix] + offx, -0.15 + offy),  # Adjust text position as needed
+                    xy=(x_peak, y_peak),
+                    xytext=(x_peak + offx, -0.15 + offy),  # Adjust text position as needed
                     # xy=(x_fit[max_ix], y_fit[max_ix]),
                     # xytext=(x_fit[max_ix] + offx, y_fit[max_ix] * -1),  # Adjust text position as needed
                     arrowprops=dict(arrowstyle="->", color=color, lw=2, shrinkB=10),
