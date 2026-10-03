@@ -31,7 +31,7 @@ model. Output file names carry the display item (`FIG-N`, `TABLE-N`, `SUPPFIG-N`
 | `69_supptable-10_factorial_sm_vpd.py` | Supplementary Table 10, SM and VPD effects in four soil water classes by four VPD classes | `40_aggregation/.../factorial-cells/44_...csv` |
 
 Supplementary Table 1, the list of sites with their data references, was assembled by
-hand from the outputs of stage 21. Supplementary Table 2, the per-site statistics, comes
+hand from the outputs of stages 17 and 21. Supplementary Table 2, the per-site statistics, comes
 from the outputs of stages 17 and 21. Script 91 copies the data behind every display item
 into the Source Data archive (see [Data](data.qmd#deposited-outputs)).
 
