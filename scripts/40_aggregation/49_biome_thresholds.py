@@ -6,8 +6,8 @@ a fourth-order polynomial fitted, and the highest crossing from positive to nega
 taken, as in `src.fit.calc_threshold`. Sites with fewer than MIN_BINS filled bins are skipped. The
 per-site values feed a Kruskal-Wallis test across forest types, pairwise Mann-Whitney
 tests with Holm correction, and a bootstrap interval for each forest type median. Rank
-tests are used because the per-site thresholds are skewed. The Figure 4 intervals cannot
-answer this: they describe fit uncertainty, not the spread between sites.
+tests are used because the per-site thresholds are skewed. The Figure 4 threshold interval cannot
+answer this: it describes fit uncertainty, not the spread between sites.
 
 Writes 49_SiteThresholds.csv, 49_BiomeThresholds_Summary.csv and
 49_BiomeThresholds_PairwiseTests.csv.

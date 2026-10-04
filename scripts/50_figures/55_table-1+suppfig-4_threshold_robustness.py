@@ -214,7 +214,7 @@ tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 # minimums. The figure keeps all eighteen.
 # The full set is too many for a main display item, and the reason is redundancy: three
 # record-length rows make one point, and each matched pair is a two-row argument about one
-# comparison. Both largest movers stay, North America and the ten-year records, so the
+# comparison. The four largest movers stay (the ten-year records, the five-or-more-depths pair and North America), so the
 # selection cannot be read as flattering. All three region rows stay: Europe removed gives the
 # highest threshold of all tests, so without it the table would show the low end of the
 # region effect and not the high end. The estimator row is left
@@ -334,9 +334,8 @@ table1 = pd.DataFrame(records, columns=COLUMNS)
 
 
 
-# Which tests actually pass the cutoff, rather than a sentence that assumes one does. Adding
-# the five-or-more-depths pair made the old wording false: its shallow row sits 0.069 kPa below the
-# reference because it uses 59 sites, so two rows now clear 0.06 kPa rather than one.
+# Which tests pass the cutoff, rather than a sentence that assumes one does. Three rows clear
+# 0.06 kPa: the ten-year records and the two rows of the 59 sites with five or more depths.
 biggest = tests.loc[tests['shift_kpa'].abs().idxmax()]
 movers = tests.loc[tests['shift_kpa'].abs() >= MOVER].sort_values('shift_kpa')
 mover_text = '; '.join(f"{SHORT.get(r['test'], r['test']).lower()} at "

@@ -71,7 +71,7 @@ def summarise(path, label):
 summary = pd.concat([summarise(p, name) for name, p in SOURCES.items()],
                     ignore_index=True)
 
-# The two numbers that answer the objection.
+# The two comparisons of the docstring.
 verdict = {}
 for name in SOURCES:
     seq = summary.loc[summary['sequence'] == name].set_index('stage')

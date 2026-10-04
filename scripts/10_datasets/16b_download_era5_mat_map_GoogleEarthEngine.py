@@ -1,6 +1,8 @@
 """
 Compute yearly ERA5 temperature and precipitation for each site on Google Earth Engine.
 
+Legacy. Script 17 does not read this output, it uses ERA5-Land from 16c/16d.
+
 GEE aggregates the ECMWF/ERA5/DAILY collection at the site coordinates to
 yearly mean temperature (MAT_degC) and precipitation sum (PRECIP_TOT_mm) for
 1991-2020. A site is saved only if all 30 years are present. Failed requests

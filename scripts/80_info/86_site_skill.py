@@ -2,7 +2,7 @@
 Per-site model skill (n, R2, RMSE, MAE, bias) for all records, Stage 8 and the high-VPD tail.
 
 Uses the out-of-sample predictions that stage 31 stores in the per-site SHAP files
-(`NEP_ZSCORE_PRED`, the five folds concatenated), so nothing is refitted. Runs for each
+(`NEP_ZSCORE_PRED`, the held-out predictions of all folds), so nothing is refitted. Runs for each
 entry of VARIANTS: the main analysis with random folds and the leave-one-year-out
 cross-validation (`blocked-cv`).
 
@@ -29,7 +29,7 @@ from src.paths import load_settings
 
 FLUX = 'NEP_ZSCORE'
 CONDITIONAL = True
-VARIANTS = ["", "blocked-cv"]     # empty is the submitted run
+VARIANTS = ["", "blocked-cv"]     # empty is the main analysis
 VPD_TAIL_SIGMA = 1.2815515655446   # the Stage 8 VPD cut-off, top decile of a normal
 MIN_RECORDS = 10                   # a subset with fewer records gets no skill numbers
 

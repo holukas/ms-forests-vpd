@@ -34,7 +34,7 @@ def create_colormap(fig, ax, cmap, label, absmax, labelsize, step=None):
     cb = fig.colorbar(sm, cax=ax, extend='both')
     # Tick spacing follows the range, so a colorbar for a small effect still carries
     # ticks. A fixed 0.2 left the soil water effect, about 0.1 sigma, with a bare
-    # zero. The factor 1.5 is set by the three cases drawn so far: 0.66 keeps the
+    # zero. The factor 1.5 was set from three cases: 0.66 keeps the
     # main-analysis 0.2, and 0.31 and 0.10 get a single tick each side, at 0.2 and 0.05.
     # A figure with several colorbars can pass one step for all of them.
     if step is None:

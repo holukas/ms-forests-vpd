@@ -33,7 +33,7 @@ def calc_threshold(x_fit, y_fit, pi_lower, pi_upper):
         # Select and return the maximum x-coordinate root
         return max(roots)
 
-    # Apply the root-finding logic to the main fit and both confidence intervals
+    # Apply the root-finding logic to the main fit and both limits of the prediction band
     threshold_main = find_highest_zero_crossing(x_fit, y_fit)
     threshold_lower = find_highest_zero_crossing(x_fit, pi_lower)
     threshold_upper = find_highest_zero_crossing(x_fit, pi_upper)

@@ -23,7 +23,7 @@ import pandas as pd
 from src.paths import data_path
 
 # ==================== CONFIGURATION ====================
-NUM_BATCHES = 3  # Number of parallel processes (default: 6)
+NUM_BATCHES = 3  # Number of parallel processes
 # ========================================================
 
 # Load datasets info to get total site count

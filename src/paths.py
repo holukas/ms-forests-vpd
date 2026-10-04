@@ -9,7 +9,7 @@ which is resolved in this order:
 2. key ``DATA_ROOT`` in ``config/settings.local.yaml`` (not under version control)
 3. key ``DATA_ROOT`` in ``config/settings.yaml``
 
-The data folder contains ``00_raw/`` and ``outputs/`` (layout in
+The data folder contains ``data/00_raw/`` and ``data/outputs/`` (layout in
 ``docs/data.qmd``). Scripts can be run from any directory, e.g. the repository root:
 
     python scripts/30_shap/31_shap.py
@@ -104,7 +104,7 @@ def load_settings() -> dict:
     Read ``config/settings.yaml``, apply local overrides, resolve data paths.
 
     Path values are stored relative to the data folder, so a settings entry
-    ``outputs/30_shap`` comes back as an absolute path under `DATA_ROOT`.
+    ``data/outputs/30_shap`` comes back as an absolute path under `DATA_ROOT`.
     Absolute values are left untouched.
     """
     settings = _read_yaml(SETTINGS_FILE)

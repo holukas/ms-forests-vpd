@@ -40,10 +40,10 @@ def train_rf_models_and_shap(target: str, features: list,
 
     model = RandomForestRegressor(
         n_estimators=1000,  # Number of trees (1000 provides very stable SHAP values)
-        max_depth=None,  # Limit depth to prevent overfitting on just 4 features
+        max_depth=None,  # No depth limit
         min_samples_split=2,
-        min_samples_leaf=1,  # (Equivalent to min_child_weight) Prevents splitting on outliers
-        max_features=0.75,  # (Equivalent to colsample_bytree) Uses 3 out of 4 features per tree
+        min_samples_leaf=1,  # Default, no minimum leaf size
+        max_features=0.75,  # (Equivalent to colsample_bytree) 3 of 4 features per split
         random_state=42,
         n_jobs=-1  # Use all available CPU cores
     )
@@ -459,7 +459,7 @@ def train_xgboost_models_and_ale(target: str, features: list,
         # others are optional overlays. We want the FIRST line which has ~grid_size points.
         ale_curve = None
         if len(ale_values) > 0:
-            # Get the first line (smallest number of points, which is the ALE curve)
+            # Take the line with the fewest points as the ALE curve
             ale_curve = min(ale_values, key=lambda x: len(x['feature_value']))
             print(f"    Extracted ALE curve with {len(ale_curve['feature_value'])} grid points for {feature}")
 
@@ -480,7 +480,7 @@ def train_xgboost_models_and_ale(target: str, features: list,
         else:
             print(f"    WARNING: No ALE curve extracted for {feature}")
 
-    # Step 2: Create combined subplot figure by reading the saved parquet files
+    # Step 2: Create combined subplot figure from the curves collected in step 1
     if ale_data_all_features:
         print(f"  Creating combined ALE plot from saved data...")
 
@@ -506,7 +506,7 @@ def train_xgboost_models_and_ale(target: str, features: list,
                 col = idx % n_cols
                 ax = axes[row, col]
 
-                # Get data from saved file
+                # Curve collected in step 1
                 ale_data = ale_data_all_features[feature]
                 feature_values = ale_data['feature_value'].values
                 effects = ale_data['effect'].values
@@ -816,7 +816,7 @@ def create_validation_summary(target: str, features: list,
         # Rank features by importance across methods
         feature_scores = {}
         for feature in features:
-            # ALE: max absolute effect
+            # ALE: range of the effect (max minus min)
             ale_feature = ale_df[ale_df['feature'] == feature]
             ale_range = ale_feature['effect'].max() - ale_feature['effect'].min()
 
@@ -828,7 +828,7 @@ def create_validation_summary(target: str, features: list,
             pa_feature = pa_df[(pa_df['FEATURE'] == feature) & (pa_df['PATH_TYPE'] == 'DIRECT')]
             pa_coef = abs(pa_feature['PATH_COEFFICIENT'].values[0]) if len(pa_feature) > 0 else 0
 
-            # Combined score (normalize and average)
+            # Combined score (plain mean, not normalized)
             feature_scores[feature] = {
                 'ale_range': ale_range,
                 'pc_corr': pc_corr,

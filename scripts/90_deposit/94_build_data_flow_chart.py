@@ -230,7 +230,7 @@ for n in nodes:
     if nodes[n]["kind"] == "product":
         rank[n] = rank[writer[n]] if n in writer else 0
 
-# The deposit group (stage folders, scripts 93 and 94, deposit files) goes after everything else
+# The deposit group (stage folders, scripts 91 to 96, deposit files) goes after everything else
 end_nodes = [n for n in nodes if nodes[n].get("group_end")]
 if end_nodes:
     last = max(r for n, r in rank.items() if n not in end_nodes)

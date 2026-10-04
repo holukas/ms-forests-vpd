@@ -2,7 +2,7 @@
 Where the fixed stage cutoffs fall in each site's empirical distribution of the drivers.
 
 The stages use three cutoffs a, b and c on site-standardized drivers, the standard-normal
-quantiles that mark the middle 25 %, the middle 52.5 % and the outer 10 % of a Gaussian.
+quantiles that mark the middle 25 %, the middle 52.5 % and the outer 10 % on each side of a Gaussian.
 Standardizing a skewed variable does not make it Gaussian, so at a given site the cutoffs
 need not land on those percentiles. For every site and driver, the script reports the share
 of records at or below -c, -b, -a, a, b and c next to the Gaussian share. The cutoffs are
@@ -28,7 +28,7 @@ from src.paths import load_settings
 
 FLUX = 'NEP_ZSCORE'
 CONDITIONAL = True
-VARIANT = ""                       # empty is the submitted run
+VARIANT = ""                       # empty is the main analysis
 DRIVERS = ['TA_ZSCORE', 'VPD_ZSCORE', 'SWC_ZSCORE', 'SWIN_ZSCORE']
 
 shap_type = 'conditional' if CONDITIONAL else 'interventional'

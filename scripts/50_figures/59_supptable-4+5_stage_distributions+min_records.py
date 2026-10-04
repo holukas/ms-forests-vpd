@@ -1,7 +1,7 @@
 """
 Supplementary Tables 4 and 5: driver distributions per stage and the Stage 8 record minimum.
 
-Supplementary Table 4 gives, per stage, for all forests and each forest type, the sites,
+Supplementary Table 4 gives, per stage, for all sites and each forest type, the sites,
 records and TA, VPD, SM and SW distributions, standardized and in measured units, as
 written by script 45.
 

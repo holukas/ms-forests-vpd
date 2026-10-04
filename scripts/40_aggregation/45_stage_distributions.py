@@ -2,7 +2,7 @@
 Driver distributions within each stress stage.
 
 Takes the median of TA, VPD, SWC and SWIN per site and stage, then summarizes these
-site medians (median, quartiles, site and record counts) globally and per forest type.
+site medians (median, quartiles, site and record counts) across all sites and per forest type.
 SWIN is the one driver no stage definition constrains, so its distribution shows
 whether the stages also differ in light. Values are reported standardized, as the
 stages are defined, and in measured units, since a fixed sigma cut-off falls at a

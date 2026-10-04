@@ -50,9 +50,9 @@ aggfunc = 'mean'
 # ------------------------------
 # Agg groups, use z-scores:
 # NEP:  [x]TA/VPD [x]SWC/VPD [x]TA/SWC [x] ET/VPD [x] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
-# ET:   [ ]TA/VPD [ ]SWC/VPD [ ]TA/SWC [ ] ET/VPD [ ] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
-# GPP:  [ ]TA/VPD [ ]SWC/VPD [ ]TA/SWC [ ] ET/VPD [ ] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
-# RECO: [ ]TA/VPD [ ]SWC/VPD [ ]TA/SWC [ ] ET/VPD [ ] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
+# ET:   [x]TA/VPD [x]SWC/VPD [x]TA/SWC [x] ET/VPD [x] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
+# GPP:  [x]TA/VPD [x]SWC/VPD [x]TA/SWC [x] ET/VPD [x] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
+# RECO: [x]TA/VPD [x]SWC/VPD [x]TA/SWC [x] ET/VPD [x] ET/SWC [ ]SWIN/TA [ ]SWIN/VPD
 # ------------------------------
 
 for VARS in VAR_PAIRS:

@@ -19,7 +19,7 @@ Reads:
     <DATA_ROOT>/data/outputs/: the header of every matched file
 
 Writes:
-    docs/columns.qmd, the Columns page of the documentation
+    docs/columns.qmd, the Output columns page of the documentation
     with --build also <DATA_ROOT>/deposit_eth_research_collection/COLUMNS.csv, every column
     of every output with its description
 

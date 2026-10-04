@@ -216,7 +216,6 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     subset_stats = subset.describe()
     subset = subset.dropna()
     if subset.empty:
-        # Count if there are data from all 4 months
         logging.warning(f"{site} Skipped site because subset dataframe is empty after dropna(). "
                         f"Most likely one of the variables has no data in the selected time period. "
                         f"Variable counts: {subset_stats.loc['count']}")

@@ -16,7 +16,7 @@ from src.paths import data_path
 infile = data_path("data/outputs/10_datasets/14_datasets_info_parquet_vars_stats.csv")
 datasets_df = pd.read_csv(infile)
 
-# Keep sites where SWC is available and that are not DNF (only 2 sites)
+# Keep sites with SWC, GPP and RECO, not DNF, and with at least 3 years
 datasets_df = datasets_df.loc[
     (datasets_df['SWC_AVG'] != '-MISSING-') &  # Condition 1: SWC must be available
     (datasets_df['GPP_AVG'] != '-MISSING-') &  # Condition 2: GPP must be available

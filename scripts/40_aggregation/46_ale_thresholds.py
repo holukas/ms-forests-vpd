@@ -32,7 +32,7 @@ FEATURE = 'VPD_ZSCORE'
 # next to them. The ALE campaign must have run with the same value.
 VARIANT = ""
 
-USE_MEDIAN = False       # False: mean across sites, as in the main analysis
+USE_MEDIAN = False       # False: mean across sites, used only for the pooled-curve row
 IGBPS = ['ENF', 'DBF', 'MF', 'EBF']
 GRID_POINTS = 50
 

@@ -182,7 +182,7 @@ plot_map_region(ax_world, extent=[-180, 180, -60, 85], title=f'Global forest sit
                 letter='a', is_main_map=True)
 
 # Legend under the map. Short labels only: the site-year counts and the percentages go in
-# the figure caption instead, which is where they were asked for.
+# the figure caption instead.
 # Explicit handles, so the legend follows IGBP_ORDER and not the drawing order.
 legend_handles = [
     Line2D([], [], linestyle='none', marker=igbp_markers[igbp]['marker'],
@@ -232,8 +232,6 @@ ax_climate.set_xlabel('MAT (°C)', fontsize=AX_LABELS_FONTSIZE, color='#222222')
 ax_climate.set_ylabel('MAP (mm)', fontsize=AX_LABELS_FONTSIZE, color='#222222')
 ax_climate.set_facecolor('white')
 
-# Fixed the transform argument to ax_climate.transAxes
-# Fixed the transform argument to ax_climate.transAxes AND standardized the y-height to 1.05
 panel_label(ax_climate, 'b', f'Bioclimatic distribution (n={n_sites_climate})')
 
 # ---------------------------------------------------------

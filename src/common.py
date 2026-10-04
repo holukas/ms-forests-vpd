@@ -8,8 +8,7 @@ def peak_season_months(sitedata, gpp_col: str, n_months: int = 4) -> list:
 
     This is the peak-season definition of the analysis. It is applied to the full
     record, before quality-control or daytime filtering, so the season does not
-    move when those filters change. Comments that say "warmest months" refer to
-    these months.
+    move when those filters change.
 
     Args:
         sitedata: Site data with a DatetimeIndex.

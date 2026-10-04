@@ -1,5 +1,5 @@
 """
-Mean SHAP values within each stress stage, per site and across sites.
+Mean SHAP values within each stress stage, one row per site and stage. The figure scripts aggregate across sites.
 
 Stages are defined in `src/stages.py`. Settings at the top of the file:
 - FLUX, CONDITIONAL, VARIANT, SITE_SUBSET

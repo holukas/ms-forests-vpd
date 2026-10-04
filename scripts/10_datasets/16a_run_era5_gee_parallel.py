@@ -1,7 +1,7 @@
 """
 Run script 16b in parallel batches to download ERA5 data from Google Earth Engine.
 
-This is the main ERA5 download script. It splits the site list into
+Legacy, script 17 reads ERA5-Land from 16c/16d instead. It splits the site list into
 NUM_BATCHES equal batches, starts one 16b process per batch, waits for all of
 them and reports which batches failed.
 

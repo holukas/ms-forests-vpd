@@ -87,10 +87,10 @@ CV_STRATEGY = "random"
 
 # ------------------------------
 # Calculate SHAP values for:
-# [ ] NEP_ZSCORE
+# [x] NEP_ZSCORE
 # [x] ET_ZSCORE
-# [ ] GPP_ZSCORE
-# [ ] RECO_ZSCORE
+# [x] GPP_ZSCORE
+# [x] RECO_ZSCORE
 # ------------------------------
 
 

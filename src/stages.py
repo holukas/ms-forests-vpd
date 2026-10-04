@@ -35,7 +35,7 @@ def calculate_stage_stats(df_input, igbp, stage_order, vars, shap_suffix_avg, sh
             stage_shap_avg_min = sites_shap_avg.min()
             stage_shap_avg_max = sites_shap_avg.max()
 
-            # Calculate the SD of site-means
+            # Total SD over sites and records (law of total variance)
             # Law of total variance
             mean_of_variances = (sites_shap_sd ** 2).mean()  # Average of within-site variances
             variance_of_means = sites_shap_avg.var(ddof=0)  # Variance of the site means

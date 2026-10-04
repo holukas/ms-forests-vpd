@@ -11,7 +11,7 @@ Uses the quartic fit and data of Figure 4 (script 54), for all sites and per for
 Each point is given in sigma and in kPa, converted as in script 54. Points within 2 % of
 the edge of the observed range are flagged as marking where the data stop.
 
-Reads: the 54_FIG-4_ResponseCurve_..._DATA.csv files of script 54.
+Reads: the 54_FIG-4_ResponseCurve_..._DATA.csv files of script 54 and 21_SUBSETS_parquet_vars_stats_subsets.csv for the kPa conversion.
 Writes: 81_INFO_ThresholdDefinitions.csv.
 """
 from pathlib import Path

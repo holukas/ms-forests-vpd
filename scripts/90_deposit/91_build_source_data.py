@@ -2,7 +2,7 @@
 Collect the Source Data of the paper: the data behind every figure, table and
 Supplementary Data file of the main analysis, one plainly named file each.
 
-The journal asks for the data behind the display items as labelled files in one zipped
+The journal asks for the data behind the display items as labeled files in one zipped
 folder named "Source Data". The files here are copies of pipeline outputs, renamed after
 the display item they belong to; nothing is recomputed. README.txt in the archive lists
 every file with the output it was copied from.
@@ -106,7 +106,7 @@ analysis pipeline (code: https://github.com/holukas/ms-forests-vpd), written by 
 script whose number starts the source file name. The deposit in the ETH Research
 Collection (https://doi.org/10.3929/ethz-c-000798579) holds the same outputs together with
 every earlier step and the sensitivity runs. Column names follow the pipeline; the legend
-of each display item gives the units. Licence: CC BY 4.0.
+of each display item gives the units. License: CC BY 4.0.
 
 Site climate (Fig. 1b, Supplementary Table 1): SupplementaryTable1_climate.csv lists MAT and
 MAP of the 208 sites with the source of each value (ERA5_MAT_SOURCE, ERA5_MAP_SOURCE) and,

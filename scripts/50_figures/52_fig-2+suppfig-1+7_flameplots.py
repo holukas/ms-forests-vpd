@@ -6,7 +6,7 @@ FIGURE at the top of the file selects the output:
 - `"driver-effects"`: Supplementary Fig. 1, the TA and SM effects on the same grids
 - `"fluxes"` (default): Supplementary Fig. 7, NEP, GPP, RECO and ET over the SM by VPD grid
 
-Reads the stage 42 aggregation. VARIANT and SITE_SUBSET select a sensitivity run.
+Reads the stage 42 and 43 aggregations. VARIANT and SITE_SUBSET select a sensitivity run.
 Writes the figure and `<figure name>_DATA.csv`, one row per grid cell and panel.
 """
 import string

@@ -120,7 +120,7 @@ def to_sigma(kpa, sites):
 
 
 # ---------------------------------------------------------------------------
-# Part 1: the estimator sweep, formerly script 60
+# Part 1: the estimator sweep
 # ---------------------------------------------------------------------------
 
 def poly_threshold(x, y, degree):
@@ -410,8 +410,8 @@ def robustness_rows(sweep):
         stats = deep_stats if sub[0] == 'deep-sm' else None
         rows.append(('Soil water depth', label, *threshold_with_ci(piv, seed=1, stats=stats), None))
 
-    # The deepest layers on their own. The matched pair above uses all 128 sites that moved
-    # down, and most of them moved one layer, so the depth contrast is diluted. These are the
+    # The deepest layers on their own. The matched pair above uses all 128 sites below
+    # layer 1 in the deep run, and 69 of them are on layers 2 to 4, so the depth contrast is diluted. These are the
     # sites that reached layer 5 or below, held fixed across both rows, so only the depth
     # changes and the contrast is the largest the network allows. Surface soil water is not
     # the water a tree reaches.
@@ -486,7 +486,7 @@ def robustness_rows(sweep):
     # Leave one site out. Every other row in this group drops a whole class of sites, so none
     # of them answers the simplest question a reader has: does the number rest on a handful of
     # sites? Drop each site in turn and refit. The row carries the median and the full range
-    # over the removals rather than an interval, because any two of those values share 207
+    # over the removals rather than an interval, because any two of those values share 206
     # sites and are not independent draws.
     loo = leave_one_site_out(base).dropna()
     # The sigma value is the reference row's: every removal refits the same estimator on almost

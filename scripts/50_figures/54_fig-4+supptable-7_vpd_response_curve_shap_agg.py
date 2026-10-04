@@ -7,12 +7,12 @@ interval. Panels b to e show each forest type. The threshold is the highest posi
 of the fit, bounded by the crossings of the interval. Supplementary Table 7 lists the
 coefficients, R2 and the threshold in sigma and in kPa; the kPa value uses each site's VPD
 mean and standard deviation, averaged over sites, with CD-Ygb converted from Pa first.
-VARIANT and SITE_SUBSET must match the values scripts 42 and 43 ran with.
+VARIANT and SITE_SUBSET must match the values scripts 41 to 43 ran with.
 
 Reads the 42 and 43 aggregations on the TA by VPD grid and the stage 21 subsets table. The
 error bars, the standard error of the cross-site median from a bootstrap over the sites of
-each panel, need the per-site cell means, so the script also reads the stage 41 file. With
-script 59 this is the only figure script that reads per-site values.
+each panel, need the per-site cell means, so the script also reads the stage 41 file, as
+scripts 59 and 68 read per-site values.
 Writes to the plot folder:
 - 54_FIG-4_ResponseCurve_ShapMeans_<FLUX>_<vars>.png, with _ALLSITES_DATA.csv,
   _<IGBP>_DATA.csv and _DATA_COEFFICIENTS.csv
@@ -41,7 +41,7 @@ SHOW_PLOT = False
 
 # Settings & variables
 
-# Main Fig. 3
+# Fig. 4
 # plotvars = [FLUX, xvar, yvar, zvar, x_in_filename, y_in_filename]
 # plotvars = ['NEP_ZSCORE', 'BIN_TA_ZSCORE', 'TA_ZSCORE_SHAPVALS', 'SWC_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-SWC_ZSCORE']
 # plotvars = ['NEP_ZSCORE', 'BIN_SWC_ZSCORE', 'SWC_ZSCORE_SHAPVALS', 'TA_ZSCORE', 'BIN-TA_ZSCORE', 'BIN-SWC_ZSCORE']
@@ -232,8 +232,8 @@ subsetdf.to_csv(_outfilepath, index=False)
 X_data = subsetdf.iloc[:, 0].values
 Y_data = subsetdf.iloc[:, 1].values
 Z_data = subsetdf.iloc[:, 2].values
-# The standard error of the cross-site mean sets the y range of all panels, as before the
-# error bars showed the standard error of the median
+# The standard error of the cross-site mean sets the y range of all panels, as it did before
+# the error bars changed to the standard error of the median
 _sem = subsetdf.iloc[:, 3].values
 _median_se = subsetdf[f"{yvar}_median_se"].values
 _sem_upper = Y_data + _sem

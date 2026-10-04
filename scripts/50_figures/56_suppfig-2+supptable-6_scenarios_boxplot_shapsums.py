@@ -117,8 +117,7 @@ df_global = df_main[df_main['IGBP'].isin(IGBP_CLASSES)]
 df_global = df_global[df_global['SCENARIO'].isin(STAGE_ORDER)]
 
 # Global scaling
-# Global limits for NEP are: (np.float64(), np.float64(1.536760039509245))
-# In case a different flux than NEP is plotted, the global limits for NEP are used
+# Other fluxes use fixed limits (else branch), taken from an earlier NEP run
 if FLUX == 'NEP_ZSCORE':
     all_values_flat = df_global[SHAP_COLS_AVG].values.flatten()
     GRAND_Y_MIN = np.nanmin(all_values_flat)
@@ -265,7 +264,7 @@ for i, igbp in enumerate(IGBP_CLASSES):
     stage_stats = pd.concat([stage_stats, igbp_data], axis=0)
 
 # All sites with the deepest soil water layer, from the deep-sm aggregation. Same
-# stages, same statistics, labelled as its own group so it forms one block of the table.
+# stages, same statistics, labeled as its own group so it forms one block of the table.
 if DEEP_SM_VARIANT:
     filepath_deep = (Path(settings['DIR_DATA_OUT_SHAP_ANALYSIS_AGG']) / FLUX / shap_type / DEEP_SM_VARIANT
                      / SITE_SUBSET / f"44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet")

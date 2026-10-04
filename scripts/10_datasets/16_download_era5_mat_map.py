@@ -1,6 +1,8 @@
 """
 Download hourly ERA5-Land temperature and precipitation from CDS and aggregate to yearly values.
 
+Legacy. Script 17 does not read this output, it uses the 16c/16d folder.
+
 Only sites downloaded via FLUXNET_ORG (FLUXNET2015) are processed, because their
 files lack ERA5 data for 1991-2020. Per site, the script converts temperature to
 degC (TA_degC) and precipitation to mm (PRECIP_TOT_mm), shifts the timestamps

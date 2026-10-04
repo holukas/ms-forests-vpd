@@ -12,7 +12,7 @@ Writes, per site, a subset parquet file and a heatmap plot, plus
 21_SUBSETS_parquet_vars_stats_subsets.csv and 21_warnings.log.
 
 CD-Ygb reports VPD in Pa instead of hPa. The models use per-site z-scores, so
-results are unaffected; its VPD mean in the Extended Data overview table was
+results are unaffected; its VPD mean in the site statistics (Supplementary Tables 1 and 2) was
 corrected by hand.
 """
 import logging
@@ -33,7 +33,7 @@ VARIANT = ""
 # Which soil water layer to use. "shallow" keeps SWC_F_MDS_1, which is what the
 # main analysis used. "deepest" swaps in the deepest layer per site that
 # still holds at least 90 % of layer 1's records in the peak months, for the
-# soil water sensitivity run. 128 of 208 sites move, the rest have no deeper
+# soil water sensitivity run. 127 of 208 sites move, CA-Obs is on layer 2 in both runs, and the rest have no deeper
 # layer or only gappy ones and stay on layer 1. Set VARIANT as well when using "deepest", or the deep subsets
 # overwrite the main analysis ones.
 SWC_LAYER = "shallow"
@@ -98,7 +98,7 @@ def process_site(task: tuple) -> tuple:
         collected.warning(f"{site} FAILED with {type(error).__name__}: {error}")
         return None, collected.messages, site
 
-    # Some sites can come up empty if e.g. SWC is missing during 4 warmest months
+    # Some sites can come up empty if e.g. SWC is missing during the 4 peak-GPP months
     if not subsetinfo:
         return None, collected.messages, None
 
