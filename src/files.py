@@ -86,7 +86,7 @@ def create_subsets_parquet_files(settings: dict, filepath_parquet_fullset: str, 
     Args:
         varnames: Column names by role, from `get_variable_names()`.
         variant: Run variant. An empty string writes to the main-analysis
-            paths, any other value (e.g. 'multilayer') adds a folder level.
+            paths, any other value (e.g. 'deep-sm') adds a folder level.
         showplot: Show the heatmap on screen. Must be False in a worker process.
 
     Returns:

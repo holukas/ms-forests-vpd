@@ -170,9 +170,10 @@ ax.axvline(published, color=COLOR_REF, lw=1.4, zorder=2)
 
 for (group, label, mid, lo, hi, n, note, sigma), y in zip(ordered, ypos):
     if hi <= lo:
-        pass                                   # ALE: a marker on its own, no interval
+        pass                                   # no interval: a marker on its own
     elif note:
-        # Whiskers, not a band. These rows carry a spread across settings or removals, which
+        # Whiskers, not a band. These rows have a spread across settings or removals, or for ALE
+        # a confidence interval, which
         # is a different quantity from a prediction band, so it must not look the same.
         ax.plot([lo, hi], [y, y], color=COLOR_POINT, lw=1.2, zorder=3)
         for edge in (lo, hi):
@@ -223,7 +224,7 @@ tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 #
 # Depth takes five rows. The all-sites row is the main analysis rerun on the deepest
 # layer each site has, which is the test the text names first; it mixes the 80 sites that
-# never moved with 128 that did, most of them by one layer, so its shift is small. The
+# remain on layer 1 with the 128 on a deeper layer, 69 of them on layers 2 to 4, so its shift is small. The
 # matched pair holds the 128 sites that have a deeper layer fixed and changes only the
 # layer, which is the clean read on depth. The five-or-more-depths pair holds 59 sites
 # fixed and swaps their shallowest depth for their deepest, which is the largest departure

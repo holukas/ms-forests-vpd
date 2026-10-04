@@ -131,8 +131,6 @@ for index, row in datasets_df.iterrows():
 
     site_id = row['SITE']
 
-    # downloaded_via = row['DOWNLOADED_VIA']
-
     # Create site-specific subfolder
     site_dir = output_dir / site_id
     merged_file = site_dir / f"{site_id}_era5_1991-2020_yearly.csv"
@@ -167,9 +165,7 @@ for index, row in datasets_df.iterrows():
 
     site_dir.mkdir(parents=True, exist_ok=True)
 
-    # Files from FLUXNET_ORG do not have ERA5 data 1991-2020
-
-    # if downloaded_via == 'FLUXNET_ORG':
+    # Every site is downloaded, because script 17 reads the ERA5-Land file of every site
     lon = row['LON']
     lat = row['LAT']
     if site_id in ERA5_LAND_POINT_OVERRIDE:

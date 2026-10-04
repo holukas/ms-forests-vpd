@@ -8,7 +8,7 @@ stomatal control from anything that covaries with VPD.
 - Per VPD bin, mean GPP over mean ET (per-record ratios explode where ET is near zero),
   in micromol CO2 per mmol H2O.
 - Each site is scaled by its own overall value; sites are weighted equally and bins need
-  half the sites, as in stages 41 and 42.
+  half the sites, as in scripts 47, 52, 54 and 58.
 - Per site, the slope of log water use efficiency on log VPD: -1 means no stomatal
   adjustment, about -0.5 matches optimal stomatal theory.
 - The printed split at the GPP turnover uses a hard-coded 0.18 sigma.

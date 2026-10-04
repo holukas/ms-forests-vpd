@@ -87,7 +87,7 @@ IGBP_NAMES = {
 
 # Column suffixes
 SHAP_SUFFIX_AVG = '_SHAPVALS_OVR_AVG'
-SHAP_SUFFIX_SD = '_SHAPVALS_OVR_SD'  # Using SD column for uncertainty
+SHAP_SUFFIX_SD = '_SHAPVALS_OVR_SD'  # within-site SD, for total_sd in the data file
 
 PALETTE = {
     'VPD_ZSCORE': '#D55E00',
@@ -201,8 +201,8 @@ for pix, p in enumerate(panels_data):
         vertices_up = [(-0.6, 0), (-0.6, 0.15), (-1.2, 0.25), (-1.8, 0.15), (-1.8, 0), (-0.5, 0)]
         vertices_down = [(-0.6, 0), (-0.6, -0.15), (-1.2, -0.25), (-1.8, -0.15), (-1.8, 0), (-0.5, 0)]
         # Add arrows
-        plot.add_gradient_arrow(ax=ax, vertices=vertices_up, color_main=color_facilzone, direction='up')  # Sage Green
-        plot.add_gradient_arrow(ax=ax, vertices=vertices_down, color_main=color_limzone, direction='down')  # Slate Blue
+        plot.add_gradient_arrow(ax=ax, vertices=vertices_up, color_main=color_facilzone, direction='up')  # blue
+        plot.add_gradient_arrow(ax=ax, vertices=vertices_down, color_main=color_limzone, direction='down')  # red
 
         # Y-axis label for the entire figure
         ax.text(-2.2, 0, rf'Effect on daytime {FLUX_LABEL} ($\sigma$)', va='center', ha='center',

@@ -2,7 +2,7 @@
 Supplementary Fig. 2 and Supplementary Table 6: the driver effects across the eight stages.
 
 The figure shows the per-site effects of VPD, TA, SM and SW on the flux at each stage,
-for all sites and per forest type. The table gives the cross-site mean, its standard
+for all sites and per forest type. The table gives the cross-site mean, the total standard
 deviation and the range per driver and stage in the same groups, plus one block for all
 sites with the deepest available soil water layer (DEEP_SM_VARIANT, the deep-sm run).
 The block is skipped if that aggregation does not exist.
@@ -78,7 +78,7 @@ SHAP_COLS_SD = [v + SHAP_SUFFIX_SD for v in VARS]
 # Okabe-Ito palette (colorblind friendly)
 COLORS = ['#D55E00', '#CC79A7', '#009E73', '#E69F00']
 
-# Figure dimensions (double column ~183mm width)
+# Figure dimensions in inches
 FIG_WIDTH_INCHES = 12
 # FIG_WIDTH_INCHES = 7.2
 FIG_HEIGHT_INCHES = 8.5

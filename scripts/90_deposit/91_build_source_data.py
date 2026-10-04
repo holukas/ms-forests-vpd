@@ -1,6 +1,6 @@
 """
 Collect the Source Data of the paper: the data behind every figure, table and
-Supplementary Data file of the main analysis, one plainly named file each.
+Supplementary Data file of the main analysis, one or more plainly named files each.
 
 The journal asks for the data behind the display items as labeled files in one zipped
 folder named "Source Data". The files here are copies of pipeline outputs, renamed after
@@ -100,8 +100,8 @@ Hoertnagl L., Floriancic M. G., Gessler A., Vekuri H., Zweifel R., Etzold S., Gh
 Kohonen K.-M., Feigenwinter I., Krebs L., Merbold L., Papale D., Scapucci L., Shekhar A.,
 Meier P., Baur T., Buchmann N.
 
-The data behind every figure, table and Supplementary Data file of the paper, one file per
-item or panel group, named after the display item. Each file is a copy of an output of the
+The data behind every figure, table and Supplementary Data file of the paper, one or more
+files per item, named after the display item. Each file is a copy of an output of the
 analysis pipeline (code: https://github.com/holukas/ms-forests-vpd), written by the
 script whose number starts the source file name. The deposit in the ETH Research
 Collection (https://doi.org/10.3929/ethz-c-000798579) holds the same outputs together with

@@ -119,7 +119,7 @@ for VARS in VAR_PAIRS:
     shapvals_sites_grouped_agg_df['N_SITES'] = n_sites
 
     # Save to Parquet
-    # 41_SHAPVALUES-conditional_AggregatedPerSite_BIN-TA_ZSCORE+BIN-VPD_ZSCORE+NEP_ZSCORE
+    # 42_SHAPVALUES-conditional_meanAggregatedAcrossSites_BIN-TA_ZSCORE+BIN-VPD_ZSCORE+NEP_ZSCORE
     outfilepath = dv.save_parquet(
         filename=f"42_SHAPVALUES-{shap_type}_{aggfunc}AggregatedAcrossSites_BIN-{xvar}+BIN-{yvar}+{FLUX}",
         data=shapvals_sites_grouped_agg_df,

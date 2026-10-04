@@ -27,7 +27,7 @@ from src.common import deepest_swc_per_site, get_variable_names
 from src.paths import data_path, load_settings, resolve_stored_path
 
 # Run variant. An empty string writes to the baseline paths and overwrites the
-# main analysis subsets. Any other value adds a folder level, e.g. "multilayer".
+# main analysis subsets. Any other value adds a folder level, e.g. "deep-sm".
 VARIANT = ""
 
 # Which soil water layer to use. "shallow" keeps SWC_F_MDS_1, which is what the

@@ -39,7 +39,7 @@ def calc_threshold(x_fit, y_fit, pi_lower, pi_upper):
     threshold_upper = find_highest_zero_crossing(x_fit, pi_upper)
 
     # Print the results for your manuscript text
-    print(f"VPD Threshold: {threshold_main:.2f} sigma (95% CI: [{threshold_lower:.2f}, {threshold_upper:.2f}])")
+    print(f"VPD Threshold: {threshold_main:.2f} sigma (95% prediction interval: [{threshold_lower:.2f}, {threshold_upper:.2f}])")
 
     return threshold_main, threshold_lower, threshold_upper
 

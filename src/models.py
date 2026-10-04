@@ -456,7 +456,7 @@ def train_xgboost_models_and_ale(target: str, features: list,
                 ale_values.append({'feature_value': xdata, 'effect': ydata})
 
         # PyALE creates multiple lines: first is the ALE curve (grid_size points),
-        # others are optional overlays. We want the FIRST line which has ~grid_size points.
+        # others are optional overlays.
         ale_curve = None
         if len(ale_values) > 0:
             # Take the line with the fewest points as the ALE curve

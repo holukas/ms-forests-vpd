@@ -1,7 +1,7 @@
 """
 Figure 4 and Supplementary Table 7: the VPD response curve of NEP.
 
-Panel a plots the SHAP effect of VPD on NEP per VPD bin, aggregated across sites and
+Panel a plots the cross-site median SHAP effect of VPD on NEP per cell of the TA by VPD grid,
 colored by air temperature, with a fourth-order polynomial fit and its 95% prediction
 interval. Panels b to e show each forest type. The threshold is the highest positive to negative crossing
 of the fit, bounded by the crossings of the interval. Supplementary Table 7 lists the

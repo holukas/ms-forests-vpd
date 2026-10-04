@@ -184,9 +184,9 @@ if ale_results_all:
     print(f"{'=' * 80}\n")
 
 print("Output files per site:")
-print(f"  - {{SITE}}_ale_curves_{FLUX}.csv — ALE curve data (100 grid points)")
-print(f"  - {{SITE}}_ale_combined_{FLUX}.png — 2x2 combined ALE plot")
-print(f"  - {{SITE}}_ale_{FLUX}.parquet/csv — Full dataset with predictions")
+print(f"  - {{SITE}}_ale_curves_{FLUX}.csv: ALE curve data (grid_size=100, up to 101 points)")
+print(f"  - {{SITE}}_ale_combined_{FLUX}.png: 2x2 combined ALE plot")
+print(f"  - {{SITE}}_ale_{FLUX}.parquet/csv: full dataset with predictions")
 print("\nUse ALE results to validate SHAP importance:")
 print("  Match: SHAP direction agrees with the ALE effect, high confidence")
 print("  Disagreement: check feature correlations or interactions")

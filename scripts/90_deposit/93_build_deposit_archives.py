@@ -3,7 +3,8 @@ Build the zip archives of the pipeline outputs for the data deposit.
 
 One uncompressed zip per output stage, with paths relative to ``data/outputs/``.
 Unpacked there, the archives let the pipeline run from stage 31 onward
-without the flux products.
+without the flux products, except script 80, which reads the merged site files of
+stage 12.
 
 Contents per stage:
 - 10_datasets: the top-level csv and log files of scripts 11-17, the Google
@@ -20,9 +21,9 @@ total).
 Without arguments it is a dry run. With ``--build`` it writes into
 <DATA_ROOT>/deposit_eth_research_collection/ the archives
 ms-forests-vpd_outputs_<stage>.zip (replacing existing ones), MANIFEST.csv
-(sha256 per file) and ARCHIVES.csv. Other zip archives already in that folder,
-the Source Data of script 91 and the demo of script 92, are listed in both files
-as they are, so run 91 and 92 first.
+(sha256 per file) and ARCHIVES.csv. Other zip archives already in that folder
+(the Source Data of script 91, the demo of script 92 and the code and documentation
+snapshots) are listed in both files as they are. Add them before the build.
 """
 import csv
 import hashlib
