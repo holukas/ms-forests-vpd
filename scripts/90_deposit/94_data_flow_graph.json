@@ -514,6 +514,7 @@
    "label": "54 Fig. 4 + Suppl. Table 7",
    "stage": "50_figures",
    "reads": [
+    "outputs/40_aggregation/41_SHAPVALUES meanAggregatedPerSite (per grid)",
     "outputs/40_aggregation/42_SHAPVALUES AggregatedAcrossSites (per grid)",
     "outputs/40_aggregation/43_SHAPVALUES AcrossIGBP (per forest type, grid)",
     "outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv"

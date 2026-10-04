@@ -45,6 +45,27 @@ def aggregate_shap_values_across_sites(df, binx, biny) -> pd.DataFrame:
     return df_grouped_agg
 
 
+def median_se_across_sites(df, binx, biny, col, n_boot=1000, seed=42) -> pd.Series:
+    """
+    Standard error of the cross-site median of `col` per grid cell, from a bootstrap over sites.
+
+    `df` is the long per-site table of stage 41, one row per site and cell. Cells are labeled
+    as in `aggregate_shap_values_across_sites`, so the result aligns with the stage 42 index.
+    In each cell the site values are resampled with replacement `n_boot` times, and the
+    standard deviation of the resampled medians is returned. Cells are visited in sorted order
+    with one generator, so the result is reproducible for a given seed.
+    """
+    df = df[[binx, biny, col]].dropna(subset=[col]).copy()
+    df['BIN_COMBINED_STR'] = df[binx].round(1).astype(str) + "+" + df[biny].round(1).astype(str)
+    rng = np.random.default_rng(seed)
+    se = {}
+    for cell, values in sorted(df.groupby('BIN_COMBINED_STR')[col]):
+        values = values.to_numpy()
+        medians = np.median(rng.choice(values, size=(n_boot, len(values)), replace=True), axis=1)
+        se[cell] = medians.std(ddof=1) if len(values) > 1 else np.nan
+    return pd.Series(se, name=f"{col}_median_se")
+
+
 def aggregate_shap_values_for_site(site, igbp, filepath, xvar, yvar, aggfunc, ix,
                                    binsize: float = 0.2):
     shapvals_agg_df = pd.DataFrame()

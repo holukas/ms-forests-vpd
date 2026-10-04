@@ -13,7 +13,7 @@ model. Output file names contain the display item (`FIG-N`, `TABLE-N`, `SUPPFIG-
 | `51_fig-1_worldmap_mat_map_era5.py` | Fig. 1, site map and climate | `10_datasets/17_..._era5.csv`, `20_subsets/21_...csv` |
 | `52_fig-2+suppfig-1+7_flameplots.py` | Fig. 2, the VPD effect on NEP over the TA, SM and ET grids; Supplementary Fig. 1, the TA and SM effects; Supplementary Fig. 7, the flux maps. `FIGURE` selects the item | `40_aggregation/` |
 | `53_fig-3+suppfig-3_sankeyplot_shapvalues_8stages.py` | Fig. 3, driver effects across the stages; Supplementary Fig. 3 with `VARIANT = "mirrored-stages"` | `40_aggregation/` |
-| `54_fig-4+supptable-7_vpd_response_curve_shap_agg.py` | Fig. 4, the VPD response curve; Supplementary Table 7, coefficients and thresholds in σ and kPa | `40_aggregation/`, `20_subsets/` |
+| `54_fig-4+supptable-7_vpd_response_curve_shap_agg.py` | Fig. 4, the VPD response curve; Supplementary Table 7, coefficients and thresholds in σ and kPa | `40_aggregation/`, `40_aggregation/41_...`, `20_subsets/` |
 | `55_table-1+suppfig-4_threshold_robustness.py` | Table 1, fifteen of the eighteen tests; Supplementary Fig. 4, all eighteen | `40_aggregation/47_...csv` |
 | `56_suppfig-2+supptable-6_scenarios_boxplot_shapsums.py` | Supplementary Fig. 2, per-site effects across the stages; Supplementary Table 6, stage means and SD | `40_aggregation/` |
 | `57_suppfig-5_ale_response_curve.py` | Supplementary Fig. 5, ALE curves | `40_aggregation/46_...` |
@@ -42,6 +42,14 @@ and script 54 fits the curve to the cross-site median per bin of the script 42 o
 the two bin coordinate columns, script 42 stores the `median` (`src/aggregation.py`). These
 columns hold the lower bin edge, which is the same at every site in a cell. The median
 avoids floating-point noise in the labels and does not affect the SHAP values.
+
+The error bars show the standard error of the cross-site median in each cell, the standard
+deviation of the median over 1,000 bootstrap resamples of the sites (seed 42,
+`src/aggregation.py::median_se_across_sites`). Panel a resamples all sites, panels b to e the
+sites of their forest type. The bootstrap needs the per-site cell means, so script 54 also
+reads the stage 41 file. With script 59, it is the only figure script that reads per-site
+values. Each bar starts at the marker edge, so it does not show through the semi-transparent
+marker.
 
 ## Table 1 and Supplementary Fig. 4
 

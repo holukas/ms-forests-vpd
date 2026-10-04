@@ -961,7 +961,8 @@ Source Data of Fig. 4. Two schemas: the _ALLSITES_DATA and _<IGBP>_DATA files (p
 | `BIN_VPD_ZSCORE_median` | Lower edge of the VPD bin in σ (VPD z-score within site), x axis. The median across sites is used only to read the bin label exactly, all sites share it |
 | `VPD_ZSCORE_SHAPVALS_median` | VPD effect on daytime NEP in σ of NEP, y axis: median across sites of the site mean VPD SHAP value in the cell |
 | `TA_ZSCORE_mean` | Air temperature of the cell in σ (TA z-score within site), point color: mean across sites of the site mean TA z-score in the cell |
-| `VPD_ZSCORE_SHAPVALS_sem` | Standard error across sites of the site mean VPD SHAP values in the cell, in σ of NEP: std across sites divided by the square root of the number of sites with data, around the cross-site mean (y is the median). Not drawn |
+| `VPD_ZSCORE_SHAPVALS_sem` | Standard error across sites of the site mean VPD SHAP values in the cell, in σ of NEP: std across sites divided by the square root of the number of sites with data, around the cross-site mean (y is the median). Not drawn, it sets the y range of the panels |
+| `VPD_ZSCORE_SHAPVALS_median_se` | Standard error of the cross-site median VPD SHAP value in the cell, in σ of NEP: standard deviation of the median over 1,000 bootstrap resamples of the sites (seed 42), from the per-site cell means of stage 41, all sites in the all-sites file and the sites of the forest type in its file. Error bars of the panel |
 | `IGBP` | Panel of the fit: 'ALL SITES' (panel a) or a forest type ENF, DBF, MF, EBF (panels b to e) |
 | `a` | Coefficient of x^4 of the fourth-order polynomial y = a x^4 + b x^3 + c x^2 + d x + e, fitted by least squares to the cells of the panel (x VPD bin in σ, y median VPD SHAP in σ) |
 | `b` | Coefficient of x^3 of the same polynomial |

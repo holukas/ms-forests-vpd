@@ -9,7 +9,10 @@ coefficients, R2 and the threshold in sigma and in kPa; the kPa value uses each 
 mean and standard deviation, averaged over sites, with CD-Ygb converted from Pa first.
 VARIANT and SITE_SUBSET must match the values scripts 42 and 43 ran with.
 
-Reads the 42 and 43 aggregations on the TA by VPD grid and the stage 21 subsets table.
+Reads the 42 and 43 aggregations on the TA by VPD grid and the stage 21 subsets table. The
+error bars, the standard error of the cross-site median from a bootstrap over the sites of
+each panel, need the per-site cell means, so the script also reads the stage 41 file. With
+script 59 this is the only figure script that reads per-site values.
 Writes to the plot folder:
 - 54_FIG-4_ResponseCurve_ShapMeans_<FLUX>_<vars>.png, with _ALLSITES_DATA.csv,
   _<IGBP>_DATA.csv and _DATA_COEFFICIENTS.csv
@@ -24,6 +27,8 @@ import matplotlib.colors
 import numpy as np
 import pandas as pd
 
+import diive as dv
+import src.aggregation as aggregation
 import src.files as files
 import src.fit as fit
 import src.plot as plot
@@ -158,6 +163,13 @@ show_txt_effect = True
 show_shap_thresholds = True
 show_z_colors = True
 show_fit = True
+# Bootstrap of the error bars: resamples of sites per cell, and the seed
+N_BOOT = 1000
+BOOT_SEED = 42
+# Marker area of the points in panel a and in panels b to e, in pt², also used to start the
+# error bars at the marker edge
+MARKER_SIZE = 30
+MARKER_SIZE_SUB = 15
 color_fitline = '#263238'
 color_points = '#607D8B'
 colors_symbols = ['black', 'black', 'black']
@@ -199,6 +211,19 @@ filedf, subsetdf, minmax_counts, n_sites = files.load_data(
     subsetcols=[xcol, ycol, zcol, ycol_sem],
     site_filter=None, x_in_filename=x_in_filename, y_in_filename=y_in_filename, aggfunc=aggfunc)
 
+# Standard error of the cross-site median per cell, from the per-site cell means of stage 41
+# with the site set and cell labels of stage 42
+per_site = dv.load_parquet(
+    dir_res / f"41_SHAPVALUES-{shap_type}_{aggfunc}AggregatedPerSite_{x_in_filename}+{y_in_filename}+{FLUX}.parquet",
+    sanitize_timestamp=False, output_middle_timestamp=False)
+per_site = per_site.loc[per_site['IGBP'] != 'DNF']
+median_se = aggregation.median_se_across_sites(
+    per_site, binx=x_in_filename.replace('-', '_'), biny=y_in_filename.replace('-', '_'), col=yvar,
+    n_boot=N_BOOT, seed=BOOT_SEED)
+subsetdf[f"{yvar}_median_se"] = median_se.reindex(filedf.index).to_numpy()
+if subsetdf[f"{yvar}_median_se"].isna().any():
+    raise ValueError("Bootstrap cells do not match the cells of the stage 42 file")
+
 # Save plot data to csv
 _outfilepath = dir_out / f'54_FIG-4_ResponseCurve_ShapMeans_{FLUX}_{xvar}+{yvar}+{zvar}_ALLSITES_DATA.csv'
 subsetdf.to_csv(_outfilepath, index=False)
@@ -207,9 +232,10 @@ subsetdf.to_csv(_outfilepath, index=False)
 X_data = subsetdf.iloc[:, 0].values
 Y_data = subsetdf.iloc[:, 1].values
 Z_data = subsetdf.iloc[:, 2].values
-# Standard error across sites, used only to set the y range of the panels, so that the range
-# stays as it was when the panel showed it as error bars
+# The standard error of the cross-site mean sets the y range of all panels, as before the
+# error bars showed the standard error of the median
 _sem = subsetdf.iloc[:, 3].values
+_median_se = subsetdf[f"{yvar}_median_se"].values
 _sem_upper = Y_data + _sem
 _sem_lower = Y_data - _sem
 
@@ -238,12 +264,13 @@ for i, label in list(enumerate(bin_labels)):
         fill_color = color_points
         edge_color = color_points
 
+    # Transparent fill and opaque edge: with one alpha for both, the edge half that lies on
+    # the fill looks darker than the half outside it, and the ring appears inside the marker
     scatterplot = ax_all.scatter(X_data[indices], Y_data[indices],
                                  label=f'{label}',
                                  # label=f'{label} {beautify[zvar]}',
-                                 alpha=.5,
-                                 s=30,
-                                 color=fill_color,
+                                 s=MARKER_SIZE,
+                                 facecolors=matplotlib.colors.to_rgba(fill_color, .5),
                                  edgecolors=edge_color,
                                  zorder=98)
     scatterhandles.append(scatterplot)
@@ -251,6 +278,11 @@ for i, label in list(enumerate(bin_labels)):
     # plotparams = dict(marker='o', s=5, zorder=1, alpha=1, edgecolors='none', color=fill_color)
     # semplot = ax_all.scatter(X_data[indices], _sem_lower[indices], label="Standard error", **plotparams)
     # ax_all.scatter(X_data[indices], _sem_upper[indices], **plotparams)
+
+# Error bars of all panels, drawn after the layout is final (see below): axes, marker area,
+# bar width, x, y, standard error and color per point
+error_bars = [(ax_all, MARKER_SIZE, 2, X_data.copy(), Y_data.copy(), _median_se.copy(),
+               [colors_list[c] if show_z_colors else color_points for c in binned_z.codes])]
 
 if show_fit:
     fillbetweenplot = plot.add_fit(
@@ -399,6 +431,14 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
     X_data_nonan = df_subset_nonan.iloc[:, 0].values
     Y_data_nonan = df_subset_nonan.iloc[:, 1].values
     Z_data_nonan = df_subset_nonan.iloc[:, 2].values
+
+    # Standard error of the cross-site median per cell, from the sites of this forest type
+    median_se_sub = aggregation.median_se_across_sites(
+        per_site.loc[per_site['IGBP'] == igbp], binx=x_in_filename.replace('-', '_'),
+        biny=y_in_filename.replace('-', '_'), col=yvar, n_boot=N_BOOT, seed=BOOT_SEED)
+    df_subset_nonan[f"{yvar}_median_se"] = median_se_sub.reindex(df_subset_nonan.index).to_numpy()
+    if df_subset_nonan[f"{yvar}_median_se"].isna().any():
+        raise ValueError(f"Bootstrap cells do not match the cells of the stage 43 file for {igbp}")
     poly_func, poly_coeffs, x_fit, y_fit, r_squared, pi_upper, pi_lower = fit.fit_polynomial(X_data=X_data_nonan,
                                                                                              Y_data=Y_data_nonan)
 
@@ -442,11 +482,15 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
         scatterplot = ax.scatter(
             X_data[indices], Y_data[indices],
             label=f'{label} {beautify[zvar]}',
-            alpha=0.25,
-            s=15,
-            color=fill_color,
+            s=MARKER_SIZE_SUB,
+            facecolors=matplotlib.colors.to_rgba(fill_color, .5),
             edgecolors=edge_color,
             zorder=98)
+
+    sub_colors = [colors_list[c] if show_z_colors and c >= 0 else '#546E7A'
+                  for c in pd.cut(Z_data_nonan, bins=bin_edges, labels=bin_labels).codes]
+    error_bars.append((ax, MARKER_SIZE_SUB, 1.2, X_data_nonan, Y_data_nonan,
+                       df_subset_nonan[f"{yvar}_median_se"].to_numpy(), sub_colors))
 
     # Panel letters
     # Panel letter (Bold)
@@ -500,6 +544,19 @@ for ax, igbp, xl, yl, letter, showyticklabels, showxticklabels in configs:
 
 fig.tight_layout()
 gs.update(wspace=.1)
+
+# Error bars of all panels, drawn from the marker edge outwards so that they do not show through
+# the semi-transparent markers. Each bar starts at the middle of the opaque edge line, which
+# covers the join, so no gap shows between bar and marker. The radius in points is converted
+# to data units once the layout is final.
+fig.canvas.draw()
+for ax, size, width, xs, ys, ses, colors in error_bars:
+    ymin, ymax = ax.get_ylim()
+    r_data = np.sqrt(size) / 2 * fig.dpi / 72 * (ymax - ymin) / ax.get_window_extent().height
+    for x, y, se, color in zip(xs, ys, ses, colors):
+        if se > r_data:
+            ax.vlines([x, x], [y + r_data, y - se], [y + se, y - r_data],
+                      colors=color, linewidth=width, alpha=0.3, zorder=1, capstyle='butt')
 if SHOW_PLOT:
     fig.show()
 # Save coefficients to file
