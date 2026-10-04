@@ -6,7 +6,7 @@ title: "Installation"
 
 - Python 3.12, pinned in `.python-version` and enforced by `pyproject.toml`
 - [uv](https://docs.astral.sh/uv/) for dependency management
-- About 4 GB of disk space for the environment. The data need far more (see [Data](data.qmd)).
+- About 1.5 GB of disk space for the environment. The data need far more (see [Data](data.qmd)).
 
 ## Install
 
@@ -35,7 +35,7 @@ a fresh install takes about three minutes on a standard desktop computer.
 ## Running scripts
 
 Scripts import from `src/`, which `uv sync` installs in editable mode. Paths are resolved
-from the repository root, so scripts run from any working directory:
+from the repository root, and scripts run from any working directory:
 
 ```bash
 uv run python scripts/30_shap/31_shap.py
@@ -44,7 +44,7 @@ uv run python scripts/30_shap/31_shap.py
 ## Packages
 
 `pyproject.toml` pins the direct dependencies. `uv.lock` pins every package, including
-the transitive ones. `pip install .` uses the direct pins only, not the lock file, so
+the transitive ones. `pip install .` uses the direct pins only, not the lock file, and
 transitive versions may differ. [Reproducibility](#reproducibility) describes how the
 package versions affect the results.
 
@@ -56,7 +56,7 @@ package versions affect the results.
 | `scipy` | 1.18.0 | Z-scores, nearest-neighbor search, statistics |
 | `matplotlib` | 3.11.1 | Figures |
 | `scikit-learn` | 1.9.0 | Cross-validation, metrics, hyperparameter search |
-| `xgboost` | 3.0.5 | Gradient-boosted regression (the one pin that changes results) |
+| `xgboost` | 3.0.5 | Gradient-boosted regression (the pin known to change the results) |
 | `shap` | 0.52.0 | SHAP values via `TreeExplainer` |
 | `pyale` | 1.2.0 | ALE curves |
 | `statsmodels` | 0.14.6 | GAM row and LOWESS settings of the threshold robustness tests |
@@ -76,20 +76,20 @@ one site, CH-Dav.
 
 The script fits the XGBoost model of the site in five-fold cross-validation and computes
 the out-of-sample SHAP values. This took 7 seconds on a 24-thread desktop computer. The
-script writes `CH-Dav_shap-conditional_NEP_ZSCORE.parquet`, a run log and the
+script writes `CH-Dav_shap-conditional_NEP_ZSCORE.parquet` with a csv copy, a run log and the
 cross-validation results to `data/outputs/30_shap/NEP_ZSCORE/conditional/`. With xgboost
 3.0.5 on 24 threads, the parquet file equals
 `expected_output/CH-Dav_shap-conditional_NEP_ZSCORE.parquet` from the archive. With other
-thread counts, the values differ slightly (see [Reproducibility](#reproducibility)).
+thread counts, the values differ by up to a few percent (see [Reproducibility](#reproducibility)).
 
 ## Reproducibility
 
 The published results were produced with xgboost 3.0.5 and `n_jobs=-1` on a 24-thread
 machine. With that version and thread count, they reproduce bit for bit across all 208
-sites. Both settings change the fitted trees through the order of floating-point
-additions in the `hist` tree method:
+sites. Both settings change the fitted trees. The thread count does so through the order of
+floating-point additions in the `hist` tree method:
 
-- Under xgboost 3.3.0, predictions and out-of-sample R^2^ stay nearly the same, but the
+- Under xgboost 3.3.0, predictions and out-of-sample R^2^ remain nearly the same, but the
   attributions shift: the VPD effect is larger at every site tested.
 - Under 3.0.5 with a different thread count, the early-stopping iteration and the
   site-level attributions change.
@@ -104,14 +104,17 @@ reproduce them exactly.
 
 ```bash
 uv sync --extra era5     # scripts 16 and 16a to 16d, ERA5 downloads, need credentials
-uv sync --group dev      # JupyterLab, pytest, Quarto, ghp-import
 ```
+
+`uv sync` installs the dev group (JupyterLab, pytest, Quarto, ghp-import) by default, and
+`uv sync --no-dev` leaves it out. Each `uv sync` uninstalls the packages of an extra it
+is not given. Repeat `--extra era5` on every later `uv sync`.
 
 ## Building the documentation
 
 The site is a [Quarto](https://quarto.org/) website under `docs/`. Nothing is executed at
-render time, so no data folder is needed. Quarto comes with the dev group: run
-`uv sync --group dev` first.
+render time, and no data folder is needed. Quarto comes with the dev group, which
+`uv sync` installs by default.
 
 ```powershell
 .\preview_docs.ps1            # live preview

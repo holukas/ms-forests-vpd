@@ -54,15 +54,16 @@ resolves them and does not check that the folder exists.
 
 Each `00_raw/<source>/` folder holds the unpacked site archives and a `0-info/` folder
 with the site metadata file. `config/settings.yaml` gives the file name patterns per
-source. Scripts 91 to 94 write the deposit files to `deposit_eth_research_collection/`.
+source. Scripts 91 to 94 and 96 write the deposit files to `deposit_eth_research_collection/`. The code and documentation snapshots and `README.txt` are added by hand (see [Pipeline](pipeline.qmd)).
 Script 91 also writes the journal copy of the Source Data to
 `submission_nature_communications/`.
 
 ## Source datasets
 
 The analysis uses half-hourly FLUXNET-formatted files from five sources. If a site
-appears in more than one, the higher-priority source wins and the others extend the
-record backwards (`src/files.py::create_parquet_files`).
+appears in more than one, the dataset that ends last is kept where the datasets overlap and
+the others extend the record backwards. The source with the highest priority sets the flux
+variable and the site metadata, such as the IGBP class (`src/files.py::create_parquet_files`).
 
 | Source | Access |
 |--------|--------|
@@ -79,8 +80,9 @@ The networks distribute these files under CC BY 4.0.
 The analysis outputs are deposited in the ETH Research Collection:
 <https://doi.org/10.3929/ethz-c-000798579>. The deposit holds:
 
-- one zip archive per output stage (`10_datasets`, `20_subsets`, `30_shap`,
-  `40_aggregation`, `50_plots`, `80_info`), with paths relative to `outputs/`
+- one zip archive per output stage, `ms-forests-vpd_outputs_<stage>.zip` (`10_datasets`,
+  `20_subsets`, `30_shap`, `40_aggregation`, `50_plots`, `80_info`), with paths relative
+  to `outputs/`
 - `ms-forests-vpd_SourceData.zip`, the data behind every figure, table and
   Supplementary Data file, one or more files per display item
 - `ms-forests-vpd_demo.zip`, the model input and the published model output of one site
@@ -96,15 +98,14 @@ The analysis outputs are deposited in the ETH Research Collection:
 - `ARCHIVES.csv`, the number of files, size and SHA-256 checksum of each archive
 - `README.txt`, a description of the deposit and its archives
 
-The [data flow chart](data_flow.html) shows which archive holds each file.
 
-[Output columns](columns.qmd) describes the columns of every csv and parquet file in the
-archives.
 
 ## Entry points
 
-- With `20_subsets/` unpacked into `outputs/`, every stage from `30_shap` onward and
-  every figure runs without the raw source files. These stages start from
+- With `10_datasets/` and `20_subsets/` unpacked into `outputs/`, every stage from
+  `30_shap` onward and every figure runs without the raw source files. The exception is
+  script 80, which reads the merged site files in `10_datasets/12_parquet_merged/`. The
+  deposit does not hold these files. These stages start from
   `outputs/20_subsets/`, one small parquet file per site. Rebuild those from raw data only
   if the site selection or the filtering changes.
 - With `30_shap/` unpacked as well, the aggregation and the figures run without refitting

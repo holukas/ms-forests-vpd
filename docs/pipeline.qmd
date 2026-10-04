@@ -2,8 +2,8 @@
 title: "Pipeline"
 ---
 
-Scripts are numbered in run order. Each reads what the previous step wrote and writes to
-`<DATA_ROOT>/data/outputs/`:
+Scripts are numbered in run order, with the exceptions named under each stage below. Each script reads what earlier steps wrote and writes to
+`<DATA_ROOT>/data/outputs/`. Run a script from the repository root:
 
 ```bash
 uv run python scripts/20_subsets/21_prepare_input_data.py
@@ -24,23 +24,23 @@ full lineage. [Open the chart full screen](data_flow.html){.btn .btn-outline-pri
 
 ## Run variants
 
-Every stage from 21 onward has a `VARIANT` constant, except script 51. Script 86 loops
+Every script from 21 to 89 has a `VARIANT` constant, except script 51. Script 86 loops
 over a list, `VARIANTS`. An empty string reads and writes the
-baseline paths. Any other value adds a folder level on both sides, so a variant reads
+baseline paths. Any other value adds a folder level on both sides: a variant reads
 `20_subsets/<VARIANT>/` and writes `30_shap/<FLUX>/<type>/<VARIANT>/`. A stage fails on a
 missing file if its predecessor has not run with the same variant.
 
 | VARIANT | Change | Output through |
 |---|---|---|
 | empty | None, the published run | Every stage |
-| `deep-sm` | Deepest usable soil water layer per site | Stage 49, plus the ALE stages 32 and 46 |
-| `blocked-cv` | Leave-one-year-out instead of a shuffled split | Stage 49 |
-| `no_ta` | Air temperature dropped from the predictors | Stage 41 |
-| `no_vpd` | VPD dropped from the predictors | Stage 31 |
-| `mirrored-stages` | Stage sequence in which VPD escalates and extreme soil dryness is added last | Stage 44 only |
-| `factorial-cells` | Four soil water classes by four VPD classes, temperature left free | Stage 44 only |
+| `deep-sm` | Deepest usable soil water layer per site | Stage 49 and figure scripts 52 to 54, plus the ALE stages 32 and 46 |
+| `blocked-cv` | Leave-one-year-out instead of a shuffled split | Stage 49 and figure script 54 |
+| `no_ta` | Air temperature excluded from the predictors | Stage 41 |
+| `no_vpd` | VPD excluded from the predictors | Stage 31 |
+| `mirrored-stages` | Stage sequence in which VPD escalates and extreme soil dryness is added last | Stage 44 only, with `VARIANT = ""` and `STAGE_SEQUENCE = "mirrored"` |
+| `factorial-cells` | Four soil water classes by four VPD classes, temperature left free | Stage 44 only, with `VARIANT = ""` and `STAGE_SEQUENCE = "factorial"` |
 
-Scripts from 41 onward also take `SITE_SUBSET`, either `""` for all sites or
+Scripts 41 to 89 also take `SITE_SUBSET`, either `""` for all sites or
 `"deeper-only"` for the 128 sites with a soil water layer below layer 1. With the empty
 variant and `deep-sm`, this subset gives a matched pair: the same 128 sites at their
 shallowest and at their deepest layer. Scripts 45, 46, 51, 57, 61, 64, 66 to 68, 80,
@@ -57,7 +57,7 @@ run for timing.
 | `11_collect_info.py` | Lists the datasets in the five raw sources, one row per dataset | `11_datasets_info.csv` |
 | `12_create_parquet.py` | Merges the datasets of each site by source priority | `12_parquet_merged/`, `12_datasets_info_parquet.csv` |
 | `13_check_available_vars.py` | Records which of NEE, LE, GPP, RECO, TA, VPD, SWIN and SWC exist per site, and under which name | `13_datasets_info_parquet_vars.csv` |
-| `13b_check_available_vars_SWC.py` | Reports the coverage of every soil water layer per site, within the peak months and against layer 1 | `13b_variables_coverage_summary.csv`, `13b_variables_per_site.csv` |
+| `13b_check_available_vars_SWC.py` | Reports the coverage of every soil water layer per site, within the peak months and against layer 1 | `13_datasets_info_parquet_vars.csv` (as script 13), `13b_variables_coverage_summary.csv`, `13b_variables_per_site.csv` |
 | `14_collect_basic_stats.py` | Collects record counts, date ranges and basic statistics per variable | `14_datasets_info_parquet_vars_stats.csv` |
 | `15_remove_sites.py` | Applies the inclusion criteria | `15_datasets_info_parquet_vars_stats_usedsites.csv` |
 | `16a` to `16d`, `16_download_era5_mat_map.py` | Download ERA5 1991 to 2020 normals from Google Earth Engine and the Copernicus CDS | `16_ERA5_climate_1991-2020*/` |
@@ -67,23 +67,23 @@ run for timing.
 
 `21_prepare_input_data.py` builds the subset the models see, per site:
 
-1. keep the four months with the highest mean GPP
-2. keep measured NEE only (quality flag 0)
-3. keep daytime records, `SW_IN_POT > 20`
+1. keep measured NEE only (quality flag 0)
+2. keep daytime records, `SW_IN_POT > 20`
+3. keep the four months with the highest mean GPP, chosen on the full record
 4. balance the record so every month contributes the same number of years
-5. drop records with any missing predictor
+5. remove records with a missing value in any of NEE, LE, GPP, RECO, TA, VPD, SWIN and SWC
 6. derive ET from LE and TA, and NEP as `-NEE`
 7. z-score every variable within the site
 
-`SWC_LAYER = "shallow"` uses `SWC_F_MDS_1`, and `"deepest"` uses the deepest usable layer
+`SWC_LAYER = "shallow"` uses `SWC_F_MDS_1` (`SWC_F_MDS_2` at CA-Obs, where layer 1 has no data), and `"deepest"` uses the deepest usable layer
 per site (see [Methods](methods.qmd#soil-water-layer)). CD-Ygb stores VPD in Pa, and this
-script keeps it. The z-scores are unaffected. Scripts 47, 48, 54, 58, 68 and 81, which
+script leaves it in Pa. The z-scores are unaffected. Scripts 47, 48, 54, 58, 68 and 81 to 85, which
 convert VPD to kPa, divide the CD-Ygb values by 100. Script 45 does not, so its per-site
 medians for CD-Ygb are in Pa. The cross-site medians and quartiles of Supplementary
-Table 4 are the same at two decimals with and without the conversion. It writes one
+Table 4 are the same at two decimals with and without the conversion. Script 21 writes one
 parquet per site to `21_subsets_parquet/` and
 the summary `21_SUBSETS_parquet_vars_stats_subsets.csv`, which records the soil water
-layer used per site. `N_WORKERS = 3` by default, and the largest sites need about 3 GB
+layer used per site. Of the tables in the outputs, only the `deep-sm` one has these columns (`SWC_VAR`, `SWC_LAYER`), because the others were written before the code added them. `N_WORKERS = 3` by default, and the largest sites need about 3 GB
 per worker.
 
 `22_data_flow.py` counts the records each filter removes per site and checks its final
@@ -103,19 +103,19 @@ the top of the file:
 | `TUNE_HYPERPARAMETERS` | `False` for the analysis, `True` for the hyperparameter search |
 
 Within each fold, 80 percent of the records are split into 68 percent for fitting and
-12 percent for early stopping. The model explains the held-out 20 percent, so every SHAP
+12 percent for early stopping. The model explains the held-out 20 percent, and every SHAP
 value comes from a model that never saw the record. The script writes per-site parquet
 and csv files with predictors, SHAP values and predictions, plus one csv of fold metrics.
 Unchanged sites give bit-identical output between runs.
 
 `32_validate_shap_methods.py` fits one model per site on an 85/15 split, computes ALE
-curves on 100 grid points per predictor and writes `{SITE}_ale_curves_{TARGET}.csv`.
+curves on 100 grid points per predictor and writes `{SITE}_ale_curves_{FLUX}.csv` and `{SITE}_ale_{FLUX}.parquet`, which script 46 reads.
 
 ## 40_aggregation: results across sites
 
 | Script | Function |
 |--------|----------|
-| `41_binagg_per_site.py` | Bins each site's SHAP values on a two-variable grid with shared edges, for five variable pairs (TA-VPD, SWC-VPD, TA-SWC, ET-VPD, ET-SWC) |
+| `41_binagg_per_site.py` | Bins the SHAP values of each site on a two-variable grid with shared edges, for five variable pairs (TA-VPD, SWC-VPD, TA-SWC, ET-VPD, ET-SWC) |
 | `42_binagg_across_sites.py` | Averages the site grids, one vote per site |
 | `43_binagg_across_igbp.py` | Averages the site grids per forest type |
 | `44_agg_per_scenario.py` | Computes SHAP means within the stress stages, per site and across sites. `STAGE_SEQUENCE` is `"published"`, `"mirrored"` or `"factorial"` |
@@ -126,13 +126,12 @@ curves on 100 grid points per predictor and writes `{SITE}_ale_curves_{TARGET}.c
 | `49_biome_thresholds.py` | Estimates one threshold per site (highest crossing from positive to negative) and compares forest types with Kruskal-Wallis and Holm-corrected pairwise tests |
 
 Run 41 first, then 42 and 43. Run 44 any time after 31, 46 after 32 and 49 after 41. Run
-47 after 46 and after the `deep-sm`, `deeper-only`, `blocked-cv` and `no_ta` runs have
-reached stage 41. Run 48 after 47 and 49. Bins covered by fewer than half the sites are
-dropped.
+47 after 42 and 46 and after the `deep-sm`, `deeper-only`, `blocked-cv` and `no_ta` runs have
+reached stage 41. Run 48 after 47 and 49. Scripts 47, 52, 54 and 58 exclude bins covered by fewer than half the sites when they read the 42 and 43 grids.
 
 ## 50_figures
 
-Figure scripts write to `50_plots/<FLUX>/<type>/<VARIANT>/<SITE_SUBSET>/`, so a variant
+Figure scripts write to `50_plots/<FLUX>/<type>/<VARIANT>/<SITE_SUBSET>/`, and a variant therefore
 never overwrites a published figure. Script 53 writes Supplementary Fig. 3 to the folder
 without the variant level, under its own name. Scripts 55, 57, 59, 60 and 65 read the
 stage 40 files of 47, 46, 45, 48 and 49, in that order. Script 68 reads those of 41, 47
@@ -142,15 +141,15 @@ in that order. See [Figures](figures.qmd).
 ## 80_info: sensitivity checks
 
 These scripts compute numbers quoted in the paper and write to
-`80_info/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/`. Scripts 80 and 85 to 87 write to
+`80_info/<FLUX>/conditional/<VARIANT>/<SITE_SUBSET>/`. Script 88 writes to `80_info/<FLUX>/conditional/` for any `VARIANT` and `SITE_SUBSET`, and script 89 to `80_info/<FLUX>/conditional/<VARIANT>/`. Scripts 80 and 85 to 87 write to
 `80_info/<FLUX>/`. Where a supplementary table shows
-the same numbers, a script of the 50s lays out the INFO file.
+the same numbers, a script of the 50s lays out the INFO file. Run 81 after 54, because script 81 reads the Fig. 4 files of script 54.
 
 | Script | Function |
 |--------|----------|
 | `80_time_scale_coverage.py` | Measured share of a peak-season day, and the records and Stage 8 records left at daily, monthly and yearly resolution |
 | `81_threshold_definitions.py` | Peak, steepest decline, crossing from positive to negative and minimum of the fitted VPD response, with range-edge flags |
-| `82_threshold_vs_site_vpd_range.py` | Per-site thresholds by quartile of the site's maximum VPD, with all 208 sites in the quartiles. The direction of each driver's effect at every site goes to `82_INFO_DriverEffectDirection.csv` |
+| `82_threshold_vs_site_vpd_range.py` | Per-site thresholds by quartile of the maximum VPD at each site, with all 208 sites in the quartiles. The direction of each driver's effect at every site goes to `82_INFO_DriverEffectDirection.csv` |
 | `83_leave_region_out.py` | Threshold and Stage 8 attribution with Europe, North America or both removed |
 | `84_short_record_sensitivity.py` | Threshold and Stage 8 attribution under minimum record lengths |
 | `85_wue_vs_vpd.py` | Water use efficiency against VPD per site |
@@ -159,7 +158,7 @@ the same numbers, a script of the 50s lays out the INFO file.
 | `88_stage_order_test.py` | Net effect along the published and the mirrored stage order |
 | `89_stage_matching.py` | Stage 7 against Stage 8 on matched records |
 
-Scripts 83 and 84 use the median of the per-site thresholds, which sits about 0.07 kPa
+Scripts 83 and 84 use the median of the per-site thresholds, which is about 0.07 kPa
 below the crossing of the aggregated curve. Table 1 reports the crossing.
 
 ## 90_deposit: data deposit
@@ -179,7 +178,7 @@ writes `COLUMNS.csv` only with `--build`.
 | Script | Function |
 |--------|----------|
 | `91_build_source_data.py` | The Source Data: the data file of every figure, table and Supplementary Data file of the main analysis, copied under a plain name (`Fig4_all_sites.csv`, `SupplementaryTable6.xlsx`), with a README |
-| `92_build_demo_data.py` | `ms-forests-vpd_demo.zip`, the model input of one site (CH-Dav) with its published output, so script 31 can be tried without the full deposit (see Demo in the README) |
+| `92_build_demo_data.py` | `ms-forests-vpd_demo.zip`, the model input of one site (CH-Dav) with its published output, for trying script 31 without the full deposit (see Demo in the README) |
 | `93_build_deposit_archives.py` | One uncompressed zip per output stage, with `MANIFEST.csv` and `ARCHIVES.csv` |
 | `94_build_data_flow_chart.py` | `DATA_FLOW.html`, a zoomable chart of every script with the files it reads and writes, from `94_data_flow_graph.json` |
 | `95_copy_figures_to_docs.py` | The 14 figures of the paper, scaled to 1600 px and 256 colors, in `docs/figures/` for the [Figures](figures.qmd) page |
@@ -187,4 +186,4 @@ writes `COLUMNS.csv` only with `--build`.
 
 The reads and writes in `94_data_flow_graph.json` were taken from the code by hand. When
 a script changes the files it reads or writes, update its entry there and rerun
-script 94. It also writes a copy of the chart to `docs/data_flow.html` for this site.
+script 94. Script 94 also writes a copy of the chart to `docs/data_flow.html` for this site.

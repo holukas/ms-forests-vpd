@@ -40,9 +40,9 @@ its full lineage.
 | `scripts/40_aggregation/` | Aggregate SHAP values per site, across sites, by forest type and by stress stage |
 | `scripts/50_figures/` | Manuscript figures, tables and data files, each script named after the items it produces |
 | `scripts/80_info/` | Checks quoted in the text or used in supplementary tables |
-| `scripts/90_deposit/` | Source Data, demo data, deposit archives, the data flow chart and the figure copies for this site |
+| `scripts/90_deposit/` | Source Data, demo data, deposit archives, the data flow chart, and the figure copies and column reference for this site |
 | `src/` | Shared code: models, aggregation, plotting, statistics, curve fitting, stress stages, file handling, paths |
-| `config/` | `settings.yaml` and FLUXNET site metadata |
+| `config/` | `settings.yaml`, FLUXNET and AmeriFlux site metadata, and the site climate tables read by script 17 |
 | `data/worldmap/` | Natural Earth country outlines for the site map |
 
 Source data and analysis outputs are not in the repository (see [Data](data.qmd)).
