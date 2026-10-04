@@ -26,7 +26,7 @@ as `DATA_FLOW.html`.
 ## Documentation
 
 The documentation is a Quarto site under [`docs/`](docs/), published at
-<https://holukas.github.io/ms-forests-vpd/>. It describes every stage of the pipeline,
+<https://holukas.github.io/ms-forests-vpd/>. It describes every stage of the pipeline, every column of the output files,
 the methods that are hard to read from the code, and every display item with its script,
 including the figures. To preview it locally:
 
@@ -43,7 +43,7 @@ On other systems, run `uv run quarto preview docs`.
 - Python 3.12, pinned in `.python-version` and enforced by `pyproject.toml`. uv downloads
   it if the system does not have it.
 - [uv](https://docs.astral.sh/uv/) for the environment.
-- Disk space: about 4 GB for the environment, about 11 GB for the data deposit, about
+- Disk space: about 1.5 GB for the environment, about 11 GB for the data deposit, about
   185 GB for the full data folder with the source files.
 
 ## Installation
@@ -64,8 +64,8 @@ uv sync --locked
 ```
 
 A fresh install with an empty uv cache takes about three minutes on a standard desktop
-computer. Optional: `uv sync --extra era5` for the ERA5 download scripts, `uv sync --group
-dev` for JupyterLab, pytest and Quarto.
+computer. `uv sync` also installs the dev group (JupyterLab, pytest, Quarto). Optional: `uv sync
+--extra era5` for the ERA5 download scripts.
 
 ## Demo
 
@@ -102,13 +102,14 @@ The deposit in the ETH Research Collection (<https://doi.org/10.3929/ethz-c-0007
 holds one archive per output stage, from the per-site subsets through the models and SHAP
 values to the aggregated outputs behind every figure and table. Unpacked into
 `data/outputs/`, the archives let everything from `30_shap` onward run without the raw source
-files. The data behind each figure and table are also in `ms-forests-vpd_SourceData.zip`
+files, except script 80, which reads the merged site files of stage 12. The data behind each figure and table are also in `ms-forests-vpd_SourceData.zip`
 of the same deposit, one or more files per display item, named after it
 (`Fig4_all_sites.csv`, `SupplementaryTable6.xlsx`).
 
 ## Running the analysis
 
-Paths resolve from the repository root, so scripts can be started from anywhere:
+Paths resolve from the repository root, and scripts can be started from any working directory
+(except 16a and 16c, which start 16b and 16d by file name and run from `scripts/10_datasets/`):
 
 ```bash
 # per-site subsets and z-scores
@@ -173,9 +174,9 @@ diive is installed from PyPI at release 0.91.1.
 | `scripts/40_aggregation/` | Aggregation per site, across sites, by IGBP, by stress stage |
 | `scripts/50_figures/` | Manuscript figures, tables and data files, each script named after the items it produces |
 | `scripts/80_info/` | Checks quoted in the text or used in supplementary tables, read by no figure |
-| `scripts/90_deposit/` | Source Data, demo data, deposit archives, the data flow chart and the figure copies for the documentation |
+| `scripts/90_deposit/` | Source Data, demo data, deposit archives, the data flow chart, and the figure copies and column reference for the documentation |
 | `src/` | Shared code: models, aggregation, plotting, statistics, I/O, paths |
-| `config/` | `settings.yaml` and FLUXNET site metadata |
+| `config/` | `settings.yaml`, FLUXNET and AmeriFlux site metadata, and the site climate tables read by script 17 |
 | `data/worldmap/` | Natural Earth country outlines for the site map |
 | `docs/` | Quarto documentation sources and the figures shown there |
 

@@ -46,10 +46,9 @@ avoids floating-point noise in the labels and does not affect the SHAP values.
 The error bars show the standard error of the cross-site median in each cell, the standard
 deviation of the median over 1,000 bootstrap resamples of the sites (seed 42,
 `src/aggregation.py::median_se_across_sites`). Panel a resamples all sites, panels b to e the
-sites of their forest type. The bootstrap needs the per-site cell means, so script 54 also
-reads the stage 41 file. With script 59, it is the only figure script that reads per-site
-values. Each bar starts at the marker edge, so it does not show through the semi-transparent
-marker.
+sites of their forest type. The bootstrap needs the per-site cell means, and script 54 therefore also
+reads the stage 41 file, as script 68 does. Each bar starts at the marker edge and does not
+show through the semi-transparent marker.
 
 ## Table 1 and Supplementary Fig. 4
 

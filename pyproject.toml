@@ -23,7 +23,7 @@ authors = [{ name = "Lukas Hörtnagl", email = "lukas.hoertnagl@usys.ethz.ch" }]
 # manuscript. shap 0.52.0 and scikit-learn 1.9.0 are newer than the versions that
 # produced the results (shap 0.48.0, scikit-learn 1.6.1) and reproduce those
 # results exactly. diive is installed from PyPI at the 0.91.1 release. numpy
-# stays below 2.5 because numba, pulled in by shap, supports no more, and
+# remains below 2.5 because numba, pulled in by shap, supports no more, and
 # numba 0.53 does not build on Python 3.12.
 dependencies = [
     "diive==0.91.1",
@@ -54,8 +54,9 @@ dev = [
     "jupyterlab>=4.2.4",
     "pytest>=8.3.3",
     # Documentation. quarto-cli ships the Quarto binary, so `uv run quarto`
-    # works without a separate system install; ghp-import pushes the rendered
-    # site to gh-pages by hand when the Actions run is not wanted.
+    # works without a separate system install; ghp-import can push the rendered
+    # site to a gh-pages branch, which is published only if Pages deploys from that
+    # branch instead of from GitHub Actions.
     "quarto-cli>=1.10,<2.0",
     "ghp-import>=2.1.0,<3.0",
 ]

@@ -53,6 +53,7 @@ Start with [Installation](installation.qmd), then [Data](data.qmd), which shows 
 point the code at a data folder. [Pipeline](pipeline.qmd) lists the scripts in run order.
 [Methods](methods.qmd) documents the choices that are hard to read from the code.
 [Figures](figures.qmd) maps each display item to its script and shows the figures.
+[Output columns](columns.qmd) describes every column of the deposited csv and parquet files.
 
 ## How to cite
 

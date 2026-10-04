@@ -21,7 +21,7 @@ intro: 'The deposit holds one zip archive per output stage (see [Data](data.qmd#
 
   the files on disk. The same descriptions, one row per column, are in `COLUMNS.csv` of the
 
-  deposit. In 30_shap and 40_aggregation the deposit leaves out a csv file if a parquet file of the same name exists. The merged site files (12_parquet_merged) and the two ERA5-Land folders of script 16 are described here but are not in the deposit. Tables laid out
+  deposit. In 30_shap and 40_aggregation the deposit leaves out a csv file if a parquet file of the same name exists. The merged site files (12_parquet_merged) and the legacy ERA5-Land folder of script 16 are described here but are not in the deposit. Of the Copernicus ERA5-Land folder, the deposit holds only the yearly file of each site. Tables laid out
 
   for Word (xlsx) are not described. Their data are in the csv file of the same item.
 
@@ -897,8 +897,8 @@ products:
   outputs/50_plots/52_SUPPFIG-7:
     row: One row per cell of the SM by VPD bin grid and panel (20 panels a to t)
     note: 'Source Data of Supplementary Fig. 7. The fluxes themselves, not SHAP
-      values, on the SM by VPD grid: panels a to e NEP, f to j GPP, k to o RECO, p to t ET, columns Global
-      forests, ENF, DBF, MF, EBF. Bins 0.1 σ wide, labeled by their lower edge. z is the mean across sites
+      values, on the SM by VPD grid: panels a to e NEP, f to j GPP, k to o RECO, p to t ET, columns All
+      sites, ENF, DBF, MF, EBF. Bins 0.1 σ wide, labeled by their lower edge. z is the mean across sites
       of the per-site mean flux z-score in the cell. Cells kept only where at least half of the sites
       of the group have data, forest type panels only where the All sites panel has the cell'
     columns:
@@ -964,7 +964,7 @@ products:
       and leaves out rows with a missing value. Each point is plotted at x = BIN_VPD_ZSCORE_median, y = VPD_ZSCORE_SHAPVALS_median,
       colored by TA_ZSCORE_mean in ten equal-width classes.
       The variant folders (deep-sm, blocked-cv, deeper-only and deep-sm/deeper-only) and the GPP, RECO
-      and ET folders hold the same files for those runs, with SHAP values in σ of their flux'
+      and ET folders hold the same files for those runs, with SHAP values in σ of their flux, written before VPD_ZSCORE_SHAPVALS_median_se was added and without that column'
     columns:
       BIN_VPD_ZSCORE_median: Lower edge of the VPD bin in σ (VPD z-score within site), x axis. The median
         across sites is used only to read the bin label exactly, all sites share it

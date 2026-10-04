@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     The docs are published from GitHub Actions, which needs Pages enabled on the
-    repository. While the repository is private, this is the way to read them.
+    repository. The published site is at https://holukas.github.io/ms-forests-vpd/. This script shows the local sources, for example before a push.
 
     Nothing in docs/ is executed at render time, so no data folder is needed.
     Quarto comes from the quarto-cli package in the dev group:

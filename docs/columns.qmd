@@ -14,7 +14,7 @@ columns the scheme does not explain.
 The page is written by `scripts/90_deposit/96_build_column_reference.py` from
 `96_column_dictionary.yaml`. The script also checks every description against the headers of
 the files on disk. The same descriptions, one row per column, are in `COLUMNS.csv` of the
-deposit. In 30_shap and 40_aggregation the deposit leaves out a csv file if a parquet file of the same name exists. The merged site files (12_parquet_merged) and the two ERA5-Land folders of script 16 are described here but are not in the deposit. Tables laid out
+deposit. In 30_shap and 40_aggregation the deposit leaves out a csv file if a parquet file of the same name exists. The merged site files (12_parquet_merged) and the legacy ERA5-Land folder of script 16 are described here but are not in the deposit. Of the Copernicus ERA5-Land folder, the deposit holds only the yearly file of each site. Tables laid out
 for Word (xlsx) are not described. Their data are in the csv file of the same item.
 
 ## Naming scheme
@@ -886,7 +886,7 @@ Source Data: `SupplementaryFig7.csv`.
 
 One row per cell of the SM by VPD bin grid and panel (20 panels a to t)
 
-Source Data of Supplementary Fig. 7. The fluxes themselves, not SHAP values, on the SM by VPD grid: panels a to e NEP, f to j GPP, k to o RECO, p to t ET, columns Global forests, ENF, DBF, MF, EBF. Bins 0.1 σ wide, labeled by their lower edge. z is the mean across sites of the per-site mean flux z-score in the cell. Cells kept only where at least half of the sites of the group have data, forest type panels only where the All sites panel has the cell
+Source Data of Supplementary Fig. 7. The fluxes themselves, not SHAP values, on the SM by VPD grid: panels a to e NEP, f to j GPP, k to o RECO, p to t ET, columns All sites, ENF, DBF, MF, EBF. Bins 0.1 σ wide, labeled by their lower edge. z is the mean across sites of the per-site mean flux z-score in the cell. Cells kept only where at least half of the sites of the group have data, forest type panels only where the All sites panel has the cell
 
 | Column | Description |
 |---|---|
@@ -954,7 +954,7 @@ Source Data: `Fig4_DBF.csv`, `Fig4_EBF.csv`, `Fig4_ENF.csv`, `Fig4_MF.csv`, `Fig
 
 Data files: one row per cell of the TA by VPD bin grid kept for the panel. Several rows share one VPD bin. Coefficient file: one row per panel
 
-Source Data of Fig. 4. Two schemas: the _ALLSITES_DATA and _<IGBP>_DATA files (points of panel a and panels b to e) and the _DATA_COEFFICIENTS file (fits). Grid: TA and VPD bins 0.1 σ wide, labeled by their lower edge. Per site, all records in a cell are averaged (stage 41), then the site values are aggregated across sites, equal weight per site (stages 42 and 43). The all-sites file holds cells where at least half of the sites of the run have data (104 of 208 in the main analysis). A forest type file holds cells that are also in the all-sites file and where at least half of the sites of that type have data, and leaves out rows with a missing value. Each point is plotted at x = BIN_VPD_ZSCORE_median, y = VPD_ZSCORE_SHAPVALS_median, colored by TA_ZSCORE_mean in ten equal-width classes. The variant folders (deep-sm, blocked-cv, deeper-only and deep-sm/deeper-only) and the GPP, RECO and ET folders hold the same files for those runs, with SHAP values in σ of their flux
+Source Data of Fig. 4. Two schemas: the _ALLSITES_DATA and _<IGBP>_DATA files (points of panel a and panels b to e) and the _DATA_COEFFICIENTS file (fits). Grid: TA and VPD bins 0.1 σ wide, labeled by their lower edge. Per site, all records in a cell are averaged (stage 41), then the site values are aggregated across sites, equal weight per site (stages 42 and 43). The all-sites file holds cells where at least half of the sites of the run have data (104 of 208 in the main analysis). A forest type file holds cells that are also in the all-sites file and where at least half of the sites of that type have data, and leaves out rows with a missing value. Each point is plotted at x = BIN_VPD_ZSCORE_median, y = VPD_ZSCORE_SHAPVALS_median, colored by TA_ZSCORE_mean in ten equal-width classes. The variant folders (deep-sm, blocked-cv, deeper-only and deep-sm/deeper-only) and the GPP, RECO and ET folders hold the same files for those runs, with SHAP values in σ of their flux, written before VPD_ZSCORE_SHAPVALS_median_se was added and without that column
 
 | Column | Description |
 |---|---|

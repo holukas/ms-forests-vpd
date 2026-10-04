@@ -35,7 +35,7 @@ a fresh install takes about three minutes on a standard desktop computer.
 ## Running scripts
 
 Scripts import from `src/`, which `uv sync` installs in editable mode. Paths are resolved
-from the repository root, and scripts run from any working directory:
+from the repository root, and scripts run from any working directory (except 16a and 16c, which start 16b and 16d by file name and run from `scripts/10_datasets/`):
 
 ```bash
 uv run python scripts/30_shap/31_shap.py

@@ -62,11 +62,11 @@ contribution is unchanged (-0.429 in both), and the soil water contribution weak
 `FEATURE_SET` in script 31 selects `full`, `no_vpd` or `no_ta`. Removing either variable
 lowers the score at 205 of 208 sites (median R^2^ 0.64 for `full`, 0.60 for `no_vpd`, 0.61
 for `no_ta`). When one variable
-is removed, the other takes over part of its role, so the attributions in the full model
+is removed, the other takes over part of its role. The attributions in the full model therefore
 are conditional on both being present. The `no_ta` run goes through the full aggregation
 and is one row of Table 1. With models that never saw temperature, the threshold is
 1.28 kPa [1.19, 1.37], against 1.26 kPa [1.16, 1.36] for the full model. A model with TA
-and relative humidity was not fitted. VPD follows from TA and relative humidity, so such a
+and relative humidity was not fitted. VPD follows from TA and relative humidity, and such a
 model holds the same information as one with TA and VPD and cannot separate heat from
 dryness any better.
 
@@ -83,7 +83,7 @@ physiological causes. The values are out-of-sample: each fold explains only the
 ALE curves come from `PyALE.ale` with `grid_size=100` per predictor (100 quantile intervals, up to 101 points per curve). Each site has one
 model fitted on 85 percent of the records, separate from the cross-validated models
 behind the SHAP values. ALE and SHAP interrogate models of the same form on the same
-data, so their agreement tests the interpretation method, not the physiology.
+data. Their agreement therefore tests the interpretation method, not the physiology.
 
 ## Soil water layer {#soil-water-layer}
 
@@ -276,7 +276,7 @@ proportional to the site maximum.
 
 ### Forest type comparison
 
-The intervals in Figure 4 are prediction bands of the aggregated curve. Script 49 fits
+The threshold intervals in Figure 4 come from the prediction band of the aggregated curve. Script 49 fits
 one threshold per site and compares the distributions over the 207 sites with a crossing
 from positive to negative (Kruskal-Wallis H = 11.43, p = 0.010). After Holm correction,
 only ENF against DBF differs (p = 0.035). The
@@ -302,7 +302,7 @@ script 16d) replaces it in these cases:
 | Case | MAT | MAP | Sites |
 |---|---|---|---|
 | No ERA5 file in the flux product (FLUXNET2015 downloads) | yes | yes | 18 |
-| No site precipitation, so P_ERA is not scaled (`ERA_SLOPE` of P is -9999 in the BIF or AUXMETEO file) | | yes | 18 |
+| No site precipitation, and P_ERA is therefore not scaled (`ERA_SLOPE` of P is -9999 in the BIF or AUXMETEO file) | | yes | 18 |
 | P_ERA more than 25% off the MAP reported for the site, ERA5-Land closer | | yes | 29 |
 | Set by hand in `config/site_climate_source_override.csv` (ERA5-Land closer to the reported MAT) | yes | | 7 |
 

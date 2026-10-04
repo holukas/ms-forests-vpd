@@ -1,7 +1,7 @@
 project:
   type: website
   output-dir: _site
-  # Written by scripts/90_deposit/94_build_data_flow_chart.py, embedded in pipeline.qmd
+  # Written by scripts/90_deposit/94_build_data_flow_chart.py, embedded in index.qmd and pipeline.qmd
   resources:
     - data_flow.html
 

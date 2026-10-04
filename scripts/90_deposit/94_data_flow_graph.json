@@ -983,7 +983,7 @@
    "writes": [
     "deposit_eth_research_collection/DATA_FLOW.html"
    ],
-   "note": "Draws this chart.",
+   "note": "Draws this chart. Also writes the same page to docs/data_flow.html when the output goes to the deposit folder.",
    "variants": [],
    "group_end": true
   },
@@ -1021,7 +1021,7 @@
     "docs/columns.qmd",
     "deposit_eth_research_collection/COLUMNS.csv"
    ],
-   "note": "Describes every column of every csv and parquet output from the dictionary and checks the descriptions against the file headers. Always writes the Output columns page, --build also writes COLUMNS.csv.",
+   "note": "Describes every column of every csv and parquet output from the dictionary and checks the descriptions against the file headers. Takes the Source Data names from 91_build_source_data.py. Always writes the Output columns page, --build also writes COLUMNS.csv.",
    "variants": [],
    "group_end": true
   }
@@ -1041,8 +1041,8 @@
    "variants": []
   },
   {
-   "id": "00_raw/ FLUXNET ERA5 yearly files",
-   "label": "raw FLUXNET ERA5 yearly files",
+   "id": "00_raw/ FLUXNET ERA5 yearly, BIF and AUXMETEO files",
+   "label": "raw FLUXNET ERA5, BIF and AUXMETEO files",
    "stage": "00_raw",
    "variants": []
   },

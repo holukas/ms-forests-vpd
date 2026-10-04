@@ -78,7 +78,7 @@ run for timing.
 `SWC_LAYER = "shallow"` uses `SWC_F_MDS_1` (`SWC_F_MDS_2` at CA-Obs, where layer 1 has no data), and `"deepest"` uses the deepest usable layer
 per site (see [Methods](methods.qmd#soil-water-layer)). CD-Ygb stores VPD in Pa, and this
 script leaves it in Pa. The z-scores are unaffected. Scripts 47, 48, 54, 58, 68 and 81 to 85, which
-convert VPD to kPa, divide the CD-Ygb values by 100. Script 45 does not, so its per-site
+convert VPD to kPa, divide the CD-Ygb values by 100. Script 45 does not, and its per-site
 medians for CD-Ygb are in Pa. The cross-site medians and quartiles of Supplementary
 Table 4 are the same at two decimals with and without the conversion. Script 21 writes one
 parquet per site to `21_subsets_parquet/` and
@@ -87,7 +87,7 @@ layer used per site. Of the tables in the outputs, only the `deep-sm` one has th
 per worker.
 
 `22_data_flow.py` counts the records each filter removes per site and checks its final
-count against script 21. Of the delivered half-hourly records, 7.1 percent reach the
+count against script 21. It counts step 5 in two parts: records with NEE, TA, VPD, SWIN and SWC, then records that also have LE, GPP and RECO. Of the delivered half-hourly records, 7.1 percent reach the
 models. The quality filter removes the most.
 
 ## 30_shap: models and attribution
@@ -109,7 +109,7 @@ and csv files with predictors, SHAP values and predictions, plus one csv of fold
 Unchanged sites give bit-identical output between runs.
 
 `32_validate_shap_methods.py` fits one model per site on an 85/15 split, computes ALE
-curves on 100 grid points per predictor and writes `{SITE}_ale_curves_{FLUX}.csv` and `{SITE}_ale_{FLUX}.parquet`, which script 46 reads.
+curves with 100 quantile intervals per predictor (up to 101 points) and writes `{SITE}_ale_curves_{FLUX}.csv` and `{SITE}_ale_{FLUX}.parquet`, which script 46 reads.
 
 ## 40_aggregation: results across sites
 
@@ -134,7 +134,7 @@ reached stage 41. Run 48 after 47 and 49. Scripts 47, 52, 54 and 58 exclude bins
 Figure scripts write to `50_plots/<FLUX>/<type>/<VARIANT>/<SITE_SUBSET>/`, and a variant therefore
 never overwrites a published figure. Script 53 writes Supplementary Fig. 3 to the folder
 without the variant level, under its own name. Scripts 55, 57, 59, 60 and 65 read the
-stage 40 files of 47, 46, 45, 48 and 49, in that order. Script 68 reads those of 41, 47
+stage 40 files of 47, 46, 45, 48 and 49, in that order. Script 54 also reads the per-site file of 41, and script 68 reads those of 41, 47
 and 49. Scripts 59, 61, 62, 63 and 64 read the stage 80 files of 89, 87, 81, 82 and 86,
 in that order. See [Figures](figures.qmd).
 
