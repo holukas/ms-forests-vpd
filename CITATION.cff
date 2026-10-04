@@ -10,6 +10,7 @@ authors:
 repository-code: "https://github.com/holukas/ms-forests-vpd"
 url: "https://holukas.github.io/ms-forests-vpd/"
 license: GPL-3.0-or-later
+# Also shown in the footer of the docs (docs/_quarto.yml): change both together
 version: "v2-revised"
 date-released: "2026-10-04"
 identifiers:
