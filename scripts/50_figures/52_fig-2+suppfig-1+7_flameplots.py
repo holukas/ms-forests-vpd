@@ -83,6 +83,9 @@ FIGURES = {
         figsize=(19, 13 / 3 * 4),
         figure_info=["SUPPFIG-7", 'Fluxes-NEP_ZSCORE'],
         show_only_max_marker=True,
+        # One tick step for the four colorbars, so that the fluxes read on the same scale.
+        # Chosen by range, the NEP bar (about 0.7) would get 0.2 and the others 0.5.
+        colorbar_step=0.5,
     ),
     # Same colormap as Figure 2, so blue is a positive effect on NEP in both. Each
     # row gets its own colorbar because the two effects differ in size.
@@ -103,6 +106,7 @@ plotvars_rows = FIGURES[FIGURE]["plotvars_rows"]
 figsize = FIGURES[FIGURE]["figsize"]
 figure_info = FIGURES[FIGURE]["figure_info"]
 show_only_max_marker = FIGURES[FIGURE]["show_only_max_marker"]
+colorbar_step = FIGURES[FIGURE].get("colorbar_step")   # None: chosen per colorbar by range
 
 # Header geometry, in figure fractions. The gap between the two header lines and
 # the room the panels leave for them are set in inches and divided by the figure
@@ -189,7 +193,8 @@ for row_idx, plotvars in enumerate(plotvars_rows):
     if show_row_colormap:
         absmax = np.max(allsites_subset_df.iloc[:, 2].abs())
         cax = fig.add_subplot(gs[row_idx, 5])
-        plot.create_colormap(fig=fig, ax=cax, cmap=cmap, label=zlabel, absmax=absmax, labelsize=AX_LABELS_FONTSIZE)
+        plot.create_colormap(fig=fig, ax=cax, cmap=cmap, label=zlabel, absmax=absmax, labelsize=AX_LABELS_FONTSIZE,
+                             step=colorbar_step)
     else:
         if row_idx == 0:
             absmax = np.max([allsites_subset_df.iloc[:, 2].abs().min(), allsites_subset_df.iloc[:, 2].abs().max()])

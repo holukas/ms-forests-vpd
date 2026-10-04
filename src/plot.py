@@ -28,7 +28,7 @@ def heatmap_style(**overrides) -> dv.plotting.FormatStyle:
     return style.merged(**overrides) if overrides else style
 
 
-def create_colormap(fig, ax, cmap, label, absmax, labelsize):
+def create_colormap(fig, ax, cmap, label, absmax, labelsize, step=None):
     norm = mpl.colors.Normalize(vmin=-absmax, vmax=absmax)
     sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
     cb = fig.colorbar(sm, cax=ax, extend='both')
@@ -36,7 +36,9 @@ def create_colormap(fig, ax, cmap, label, absmax, labelsize):
     # ticks. A fixed 0.2 left the soil water effect, about 0.1 sigma, with a bare
     # zero. The factor 1.5 is set by the three cases drawn so far: 0.66 keeps the
     # main-analysis 0.2, and 0.31 and 0.10 get a single tick each side, at 0.2 and 0.05.
-    step = next(s for s in (0.5, 0.2, 0.1, 0.05, 0.02, 0.01) if absmax / s >= 1.5)
+    # A figure with several colorbars can pass one step for all of them.
+    if step is None:
+        step = next(s for s in (0.5, 0.2, 0.1, 0.05, 0.02, 0.01) if absmax / s >= 1.5)
     cb.ax.yaxis.set_major_locator(ticker.MultipleLocator(step))
     cb.ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: cb_formatter(x, pos, step)))
     cb.set_label(label, size=labelsize, labelpad=20)
