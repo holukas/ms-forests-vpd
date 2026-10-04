@@ -444,8 +444,9 @@ products:
         record
       year_balanced: Records left after giving each of the four months the same number of years, latest
         years kept
-      complete_cases: Records left after dropping records with a missing value in NEE, LE, GPP, RECO,
-        TA, VPD, SWIN or SWC
+      complete_predictors: Records left after dropping records with a missing value in NEE, TA, VPD,
+        SWIN or SWC
+      complete_cases: Records of complete_predictors that also have LE, GPP and RECO, the modeled records
       SWC_VAR: FLUXNET soil water column used as SWC
   outputs/30_shap/<FLUX>/conditional/<SITE>_shap-conditional_<FLUX>.parquet (per site):
     row: One half-hourly or hourly record of the peak-season subset of one site (4 peak-GPP months, daytime,
@@ -1280,8 +1281,8 @@ products:
     columns:
       step: 'Step name: all_records (all records of the site files), measured_nee (NEE QC flag 0), daytime
         (SW_IN_POT > 20 W m-2), peak_months (four peak-GPP months of the site), year_balanced (same number
-        of years in every peak month, oldest years trimmed), complete_cases (no missing NEE, LE, GPP,
-        RECO, TA, VPD, SW_IN or SWC, the modeled records)'
+        of years in every peak month, oldest years trimmed), complete_predictors (no missing NEE, TA,
+        VPD, SW_IN or SWC), complete_cases (LE, GPP and RECO also present, the modeled records)'
       records: Records left after the step, summed over sites, count
       removed: Records removed by the step, summed over sites, count, empty for the first step
       share_kept_pct: Records left after the step as percent of all records
@@ -1301,8 +1302,10 @@ products:
       Four peak-GPP months: Records left in the four months with the highest mean GPP of the site, count
       Equal year coverage per month: Records left after keeping the same number of years in each peak
         month, oldest years trimmed, count
-      Complete cases (records used): Records with no missing NEE, LE, GPP, RECO, TA, VPD, SW_IN or SWC,
-        the modeled records, count
+      No missing predictor: Records left after dropping records with a missing value in NEE, TA,
+        VPD, SW_IN or SWC, count
+      GPP, RECO and ET present (records used): Records of the previous column that also have GPP, RECO
+        and LE (from which ET is derived), the modeled records, count
       Soil water layer used: FLUXNET variable used as soil water content of the site, e.g. SWC_F_MDS_1
   outputs/50_plots/68_SUPPFIG-9:
     row: 'Crossings csv: one row per site with a zero crossing. DATA csv: one row per point of the kPa

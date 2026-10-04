@@ -28,7 +28,8 @@ STEPS = [
     ('daytime', 'Daytime\n(SW_IN_POT > 20 W m⁻²)'),
     ('peak_months', 'Four peak-GPP\nmonths'),
     ('year_balanced', 'Equal year coverage\nper month'),
-    ('complete_cases', 'No missing\npredictor or NEP'),
+    ('complete_predictors', 'No missing\npredictor'),
+    ('complete_cases', 'GPP, RECO and\nET present'),
 ]
 
 KEPT = '#2196F3'   # Material blue 500

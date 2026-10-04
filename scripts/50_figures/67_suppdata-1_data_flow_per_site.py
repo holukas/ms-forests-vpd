@@ -2,7 +2,7 @@
 Supplementary Data 1: the record losses per site, from delivered half-hours to the modeled
 records.
 
-One row per site, the six steps of Supplementary Fig. 10 as columns in order, the soil water
+One row per site, the seven steps of Supplementary Fig. 10 as columns in order, the soil water
 layer the site used, and a last row with the totals.
 
 Reads:
@@ -30,7 +30,8 @@ COLUMNS = [
     ('daytime', 'Daytime (SW_IN_POT > 20 W m-2)'),
     ('peak_months', 'Four peak-GPP months'),
     ('year_balanced', 'Equal year coverage per month'),
-    ('complete_cases', 'Complete cases (records used)'),
+    ('complete_predictors', 'No missing predictor'),
+    ('complete_cases', 'GPP, RECO and ET present (records used)'),
     ('SWC_VAR', 'Soil water layer used'),
 ]
 COUNT_COLUMNS = [c for c, _ in COLUMNS if c not in ('SITE', 'IGBP', 'SWC_VAR')]

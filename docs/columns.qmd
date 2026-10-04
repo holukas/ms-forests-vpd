@@ -456,7 +456,8 @@ Main run only. Record counts after each filter step of stage 21, in the order of
 | `daytime` | Records left after keeping daytime (SW_IN_POT above 20 W m-2) |
 | `peak_months` | Records left after keeping the four months with the highest mean GPP over the whole record |
 | `year_balanced` | Records left after giving each of the four months the same number of years, latest years kept |
-| `complete_cases` | Records left after dropping records with a missing value in NEE, LE, GPP, RECO, TA, VPD, SWIN or SWC |
+| `complete_predictors` | Records left after dropping records with a missing value in NEE, TA, VPD, SWIN or SWC |
+| `complete_cases` | Records of complete_predictors that also have LE, GPP and RECO, the modeled records |
 | `SWC_VAR` | FLUXNET soil water column used as SWC |
 
 
@@ -1287,7 +1288,7 @@ Source Data of Supplementary Fig. 10. Counts are sums over the 209 sites of 22_d
 
 | Column | Description |
 |---|---|
-| `step` | Step name: all_records (all records of the site files), measured_nee (NEE QC flag 0), daytime (SW_IN_POT > 20 W m-2), peak_months (four peak-GPP months of the site), year_balanced (same number of years in every peak month, oldest years trimmed), complete_cases (no missing NEE, LE, GPP, RECO, TA, VPD, SW_IN or SWC, the modeled records) |
+| `step` | Step name: all_records (all records of the site files), measured_nee (NEE QC flag 0), daytime (SW_IN_POT > 20 W m-2), peak_months (four peak-GPP months of the site), year_balanced (same number of years in every peak month, oldest years trimmed), complete_predictors (no missing NEE, TA, VPD, SW_IN or SWC), complete_cases (LE, GPP and RECO also present, the modeled records) |
 | `records` | Records left after the step, summed over sites, count |
 | `removed` | Records removed by the step, summed over sites, count, empty for the first step |
 | `share_kept_pct` | Records left after the step as percent of all records |
@@ -1312,7 +1313,8 @@ Source Data of Supplementary Data 1. The xlsx holds the same table and is deposi
 | `Daytime (SW_IN_POT > 20 W m-2)` | Measured records in daytime, potential shortwave radiation above 20 W m-2, count |
 | `Four peak-GPP months` | Records left in the four months with the highest mean GPP of the site, count |
 | `Equal year coverage per month` | Records left after keeping the same number of years in each peak month, oldest years trimmed, count |
-| `Complete cases (records used)` | Records with no missing NEE, LE, GPP, RECO, TA, VPD, SW_IN or SWC, the modeled records, count |
+| `No missing predictor` | Records left after dropping records with a missing value in NEE, TA, VPD, SW_IN or SWC, count |
+| `GPP, RECO and ET present (records used)` | Records of the previous column that also have GPP, RECO and LE (from which ET is derived), the modeled records, count |
 | `Soil water layer used` | FLUXNET variable used as soil water content of the site, e.g. SWC_F_MDS_1 |
 
 

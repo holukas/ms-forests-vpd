@@ -25,7 +25,8 @@ VARIANT = ""
 # Sites run in parallel. Memory is the limit, as in stage 21.
 N_WORKERS = 3
 
-STEPS = ["all_records", "measured_nee", "daytime", "peak_months", "year_balanced", "complete_cases"]
+STEPS = ["all_records", "measured_nee", "daytime", "peak_months", "year_balanced",
+         "complete_predictors", "complete_cases"]
 
 
 def count_site(task: tuple) -> dict:
@@ -64,9 +65,13 @@ def count_site(task: tuple) -> dict:
     df = df.loc[keep]
     counts['year_balanced'] = len(df)
 
-    required = [varnames[v] for v in
-                ('nee_var', 'le_var', 'gpp_var', 'reco_var', 'ta_var', 'vpd_var', 'swin_var', 'swc_var')]
-    counts['complete_cases'] = len(df[required].dropna())
+    # Stage 21 drops a record with any of the eight variables missing. Counted in two steps,
+    # since the gap-filled LE, GPP and RECO are missing over whole periods at a few sites
+    predictors = [varnames[v] for v in ('nee_var', 'ta_var', 'vpd_var', 'swin_var', 'swc_var')]
+    df = df[predictors + [varnames[v] for v in ('le_var', 'gpp_var', 'reco_var')]]
+    df = df.loc[df[predictors].notna().all(axis=1)]
+    counts['complete_predictors'] = len(df)
+    counts['complete_cases'] = len(df.dropna())
     counts['SWC_VAR'] = varnames['swc_var']
     return counts
 
