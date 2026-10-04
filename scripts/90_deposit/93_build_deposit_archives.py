@@ -6,8 +6,9 @@ Unpacked there, the archives let the pipeline run from stage 31 onward
 without the flux products.
 
 Contents per stage:
-- 10_datasets: the top-level csv and log files of scripts 11-17 and the Google
-  Earth Engine ERA5 folder
+- 10_datasets: the top-level csv and log files of scripts 11-17, the Google
+  Earth Engine ERA5 folder and the yearly ERA5-Land files per site of the
+  Copernicus folder (script 17 reads only these, the hourly downloads are excluded)
 - 30_shap, 40_aggregation: everything except csv files with a parquet file of
   the same name in the same folder
 - 20_subsets, 50_plots, 80_info: everything
@@ -40,6 +41,8 @@ STAGES = ["10_datasets", "20_subsets", "30_shap", "40_aggregation", "50_plots", 
 
 # 10_datasets: only these top-level entries (files or folders)
 RAW_KEEP = re.compile(r"^(1[1-7][a-z]?_.*\.(csv|log)|16_ERA5_climate_1991-2020_GoogleEarthEngine)$")
+# 10_datasets: from the Copernicus folder only the yearly file of each site
+ERA5_LAND_YEARLY = "16_ERA5_climate_1991-2020_Copernicus/*/*_era5_1991-2020_yearly.csv"
 
 MAX_FILE_BYTES = 10 * 1024**3
 MAX_ENTRY_BYTES = 50 * 1024**3
@@ -56,7 +59,7 @@ def select(stage: str) -> list[Path]:
             if not RAW_KEEP.match(entry.name):
                 continue
             files += [entry] if entry.is_file() else sorted(p for p in entry.rglob("*") if p.is_file())
-        return files
+        return sorted(files + list(root.glob(ERA5_LAND_YEARLY)))
     files = sorted(p for p in root.rglob("*") if p.is_file())
     if stage in ("30_shap", "40_aggregation"):
         files = [p for p in files if not (p.suffix == ".csv" and p.with_suffix(".parquet").exists())]
