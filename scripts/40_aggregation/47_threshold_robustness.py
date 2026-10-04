@@ -159,7 +159,7 @@ def aggregated_curve():
     """
     xvar, yvar, zvar = 'BIN_VPD_ZSCORE', 'VPD_ZSCORE_SHAPVALS', 'TA_ZSCORE'
     aggfunc = 'mean'
-    xagg = yagg = 'median'          # both bin coordinate columns, as in script 54
+    xagg = yagg = 'median'          # VPD bin label and cross-site median SHAP, as in script 54
     _, subsetdf, _, _ = files.load_data(
         suffix='Sites', shap_type=shap_type, dir_res=dir_out, flux=FLUX, aggfunc=aggfunc,
         subsetcols=[(xvar, xagg), (yvar, yagg), (zvar, aggfunc), (yvar, 'sem')],

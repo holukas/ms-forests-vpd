@@ -210,7 +210,8 @@ print(f"Saved {outfile}")
 ref = out.loc[out['test'] == 'PUBLISHED REFERENCE'].iloc[0]
 tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 
-# Seven tests for the main table, one per kind of challenge. The figure keeps all of them.
+# Fifteen tests for the main table, all but the estimator sweep and the 3 and 5 year record
+# minimums. The figure keeps all eighteen.
 # The full set is too many for a main display item, and the reason is redundancy: three
 # record-length rows make one point, and each matched pair is a two-row argument about one
 # comparison. Both largest movers stay, North America and the ten-year records, so the
