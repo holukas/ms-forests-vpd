@@ -52,7 +52,7 @@ SITE_SUBSET = ""
 # deep-sm run uses the deepest soil water layer that keeps at least 90 % of the layer 1
 # records at each site, 128 sites on a deeper layer and 80 on layer 1. Empty skips the block.
 DEEP_SM_VARIANT = "deep-sm"
-DEEP_SM_LABEL = "Global forests, deepest SM layer"
+DEEP_SM_LABEL = "All sites, deepest SM layer"
 IGBP_CLASSES = ['ENF', 'DBF', 'MF', 'EBF']
 COLUMN_ORDER = ['All sites'] + IGBP_CLASSES
 STAGE_ORDER = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -232,7 +232,7 @@ plt.subplots_adjust(left=0.05, right=0.98, top=0.95, bottom=0.08)
 STAGE_ORDER_NAMES = ['1', '2', '3', '4', '5', '6', '7', '8']
 scen_map = {1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8'}
 
-IGBP_ORDER = ['Global forests', 'ENF', 'DBF', 'MF', 'EBF', DEEP_SM_LABEL]
+IGBP_ORDER = ['All sites', 'ENF', 'DBF', 'MF', 'EBF', DEEP_SM_LABEL]
 VAR_ORDER = ['VPD', 'TA', 'SM', 'SW']
 
 # Map raw variable names to display names
@@ -296,7 +296,7 @@ else:
 df['Driver'] = df[var_col].map(var_map).fillna(df[var_col])
 df['Stage_Name'] = df['stage'].map(scen_map)
 
-igbp_map = {'global': 'Global forests', 'global-deep': DEEP_SM_LABEL}
+igbp_map = {'global': 'All sites', 'global-deep': DEEP_SM_LABEL}
 df['IGBP_Display'] = df['igbp'].replace(igbp_map)
 
 # Format Statistics
@@ -326,7 +326,7 @@ table_str = table_str.reindex(columns=STAGE_ORDER_NAMES)
 final_rows = []
 
 # --- DATA ROWS (IGBP GROUPS) ---
-# Iterate through 'Global forests' then IGBPs
+# Iterate through 'All sites' then IGBPs
 for igbp in IGBP_ORDER:
     # Header Row (IGBP Name)
     final_rows.append({

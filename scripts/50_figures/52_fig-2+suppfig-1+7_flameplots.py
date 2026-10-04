@@ -220,7 +220,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
 
         # Headers for the very top row only
         if row_idx == 0:
-            coltitle = igbp if 1 <= col_idx <= 4 else "Global forests"
+            coltitle = igbp if 1 <= col_idx <= 4 else "All sites"
             trans = transforms.blended_transform_factory(ax.transAxes, fig.transFigure)
             fig.text(0.5, HEADER_TOP, coltitle, transform=trans,
                      fontsize=AX_LABELS_FONTSIZE * 1.2, ha='center', va='top', weight='bold')
@@ -233,7 +233,7 @@ for row_idx, plotvars in enumerate(plotvars_rows):
         _p = df_to_plot.iloc[:, :3].copy()
         _p.columns = ['x', 'y', 'z']
         _p.insert(0, 'panel', letter)
-        _p.insert(1, 'group', igbp or 'Global forests')
+        _p.insert(1, 'group', igbp or 'All sites')
         _p.insert(2, 'x_var', xvar)
         _p.insert(3, 'y_var', yvar)
         _p.insert(4, 'z_var', f'{zvar}_{aggfunc}')

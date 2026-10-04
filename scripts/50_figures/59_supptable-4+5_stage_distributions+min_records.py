@@ -111,7 +111,7 @@ def stage_block(frame: pd.DataFrame, group_name: str) -> list:
 overall = pd.read_csv(dir_agg / "45_StageDistributions_overall.csv")
 by_igbp = pd.read_csv(dir_agg / "45_StageDistributions_byIGBP.csv")
 
-table_a_rows = stage_block(overall, 'Global forests')
+table_a_rows = stage_block(overall, 'All sites')
 for igbp in IGBP_ORDER:
     subset = by_igbp[by_igbp['IGBP'] == igbp]
     if subset.empty:

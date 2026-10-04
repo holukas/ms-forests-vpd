@@ -159,7 +159,7 @@ panels_data = []
 
 # Global
 _data = stage_stats.loc[stage_stats['igbp'] == 'global'].copy()
-panels_data.append({'data': _data, 'title': "a | Global forests",
+panels_data.append({'data': _data, 'title': "a | All sites",
                     'is_small': False, 'gs': gs_top[0], 'show_stage_labels': True})
 
 # IGBP

@@ -856,16 +856,16 @@ products:
     row: One row per cell of a two-variable bin grid and panel (15 panels a to o)
     note: 'Source Data of Fig. 2. Each panel is a heat map: x and y are the bin coordinates,
       z the color. Rows of panels: TA by VPD (a to e), SM by VPD (f to j), ET by VPD (k to o). Columns
-      of panels: Global forests, ENF, DBF, MF, EBF. Bins are 0.1 σ wide and labeled by their lower edge.
+      of panels: All sites, ENF, DBF, MF, EBF. Bins are 0.1 σ wide and labeled by their lower edge.
       Per site, the VPD SHAP values of all records in a cell are averaged (stage 41), then z is the mean
       of these site means across the sites of the group, equal weight per site (stages 42 and 43). A cell
       is kept only if at least half of the sites of the group have data in it, and a forest type panel
-      excludes cells that are missing from the Global forests panel. The site count per panel shown
+      excludes cells that are missing from the All sites panel. The site count per panel shown
       in the figure header is not in the file. The deep-sm and deeper-only folders hold
       the figure only, no csv'
     columns:
       panel: Panel letter of the figure, a to o
-      group: 'Site group of the panel: ''Global forests'' (all sites) or a forest type (ENF, DBF, MF,
+      group: 'Site group of the panel: ''All sites'' or a forest type (ENF, DBF, MF,
         EBF)'
       x_var: 'Name of the bin column on the x axis: BIN_TA_ZSCORE, BIN_SWC_ZSCORE or BIN_ET_ZSCORE'
       y_var: Name of the bin column on the y axis, always BIN_VPD_ZSCORE
@@ -879,13 +879,13 @@ products:
     row: One row per cell of a two-variable bin grid and panel (10 panels a to j)
     note: 'Source Data of Supplementary Fig. 1. Same layout and aggregation as
       Fig. 2: panels a to e show the TA effect on the TA by VPD grid, panels f to j the SM effect on the
-      SM by VPD grid, columns Global forests, ENF, DBF, MF, EBF. Bins 0.1 σ wide, labeled by their lower
+      SM by VPD grid, columns All sites, ENF, DBF, MF, EBF. Bins 0.1 σ wide, labeled by their lower
       edge. z is the mean across sites of the per-site mean SHAP value in the cell. Cells kept only where
-      at least half of the sites of the group have data, forest type panels only where the Global forests
+      at least half of the sites of the group have data, forest type panels only where the All sites
       panel has the cell'
     columns:
       panel: Panel letter of the figure, a to j
-      group: 'Site group of the panel: ''Global forests'' (all sites) or a forest type (ENF, DBF, MF,
+      group: 'Site group of the panel: ''All sites'' or a forest type (ENF, DBF, MF,
         EBF)'
       x_var: 'Name of the bin column on the x axis: BIN_TA_ZSCORE or BIN_SWC_ZSCORE'
       y_var: Name of the bin column on the y axis, always BIN_VPD_ZSCORE
@@ -900,10 +900,10 @@ products:
       values, on the SM by VPD grid: panels a to e NEP, f to j GPP, k to o RECO, p to t ET, columns Global
       forests, ENF, DBF, MF, EBF. Bins 0.1 σ wide, labeled by their lower edge. z is the mean across sites
       of the per-site mean flux z-score in the cell. Cells kept only where at least half of the sites
-      of the group have data, forest type panels only where the Global forests panel has the cell'
+      of the group have data, forest type panels only where the All sites panel has the cell'
     columns:
       panel: Panel letter of the figure, a to t
-      group: 'Site group of the panel: ''Global forests'' (all sites) or a forest type (ENF, DBF, MF,
+      group: 'Site group of the panel: ''All sites'' or a forest type (ENF, DBF, MF,
         EBF)'
       x_var: Name of the bin column on the x axis, always BIN_SWC_ZSCORE
       y_var: Name of the bin column on the y axis, always BIN_VPD_ZSCORE
@@ -1061,7 +1061,7 @@ products:
       in panel a and in the panel of its forest type
     columns:
       panel: 'Panel letter: a (all sites) or b to e (ENF, DBF, MF, EBF)'
-      group: 'Site group: ''Global forests'' or a forest type ENF, DBF, MF, EBF'
+      group: 'Site group: ''All sites'' or a forest type ENF, DBF, MF, EBF'
       SITE: Site ID
       IGBP: IGBP forest type of the site
       x: VPD in σ (VPD z-score within site), grid point of the common grid
@@ -1103,13 +1103,13 @@ products:
         a crossing that is not resolved)
       note: Remark on the crossing, empty or 'interval open on one side, crossing not resolved' (RECO)
   outputs/50_plots/59_SUPPTABLE-4:
-    row: One row per site group and stage (stages 0 to 8, for Global forests and each forest type)
+    row: One row per site group and stage (stages 0 to 8, for All sites and each forest type)
     note: 'Source Data of Supplementary Table 4. Built from stage 45: per site
       and stage, the median of each driver over the records of that stage, then across sites the median
       of these site medians with the interquartile range across sites in brackets. Driver cells are text
       ''median [q25, q75]''.'
     columns:
-      Group: 'Site group: ''Global forests'' (all sites) or a forest type ENF, DBF, MF, EBF'
+      Group: 'Site group: ''All sites'' or a forest type ENF, DBF, MF, EBF'
       Stage: Stage 0 (all records, no restriction) or stress stage 1 to 8
       Sites: Number of sites with at least one record in the stage
       Records: Number of half-hourly records in the stage, summed over sites
@@ -1208,7 +1208,7 @@ products:
       SW (%): Median across sites of the percent of modeled records with SWIN z-score at or below the
         cut-off
   outputs/50_plots/62_SUPPTABLE-9:
-    row: 'One row per group: all sites (Global forests) and the forest types ENF, DBF, MF, EBF'
+    row: 'One row per group: all sites (All sites) and the forest types ENF, DBF, MF, EBF'
     note: Source Data of Supplementary Table 9, built from 81_INFO_ThresholdDefinitions.csv. All points are read off the
       quartic fit of the Fig. 4 VPD response curve of the group (VPD SHAP value against the VPD z-score
       bin, medians across sites). Values are text with fixed decimals. A value followed by "(range edge)"
@@ -1217,7 +1217,7 @@ products:
       the mean over the sites of the group, equal weight per site, of (site mean VPD + z × site VPD standard
       deviation) / 10, with CD-Ygb converted from Pa to hPa.
     columns:
-      Group: 'Group name: Global forests (all sites) or forest type (IGBP)'
+      Group: 'Group name: All sites (all sites) or forest type (IGBP)'
       Fitted range, upper limit (σ): Largest VPD z-score bin of the fitted curve data of the group, in
         σ, one decimal
       Peak of the VPD effect (σ): VPD z-score where the fitted VPD effect on NEP is most positive, in

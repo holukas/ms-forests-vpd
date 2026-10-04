@@ -266,7 +266,7 @@ if mean_effect is not None and std_effect is not None:
     ax_all.legend(loc='best', fontsize=AX_LABELS_FONTSIZE)
 
     ax_all.text(0, 1.05, 'a', transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2, weight='bold')
-    ax_all.text(0.05, 1.05, 'Global forests', transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
+    ax_all.text(0.05, 1.05, 'All sites', transform=ax_all.transAxes, size=AX_LABELS_FONTSIZE * 1.2)
     # Both counts, because the threshold is the mean over the sites that cross, not over
     # every site drawn. US-Cwt is the one that does not: its curve rises with VPD, so it
     # has no positive to negative crossing.
@@ -454,7 +454,7 @@ if mean_effect is not None and std_effect is not None:
     print(f"Saved figure to: {outfilepath}\n")
 
     # The plotted values: the polynomial-smoothed site curves of every panel, as drawn.
-    _curves = [pd.DataFrame({'panel': 'a', 'group': 'Global forests', 'SITE': site,
+    _curves = [pd.DataFrame({'panel': 'a', 'group': 'All sites', 'SITE': site,
                              'IGBP': site_igbp_map.get(site), 'x': common_grid, 'ale_effect': curve})
                for site, curve in zip(stored.index, site_ale_interpolated_array)]
     for letter, igbp in zip(['b', 'c', 'd', 'e'], IGBPS):
@@ -464,7 +464,7 @@ if mean_effect is not None and std_effect is not None:
     pd.concat(_curves).dropna(subset=['ale_effect']).to_csv(
         outfilepath.with_name(outfilepath.stem + '_DATA.csv'), index=False)
     # The threshold markers and their labels.
-    _thr = [{'group': 'Global forests', 'threshold': threshold_main,
+    _thr = [{'group': 'All sites', 'threshold': threshold_main,
              'n_crossing': n_curves_crossing, 'n_total': n_curves_total}]
     _thr += [{'group': d['IGBP'], 'threshold': d['Threshold'],
               'n_crossing': d['N_crossing'], 'n_total': d['N_total']} for d in igbp_threshold_data]

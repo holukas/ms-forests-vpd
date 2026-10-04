@@ -26,7 +26,7 @@ VARIANT = ""
 SITE_SUBSET = ""
 
 # Group labels of script 81 and the names the reader sees, in the order of Fig. 4.
-GROUPS = [('ALL SITES', 'Global forests'), ('ENF', 'ENF'), ('DBF', 'DBF'),
+GROUPS = [('ALL SITES', 'All sites'), ('ENF', 'ENF'), ('DBF', 'DBF'),
           ('MF', 'MF'), ('EBF', 'EBF')]
 # The three readings, in the order they occur along the VPD axis.
 DEFINITIONS = [('peak', 'Peak of the VPD effect'),

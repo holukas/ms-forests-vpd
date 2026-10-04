@@ -318,7 +318,7 @@ max_ix = np.argmax(y_fit)
 
 # Panel letter (Bold)
 letter = 'a'
-igbp = 'Global forests'
+igbp = 'All sites'
 ax_all.text(0, 1.05, letter, transform=ax_all.transAxes, zorder=99,
             size=AX_LABELS_FONTSIZE * 1.2, weight='bold', ha='left', va='top')
 
