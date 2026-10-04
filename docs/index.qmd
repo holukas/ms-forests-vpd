@@ -14,8 +14,8 @@ Each site has its own XGBoost model. The models are interpreted with out-of-samp
 values from 5-fold cross-validation and with ALE curves. Site results are aggregated with
 equal weight per site, overall and per IGBP forest type.
 
-- Target: `NEP_ZSCORE`, half-hourly, daytime, four months of highest GPP per site.
-  `GPP_ZSCORE`, `RECO_ZSCORE` and `ET_ZSCORE` run through the same pipeline as
+- Target: `NEP_ZSCORE`, half-hourly (hourly at five sites), daytime, four months of highest GPP per site.
+  `GPP_ZSCORE`, `RECO_ZSCORE` and `ET_ZSCORE` run through scripts 31, 41 to 44, 53, 54 and 58 as
   supporting analyses.
 - Predictors: `TA_ZSCORE`, `SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`.
 - All variables are z-scored within site.

@@ -961,7 +961,7 @@ Source Data of Fig. 4. Two schemas: the _ALLSITES_DATA and _<IGBP>_DATA files (p
 | `BIN_VPD_ZSCORE_median` | Lower edge of the VPD bin in σ (VPD z-score within site), x axis. The median across sites is used only to read the bin label exactly, all sites share it |
 | `VPD_ZSCORE_SHAPVALS_median` | VPD effect on daytime NEP in σ of NEP, y axis: median across sites of the site mean VPD SHAP value in the cell |
 | `TA_ZSCORE_mean` | Air temperature of the cell in σ (TA z-score within site), point color: mean across sites of the site mean TA z-score in the cell |
-| `VPD_ZSCORE_SHAPVALS_sem` | Standard error across sites of the site mean VPD SHAP values in the cell, in σ of NEP: std across sites divided by the square root of the number of sites with data, around the cross-site mean (y is the median). Not drawn, it sets the y range of the panels |
+| `VPD_ZSCORE_SHAPVALS_sem` | Standard error across sites of the site mean VPD SHAP values in the cell, in σ of NEP: std across sites divided by the square root of the number of sites with data, around the cross-site mean (y is the median). Not drawn. In the all-sites file it sets the y range of all panels |
 | `VPD_ZSCORE_SHAPVALS_median_se` | Standard error of the cross-site median VPD SHAP value in the cell, in σ of NEP: standard deviation of the median over 1,000 bootstrap resamples of the sites (seed 42), from the per-site cell means of stage 41, all sites in the all-sites file and the sites of the forest type in its file. Error bars of the panel |
 | `IGBP` | Panel of the fit: 'ALL SITES' (panel a) or a forest type ENF, DBF, MF, EBF (panels b to e) |
 | `a` | Coefficient of x^4 of the fourth-order polynomial y = a x^4 + b x^3 + c x^2 + d x + e, fitted by least squares to the cells of the panel (x VPD bin in σ, y median VPD SHAP in σ) |
@@ -1211,7 +1211,7 @@ Source Data: `SupplementaryTable9.csv`.
 
 One row per group: all sites (All sites) and the forest types ENF, DBF, MF, EBF
 
-Source Data of Supplementary Table 9, built from 81_INFO_ThresholdDefinitions.csv. All points are read off the quartic fit of the Fig. 4 VPD response curve of the group (VPD SHAP value against the VPD z-score bin, medians across sites). Values are text with fixed decimals. A value followed by "(range edge)" lies within 2 % of the fitted range width from an end of the range. It marks where the fitted data end, not a feature of the curve. The zero crossing is never tested for the range edge. kPa values are the mean over the sites of the group, equal weight per site, of (site mean VPD + z × site VPD standard deviation) / 10, with CD-Ygb converted from Pa to hPa.
+Source Data of Supplementary Table 9, built from 81_INFO_ThresholdDefinitions.csv. All points are read off the quartic fit of the Fig. 4 VPD response curve of the group (VPD SHAP value against the VPD z-score bin, medians across sites). Values are text with fixed decimals. A value followed by "(range edge)" is within 2 % of the fitted range width from an end of the range. It marks where the fitted data end, not a feature of the curve. The zero crossing is never tested for the range edge. kPa values are the mean over the sites of the group, equal weight per site, of (site mean VPD + z × site VPD standard deviation) / 10, with CD-Ygb converted from Pa to hPa.
 
 | Column | Description |
 |---|---|
@@ -1423,7 +1423,7 @@ Numbers on why the analysis is not repeated at daily or coarser resolution, 208 
 
 One row per group: all sites and the forest types ENF, DBF, EBF, MF
 
-Four points on the quartic fit of the Fig. 4 VPD response curve of the group (VPD SHAP value in σ of NEP against the VPD z-score bin, from the 54_FIG-4 _DATA files), fit evaluated at 2000 points over the fitted range. z values are in σ of the VPD z-score. kPa values are the mean over the sites of the group, equal weight per site, of (site mean VPD + z × site VPD standard deviation) / 10, with CD-Ygb converted from Pa to hPa. An edge flag is True when the point lies within 2 % of the fitted range width from either end. Feeds Supplementary Table 9.
+Four points on the quartic fit of the Fig. 4 VPD response curve of the group (VPD SHAP value in σ of NEP against the VPD z-score bin, from the 54_FIG-4 _DATA files), fit evaluated at 2000 points over the fitted range. z values are in σ of the VPD z-score. kPa values are the mean over the sites of the group, equal weight per site, of (site mean VPD + z × site VPD standard deviation) / 10, with CD-Ygb converted from Pa to hPa. An edge flag is True when the point is within 2 % of the fitted range width from either end. Feeds Supplementary Table 9.
 
 | Column | Description |
 |---|---|
@@ -1431,16 +1431,16 @@ Four points on the quartic fit of the Fig. 4 VPD response curve of the group (VP
 | `x_max` | Largest VPD z-score bin of the fitted curve data, upper end of the fitted range, in σ |
 | `peak_z` | VPD z-score where the fitted VPD effect is most positive, in σ |
 | `peak_kPa` | Peak converted to VPD in kPa |
-| `peak_at_edge` | True if the peak lies at the edge of the fitted range |
+| `peak_at_edge` | True if the peak is at the edge of the fitted range |
 | `steepest_decline_z` | VPD z-score of the most negative slope of the fitted curve at or after the peak, in σ |
 | `steepest_decline_kPa` | Steepest decline converted to VPD in kPa |
-| `steepest_decline_at_edge` | True if the steepest decline lies at the edge of the fitted range |
+| `steepest_decline_at_edge` | True if the steepest decline is at the edge of the fitted range |
 | `zero_crossing_z` | VPD z-score of the highest crossing of the fitted curve from positive to negative, the threshold, linearly interpolated, in σ, empty without crossing |
 | `zero_crossing_kPa` | Zero crossing converted to VPD in kPa |
 | `zero_crossing_at_edge` | Always False, the zero crossing is not tested for the range edge |
 | `minimum_z` | VPD z-score where the fitted VPD effect is most negative within the fitted range, in σ |
 | `minimum_kPa` | Minimum converted to VPD in kPa |
-| `minimum_at_edge` | True if the minimum lies at the edge of the fitted range |
+| `minimum_at_edge` | True if the minimum is at the edge of the fitted range |
 
 
 ### 82 threshold by VPD quartile

@@ -55,12 +55,12 @@ run for timing.
 |--------|----------|--------|
 | `00_find_overlaps.py` | Finds sites in both AmeriFlux and FLUXNET-SHUTTLE and deletes their AmeriFlux folders. Already applied, do not rerun | `10_datasets/` |
 | `11_collect_info.py` | Lists the datasets in the five raw sources, one row per dataset | `11_datasets_info.csv` |
-| `12_create_parquet.py` | Merges the datasets of each site by source priority | `12_parquet_merged/`, `12_datasets_info_parquet.csv` |
+| `12_create_parquet.py` | Merges the datasets of each site by source priority | `12_parquet_merged/`, `12_parquet_merged_plots/`, `12_datasets_info_parquet.csv` |
 | `13_check_available_vars.py` | Records which of NEE, LE, GPP, RECO, TA, VPD, SWIN and SWC exist per site, and under which name | `13_datasets_info_parquet_vars.csv` |
 | `13b_check_available_vars_SWC.py` | Reports the coverage of every soil water layer per site, within the peak months and against layer 1 | `13_datasets_info_parquet_vars.csv` (as script 13), `13b_variables_coverage_summary.csv`, `13b_variables_per_site.csv` |
 | `14_collect_basic_stats.py` | Collects record counts, date ranges and basic statistics per variable | `14_datasets_info_parquet_vars_stats.csv` |
 | `15_remove_sites.py` | Applies the inclusion criteria | `15_datasets_info_parquet_vars_stats_usedsites.csv` |
-| `16a` to `16d`, `16_download_era5_mat_map.py` | Download ERA5 1991 to 2020 normals from Google Earth Engine and the Copernicus CDS | `16_ERA5_climate_1991-2020*/` |
+| `16a` to `16d`, `16_download_era5_mat_map.py` | Download ERA5 1991 to 2020 normals from Google Earth Engine and the Copernicus CDS. Script 17 reads only the ERA5-Land output of `16c` and `16d`, and `16`, `16a` and `16b` are legacy | `16_ERA5_climate_1991-2020*/` |
 | `17_add_era5_info.py` | Adds MAT and MAP per site from the flux product's ERA5 file or ERA5-Land, with source and reason | `17_datasets_info_parquet_vars_stats_usedsites_era5.csv` |
 
 ## 20_subsets: model input
@@ -118,7 +118,7 @@ curves with 100 quantile intervals per predictor (up to 101 points) and writes `
 | `41_binagg_per_site.py` | Bins the SHAP values of each site on a two-variable grid with shared edges, for five variable pairs (TA-VPD, SWC-VPD, TA-SWC, ET-VPD, ET-SWC) |
 | `42_binagg_across_sites.py` | Averages the site grids, one vote per site |
 | `43_binagg_across_igbp.py` | Averages the site grids per forest type |
-| `44_agg_per_scenario.py` | Computes SHAP means within the stress stages, per site and across sites. `STAGE_SEQUENCE` is `"published"`, `"mirrored"` or `"factorial"` |
+| `44_agg_per_scenario.py` | Computes SHAP means within the stress stages, one row per site and stage. `STAGE_SEQUENCE` is `"published"`, `"mirrored"` or `"factorial"` |
 | `45_stage_distributions.py` | Computes driver medians and quartiles within each stage, in standardized and measured units |
 | `46_ale_thresholds.py` | Puts the per-site ALE curves on one grid, takes the highest crossing from positive to negative of each and averages them, overall and per forest type |
 | `47_threshold_robustness.py` | Re-estimates the VPD threshold eighteen ways, with a bootstrap over sites, the 23-setting estimator sweep and leave-one-site-out. Feeds Table 1 |
@@ -134,7 +134,7 @@ reached stage 41. Run 48 after 47 and 49. Scripts 47, 52, 54 and 58 exclude bins
 Figure scripts write to `50_plots/<FLUX>/<type>/<VARIANT>/<SITE_SUBSET>/`, and a variant therefore
 never overwrites a published figure. Script 53 writes Supplementary Fig. 3 to the folder
 without the variant level, under its own name. Scripts 55, 57, 59, 60 and 65 read the
-stage 40 files of 47, 46, 45, 48 and 49, in that order. Script 54 also reads the per-site file of 41, and script 68 reads those of 41, 47
+stage 40 files of 47, 46, 45, 48 and 49, in that order. Script 54 also reads the per-site file of 41, script 59 the per-site files of 31, and script 68 those of 41, 47
 and 49. Scripts 59, 61, 62, 63 and 64 read the stage 80 files of 89, 87, 81, 82 and 86,
 in that order. See [Figures](figures.qmd).
 
@@ -170,7 +170,8 @@ archive already in the deposit folder in `MANIFEST.csv` and `ARCHIVES.csv`. Run 
 before 93, and put the code and documentation snapshots there first as well: the code with
 `git archive --format=zip --prefix=ms-forests-vpd/` from the tagged commit as
 `ms-forests-vpd_code.zip`, and `docs/_site/` rendered from the same commit as
-`ms-forests-vpd_docs.zip`. Script 95 writes the
+`ms-forests-vpd_docs.zip`. Run 94 after 93, because the chart takes the archive of each
+file from `MANIFEST.csv`. Script 95 writes the
 figures for this site and script 96 the Output columns page. Scripts 91 to 93 and 95 do a
 dry run by default and write only with `--build`. Script 96 always writes the page and
 writes `COLUMNS.csv` only with `--build`.

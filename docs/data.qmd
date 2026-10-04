@@ -54,13 +54,15 @@ resolves them and does not check that the folder exists.
 
 Each `00_raw/<source>/` folder holds the unpacked site archives and a `0-info/` folder
 with the site metadata file. `config/settings.yaml` gives the file name patterns per
-source. Scripts 91 to 94 and 96 write the deposit files to `deposit_eth_research_collection/`. The code and documentation snapshots and `README.txt` are added by hand (see [Pipeline](pipeline.qmd)).
+source. Scripts 91 to 94 and 96 write the deposit files to `deposit_eth_research_collection/`. The code and documentation snapshots (see [Pipeline](pipeline.qmd)) and `README.txt` are added by hand.
 Script 91 also writes the journal copy of the Source Data to
 `submission_nature_communications/`.
 
 ## Source datasets
 
-The analysis uses half-hourly FLUXNET-formatted files from five sources. If a site
+The code reads FLUXNET-formatted files from five sources, half-hourly except at five of the
+208 sites (AU-Tum, US-Cwt, US-Ha1, US-MMS, US-PFa), which are hourly. No site from
+JapanFlux2024 passes the inclusion criteria (script 15). If a site
 appears in more than one, the dataset that ends last is kept where the datasets overlap and
 the others extend the record backwards. The source with the highest priority sets the flux
 variable and the site metadata, such as the IGBP class (`src/files.py::create_parquet_files`).
@@ -122,4 +124,5 @@ Only scripts `16` and `16a` to `16d`, which rebuild the climate normals, need th
 - Copernicus Climate Data Store (`16`, `16c`, `16d`): a CDS account and an API key in
   `~/.cdsapirc`. Requests are queued server-side and can take hours.
 
-Script `17` merges whatever is present (see [Methods](methods.qmd#era5-climate-normals)).
+Script `17` reads only the ERA5-Land output of `16c` and `16d` and stops if the file of a
+site is missing. Scripts `16`, `16a` and `16b` are legacy (see [Methods](methods.qmd#era5-climate-normals)).

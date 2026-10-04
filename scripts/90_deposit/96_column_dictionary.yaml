@@ -974,7 +974,8 @@ products:
         sites of the site mean TA z-score in the cell'
       VPD_ZSCORE_SHAPVALS_sem: 'Standard error across sites of the site mean VPD SHAP values in the cell,
         in σ of NEP: std across sites divided by the square root of the number of sites with data,
-        around the cross-site mean (y is the median). Not drawn, it sets the y range of the panels'
+        around the cross-site mean (y is the median). Not drawn. In the all-sites file it sets the y
+        range of all panels'
       VPD_ZSCORE_SHAPVALS_median_se: 'Standard error of the cross-site median VPD SHAP value in the cell,
         in σ of NEP: standard deviation of the median over 1,000 bootstrap resamples of the sites
         (seed 42), from the per-site cell means of stage 41, all sites in the all-sites file and the sites
@@ -1212,7 +1213,7 @@ products:
     note: Source Data of Supplementary Table 9, built from 81_INFO_ThresholdDefinitions.csv. All points are read off the
       quartic fit of the Fig. 4 VPD response curve of the group (VPD SHAP value against the VPD z-score
       bin, medians across sites). Values are text with fixed decimals. A value followed by "(range edge)"
-      lies within 2 % of the fitted range width from an end of the range. It marks where the fitted data end,
+      is within 2 % of the fitted range width from an end of the range. It marks where the fitted data end,
       not a feature of the curve. The zero crossing is never tested for the range edge. kPa values are
       the mean over the sites of the group, equal weight per site, of (site mean VPD + z × site VPD standard
       deviation) / 10, with CD-Ygb converted from Pa to hPa.
@@ -1429,18 +1430,18 @@ products:
       in σ of NEP against the VPD z-score bin, from the 54_FIG-4 _DATA files), fit evaluated at 2000 points
       over the fitted range. z values are in σ of the VPD z-score. kPa values are the mean over the sites
       of the group, equal weight per site, of (site mean VPD + z × site VPD standard deviation) / 10,
-      with CD-Ygb converted from Pa to hPa. An edge flag is True when the point lies within 2 % of the
+      with CD-Ygb converted from Pa to hPa. An edge flag is True when the point is within 2 % of the
       fitted range width from either end. Feeds Supplementary Table 9.
     columns:
       group: ALL SITES or IGBP forest type
       x_max: Largest VPD z-score bin of the fitted curve data, upper end of the fitted range, in σ
       peak_z: VPD z-score where the fitted VPD effect is most positive, in σ
       peak_kPa: Peak converted to VPD in kPa
-      peak_at_edge: True if the peak lies at the edge of the fitted range
+      peak_at_edge: True if the peak is at the edge of the fitted range
       steepest_decline_z: VPD z-score of the most negative slope of the fitted curve at or after the peak,
         in σ
       steepest_decline_kPa: Steepest decline converted to VPD in kPa
-      steepest_decline_at_edge: True if the steepest decline lies at the edge of the fitted range
+      steepest_decline_at_edge: True if the steepest decline is at the edge of the fitted range
       zero_crossing_z: VPD z-score of the highest crossing of the fitted curve from positive to negative,
         the threshold, linearly interpolated, in σ, empty without crossing
       zero_crossing_kPa: Zero crossing converted to VPD in kPa
@@ -1448,7 +1449,7 @@ products:
       minimum_z: VPD z-score where the fitted VPD effect is most negative within the fitted range, in
         σ
       minimum_kPa: Minimum converted to VPD in kPa
-      minimum_at_edge: True if the minimum lies at the edge of the fitted range
+      minimum_at_edge: True if the minimum is at the edge of the fitted range
   outputs/80_info/82_INFO_ThresholdVsSiteVPDRange:
     row: 'ThresholdVsSiteVPDRange: one row per quartile of site maximum VPD. _perSite: one row per site,
       208 sites'

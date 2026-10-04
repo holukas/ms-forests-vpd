@@ -11,7 +11,7 @@ has its own XGBoost model. The models are interpreted with out-of-sample SHAP va
 5-fold cross-validation and with ALE curves. Site results are aggregated with equal
 weight per site, overall and per IGBP forest type.
 
-- Target: `NEP_ZSCORE`, half-hourly, daytime, four months of highest GPP per site
+- Target: `NEP_ZSCORE`, half-hourly (hourly at five sites), daytime, four months of highest GPP per site
 - Predictors: `TA_ZSCORE`, `SWIN_ZSCORE`, `VPD_ZSCORE`, `SWC_ZSCORE`
 
 ## Data flow chart
@@ -81,7 +81,7 @@ the out-of-sample SHAP values. This took 7 seconds on a 24-thread desktop comput
 writes `CH-Dav_shap-conditional_NEP_ZSCORE.parquet`, a run log and the cross-validation
 results to `data/outputs/30_shap/NEP_ZSCORE/conditional/`. With xgboost 3.0.5 on 24
 threads the parquet file equals `expected_output/CH-Dav_shap-conditional_NEP_ZSCORE.parquet`
-from the archive. With other thread counts the values differ slightly
+from the archive. With other thread counts the values differ by up to a few percent
 (`docs/installation.qmd`, Reproducibility).
 
 ## Data
@@ -99,7 +99,7 @@ contain `data/00_raw/` and `data/outputs/`. [`docs/data.qmd`](docs/data.qmd) des
 layout and where the FLUXNET source datasets come from.
 
 The deposit in the ETH Research Collection (<https://doi.org/10.3929/ethz-c-000798579>)
-holds one archive per output stage, from the per-site subsets through the models and SHAP
+holds one archive per output stage, from the site tables and per-site subsets through the models and SHAP
 values to the aggregated outputs behind every figure and table. Unpacked into
 `data/outputs/`, the archives let everything from `30_shap` onward run without the raw source
 files, except script 80, which reads the merged site files of stage 12. The data behind each figure and table are also in `ms-forests-vpd_SourceData.zip`
@@ -128,11 +128,12 @@ uv run python scripts/40_aggregation/43_binagg_across_igbp.py
 uv run python scripts/50_figures/54_fig-4+supptable-7_vpd_response_curve_shap_agg.py
 ```
 
-Scripts are numbered in run order within each folder. On a 24-thread machine with 208
+Scripts are numbered in run order within each folder, with the exceptions named in
+`docs/pipeline.qmd` (script 48 runs after 49, for example). On a 24-thread machine with 208
 sites, `21_prepare_input_data.py` takes about 40 minutes, `31_shap.py` about 20,
 `32_validate_shap_methods.py` about 85 and `41_binagg_per_site.py` about 13. Every other
-step takes minutes. Display scripts carry the manuscript item they produce in their name
-(`fig-4`, `supptable-7`, `suppdata-1`), and their outputs carry the same token. Script 65
+step takes minutes. Display scripts have the manuscript item they produce in their name
+(`fig-4`, `supptable-7`, `suppdata-1`), and their outputs have the same token. Script 65
 draws a figure that is not in the manuscript. Scripts under `80_info/` write checks that
 are quoted in the text or used in supplementary tables and Supplementary Data 2, and no
 figure reads them. The published numbers reproduce exactly with xgboost 3.0.5 on 24
@@ -142,7 +143,7 @@ threads (`docs/installation.qmd`, Reproducibility).
 
 Direct dependencies are pinned in `pyproject.toml`. `uv.lock` fixes every package,
 including the transitive ones, and `uv sync --locked` recreates that environment.
-`pip install .` installs the direct pins only, not the lock file, so transitive versions
+`pip install .` installs the direct pins only, not the lock file, and transitive versions
 may differ. xgboost 3.0.5 is the version that produced the published results, and fitted
 models differ between xgboost versions. shap 0.52.0 and scikit-learn 1.9.0 are newer than
 the versions that produced the results (0.48.0 and 1.6.1) and reproduce them exactly.

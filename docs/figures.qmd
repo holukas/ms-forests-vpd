@@ -48,7 +48,8 @@ deviation of the median over 1,000 bootstrap resamples of the sites (seed 42,
 `src/aggregation.py::median_se_across_sites`). Panel a resamples all sites, panels b to e the
 sites of their forest type. The bootstrap needs the per-site cell means, and script 54 therefore also
 reads the stage 41 file, as script 68 does. Each bar starts at the marker edge and does not
-show through the semi-transparent marker.
+show through the semi-transparent marker. A standard error smaller than the marker radius
+gives no bar.
 
 ## Table 1 and Supplementary Fig. 4
 

@@ -978,7 +978,8 @@
    "label": "94 build data flow chart",
    "stage": "90_deposit",
    "reads": [
-    "scripts/90_deposit/94_data_flow_graph.json"
+    "scripts/90_deposit/94_data_flow_graph.json",
+    "deposit_eth_research_collection/"
    ],
    "writes": [
     "deposit_eth_research_collection/DATA_FLOW.html"
