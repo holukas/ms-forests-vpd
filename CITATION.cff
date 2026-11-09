@@ -15,7 +15,7 @@ version: "v2-revised"
 date-released: "2026-10-04"
 identifiers:
   - type: doi
-    value: "10.3929/ethz-c-000798579"
+    value: "10.3929/ethz-c-000808957"
     description: "Data and code deposit in the ETH Research Collection"
 keywords:
   - eddy covariance

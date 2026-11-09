@@ -80,7 +80,7 @@ The networks distribute these files under CC BY 4.0.
 ## Deposited outputs
 
 The analysis outputs are deposited in the ETH Research Collection:
-<https://doi.org/10.3929/ethz-c-000798579>. The deposit holds:
+<https://doi.org/10.3929/ethz-c-000808957>. The deposit holds:
 
 - one zip archive per output stage, `ms-forests-vpd_outputs_<stage>.zip` (`10_datasets`,
   `20_subsets`, `30_shap`, `40_aggregation`, `50_plots`, `80_info`), with paths relative
