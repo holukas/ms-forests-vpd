@@ -15,6 +15,8 @@ Writes (rendered by script 55):
 - 47_THRESHOLD_EstimatorSweep_{FLUX}.csv, 23 settings, in sigma
 - 47_THRESHOLD_Robustness_{FLUX}.csv, all tests plus the reference row
 - 47_THRESHOLD_LeaveOneSiteOut_{FLUX}.csv, one row per dropped site, in kPa
+- 47_INFO_VegetationLabels_{FLUX}.csv, the threshold and the Stage 8 effects of VPD and SM
+  with and without the sites in VEGETATION_LABEL_SITES, for all sites and per forest type
 """
 from pathlib import Path
 
@@ -60,6 +62,16 @@ CURVE_FILE = (f'41_SHAPVALUES-{shap_type}_meanAggregatedPerSite'
 # 31.8 hPa. The z-scores are per site and therefore unaffected by the unit, so the
 # conversion only touches the mapping back to kPa.
 PA_UNIT_SITES = ['CD-Ygb']
+
+# Sites whose vegetation class is not the same in every metadata source of the raw data: the
+# BIF file inside each product, the AmeriFlux and FLUXNET2015 BIF tables and the FLUXNET site
+# lists. Every site keeps one class for its whole record, from the dataset it was taken from.
+# Five Australian sites are EBF in the April 2026 shuttle catalog but woody savanna,
+# shrubland or savanna in other sources. ES-TzM is cropland in the FLUXNET site lists.
+# US-NC1 lists open shrubland for the first years after a clearcut and ENF from 2008. The
+# last four are listed with another forest class. The test drops all eleven at once.
+VEGETATION_LABEL_SITES = ['AU-Boy', 'AU-Col', 'AU-Cum', 'AU-GWW', 'AU-Gin', 'ES-TzM',
+                          'US-NC1', 'BE-Bra', 'CD-Ygb', 'CZ-Lnz', 'IT-Cp2']
 
 
 def site_stats(variant=''):
@@ -509,6 +521,12 @@ def robustness_rows(sweep):
         keep = base.loc[~region_of.isin(drop)]
         rows.append(('Site set', label, *threshold_with_ci(keep, seed=len(drop) + 10), None))
 
+    missing = sorted(set(VEGETATION_LABEL_SITES) - set(base.index))
+    assert not missing, f"vegetation label sites not in the run: {missing}"
+    keep = base.loc[~base.index.isin(VEGETATION_LABEL_SITES)]
+    rows.append(('Site set', 'Inconsistent vegetation labels removed',
+                 *threshold_with_ci(keep, seed=30), None))
+
     years = subsets['N_YEARS']
     for min_years in (3, 5, 10):
         keep = base.loc[base.index.isin(years[years >= min_years].index)]
@@ -526,6 +544,38 @@ def robustness_rows(sweep):
     return out, loo
 
 
+def vegetation_label_check(sites):
+    """The threshold and the Stage 8 effects with and without the given sites, for all sites
+    and per forest type.
+
+    The threshold uses the estimator of the robustness rows. The Stage 8 values are
+    cross-site means of the per-site mean SHAP values, as in Fig. 3, over the sites with
+    Stage 8 records, with the number of these sites that have a negative VPD effect."""
+    base = site_curves()
+    igbp = subsets['IGBP'].reindex(base.index)
+    df = pd.read_parquet(dir_out / f'44_SHAPVALUES-{shap_type}_AggregatedAcrossScenarios_{FLUX}.parquet')
+    s8 = df.loc[df['SCENARIO'] == 8].set_index('SITE')
+    s8 = s8.dropna(subset=['VPD_ZSCORE_SHAPVALS_OVR_AVG'])
+    out = []
+    for group in ['All sites', 'ENF', 'DBF', 'MF', 'EBF']:
+        curves = base if group == 'All sites' else base.loc[igbp == group]
+        stage8 = s8 if group == 'All sites' else s8.loc[s8['IGBP'] == group]
+        dropped = [s for s in sites if s in curves.index]
+        row = {'group': group, 'sites_removed': ' '.join(dropped)}
+        for tag, c, s in [('all', curves, stage8),
+                          ('without', curves.drop(dropped), stage8.drop(dropped, errors='ignore'))]:
+            _, kpa, lo, hi, *_ = threshold_with_ci(c, seed=30)
+            vpd, sm = s['VPD_ZSCORE_SHAPVALS_OVR_AVG'], s['SWC_ZSCORE_SHAPVALS_OVR_AVG']
+            row.update({f'n_sites_{tag}': len(c), f'threshold_kpa_{tag}': kpa,
+                        f'lower_{tag}': lo, f'upper_{tag}': hi,
+                        f'stage8_n_sites_{tag}': len(s), f'stage8_vpd_{tag}': vpd.mean(),
+                        f'stage8_sm_{tag}': sm.mean(),
+                        f'stage8_net_{tag}': s['NET_SHAPVALS_OVR_AVG'].mean(),
+                        f'stage8_n_vpd_negative_{tag}': int((vpd < 0).sum())})
+        out.append(row)
+    return pd.DataFrame(out)
+
+
 def main():
     sweep = estimator_sweep()
     sweep_file = dir_out / f'47_THRESHOLD_EstimatorSweep_{FLUX}.csv'
@@ -538,6 +588,10 @@ def main():
     loo_file = dir_out / f'47_THRESHOLD_LeaveOneSiteOut_{FLUX}.csv'
     loo.to_frame().to_csv(loo_file)
 
+    veg = vegetation_label_check(VEGETATION_LABEL_SITES)
+    veg_file = dir_out / f'47_INFO_VegetationLabels_{FLUX}.csv'
+    veg.to_csv(veg_file, index=False)
+
     ref = out.loc[out['test'] == 'PUBLISHED REFERENCE'].iloc[0]
     print()
     print(out.round(3).to_string(index=False))
@@ -549,6 +603,9 @@ def main():
     print(f"Saved {sweep_file}")
     print(f"Saved {rows_file}")
     print(f"Saved {loo_file}")
+    print("\nWith and without the sites with inconsistent vegetation labels:")
+    print(veg.round(3).T.to_string(header=False))
+    print(f"Saved {veg_file}")
 
 
 if __name__ == '__main__':

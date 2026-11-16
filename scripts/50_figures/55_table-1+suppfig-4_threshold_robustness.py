@@ -79,7 +79,7 @@ outfile = folder / f'55_SUPPFIG-4_ThresholdRobustness_{FLUX}.png'
 # absolute kPa, the value and its interval are printed, and the table half mirrors
 # main-text Table 1 so the two read as one argument.
 #
-# One blue throughout. Coloring the movers red made the eye go to two rows out of eighteen
+# One blue throughout. Coloring the movers red made the eye go to two rows out of nineteen
 # and read them as failures, which is the opposite of what the figure says.
 
 SHORT = {
@@ -92,6 +92,7 @@ SHORT = {
     'Mean instead of median per bin': 'Mean per bin',
     'Threshold estimator, 23 settings': 'Estimator, 23 settings',
     'Europe and North America removed': 'Europe and N. America removed',
+    'Inconsistent vegetation labels removed': 'Vegetation label conflicts removed',
     'Records of at least 3 years': 'Records ≥ 3 years',
     'Records of at least 5 years': 'Records ≥ 5 years',
     'Records of at least 10 years': 'Records ≥ 10 years',
@@ -212,7 +213,7 @@ ref = out.loc[out['test'] == 'PUBLISHED REFERENCE'].iloc[0]
 tests = out.loc[out['test'] != 'PUBLISHED REFERENCE'].copy()
 
 # Fifteen tests for the main table, all but the estimator sweep and the 3 and 5 year record
-# minimums. The figure keeps all eighteen.
+# minimums. The figure keeps all nineteen.
 # The full set is too many for a main display item, and the reason is redundancy: three
 # record-length rows make one point, and each matched pair is a two-row argument about one
 # comparison. The four largest movers stay (the ten-year records, the five-or-more-depths pair and North America), so the
