@@ -117,37 +117,71 @@ def sigmoid(x, x_start, x_end, y_start, y_end):
 
 
 # What each stage holds, as printed above the bars of the stage figures. One entry per
-# stage sequence of src/stages.py. "non-extreme" marks the driver that is only kept off
-# its extreme cut-off until the last stage: VPD in the main order ('published'), soil
-# water in the mirrored one.
+# stage sequence of src/stages.py. "not extremely dry" marks the driver that is only kept
+# below its extreme cut-off until the last stage, with no lower limit: VPD in the main order
+# ('published'), soil water in the mirrored one. Neighboring stages with the same label are
+# printed once, in one box over the stages (draw_panel). The fill of the box shows the
+# degree, from an empty box for normal conditions to a dark fill for extreme ones.
 STAGE_CONDITIONS = {
     'published': {
         'VPD_ZSCORE':
-            ['moderate', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme',
-             'non-extreme', '↑↑↑ extreme'],
+            ['normal', 'not extremely dry', 'not extremely dry', 'not extremely dry',
+             'not extremely dry', 'not extremely dry', 'not extremely dry', 'extremely dry'],
         'TA_ZSCORE':
-            ['moderate', '↑ high', '↑ high', '↑↑ very high', '↑↑ very high', '↑↑↑ extreme',
-             '↑↑↑ extreme', '↑↑↑ extreme'],
+            ['normal', 'relatively hot', 'relatively hot', 'very hot', 'very hot',
+             'extremely hot', 'extremely hot', 'extremely hot'],
         'SWC_ZSCORE':
-            ['moderate', 'moderate', '↓ low', '↓ low', '↓↓ very low', '↓↓ very low',
-             '↓↓↓ extreme', '↓↓↓ extreme'],
+            ['normal', 'normal', 'relatively dry', 'relatively dry', 'very dry', 'very dry',
+             'extremely dry', 'extremely dry'],
         'SWIN_ZSCORE':
             ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'all'],
     },
     'mirrored': {
         'VPD_ZSCORE':
-            ['moderate', 'moderate', '↑ high', '↑ high', '↑↑ very high', '↑↑ very high',
-             '↑↑↑ extreme', '↑↑↑ extreme'],
+            ['normal', 'normal', 'relatively dry', 'relatively dry', 'very dry', 'very dry',
+             'extremely dry', 'extremely dry'],
         'TA_ZSCORE':
-            ['moderate', '↑ high', '↑ high', '↑↑ very high', '↑↑ very high', '↑↑↑ extreme',
-             '↑↑↑ extreme', '↑↑↑ extreme'],
+            ['normal', 'relatively hot', 'relatively hot', 'very hot', 'very hot',
+             'extremely hot', 'extremely hot', 'extremely hot'],
         'SWC_ZSCORE':
-            ['moderate', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme', 'non-extreme',
-             'non-extreme', '↓↓↓ extreme'],
+            ['normal', 'not extremely dry', 'not extremely dry', 'not extremely dry',
+             'not extremely dry', 'not extremely dry', 'not extremely dry', 'extremely dry'],
         'SWIN_ZSCORE':
             ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'all'],
     },
 }
+
+
+# Fill opacity of a condition box per degree: normal or unrestricted, relatively, very,
+# extremely.
+CONDITION_FILL = [0.0, 0.25, 0.6, 1.0]
+
+
+# Conditions without a lower limit: SW is not restricted at all, and the driver that is only
+# kept below its extreme cut-off can take any lower value. Drawn as dashed empty boxes.
+UNBOUNDED_CONDITIONS = ('all', 'not extremely dry')
+
+
+def condition_level(label):
+    """Degree of a condition label, 0 to 3, as used for the box fill."""
+    if label.startswith('extremely'):
+        return 3
+    if label.startswith('very'):
+        return 2
+    if label.startswith('relatively'):
+        return 1
+    return 0  # normal, all, not extremely dry
+
+
+def label_runs(labels):
+    """Group neighboring equal labels: [(label, first index, last index), ...]."""
+    runs = []
+    for i, label in enumerate(labels):
+        if runs and runs[-1][0] == label:
+            runs[-1] = (label, runs[-1][1], i)
+        else:
+            runs.append((label, i, i))
+    return runs
 
 
 def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stage_labels,
@@ -269,30 +303,8 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
             ax.text(cx, y_n_label, f"n={current_n}",
                     ha='center', va='top', fontsize=fs_tick, color='black')
 
-            # 3. Condition Boxes (Start drawing below the 'n=...' text)
-            # Use exactly 0.04 here for the top of the boxes
-            top_y_boxes = y_n_label - (y_range * 0.04)
-
-            for var_idx, var in enumerate(vars):
-                # Stack downwards
-                box_y = top_y_boxes - (var_idx * box_height) - box_height
-
-                color = palette[var]
-                symbol = scenario_symbols[var][i]
-
-                # Draw Rectangle
-                rect = plt.Rectangle(
-                    (cx - (box_width / 2), box_y), box_width, box_height,
-                    facecolor=color, alpha=0, edgecolor=color,
-                    lw=1, zorder=99, clip_on=False)
-                ax.add_patch(rect)
-
-                # Add Symbol Text
-                if symbol:
-                    fs = 12
-                    ax.text(cx, box_y + (box_height / 2), symbol,
-                            ha='center', va='center', fontsize=fs,
-                            fontweight='bold', color=color, zorder=100)
+            # 3. The condition rows are drawn after this loop, because one label can span
+            # several stages.
 
         # Site counts for small panels
         if is_small:
@@ -315,7 +327,7 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
         y_n_label = y_scen_label - (y_range * 0.03)
 
         # Note: Changed from 0.02 to 0.04 to match the loop above EXACTLY
-        top_y_boxes = y_n_label - (y_range * 0.04)
+        top_y_boxes = y_n_label - (y_range * 0.035)
 
         var_display_names = {
             'VPD_ZSCORE': 'VPD conditions   ',
@@ -331,9 +343,50 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
         for var_idx, var in enumerate(vars):
             box_y = top_y_boxes - (var_idx * box_height) - box_height
             label_text = var_display_names.get(var, var)
-            ax.text(x_centers[0] - (bar_width * 0.5) - 0.1, box_y + (box_height / 2),
-                    label_text, ha='right', va='center', fontsize=12,
+            # Ends just left of the first condition box, which starts half a stage left of
+            # the first bar center.
+            ax.text(x_centers[0] - 0.5 - 0.06, box_y + (box_height / 2),
+                    label_text, ha='right', va='center_baseline', fontsize=12,
                     fontweight='bold', color=palette[var], zorder=100)
+
+        # Condition rows: one rounded box per run of neighboring stages with the same
+        # condition, from the left to the right edge of the stage columns it covers, with the
+        # label centered. The fill darkens with the degree of the condition (condition_level).
+        scenario_symbols = stage_conditions or STAGE_CONDITIONS['published']
+        # Rounded corners need the same radius in both directions on paper, so the patch is
+        # told how many y units one x unit corresponds to on the page.
+        pos = ax.get_position()
+        fig_w, fig_h = ax.figure.get_size_inches()
+        x_lo, x_hi = x_centers[0] - 2, x_centers[-1] + 0.5  # as set_xlim below
+        x_per_inch = (x_hi - x_lo) / (fig_w * pos.width)
+        y_per_inch = y_range / (fig_h * pos.height)
+        aspect = y_per_inch / x_per_inch
+        gap = 0.025  # free space between neighboring boxes, in stage units
+        rect_h = box_height * 0.78
+        radius = rect_h * 0.30 / aspect
+        for var_idx, var in enumerate(vars):
+            box_y = top_y_boxes - (var_idx * box_height) - box_height
+            color = palette[var]
+            for label, first, last in label_runs(scenario_symbols[var]):
+                if not label:
+                    continue
+                x0 = x_centers[first] - 0.5 + gap
+                x1 = x_centers[last] + 0.5 - gap
+                level = condition_level(label)
+                ax.add_patch(mpatches.FancyBboxPatch(
+                    (x0, box_y + (box_height - rect_h) / 2), x1 - x0, rect_h,
+                    boxstyle=f"round,pad=0,rounding_size={radius}", mutation_aspect=aspect,
+                    facecolor=mcolors.to_rgba(color, CONDITION_FILL[level]),
+                    edgecolor=color, linewidth=1.0, zorder=99, clip_on=False,
+                    # Dashed outline: no lower limit, unlike the solid empty box of "normal"
+                    linestyle=(0, (3, 2)) if label in UNBOUNDED_CONDITIONS else '-'))
+                # White text on the darkest fill, a darker shade of the row color on all other
+                # boxes. The plain row color is too light on white for the yellow and pink rows.
+                text_color = ('white' if level == 3 else
+                              mcolors.to_hex(0.55 * np.array(mcolors.to_rgb(color))))
+                ax.text((x0 + x1) / 2, box_y + (box_height / 2), label,
+                        ha='center', va='center_baseline', fontsize=11, fontweight='bold',
+                        color=text_color, zorder=100, clip_on=False)
 
     # Draw ribbons
     for i in range(len(stage_ids) - 1):
@@ -389,7 +442,8 @@ def draw_panel(ax, df, title, fixed_ylim, show_stage_labels, vars, palette, stag
     ax.set_ylim(fixed_ylim)
 
     if not is_small:
-        ax.set_xlim(x_centers[0] - 2, x_centers[-1] + 0.3)
+        # Half a stage right of the last bar center, where the last condition box ends.
+        ax.set_xlim(x_centers[0] - 2, x_centers[-1] + 0.5)
     else:
         ax.set_xlim(x_centers[0] - 0.4, x_centers[-1] + 0.3)
 
