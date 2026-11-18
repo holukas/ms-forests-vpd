@@ -58,7 +58,7 @@ website:
   page-footer:
     left: "Lukas Hörtnagl, ETH Zurich"
     # Code version of the paper, the same as version in CITATION.cff: change both together
-    center: "[Version v2-revised](https://github.com/holukas/ms-forests-vpd/tree/v2-revised)"
+    center: "[Version v3-revised](https://github.com/holukas/ms-forests-vpd/tree/v3-revised)"
     right: "GPL-3.0-or-later"
 
 format:
