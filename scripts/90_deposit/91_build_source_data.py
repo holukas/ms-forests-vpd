@@ -104,7 +104,7 @@ The data behind every figure, table and Supplementary Data file of the paper, on
 files per item, named after the display item. Each file is a copy of an output of the
 analysis pipeline (code: https://github.com/holukas/ms-forests-vpd), written by the
 script whose number starts the source file name. The deposit in the ETH Research
-Collection (https://doi.org/10.3929/ethz-c-000798579) holds the same outputs together with
+Collection (https://doi.org/10.3929/ethz-c-000808957) holds the same outputs together with
 every earlier step and the sensitivity runs. Column names follow the pipeline; the legend
 of each display item gives the units. License: CC BY 4.0.
 

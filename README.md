@@ -3,7 +3,7 @@
 Code for the paper *An atmospheric dryness threshold limits daytime net CO<sub>2</sub> uptake in
 forests* by Lukas Hörtnagl and coauthors, submitted to Nature Communications. The outputs
 of the analysis and a snapshot of this code are deposited in the ETH Research Collection:
-<https://doi.org/10.3929/ethz-c-000798579>.
+<https://doi.org/10.3929/ethz-c-000808957>.
 
 The code analyzes the effects of vapor pressure deficit (VPD) and soil water content (SWC)
 on daytime net ecosystem production (NEP) at 208 forest eddy covariance sites. Each site
@@ -98,7 +98,7 @@ or by adding `DATA_ROOT` to `config/settings.local.yaml`. The folder is expected
 contain `data/00_raw/` and `data/outputs/`. [`docs/data.qmd`](docs/data.qmd) describes the
 layout and where the FLUXNET source datasets come from.
 
-The deposit in the ETH Research Collection (<https://doi.org/10.3929/ethz-c-000798579>)
+The deposit in the ETH Research Collection (<https://doi.org/10.3929/ethz-c-000808957>)
 holds one archive per output stage, from the site tables and per-site subsets through the models and SHAP
 values to the aggregated outputs behind every figure and table. Unpacked into
 `data/outputs/`, the archives let everything from `30_shap` onward run without the raw source
@@ -189,7 +189,7 @@ Hörtnagl, L. (2026). ms-forests-vpd: analysis code for atmospheric dryness and 
 CO<sub>2</sub> uptake (version v2-revised). <https://github.com/holukas/ms-forests-vpd>
 
 The data and code deposit is in the ETH Research Collection:
-<https://doi.org/10.3929/ethz-c-000798579>. [`CITATION.cff`](CITATION.cff) holds the same
+<https://doi.org/10.3929/ethz-c-000808957>. [`CITATION.cff`](CITATION.cff) holds the same
 reference, and GitHub shows it under "Cite this repository". The paper reference will be added
 when the paper is published.
 

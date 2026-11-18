@@ -80,7 +80,7 @@ The networks distribute these files under CC BY 4.0.
 ## Deposited outputs
 
 The analysis outputs are deposited in the ETH Research Collection:
-<https://doi.org/10.3929/ethz-c-000798579>. The deposit holds:
+<https://doi.org/10.3929/ethz-c-000808957>. The deposit holds:
 
 - one zip archive per output stage, `ms-forests-vpd_outputs_<stage>.zip` (`10_datasets`,
   `20_subsets`, `30_shap`, `40_aggregation`, `50_plots`, `80_info`), with paths relative
@@ -124,5 +124,7 @@ Only scripts `16` and `16a` to `16d`, which rebuild the climate normals, need th
 - Copernicus Climate Data Store (`16`, `16c`, `16d`): a CDS account and an API key in
   `~/.cdsapirc`. Requests are queued server-side and can take hours.
 
-Script `17` reads only the ERA5-Land output of `16c` and `16d` and stops if the file of a
-site is missing. Scripts `16`, `16a` and `16b` are legacy (see [Methods](methods.qmd#era5-climate-normals)).
+Script `17` takes MAT and MAP from the ERA5 file of the flux product where it is usable,
+otherwise from the ERA5-Land files of `16c` and `16d`. It reads the ERA5-Land file of every
+site and stops if one is missing. Scripts `16`, `16a` and `16b` are legacy (see
+[Methods](methods.qmd#era5-climate-normals)).

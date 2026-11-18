@@ -404,13 +404,15 @@
     "outputs/20_subsets/21_SUBSETS_parquet_vars_stats_subsets.csv",
     "outputs/40_aggregation/41_SHAPVALUES meanAggregatedPerSite (per grid)",
     "outputs/40_aggregation/42_SHAPVALUES AggregatedAcrossSites (per grid)",
+    "outputs/40_aggregation/44_SHAPVALUES AggregatedAcrossScenarios",
     "outputs/40_aggregation/46_ALE_Thresholds"
    ],
    "writes": [
     "outputs/40_aggregation/47_THRESHOLD_Robustness",
-    "outputs/40_aggregation/47_THRESHOLD_EstimatorSweep + LeaveOneSiteOut"
+    "outputs/40_aggregation/47_THRESHOLD_EstimatorSweep + LeaveOneSiteOut",
+    "outputs/40_aggregation/47_INFO_VegetationLabels"
    ],
-   "note": "Reads the 21 table and the 41 TA+VPD grid of the main, deep-sm, deeper-only, no_ta and blocked-cv runs.",
+   "note": "Reads the 21 table and the 41 TA+VPD grid of the main, deep-sm, deeper-only, no_ta and blocked-cv runs, and the 44 stage table of the main run for the vegetation label check.",
    "variants": [
     "deep-sm",
     "blocked-cv",
@@ -1351,6 +1353,13 @@
    "variants": []
   },
   {
+   "id": "outputs/40_aggregation/47_INFO_VegetationLabels",
+   "label": "47 vegetation label check",
+   "stage": "40_aggregation",
+   "glob": "40_aggregation/*/conditional/**/47_INFO_VegetationLabels_*",
+   "variants": []
+  },
+  {
    "id": "outputs/40_aggregation/48_EXCEEDANCE",
    "label": "48 threshold exceedance",
    "stage": "40_aggregation",
@@ -1463,7 +1472,7 @@
   },
   {
    "id": "outputs/50_plots/55_SUPPFIG-4",
-   "label": "Suppl. Fig. 4 all 18 tests",
+   "label": "Suppl. Fig. 4 all 19 tests",
    "stage": "50_plots",
    "note": "",
    "glob": "50_plots/*/conditional/**/55_SUPPFIG-4_*",

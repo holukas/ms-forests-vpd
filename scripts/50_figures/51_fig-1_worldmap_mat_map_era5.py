@@ -2,7 +2,8 @@
 Figure 1: site map and the climate space of the sites.
 
 Reads `17_datasets_info_parquet_vars_stats_usedsites_era5.csv` for the ERA5 mean annual
-temperature and precipitation and the stage 21 subsets table for the site counts.
+temperature and precipitation and the stage 21 subsets table for the counts of sites and
+site-years.
 Writes `51_FIG-1_WorldMap_MAT_MAP_ERA5.png` and `_DATA.csv` with site, forest type, position,
 climate and the source of each MAT and MAP value.
 """
@@ -178,24 +179,31 @@ def plot_map_region(ax, extent=None, title="", letter="", is_main_map=False):
 # 5. PLOT THE MAPS (Left Panels)
 # ---------------------------------------------------------
 # Global map adjusted to align with the aspect ratio of the subpanels below
-plot_map_region(ax_world, extent=[-180, 180, -60, 85], title=f'Global forest sites in this study (n={n_sites_total})',
+plot_map_region(ax_world, extent=[-180, 180, -60, 85],
+                title=f'Global forest sites in this study ({n_sites_total} sites, '
+                      f'{int(n_years_counted):,} site-years)',
                 letter='a', is_main_map=True)
 
-# Legend under the map. Short labels only: the site-year counts and the percentages go in
-# the figure caption instead.
-# Explicit handles, so the legend follows IGBP_ORDER and not the drawing order.
+# Legend under the map, with sites and site-years per forest type. The percentages are in
+# the figure caption.
+# Explicit handles, so the legend follows IGBP_ORDER and not the drawing order. The labels
+# are too long for one row, and a two-column legend fills column by column. The handles are
+# therefore listed as ENF, MF, DBF, EBF, which reads ENF, DBF in the first row and MF, EBF in
+# the second.
+LEGEND_ORDER = IGBP_ORDER[0::2] + IGBP_ORDER[1::2]
 legend_handles = [
     Line2D([], [], linestyle='none', marker=igbp_markers[igbp]['marker'],
            markerfacecolor=igbp_markers[igbp]['color'],
            markeredgecolor=igbp_markers[igbp]['edgecolor'], markeredgewidth=0.8,
            markersize=11,
-           label=f"{igbp} (n={counts.loc[igbp, 'n_sites']})")
-    for igbp in IGBP_ORDER
+           label=f"{igbp}: {counts.loc[igbp, 'n_sites']} sites, "
+                 f"{int(counts.loc[igbp, 'n_years']):,} site-years")
+    for igbp in LEGEND_ORDER
 ]
 # Anchored to the map rather than given its own row. The map is aspect-locked, so its cell
 # is taller than the map itself, and the leftover height should sit under the legend as an
 # ordinary margin rather than as a hole between the map and the legend.
-ax_world.legend(handles=legend_handles, loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=4,
+ax_world.legend(handles=legend_handles, loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=2,
                 fontsize=AX_LABELS_FONTSIZE, frameon=False, columnspacing=2.5,
                 handletextpad=0.6)
 

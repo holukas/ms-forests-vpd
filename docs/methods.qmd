@@ -107,26 +107,27 @@ broadleaf sites have a usable deeper layer.
 
 ## Stress stages
 
-`src/stages.py` defines nine record subsets on z-scores. The cut-offs are 0.319 (middle
-25 percent), 0.714 (middle 52.5 percent) and 1.282 (outer 10 percent) of a standard normal.
+`src/stages.py` defines nine record subsets on z-scores. The cut-offs on |z| are 0.319,
+0.714 and 1.282. They are percentiles of a standard normal distribution, not of the site
+data: the middle 25 percent, the middle 52.5 percent and the outer 10 percent on each side.
 
 | Stage | Condition |
 |-------|-----------|
 | 0 | all records |
-| 1 | TA, VPD and SWC within the middle 25 percent |
-| 2 | warm, soil moisture normal, VPD not extreme |
-| 3 | warm, dry soil, VPD not extreme |
-| 4 | hot, dry soil, VPD not extreme |
-| 5 | hot, very dry soil, VPD not extreme |
-| 6 | extremely hot, very dry soil, VPD not extreme |
-| 7 | extremely hot, extremely dry soil, VPD not extreme |
+| 1 | normal conditions: TA, VPD and SWC within ±0.319σ |
+| 2 | relatively hot, soil moisture normal, air not extremely dry |
+| 3 | relatively hot, relatively dry soil, air not extremely dry |
+| 4 | very hot, relatively dry soil, air not extremely dry |
+| 5 | very hot, very dry soil, air not extremely dry |
+| 6 | extremely hot, very dry soil, air not extremely dry |
+| 7 | extremely hot, extremely dry soil, air not extremely dry |
 | 8 | extremely hot, extremely dry soil, extremely dry air |
 
 Standardization does not make the drivers Gaussian. Script 87 measures the empirical
 share of records below each cut-off. At the median site, this share is within six
 percentage points of the Gaussian share, and within 2.2 at the Stage 8 cut-offs. The
 stages do not constrain shortwave radiation, which rises from 0.34σ at Stage 1 to 0.65σ
-at Stage 8 (script 45). The sequence is not a factorial design. Three tests address
+at Stage 8 (script 45). The sequence is not a factorial design. Three checks address
 this: the mirrored stage order, the matched records and the factorial cells.
 
 ### Stage order
@@ -167,8 +168,8 @@ contributes 0.03σ through the TA attribution.
 ### Factorial cells
 
 `FACTORIAL_CELLS` in `src/stages.py` crosses four soil water classes with four VPD
-classes, at the same cut-offs as the stages. TA is unconstrained. Class 0 is the middle
-25 percent. Classes 1 to 3 step toward stress at 0.714 and 1.282, downward for soil water
+classes, at the same cut-offs as the stages. TA is unconstrained. Class 0 is |z| within
+0.319, as in Stage 1. Classes 1 to 3 step toward stress at 0.714 and 1.282, downward for soil water
 and upward for VPD. Records with wet soil or low VPD fall in no cell. Script 44 with
 `STAGE_SEQUENCE = "factorial"` aggregates the sixteen cells into its own
 `factorial-cells/` folder. Script 69 writes Supplementary Table 10. For each cell, it

@@ -620,14 +620,14 @@ Columns of the naming scheme: `BIN_{VAR}_ZSCORE` (median), `{VAR}_ZSCORE` (mean,
 
 One site and one stress stage (9 stages per site, 16 factorial cells per site in factorial-cells/)
 
-Per-site rows only. Stage statistics {COL}_* are taken over the records of the site that fall in the stage, for every column of the per-site SHAP file, measured variables and z-scores included. The entries EXPECTED, SUM and SUM+EXPECTED below describe the base of their {COL}_* columns. Stages are masks on TA_ZSCORE, VPD_ZSCORE and SWC_ZSCORE with cuts a = 0.3186 (middle 25 percent of a normal distribution), b = 0.7144 and c = 1.2816 (10th and 90th percentile). Main sequence: 0 all data, 1 all three drivers within plus or minus a, 2 warm, 3 warm and dry soil, 4 hot and dry soil, 5 hot and very dry soil, 6 extremely hot and very dry soil, 7 extremely hot and extremely dry soil, stages 2 to 7 with VPD_ZSCORE at most c, 8 compound extreme with TA and VPD above c and SWC below -c. mirrored-stages/ swaps the roles of VPD and soil water, factorial-cells/ crosses 4 soil water classes with 4 VPD classes and leaves TA free. Across-site stage summaries (mean of site means, sem, and a total SD by the law of total variance, sqrt of the mean of within-site variances plus the ddof 0 variance of site means) are computed on the fly by calculate_stage_stats in src/stages.py for the figures and are not stored here.
+Per-site rows only. Stage statistics {COL}_* are taken over the records of the site that fall in the stage, for every column of the per-site SHAP file, measured variables and z-scores included. The entries EXPECTED, SUM and SUM+EXPECTED below describe the base of their {COL}_* columns. Stages are masks on TA_ZSCORE, VPD_ZSCORE and SWC_ZSCORE with cuts a = 0.3186 (middle 25 percent of a standard normal distribution), b = 0.7144 and c = 1.2816 (10th and 90th percentile of a standard normal distribution), not empirical percentiles of the site. Main sequence, with the labels of Fig. 3: 0 all data, 1 normal (all three drivers within plus or minus a), 2 relatively hot, 3 relatively hot and relatively dry soil, 4 very hot and relatively dry soil, 5 very hot and very dry soil, 6 extremely hot and very dry soil, 7 extremely hot and extremely dry soil, stages 2 to 7 with VPD_ZSCORE at most c (air not extremely dry), 8 compound extreme with TA and VPD above c and SWC below -c. mirrored-stages/ swaps the roles of VPD and soil water, factorial-cells/ crosses 4 soil water classes with 4 VPD classes and leaves TA free. Across-site stage summaries (mean of site means, sem, and a total SD by the law of total variance, sqrt of the mean of within-site variances plus the ddof 0 variance of site means) are computed on the fly by calculate_stage_stats in src/stages.py for the figures and are not stored here.
 
 | Column | Description |
 |---|---|
 | `SITE` | Site code |
 | `IGBP` | IGBP forest type of the site |
 | `SCENARIO` | Stage number within the sequence, 0 to 8 (factorial: cell number 0 to 15, 4 times SWC_CLASS plus VPD_CLASS) |
-| `CONDITION` | Text label of the stage, not unique (stages 5, 6 and 7 are all labeled hot and driest), use SCENARIO as key |
+| `CONDITION` | Short internal tag of the stage from src/stages.py, not unique (stages 5, 6 and 7 are all tagged hot and driest), use SCENARIO as key. The figures and the manuscript use the condition labels of Fig. 3 (STAGE_CONDITIONS in src/plot.py) |
 | `N_VALUES` | Number of records of the site in the stage (count), statistics are NaN when 0 |
 | `TA_CLASS` | Temperature class of the stage, -1 unrestricted, 0 within plus or minus a, 1 above a up to b, 2 above b up to c, 3 above c |
 | `VPD_CLASS` | VPD class of the stage, 0 within plus or minus a, 1 above a up to b, 2 above b up to c, 3 above c, -1 unrestricted in stage 0 and only kept at or below c in stages 2 to 7 |
@@ -713,7 +713,7 @@ Source Data: `SupplementaryFig4.csv`.
 
 One row per robustness test of the VPD threshold, plus a final PUBLISHED REFERENCE row
 
-csv in 40_aggregation/NEP_ZSCORE/conditional. Estimator of every row unless stated: highest positive to negative crossing of a fourth-order polynomial fitted to the cross-site median VPD SHAP per TA by VPD bin cell (stage 41 per-site cell means, cells held by at least half the row's sites), as for Figure 4. Rows differ in data (soil water depth runs, no_ta, blocked-cv), in site set (regions removed, minimum record length, matched sites) or in estimator (mean per bin, GAM, ALE, estimator sweep). σ to kPa: kPa = (mean of VPD_Z0 + z times mean of VPD_SD, both over the sites of the row) / 10, with the stage 21 site table of the run behind the row (deep-sm rows use the deep-sm table, no_ta and blocked-cv their own, all others the main run table), CD-Ygb VPD divided by 100 from Pa to hPa. Each row has two intervals in kPa: lower and upper, the crossings of the 95% prediction band of the fit (src.fit, for the GAM row the band of the spline), shown in the display items, and boot_lower and boot_upper, the 2.5th and 97.5th percentiles of the crossing over 2000 resamples of sites with replacement. lower_sigma and upper_sigma are lower and upper in σ. The three rows with a note hold another interval in all four kPa columns: ALE instead of SHAP the 95% confidence interval of the mean of per-site ALE crossings (46_ALE_Thresholds), Threshold estimator and Any one site removed the minimum and maximum over the sweep settings or the removals. An interval bound is NaN if the corresponding curve does not cross zero.
+csv in 40_aggregation/NEP_ZSCORE/conditional. Estimator of every row unless stated: highest positive to negative crossing of a fourth-order polynomial fitted to the cross-site median VPD SHAP per TA by VPD bin cell (stage 41 per-site cell means, cells held by at least half the row's sites), as for Figure 4. Rows differ in data (soil water depth runs, no_ta, blocked-cv), in site set (regions removed, sites with inconsistent vegetation labels, minimum record length, matched sites) or in estimator (mean per bin, GAM, ALE, estimator sweep). σ to kPa: kPa = (mean of VPD_Z0 + z times mean of VPD_SD, both over the sites of the row) / 10, with the stage 21 site table of the run behind the row (deep-sm rows use the deep-sm table, no_ta and blocked-cv their own, all others the main run table), CD-Ygb VPD divided by 100 from Pa to hPa. Each row has two intervals in kPa: lower and upper, the crossings of the 95% prediction band of the fit (src.fit, for the GAM row the band of the spline), shown in the display items, and boot_lower and boot_upper, the 2.5th and 97.5th percentiles of the crossing over 2000 resamples of sites with replacement. lower_sigma and upper_sigma are lower and upper in σ. The three rows with a note hold another interval in all four kPa columns: ALE instead of SHAP the 95% confidence interval of the mean of per-site ALE crossings (46_ALE_Thresholds), Threshold estimator and Any one site removed the minimum and maximum over the sweep settings or the removals. An interval bound is NaN if the corresponding curve does not cross zero.
 
 | Column | Description |
 |---|---|
@@ -748,6 +748,38 @@ Two csv files in 40_aggregation/NEP_ZSCORE/conditional. EstimatorSweep refits th
 | `note` | EstimatorSweep: published choice for the quartic, number of bins for bin width rows, number of TA by VPD cells kept for fitting range rows, otherwise empty |
 | `site_removed` | LeaveOneSiteOut: FLUXNET site ID of the site left out, written index |
 | `threshold_kpa` | LeaveOneSiteOut: threshold in kPa from the remaining sites, converted with their mean VPD and standard deviation (main run site table) |
+
+
+### 47 vegetation label check
+
+`40_aggregation/*/conditional/**/47_INFO_VegetationLabels_*` (1 file)
+
+One row per group: All sites and the forest types ENF, DBF, MF, EBF
+
+csv in 40_aggregation/NEP_ZSCORE/conditional. The VPD threshold and the Stage 8 effects with and without the eleven sites whose vegetation class differs between metadata sources or changed during the record (VEGETATION_LABEL_SITES in script 47). The threshold uses the estimator and the 95% prediction band of the robustness rows, in kPa with the site set of the column. Stage 8 values are cross-site means of the per-site mean SHAP values of stage 44 (scenario 8), equal weight per site, over the sites with Stage 8 records, in σ of NEP. Columns ending in _all use all sites of the group, columns ending in _without leave the listed sites out.
+
+| Column | Description |
+|---|---|
+| `group` | All sites or IGBP forest type |
+| `sites_removed` | The sites of the list that belong to the group, separated by spaces |
+| `n_sites_all` | Number of sites of the group in the threshold fit |
+| `threshold_kpa_all` | VPD threshold of the group in kPa |
+| `lower_all` | Lower bound of the 95% prediction band of the threshold, kPa |
+| `upper_all` | Upper bound of the 95% prediction band of the threshold, kPa |
+| `stage8_n_sites_all` | Number of sites of the group with Stage 8 records |
+| `stage8_vpd_all` | Mean across sites of the Stage 8 VPD effect, σ of NEP |
+| `stage8_sm_all` | Mean across sites of the Stage 8 SM effect, σ of NEP |
+| `stage8_net_all` | Mean across sites of the Stage 8 net effect, the sum of the four drivers, σ of NEP |
+| `stage8_n_vpd_negative_all` | Number of sites with Stage 8 records and a negative Stage 8 VPD effect |
+| `n_sites_without` | As n_sites_all, without the listed sites |
+| `threshold_kpa_without` | As threshold_kpa_all, without the listed sites |
+| `lower_without` | As lower_all, without the listed sites |
+| `upper_without` | As upper_all, without the listed sites |
+| `stage8_n_sites_without` | As stage8_n_sites_all, without the listed sites |
+| `stage8_vpd_without` | As stage8_vpd_all, without the listed sites |
+| `stage8_sm_without` | As stage8_sm_all, without the listed sites |
+| `stage8_net_without` | As stage8_net_all, without the listed sites |
+| `stage8_n_vpd_negative_without` | As stage8_n_vpd_negative_all, without the listed sites |
 
 
 ### 48 threshold exceedance
@@ -1003,9 +1035,9 @@ Source Data of Supplementary Table 7. Same fits as the Fig. 4 coefficient file, 
 
 Source Data: `Table1.csv`.
 
-One row for the main analysis, then one row per test shown in Table 1 (15 of the 18 tests), with sub-header rows for the test groups
+One row for the main analysis, then one row per test shown in Table 1 (15 of the 19 tests), with sub-header rows for the test groups
 
-Source Data of Table 1. Formatted table built from 40_aggregation 47_THRESHOLD_Robustness_NEP_ZSCORE.csv, which holds the unformatted numbers of all 18 tests. Rows 'Soil water depth', 'Model fitting' and 'Site set' are group headers with empty cells. Values are text 't [lo, hi]': lo and hi are the 95% prediction band of the fit, except in rows marked with an asterisk, where they are the range across the leave-one-site-out removals or, for ALE, the 95% confidence interval of the mean per-site crossing. The .xlsx twin (sheet 'Table 1') is the same table for Word with the footnote under it and is not described separately
+Source Data of Table 1. Formatted table built from 40_aggregation 47_THRESHOLD_Robustness_NEP_ZSCORE.csv, which holds the unformatted numbers of all 19 tests. Rows 'Soil water depth', 'Model fitting' and 'Site set' are group headers with empty cells. Values are text 't [lo, hi]': lo and hi are the 95% prediction band of the fit, except in rows marked with an asterisk, where they are the range across the leave-one-site-out removals or, for ALE, the 95% confidence interval of the mean per-site crossing. The .xlsx twin (sheet 'Table 1') is the same table for Word with the footnote under it and is not described separately
 
 | Column | Description |
 |---|---|
