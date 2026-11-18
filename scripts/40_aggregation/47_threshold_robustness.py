@@ -8,7 +8,7 @@ bootstrap with 2000 resamples (`boot_lower`, `boot_upper`). Three rows put anoth
 interval in both, flagged in `note`: estimator sweep (spread across 23 settings),
 leave-one-site-out (range across removals) and ALE (95% interval from stage 46).
 
-Runs after stages 42 and 46 and after the deep-sm, deeper-only, blocked-cv and no_ta runs
+Runs after stages 42, 44 and 46 and after the deep-sm, deeper-only, blocked-cv and no_ta runs
 reached stage 41. Takes about two minutes.
 
 Writes (rendered by script 55):
