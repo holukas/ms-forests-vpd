@@ -700,7 +700,7 @@ products:
       positive to negative crossing of a fourth-order polynomial fitted to the cross-site median VPD SHAP
       per TA by VPD bin cell (stage 41 per-site cell means, cells held by at least half the row''s sites),
       as for Figure 4. Rows differ in data (soil water depth runs, no_ta, blocked-cv), in site set (regions
-      removed, minimum record length, matched sites) or in estimator (mean per bin, GAM, ALE, estimator
+      removed, sites with inconsistent vegetation labels, minimum record length, matched sites) or in estimator (mean per bin, GAM, ALE, estimator
       sweep). σ to kPa: kPa = (mean of VPD_Z0 + z times mean of VPD_SD, both over the sites of the row)
       / 10, with the stage 21 site table of the run behind
       the row (deep-sm rows use the deep-sm table, no_ta and blocked-cv their own, all others the main
@@ -763,6 +763,36 @@ products:
       site_removed: 'LeaveOneSiteOut: FLUXNET site ID of the site left out, written index'
       threshold_kpa: 'LeaveOneSiteOut: threshold in kPa from the remaining sites, converted with their
         mean VPD and standard deviation (main run site table)'
+  outputs/40_aggregation/47_INFO_VegetationLabels:
+    row: 'One row per group: All sites and the forest types ENF, DBF, MF, EBF'
+    note: 'csv in 40_aggregation/NEP_ZSCORE/conditional. The VPD threshold and the Stage 8 effects with
+      and without the eleven sites whose vegetation class differs between metadata sources or changed
+      during the record (VEGETATION_LABEL_SITES in script 47). The threshold uses the estimator and the
+      95% prediction band of the robustness rows, in kPa with the site set of the column. Stage 8 values
+      are cross-site means of the per-site mean SHAP values of stage 44 (scenario 8), equal weight per
+      site, over the sites with Stage 8 records, in σ of NEP. Columns ending in _all use all sites of
+      the group, columns ending in _without leave the listed sites out.'
+    columns:
+      group: All sites or IGBP forest type
+      sites_removed: The sites of the list that belong to the group, separated by spaces
+      n_sites_all: Number of sites of the group in the threshold fit
+      threshold_kpa_all: VPD threshold of the group in kPa
+      lower_all: Lower bound of the 95% prediction band of the threshold, kPa
+      upper_all: Upper bound of the 95% prediction band of the threshold, kPa
+      stage8_n_sites_all: Number of sites of the group with Stage 8 records
+      stage8_vpd_all: Mean across sites of the Stage 8 VPD effect, σ of NEP
+      stage8_sm_all: Mean across sites of the Stage 8 SM effect, σ of NEP
+      stage8_net_all: Mean across sites of the Stage 8 net effect, the sum of the four drivers, σ of NEP
+      stage8_n_vpd_negative_all: Number of sites with Stage 8 records and a negative Stage 8 VPD effect
+      n_sites_without: As n_sites_all, without the listed sites
+      threshold_kpa_without: As threshold_kpa_all, without the listed sites
+      lower_without: As lower_all, without the listed sites
+      upper_without: As upper_all, without the listed sites
+      stage8_n_sites_without: As stage8_n_sites_all, without the listed sites
+      stage8_vpd_without: As stage8_vpd_all, without the listed sites
+      stage8_sm_without: As stage8_sm_all, without the listed sites
+      stage8_net_without: As stage8_net_all, without the listed sites
+      stage8_n_vpd_negative_without: As stage8_n_vpd_negative_all, without the listed sites
   outputs/40_aggregation/48_EXCEEDANCE:
     row: 'PerSite: one row per site. PerBiome: one row per forest type (ENF, DBF, EBF, MF) plus all'
     note: 'Two csv files in 40_aggregation/NEP_ZSCORE/conditional. Counts stage 21 subset half-hours (peak-season
@@ -1013,9 +1043,9 @@ products:
         times VPD standard deviation (subset records, hPa, CD-Ygb converted from Pa), divided by 10, then
         averaged over the sites of the group'
   outputs/50_plots/55_TABLE-1:
-    row: One row for the main analysis, then one row per test shown in Table 1 (15 of the 18 tests), with sub-header rows for the test groups
+    row: One row for the main analysis, then one row per test shown in Table 1 (15 of the 19 tests), with sub-header rows for the test groups
     note: 'Source Data of Table 1. Formatted table built from 40_aggregation 47_THRESHOLD_Robustness_NEP_ZSCORE.csv,
-      which holds the unformatted numbers of all 18 tests. Rows ''Soil water depth'', ''Model fitting''
+      which holds the unformatted numbers of all 19 tests. Rows ''Soil water depth'', ''Model fitting''
       and ''Site set'' are group headers with empty cells. Values are text ''t [lo, hi]'': lo and hi are
       the 95% prediction band of the fit, except in rows marked with an asterisk, where they are the range
       across the leave-one-site-out removals or, for ALE, the 95% confidence interval of the mean per-site
