@@ -121,7 +121,7 @@ curves with 100 quantile intervals per predictor (up to 101 points) and writes `
 | `44_agg_per_scenario.py` | Computes SHAP means within the stress stages, one row per site and stage. `STAGE_SEQUENCE` is `"published"`, `"mirrored"` or `"factorial"` |
 | `45_stage_distributions.py` | Computes driver medians and quartiles within each stage, in standardized and measured units |
 | `46_ale_thresholds.py` | Puts the per-site ALE curves on one grid, takes the highest crossing from positive to negative of each and averages them, overall and per forest type |
-| `47_threshold_robustness.py` | Re-estimates the VPD threshold eighteen ways, with a bootstrap over sites, the 23-setting estimator sweep and leave-one-site-out. Feeds Table 1 |
+| `47_threshold_robustness.py` | Re-estimates the VPD threshold nineteen ways, with a bootstrap over sites, the 23-setting estimator sweep and leave-one-site-out. Feeds Table 1 |
 | `48_threshold_exceedance.py` | Computes the share of peak-season daytime half-hours above the threshold, per site and forest type |
 | `49_biome_thresholds.py` | Estimates one threshold per site (highest crossing from positive to negative) and compares forest types with Kruskal-Wallis and Holm-corrected pairwise tests |
 

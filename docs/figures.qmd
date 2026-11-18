@@ -14,7 +14,7 @@ model. Output file names contain the display item (`FIG-N`, `TABLE-N`, `SUPPFIG-
 | `52_fig-2+suppfig-1+7_flameplots.py` | Fig. 2, the VPD effect on NEP over the TA, SM and ET grids; Supplementary Fig. 1, the TA and SM effects; Supplementary Fig. 7, the flux maps. `FIGURE` selects the item | `40_aggregation/` |
 | `53_fig-3+suppfig-3_sankeyplot_shapvalues_8stages.py` | Fig. 3, driver effects across the stages; Supplementary Fig. 3 with `VARIANT = "mirrored-stages"` | `40_aggregation/` |
 | `54_fig-4+supptable-7_vpd_response_curve_shap_agg.py` | Fig. 4, the VPD response curve; Supplementary Table 7, coefficients and thresholds in σ and kPa | `40_aggregation/`, `40_aggregation/41_...`, `20_subsets/` |
-| `55_table-1+suppfig-4_threshold_robustness.py` | Table 1, fifteen of the eighteen tests; Supplementary Fig. 4, all eighteen | `40_aggregation/47_...csv` |
+| `55_table-1+suppfig-4_threshold_robustness.py` | Table 1, fifteen of the nineteen tests; Supplementary Fig. 4, all nineteen | `40_aggregation/47_...csv` |
 | `56_suppfig-2+supptable-6_scenarios_boxplot_shapsums.py` | Supplementary Fig. 2, per-site effects across the stages; Supplementary Table 6, stage means and SD | `40_aggregation/` |
 | `57_suppfig-5_ale_response_curve.py` | Supplementary Fig. 5, ALE curves | `40_aggregation/46_...` |
 | `58_suppfig-6_vpd_response_by_flux.py` | Supplementary Fig. 6, the VPD response of NEP, GPP, RECO and ET | `40_aggregation/` per flux, `20_subsets/` |
@@ -53,7 +53,7 @@ gives no bar.
 
 ## Table 1 and Supplementary Fig. 4
 
-Script 47 computes the eighteen tests and writes `47_THRESHOLD_Robustness_NEP_ZSCORE.csv`.
+Script 47 computes the nineteen tests and writes `47_THRESHOLD_Robustness_NEP_ZSCORE.csv`.
 Script 55 draws both the table and the figure from that file.
 
 | Group | Tests |
@@ -125,7 +125,7 @@ reproduced here. They are in the paper and its supplement, and their data are in
 
 ### Supplementary Fig. 4
 
-![The VPD threshold of daytime NEP under 18 tests of the soil water layer, the model fitting and the site set. Script 55.](figures/suppfig4.png)
+![The VPD threshold of daytime NEP under 19 tests of the soil water layer, the model fitting and the site set. Script 55.](figures/suppfig4.png)
 
 ### Supplementary Fig. 5
 
