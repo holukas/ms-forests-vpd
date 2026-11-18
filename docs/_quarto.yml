@@ -5,7 +5,8 @@ project:
   resources:
     - data_flow.html
 
-# Pages are written by hand and describe code that needs the full 185 GB data
+# Pages are written by hand, except columns.qmd (scripts/90_deposit/96_build_column_reference.py).
+# They describe code that needs the full 185 GB data
 # folder to run. Nothing here is executed at render time.
 execute:
   enabled: false
@@ -58,7 +59,7 @@ website:
     left: "Lukas Hörtnagl, ETH Zurich"
     # Code version of the paper, the same as version in CITATION.cff: change both together
     center: "[Version v2-revised](https://github.com/holukas/ms-forests-vpd/tree/v2-revised)"
-    right: "GPL-3.0"
+    right: "GPL-3.0-or-later"
 
 format:
   html:
