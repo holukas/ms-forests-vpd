@@ -121,12 +121,12 @@ curves with 100 quantile intervals per predictor (up to 101 points) and writes `
 | `44_agg_per_scenario.py` | Computes SHAP means within the stress stages, one row per site and stage. `STAGE_SEQUENCE` is `"published"`, `"mirrored"` or `"factorial"` |
 | `45_stage_distributions.py` | Computes driver medians and quartiles within each stage, in standardized and measured units |
 | `46_ale_thresholds.py` | Puts the per-site ALE curves on one grid, takes the highest crossing from positive to negative of each and averages them, overall and per forest type |
-| `47_threshold_robustness.py` | Re-estimates the VPD threshold nineteen ways, with a bootstrap over sites, the 23-setting estimator sweep and leave-one-site-out. Feeds Table 1 |
+| `47_threshold_robustness.py` | Re-estimates the VPD threshold nineteen ways, with a bootstrap over sites, the 23-setting estimator sweep and leave-one-site-out. Feeds Table 1. Also writes the threshold and the Stage 8 effects without the sites with inconsistent vegetation labels |
 | `48_threshold_exceedance.py` | Computes the share of peak-season daytime half-hours above the threshold, per site and forest type |
 | `49_biome_thresholds.py` | Estimates one threshold per site (highest crossing from positive to negative) and compares forest types with Kruskal-Wallis and Holm-corrected pairwise tests |
 
 Run 41 first, then 42 and 43. Run 44 any time after 31, 46 after 32 and 49 after 41. Run
-47 after 42 and 46 and after the `deep-sm`, `deeper-only`, `blocked-cv` and `no_ta` runs have
+47 after 42, 44 and 46 and after the `deep-sm`, `deeper-only`, `blocked-cv` and `no_ta` runs have
 reached stage 41. Run 48 after 47 and 49. Scripts 47, 52, 54 and 58 exclude bins covered by fewer than half the sites when they read the 42 and 43 grids.
 
 ## 50_figures

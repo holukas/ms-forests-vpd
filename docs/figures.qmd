@@ -60,7 +60,7 @@ Script 55 draws both the table and the figure from that file.
 |---|---|
 | Soil water depth | deepest usable layer at all sites; the 128 sites with a deeper layer at their shallowest and deepest; the 59 sites with five or more layers at their shallowest and deepest |
 | Model fitting | TA excluded from the model; blocked cross-validation; mean instead of median per bin; penalized spline instead of the polynomial; ALE instead of SHAP; 23 estimator settings |
-| Site set | each site removed in turn; Europe, North America and both removed; records of at least 3, 5 and 10 years |
+| Site set | each site removed in turn; Europe, North America and both removed; the 11 sites with inconsistent vegetation labels removed; records of at least 3, 5 and 10 years |
 
 Each row gives the test, the number of sites, the threshold in σ and in kPa, and the
 95 percent prediction band of the fit. Every row converts to kPa with its own site set.
@@ -74,7 +74,7 @@ Script 47 also writes a bootstrap interval over sites (`boot_lower`, `boot_upper
 narrower than the prediction band in every other row and is not shown.
 
 `MAIN_ROWS` in script 55 selects the fifteen rows of Table 1: all tests except the estimator
-row and the records of at least 3 and 5 years.
+row, the vegetation label row and the records of at least 3 and 5 years.
 
 ## Script 57 settings
 
